@@ -95,6 +95,9 @@ citam a matriz. Resultado mantido.
 
 ## Pendências para outras features e pessoas
 
+O índice central de pendências e itens a validar é [docs/questoes-a-rever.md](../../docs/questoes-a-rever.md);
+o registro local continua nesta tabela.
+
 | Pendência | Destino |
 |---|---|
 | Criar as contas iniciais de Coordenador de Curso de Engenharia de Computação, Sistemas de Informação e Licenciatura em Computação na implantação, por comando de gestão (`manage.py`), já que não há `createsuperuser` (RAN-CAD-01, RNF Portabilidade: Instalabilidade; primeiro acesso por RBN-CAD-06.2) | US-03 |

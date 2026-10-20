@@ -108,6 +108,19 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
   exigida. No login, uma senha fora de 8 a 64 caracteres é tratada como senha incorreta ("Credencial
   ou senha inválida") e conta como tentativa.
 
+### Session 2026-10-20
+
+- Q18: Depois de quanto tempo sem uso a sessão deve ser encerrada, obrigando o usuário a entrar de
+  novo? → A: 60 minutos sem uso; a sessão também termina ao fechar o navegador.
+- Q19: Quando a senha é alterada em "Meu perfil" ou redefinida por "Esqueci minha senha", as outras
+  sessões abertas da mesma conta devem ser encerradas? → A: Sim. Todas as outras sessões da conta são
+  encerradas; quem alterou a senha em "Meu perfil" continua conectado.
+- Q20: Deve haver um limite de quantos e-mails com link (primeiro acesso, reenvio e "Esqueci minha
+  senha") podem ser pedidos para a mesma conta num intervalo de tempo? → A: Fica fora do escopo desta
+  entrega. A proposta (por conta, no máximo 1 pedido por minuto e 5 por hora; acima disso, o link não é
+  enviado) vai como sugestão à Product Owner, sem prazo (docs/questoes-a-rever.md, S-01). Até a
+  decisão, não há limite.
+
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários abaixo reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
@@ -400,6 +413,10 @@ de ativação funciona chamada de fora das telas desta feature.
   disponível".
 - **Sem notificações** (US-38, A2): "Você não tem notificações".
 - **Link de outro tipo**: um link de redefinição de senha não serve para ativação, e vice-versa.
+- **Senha trocada com outra sessão aberta** (Q19): a sessão aberta em outro computador ou navegador
+  cai, e a próxima página interna nela leva ao login.
+- **Sessão sem uso** (Q18): depois de 60 minutos sem uso, ou com o navegador fechado e aberto de novo,
+  a próxima página interna leva ao login e, depois dele, de volta à página pedida.
 - **Membro Externo com a validade vencida mas ainda 'Ativa'** (Q4): o login é negado com a mensagem
   de expiração, como se a conta estivesse 'Expirada'; a mudança do status em si é da US-06.
 - **Professor de turma arquivada** (Q9): vê a tela do aluno sem o botão "Resetar primeiro acesso".
@@ -472,18 +489,22 @@ de ativação funciona chamada de fora das telas desta feature.
   itens de Coordenador de Curso, Professor da Disciplina, Orientador e Coorientador aparecem como
   itens extras no menu, conforme os papéis que ele tiver (Q7).
 - **FR-011**: O usuário autenticado DEVE poder sair ("Sair" no menu do usuário), encerrando a sessão.
+  A sessão também DEVE terminar depois de 60 minutos sem uso e ao fechar o navegador; a próxima página
+  interna pede login de novo (Q18).
 
 **Recuperar e alterar a senha [US-12][RBN-CAD-06.5][RBN-CAD-06.7][RBN-CAD-06.8]**
 
 - **FR-012**: Em "Meu perfil", "Alterar senha" DEVE pedir Senha Atual (de 8 a 64 caracteres, exibida
-  mascarada; RBN-CAD-06.5), Nova Senha e Confirmação da Nova Senha, conferir a senha atual ("Senha atual incorreta"), aplicar a regra de FR-004 à nova senha
-  e, ao salvar, exibir "Senha alterada com sucesso".
+  mascarada; RBN-CAD-06.5), Nova Senha e Confirmação da Nova Senha, conferir a senha atual ("Senha
+  atual incorreta"), aplicar a regra de FR-004 à nova senha e, ao salvar, exibir "Senha alterada com
+  sucesso". As outras sessões abertas da conta são encerradas; a sessão de quem alterou continua
+  (Q19).
 - **FR-013**: "Esqueci minha senha" DEVE pedir o e-mail cadastrado; com e-mail em formato válido
   (senão, M-10), sempre exibir "Se a conta existir, enviaremos um link para o e-mail cadastrado",
   mesmo se o envio falhar (Q13); só envia o link de redefinição (válido por 24 horas)
   se o e-mail for de uma conta 'Ativa'.
 - **FR-014**: O link de redefinição DEVE abrir Nova Senha e Confirmação (regra de FR-004), gravar a
-  senha e deixar de valer depois de usado; link vencido, usado ou substituído exibe "Link inválido ou
+  senha, encerrar todas as sessões abertas da conta (Q19) e deixar de valer depois de usado; link vencido, usado ou substituído exibe "Link inválido ou
   vencido. Solicite um novo".
 - **FR-015**: O Professor da Disciplina DEVE poder "Resetar primeiro acesso" de um aluno de turma sob
   sua responsabilidade, com confirmação: o sistema limpa o e-mail e a senha, invalida os links
@@ -647,13 +668,18 @@ implementação. Depois da resposta, cada linha vira o texto definitivo (ou é c
 - **Links**: o link de confirmação de troca de e-mail vale 24 horas (Q11) e não usa tabela (o novo
   e-mail vai no próprio link; dicionário, seção 4, item 3). Ativação e redefinição seguem o item 2
   (o momento do último link gerado invalida os anteriores).
-- **Sessão**: encerra ao sair; a duração máxima da sessão sem uso fica para o plano. Alterar a senha
-  mantém a sessão atual.
+- **Sessão**: encerra ao sair, depois de 60 minutos sem uso e ao fechar o navegador (Q18). Alterar a
+  senha mantém a sessão atual e encerra as outras sessões da conta; a redefinição por link encerra
+  todas (Q19).
 - **Credenciais**: regras em Q13 e Q17; a matrícula é sempre de 10 dígitos.
 - **Fora do escopo**: criação de contas e contas iniciais de Coordenador (spec 002, US-03); inativação
   e reativação (US-04); expiração automática e prorrogação de Membro Externo (US-06); geração de
   notificações (cada feature que notifica); painel do aluno da US-41 (ver FR-015); envio do link na
-  criação da conta (não existe, Clarifications Q1).
+  criação da conta (não existe, Clarifications Q1); limite de pedidos de link por conta (sugestão à
+  PO, Q20).
+- **Índice de pendências**: todas as pendências e itens a validar desta spec também estão em
+  [docs/questoes-a-rever.md](../../docs/questoes-a-rever.md), que é o índice central; o registro local
+  continua aqui.
 - **Pendências para outras features**: a US-41 (Feature 6, Leandra Matos) deve incorporar o botão
   "Resetar primeiro acesso" ao painel do aluno, chamando a ação de reset desta feature; a spec 002
   (Maria Luísa Gomes) cria as contas sem chamar a geração do link (Clarifications Q1); a feature de
