@@ -1,0 +1,22 @@
+# Dependências do SIGTCC (Python 3.12), com versões exatas do pip freeze de 2026-10-19.
+# Item de configuração (PGCS 2.3): mudanças passam pela revisão do Célio Benjamim.
+# [infraestrutura da feature 001] research R12
+asgiref==3.12.1
+black==26.10.1
+click==8.5.0
+Django==5.2.18
+flake8==7.4.1
+isort==9.0.2
+mccabe==0.7.0
+mypy_extensions==1.1.0
+packaging==26.3
+pathspec==1.1.1
+platformdirs==4.13.5
+psycopg==3.3.6
+psycopg-binary==3.3.6
+pycodestyle==2.15.0
+pyflakes==4.0.3
+python-dotenv==1.2.4
+pytokens==0.4.1
+sqlparse==0.6.0
+typing_extensions==4.16.0

@@ -1,0 +1,10 @@
+# Configuração do black e do isort do SIGTCC (research R13).
+# Item de configuração: mudanças passam pela revisão do Célio Benjamim (constituição, princípio IX).
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["sigtcc"]
