@@ -8,3 +8,5 @@ sigtcc/media/
 .DS_Store
 # Configuração pessoal do Claude Code
 .claude/settings.local.json
+# Cache do bloqueio de login (research D2)
+/cache/

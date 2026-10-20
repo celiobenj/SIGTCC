@@ -1,0 +1,7 @@
+# Configuração do flake8 do SIGTCC (research R13).
+# E203 e W503 conflitam com a formatação do black.
+# Item de configuração: mudanças passam pela revisão do Célio Benjamim.
+[flake8]
+max-line-length = 100
+extend-ignore = E203, W503
+exclude = migrations, venv, .venv
