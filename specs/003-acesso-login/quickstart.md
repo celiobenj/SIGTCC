@@ -59,15 +59,16 @@ Cronometrar o item a (SC-003: até 3 minutos, sem contar a entrega do e-mail).
 
 ## 3. Checklist de revisão visual (SC-007; Q16, Q22)
 
-Comparar cada tela com `docs/fonte/prototipo/prototipo_17_10.html`, nas larguras 360, 768 e 1280 px:
+Comparar cada tela com `docs/fonte/prototipo/prototipo_17_10.html`, nas larguras 360, 768 e 1280 px
+(conferido por Julia Cohen em 2026-10-20, T050):
 
-- [ ] Paleta (azul, verde, vermelho, cinzas) e fontes Roboto e Figtree iguais às do protótipo
-- [ ] Ícones Material Symbols nos mesmos lugares (menu, sino, avatar)
-- [ ] Barra superior de 64 px com nome do sistema, sino com contador e menu do usuário
-- [ ] Menu lateral recolhido abaixo de 900 px e aberto pelo botão de menu
-- [ ] Campos com rótulo, erro destacado no campo e mensagem abaixo
-- [ ] Alertas e avisos temporários com as cores do protótipo
-- [ ] Sem rolagem horizontal nem conteúdo cortado em 360 px
+- [x] Paleta (azul, verde, vermelho, cinzas) e fontes Roboto e Figtree iguais às do protótipo
+- [x] Ícones Material Symbols nos mesmos lugares (menu, sino, avatar)
+- [x] Barra superior de 64 px com nome do sistema, sino com contador e menu do usuário
+- [x] Menu lateral recolhido abaixo de 900 px e aberto pelo botão de menu
+- [x] Campos com rótulo, erro destacado no campo e mensagem abaixo
+- [x] Alertas e avisos temporários com as cores do protótipo
+- [x] Sem rolagem horizontal nem conteúdo cortado em 360 px
 
 ## 4. Testes automatizados (SC-001, SC-002, SC-004 a SC-006, SC-008, SC-009)
 

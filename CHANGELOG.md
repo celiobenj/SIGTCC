@@ -38,8 +38,7 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 - Spec 003 (índice `docs/questoes-a-rever.md`): validar as 17 mensagens provisórias M-01 a
   M-17 com a PO (Q-01); confirmar a branch `feature/feat-02-acesso-e-login` (Q-09); aprovar os
   itens de configuração da feature 003 (Q-23 e Q-27); ciência da regra compartilhada do
-  Professor da Disciplina (Q-29 a Q-32); índice único em `lower(usu_email)` (Q-28); roteiro
-  manual e revisão visual do quickstart (T050).
+  Professor da Disciplina (Q-29 a Q-32); índice único em `lower(usu_email)` (Q-28).
 
 - Trocar os descritores provisórios dos critérios pelos textos da planilha oficial de avaliação
   da EST/UEA antes do TP3 (18/11/2026) – spec 001, FR-014a e SC-007.

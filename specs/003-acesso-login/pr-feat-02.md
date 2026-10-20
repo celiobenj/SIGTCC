@@ -44,7 +44,8 @@ Implementa o acesso ao SIGTCC sobre o modelo de dados da feat-01, **sem criar ta
 | f2843cd | feat(feat-02): recuperar e alterar senha e resetar primeiro acesso |
 | b67f070 | feat(feat-02): editar perfil e mostrar notificacoes |
 | d8211d4 | test(feat-02): cobrir mensagens, log e seguranca do acesso |
-| (este) | docs(feat-02): registrar entrega no changelog e texto do pr |
+| b9dabdd | docs(feat-02): registrar entrega no changelog e texto do pr |
+| (este) | docs(feat-02): registrar validacao manual e responder q-19 |
 
 ### 3. Checklist Técnico da Equipe (Definition of Done)
 
@@ -52,12 +53,12 @@ Implementa o acesso ao SIGTCC sobre o modelo de dados da feat-01, **sem criar ta
 - [x] Não há variáveis, imports ou trechos de código não utilizados (flake8 limpo).
 - [x] Migrações: nenhuma nova (FR-028); `makemigrations --check --dry-run` → "No changes detected".
 - [x] O arquivo `.env` e a pasta `media/` NÃO foram adicionados ao Git. `.gitignore` ganhou `/logs/` e `/cache_acesso/`. Os testes de assinatura usam um `MEDIA_ROOT` temporário e não gravam em `sigtcc/media/`.
-- [ ] A interface segue a paleta e os padrões do protótipo de 17/10 (ISO/IEC 25010): tokens de cor, fontes e componentes do protótipo, conferidos em teste (layout, CSS e fontes no HTML). **Falta o checklist visual em 360, 768 e 1280 px** (quickstart, seção 3; T050).
-- [ ] Não há quebras de layout ou erros no console do navegador: **a conferir no roteiro manual** (T050).
+- [x] A interface segue a paleta e os padrões do protótipo de 17/10 (ISO/IEC 25010): tokens de cor, fontes e componentes do protótipo, conferidos em teste e no checklist visual em 360, 768 e 1280 px (quickstart, seção 3; T050, Julia Cohen, 2026-10-20).
+- [x] Não há quebras de layout ou erros no console do navegador (roteiro manual, T050).
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
-Suíte completa: `python manage.py test sigtcc.apps` → `Ran 229 tests ... OK` (53 da feat-01 e 176 novos). O roteiro manual do quickstart (seções 1 a 3, com o tempo do primeiro acesso do SC-003) **ainda precisa ser executado** pela responsável (T050).
+Suíte completa: `python manage.py test sigtcc.apps` → `Ran 229 tests ... OK` (53 da feat-01 e 176 novos). Roteiro manual do quickstart (seções 1 a 3, itens a a o, com o tempo do primeiro acesso do SC-003 e o checklist visual do SC-007) executado por Julia Cohen em 2026-10-20 (T050), sem divergências.
 
 **US-10 – Primeiro acesso** (`test_us10_primeiro_acesso.py`, 33 testes)
 - [x] Cenários 1 a 11, mais Q2, Q6, Q8, Q12, Q15, M-14, falha no envio (M-17), token fora da URL, link adulterado (Q23), conta inativada com link válido (B1, Q26) e revalidação no POST
@@ -107,7 +108,6 @@ Suíte completa: `python manage.py test sigtcc.apps` → `Ran 229 tests ... OK` 
 | Pendência | Destino | Índice |
 |---|---|---|
 | Validar as 17 mensagens provisórias M-01 a M-17 (não bloqueiam o merge, spec Q25) | Profa. Diana (PO) | Q-01 |
-| Roteiro manual do quickstart, tempo do primeiro acesso (SC-003) e checklist visual (SC-007) | Julia Cohen | T050 |
 | Ciência da regra do Professor da Disciplina (turma não arquivada para alterar dados) | Leandra, Célio, Maria Luísa, Maria Luiza | Q-29 a Q-32 |
 | US-41 levar o botão "Resetar primeiro acesso" ao painel do aluno | Leandra Matos | Q-13 |
 | Spec 002: criar contas sem enviar link; contas iniciais de Coordenador; US-06 mudar o status de Membro Externo vencido | Maria Luísa Gomes | Q-14 a Q-16 |
