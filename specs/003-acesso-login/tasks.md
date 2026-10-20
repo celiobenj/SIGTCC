@@ -218,8 +218,8 @@ do Aluno com confirmação; abrir notificações criadas pelo shell.
 - [X] T048 Rodar `lint.bat` (ou isort, black e flake8) duas vezes seguidas: a segunda não altera nada e o flake8 termina sem erros em `sigtcc/`. — Rastreabilidade: [infraestrutura da feature 003]
 - [X] T049 Rodar `python manage.py test sigtcc.apps.cadastro sigtcc.apps.defesa` em banco de teste novo (inclui os 53 testes da feature 001) e `python manage.py makemigrations --check --dry-run` (nenhuma migração nova, FR-028). — Rastreabilidade: [SC-001][FR-028]
 - [ ] T050 Executar o roteiro de `specs/003-acesso-login/quickstart.md` do zero (seção 1 a 3): cronometrar o primeiro acesso (SC-003) e preencher o checklist de revisão visual em 360, 768 e 1280 px (SC-007); corrigir o quickstart se algum resultado esperado estiver diferente. — Rastreabilidade: [SC-003][SC-007][Q16][Q22]
-- [ ] T051 Atualizar `CHANGELOG.md` com a entrega da feature 003 e as pendências abertas do índice (Q-01, Q-09, Q-23, Q-27 a Q-32; IDs do índice, não das Clarifications da spec). — Rastreabilidade: [infraestrutura da feature 003]
-- [ ] T052 Preparar o texto do PR em `specs/003-acesso-login/pr-feat-02.md` com o template do PGCS 6.3, título `[Feat-02] Acesso e Login (US-10, US-11, US-12, US-37, US-38)`, usando o agente `revisor-pgcs` para o checklist, e listar os itens de configuração para o Célio (índice Q-23 e Q-27). Não fazer push nem abrir o PR sem pedido da responsável. — Rastreabilidade: [infraestrutura da feature 003]
+- [X] T051 Atualizar `CHANGELOG.md` com a entrega da feature 003 e as pendências abertas do índice (Q-01, Q-09, Q-23, Q-27 a Q-32; IDs do índice, não das Clarifications da spec). — Rastreabilidade: [infraestrutura da feature 003]
+- [X] T052 Preparar o texto do PR em `specs/003-acesso-login/pr-feat-02.md` com o template do PGCS 6.3, título `[Feat-02] Acesso e Login (US-10, US-11, US-12, US-37, US-38)`, usando o agente `revisor-pgcs` para o checklist, e listar os itens de configuração para o Célio (índice Q-23 e Q-27). Não fazer push nem abrir o PR sem pedido da responsável. — Rastreabilidade: [infraestrutura da feature 003]
 
 ---
 
