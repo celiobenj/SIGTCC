@@ -25,7 +25,7 @@ Implementa o acesso ao SIGTCC sobre o modelo de dados da feat-01, **sem criar ta
 * Feature Impactada: Feature 02 - Acesso e Login (spec 003), com a base comum usada pelas demais features
 * Histórias de Usuário Atendidas: US-10 [RBN-CAD-06.1][RBN-CAD-06.2][RBN-CAD-06.3], US-11 [RBN-CAD-06.4][RBN-CAD-06.6][RBN-CAD-03.3], US-12 [RBN-CAD-06.5][RBN-CAD-06.7][RBN-CAD-06.8], US-37 [RBN-CAD-06.9], US-38 [RBN-CAD-13.1][RBN-CAD-13.2]. Cada classe, função, template e teste cita as US, RBN ou FR que atende; a conferência foi feita por script na T047.
 * Requisitos da spec 003: FR-001 a FR-029; SC-001 a SC-009 (SC-003 e SC-007 pelo roteiro manual, ver seção 4).
-* Cartão no Trello: [preencher]
+* Cartão no Trello: Atividade 3.3 – Implementação da camada de interface e das regras lógicas
 
 **Commits deste PR** (só os da feat-02)
 
@@ -59,7 +59,14 @@ Implementa o acesso ao SIGTCC sobre o modelo de dados da feat-01, **sem criar ta
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
-Suíte completa: `python manage.py test sigtcc.apps` → `Ran 229 tests ... OK` (53 da feat-01 e 176 novos). Roteiro manual do quickstart (seções 1 a 3, itens a a o, com o tempo do primeiro acesso do SC-003 e o checklist visual do SC-007) executado por Julia Cohen em 2026-10-20 (T050), sem divergências.
+Suíte completa: `python manage.py test sigtcc.apps` → `Ran 229 tests ... OK` (53 da feat-01 e 176 novos).
+
+**Validação manual (T050, Julia Cohen, 2026-10-20)**
+- [x] Roteiro do `quickstart.md` executado do zero (seções 1 a 3, itens a a o), sem divergências
+- [x] SC-003: primeiro acesso (pedido, abertura do link e criação da senha) em menos de 1 minuto, sem contar a entrega do e-mail (limite: 3 minutos)
+- [x] SC-007: revisão visual em 360, 768 e 1280 px, lado a lado com o protótipo de 17/10, sem problemas
+- [x] Console do navegador sem erros
+- [x] Envio real de e-mail testado por SMTP (Gmail): o link de ativação chegou e funcionou
 
 **US-10 – Primeiro acesso** (`test_us10_primeiro_acesso.py`, 33 testes)
 - [x] Cenários 1 a 11, mais Q2, Q6, Q8, Q12, Q15, M-14, falha no envio (M-17), token fora da URL, link adulterado (Q23), conta inativada com link válido (B1, Q26) e revalidação no POST
@@ -117,7 +124,7 @@ Suíte completa: `python manage.py test sigtcc.apps` → `Ran 229 tests ... OK` 
 
 ### 5. Revisão por Pares (Peer Review)
 
-* Revisor Designado: [preencher: integrante da equipe] (itens de configuração: Célio Benjamim)
+* Revisores Designados: Célio Benjamim (itens de configuração: Q-09, Q-23 e Q-27) e Maria Luísa Gomes (código; a Gestão de Contas reaproveita a base visual e a verificação de perfil)
 * Parecer do Revisor:
 
 [ ] Aprovado integralmente para merge
