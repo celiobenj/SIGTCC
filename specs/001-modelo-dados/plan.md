@@ -51,7 +51,7 @@ só entrega a camada de modelo.
 **Constraints**: nenhuma tabela ou coluna de negócio fora do dicionário (FR-002, FR-020); nenhuma
 regra de aplicação nesta feature (FR-019); segredos só no `.env`.
 
-**Scale/Scope**: 36 tabelas, 201 colunas, 26 domínios (`TextChoices`), 50 restrições nomeadas,
+**Scale/Scope**: 36 tabelas, 201 colunas, 26 domínios (`TextChoices`), 49 restrições nomeadas (48 CHECKs e unicidades + 1 FK composta),
 1 migração de SQL (FK composta), 2 migrações de restrições e 3 data migrations; escala do NUCOMP
 (centenas de alunos por semestre, 3 cursos).
 

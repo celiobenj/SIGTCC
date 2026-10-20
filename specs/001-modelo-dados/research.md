@@ -27,6 +27,10 @@ Julia Cohen).
   Assim o `ModelBackend` recusa contas 'Aguardando Ativação', 'Inativa' e 'Expirada'.
 - Gerenciador próprio (`UsuariosManager(BaseUserManager)`) com `create_user`; sem
   `create_superuser` nesta feature.
+- Senha nula: o Django 5.2 considera `None` uma senha **utilizável** (`is_password_usable(None)` é
+  verdadeiro) e `check_password` com senha `None` levanta `TypeError`. `Usuarios` sobrescreve
+  `has_usable_password` (falso quando nula) e `check_password` (falso quando nula). Encontrado na
+  T027 durante o `/speckit-implement`; corrige a premissa desta seção.
 - `__str__` retorna `usu_nome`. O padrão de `AbstractBaseUser` retorna o `USERNAME_FIELD`, que é
   nulo para o Aluno antes do primeiro acesso, e `str(usuario)` levantaria `TypeError`.
 

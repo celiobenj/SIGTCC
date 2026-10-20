@@ -8,7 +8,9 @@ Referências: specs/001-modelo-dados/data-model.md e docs/fonte/Modelo_Logico_e_
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
+from sigtcc.apps.cadastro.choices import restricao_dominio
 from sigtcc.apps.cadastro.fields import CharFixoField, TimestampField
 from sigtcc.apps.defesa.choices import (
     ComponenteCriterio,
@@ -41,6 +43,12 @@ class Criterios(models.Model):
 
     class Meta:
         db_table = "Criterios"
+        constraints = [
+            restricao_dominio("ck_criterios_cri_componente", "cri_componente", ComponenteCriterio),
+            models.CheckConstraint(
+                condition=Q(cri_peso__gte=0, cri_peso__lte=10), name="ck_criterios_cri_peso"
+            ),
+        ]
         verbose_name = "critério de avaliação"
         verbose_name_plural = "critérios de avaliação"
 
@@ -60,6 +68,11 @@ class Ouvintes(models.Model):
 
     class Meta:
         db_table = "Ouvintes"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(ouv_matricula__regex=r"^[0-9]{10}$"), name="ck_ouvintes_ouv_matricula"
+            ),
+        ]
         verbose_name = "ouvinte"
         verbose_name_plural = "ouvintes"
 
@@ -89,6 +102,16 @@ class Defesas(models.Model):
 
     class Meta:
         db_table = "Defesas"
+        constraints = [
+            restricao_dominio("ck_defesas_def_formato", "def_formato", FormatoSessao),
+            restricao_dominio("ck_defesas_def_status", "def_status", StatusSessao),
+            restricao_dominio("ck_defesas_def_parecer", "def_parecer", Parecer, aceita_nulo=True),
+            models.CheckConstraint(
+                condition=Q(def_nota_final__gte=0, def_nota_final__lte=10)
+                | Q(def_nota_final__isnull=True),
+                name="ck_defesas_def_nota_final",
+            ),
+        ]
         verbose_name = "defesa"
         verbose_name_plural = "defesas"
 
@@ -153,6 +176,9 @@ class BancaDefesa(models.Model):
 
     class Meta:
         db_table = "Banca_Defesa"
+        constraints = [
+            restricao_dominio("ck_banca_defesa_ban_papel", "ban_papel", PapelBanca),
+        ]
         verbose_name = "membro da banca"
         verbose_name_plural = "membros da banca"
 
@@ -202,6 +228,12 @@ class Avaliacoes(models.Model):
 
     class Meta:
         db_table = "Avaliacoes"
+        constraints = [
+            restricao_dominio("ck_avaliacoes_ava_conceito", "ava_conceito", Conceito),
+            models.CheckConstraint(
+                condition=Q(ava_nota__gte=0, ava_nota__lte=10), name="ck_avaliacoes_ava_nota"
+            ),
+        ]
         verbose_name = "avaliação"
         verbose_name_plural = "avaliações"
 
@@ -255,5 +287,20 @@ class HistoricoDefesas(models.Model):
 
     class Meta:
         db_table = "Historico_Defesas"
+        constraints = [
+            restricao_dominio("ck_historico_defesas_hdf_evento", "hdf_evento", EventoDefesa),
+            restricao_dominio(
+                "ck_historico_defesas_hdf_status_anterior",
+                "hdf_status_anterior",
+                StatusSessao,
+                aceita_nulo=True,
+            ),
+            restricao_dominio(
+                "ck_historico_defesas_hdf_status_novo",
+                "hdf_status_novo",
+                StatusSessao,
+                aceita_nulo=True,
+            ),
+        ]
         verbose_name = "histórico da defesa"
         verbose_name_plural = "históricos das defesas"

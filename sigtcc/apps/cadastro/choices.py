@@ -183,3 +183,14 @@ class Homologacao(models.TextChoices):
     EM_ANALISE = "Em Análise", "Em Análise"
     HOMOLOGADO = "Homologado", "Homologado"
     RECUSADO = "Recusado", "Recusado"
+
+
+def restricao_dominio(nome, campo, choices, aceita_nulo=False):
+    """CHECK que aceita só os valores do domínio (e nulo, se o campo for anulável).
+
+    Gerado da mesma classe usada em choices=, para tela e banco não divergirem (research D7).
+    """
+    condicao = models.Q(**{f"{campo}__in": choices.values})
+    if aceita_nulo:
+        condicao |= models.Q(**{f"{campo}__isnull": True})
+    return models.CheckConstraint(condition=condicao, name=nome)

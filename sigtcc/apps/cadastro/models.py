@@ -9,6 +9,7 @@ Referências: specs/001-modelo-dados/data-model.md e docs/fonte/Modelo_Logico_e_
 
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
+from django.db.models import F, Q
 
 from sigtcc.apps.cadastro.choices import (
     DescricaoTurma,
@@ -30,6 +31,7 @@ from sigtcc.apps.cadastro.choices import (
     TipoEventoTurma,
     TipoSolicitacao,
     Titulacao,
+    restricao_dominio,
 )
 from sigtcc.apps.cadastro.fields import CharFixoField, TimestampField
 from sigtcc.apps.cadastro.managers import UsuariosManager
@@ -150,6 +152,9 @@ class Usuarios(AbstractBaseUser):
 
     class Meta:
         db_table = "Usuarios"
+        constraints = [
+            restricao_dominio("ck_usuarios_usu_status", "usu_status", StatusConta),
+        ]
         verbose_name = "usuário"
         verbose_name_plural = "usuários"
 
@@ -157,6 +162,28 @@ class Usuarios(AbstractBaseUser):
     def is_active(self):
         """Só a conta 'Ativa' faz login (derivado do status, sem coluna; research D1)."""
         return self.usu_status == StatusConta.ATIVA
+
+    def has_usable_password(self):
+        """Senha nula (conta 'Aguardando Ativação') não é utilizável.
+
+        O Django trata a senha None como utilizável; aqui ela não é (research D1).
+        """
+        return self.password is not None and super().has_usable_password()
+
+    def check_password(self, raw_password):
+        """Com a senha nula, nenhuma senha confere (o Django levantaria TypeError; research D1)."""
+        if self.password is None:
+            return False
+        return super().check_password(raw_password)
+
+    def save(self, *args, **kwargs):
+        """Grava e-mail vazio ou só com espaços como NULL (FR-007; aprovação de R3).
+
+        Atenção: QuerySet.update() e bulk_create() não passam por aqui (contrato, seção 3).
+        """
+        if self.usu_email is not None and self.usu_email.strip() == "":
+            self.usu_email = None
+        super().save(*args, **kwargs)
 
     def __str__(self):
         # O e-mail pode ser nulo (Aluno antes do primeiro acesso); por isso usa o nome.
@@ -176,6 +203,11 @@ class Alunos(models.Model):
 
     class Meta:
         db_table = "Alunos"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(alu_matricula__regex=r"^[0-9]{10}$"), name="ck_alunos_alu_matricula"
+            ),
+        ]
         verbose_name = "aluno"
         verbose_name_plural = "alunos"
 
@@ -196,6 +228,9 @@ class Docentes(models.Model):
 
     class Meta:
         db_table = "Docentes"
+        constraints = [
+            restricao_dominio("ck_docentes_doc_titulacao", "doc_titulacao", Titulacao),
+        ]
         verbose_name = "docente"
         verbose_name_plural = "docentes"
 
@@ -214,6 +249,9 @@ class MembrosExternos(models.Model):
 
     class Meta:
         db_table = "MembrosExternos"
+        constraints = [
+            restricao_dominio("ck_membrosexternos_mem_titulacao", "mem_titulacao", Titulacao),
+        ]
         verbose_name = "membro externo"
         verbose_name_plural = "membros externos"
 
@@ -250,6 +288,15 @@ class CoorientadoresExternos(models.Model):
         db_table = "CoorientadoresExternos"
         verbose_name = "coorientador externo"
         verbose_name_plural = "coorientadores externos"
+
+    def save(self, *args, **kwargs):
+        """Grava e-mail vazio ou só com espaços como NULL (FR-007; aprovação de R3).
+
+        Atenção: QuerySet.update() e bulk_create() não passam por aqui (contrato, seção 3).
+        """
+        if self.cext_email is not None and self.cext_email.strip() == "":
+            self.cext_email = None
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.cext_nome
@@ -299,6 +346,21 @@ class Turmas(models.Model):
 
     class Meta:
         db_table = "Turmas"
+        constraints = [
+            restricao_dominio("ck_turmas_tur_descricao", "tur_descricao", DescricaoTurma),
+            restricao_dominio("ck_turmas_tur_status", "tur_status", StatusTurma),
+            restricao_dominio("ck_turmas_tur_dia_da_semana", "tur_dia_da_semana", DiaSemana),
+            models.CheckConstraint(
+                condition=Q(tur_semestre__in=[1, 2]), name="ck_turmas_tur_semestre"
+            ),
+            # Ano letivo com exatamente 4 dígitos.
+            models.CheckConstraint(
+                condition=Q(tur_ano__gte=1000, tur_ano__lte=9999), name="ck_turmas_tur_ano"
+            ),
+            models.CheckConstraint(
+                condition=Q(tur_hora_termino__gt=F("tur_hora_inicio")), name="ck_turmas_horario"
+            ),
+        ]
         verbose_name = "turma"
         verbose_name_plural = "turmas"
 
@@ -352,6 +414,11 @@ class HistoricoAlunosTurmas(models.Model):
 
     class Meta:
         db_table = "Historico_Alunos_Turmas"
+        constraints = [
+            restricao_dominio(
+                "ck_historico_alunos_turmas_hat_tipo_evento", "hat_tipo_evento", TipoEventoTurma
+            ),
+        ]
         verbose_name = "histórico de aluno na turma"
         verbose_name_plural = "históricos de alunos nas turmas"
 
@@ -376,6 +443,15 @@ class TurmasMarcos(models.Model):
 
     class Meta:
         db_table = "Turmas_Marcos"
+        constraints = [
+            restricao_dominio("ck_turmas_marcos_tma_tipo", "tma_tipo", TipoEntrega),
+            # Uma entrega de cada tipo por turma, exceto 'Outra' (índice único parcial).
+            models.UniqueConstraint(
+                fields=["tma_tur", "tma_tipo"],
+                condition=~Q(tma_tipo=TipoEntrega.OUTRA),
+                name="uq_turmas_marcos_tipo_por_turma",
+            ),
+        ]
         verbose_name = "entrega da turma"
         verbose_name_plural = "entregas da turma"
 
@@ -396,6 +472,12 @@ class EntregasMarcos(models.Model):
 
     class Meta:
         db_table = "Entregas_Marcos"
+        constraints = [
+            restricao_dominio("ck_entregas_marcos_ent_status", "ent_status", StatusEntrega),
+            models.UniqueConstraint(
+                fields=["ent_tma", "ent_alu"], name="uq_entregas_marcos_aluno_atividade"
+            ),
+        ]
         verbose_name = "entrega do aluno"
         verbose_name_plural = "entregas dos alunos"
 
@@ -446,6 +528,23 @@ class TCCs(models.Model):
 
     class Meta:
         db_table = "TCCs"
+        constraints = [
+            restricao_dominio("ck_tccs_tcc_status", "tcc_status", StatusTCC),
+            restricao_dominio(
+                "ck_tccs_tcc_modalidade", "tcc_modalidade", ModalidadeTCC, aceita_nulo=True
+            ),
+            # Título, resumo e modalidade obrigatórios fora de 'Sem Proposta' (Clarifications Q1).
+            models.CheckConstraint(
+                condition=Q(tcc_status=StatusTCC.SEM_PROPOSTA)
+                | Q(
+                    tcc_titulo__isnull=False,
+                    tcc_resumo__isnull=False,
+                    tcc_modalidade__isnull=False,
+                ),
+                name="ck_tccs_campos_obrigatorios_com_proposta",
+            ),
+            models.UniqueConstraint(fields=["tcc_alu", "tcc_tur"], name="uq_tccs_aluno_turma"),
+        ]
         verbose_name = "TCC"
         verbose_name_plural = "TCCs"
 
@@ -466,6 +565,16 @@ class Orientacoes(models.Model):
 
     class Meta:
         db_table = "Orientacoes"
+        constraints = [
+            restricao_dominio("ck_orientacoes_ori_origem", "ori_origem", OrigemOrientacao),
+            restricao_dominio("ck_orientacoes_ori_status", "ori_status", StatusOrientacao),
+            # No máximo um orientador ativo por TCC (índice único parcial).
+            models.UniqueConstraint(
+                fields=["ori_tcc"],
+                condition=Q(ori_status=StatusOrientacao.ATIVA),
+                name="uq_orientacoes_uma_ativa_por_tcc",
+            ),
+        ]
         verbose_name = "orientação"
         verbose_name_plural = "orientações"
 
@@ -490,6 +599,25 @@ class Coorientacoes(models.Model):
 
     class Meta:
         db_table = "Coorientacoes"
+        constraints = [
+            restricao_dominio("ck_coorientacoes_coo_status", "coo_status", StatusCoorientacao),
+            # Exatamente um entre docente e coorientador externo.
+            models.CheckConstraint(
+                condition=Q(coo_doc__isnull=False, coo_cext__isnull=True)
+                | Q(coo_doc__isnull=True, coo_cext__isnull=False),
+                name="ck_coorientacoes_docente_ou_externo",
+            ),
+            models.UniqueConstraint(
+                fields=["coo_tcc", "coo_doc"],
+                condition=Q(coo_status=StatusCoorientacao.ATIVA),
+                name="uq_coorientacoes_docente_ativo",
+            ),
+            models.UniqueConstraint(
+                fields=["coo_tcc", "coo_cext"],
+                condition=Q(coo_status=StatusCoorientacao.ATIVA),
+                name="uq_coorientacoes_externo_ativo",
+            ),
+        ]
         verbose_name = "coorientação"
         verbose_name_plural = "coorientações"
 
@@ -526,6 +654,40 @@ class SolicitacoesOrientacao(models.Model):
 
     class Meta:
         db_table = "Solicitacoes_Orientacao"
+        constraints = [
+            restricao_dominio("ck_solicitacoes_orientacao_sol_tipo", "sol_tipo", TipoSolicitacao),
+            # Valores de sol_status conforme o tipo (dicionário 3.5.5; FR-009).
+            models.CheckConstraint(
+                condition=Q(
+                    sol_tipo__in=[TipoSolicitacao.ORIENTACAO, TipoSolicitacao.TROCA_DE_ORIENTACAO],
+                    sol_status__in=[
+                        StatusSolicitacao.AGUARDANDO_RESPOSTA,
+                        StatusSolicitacao.ACEITO,
+                        StatusSolicitacao.RECUSADO,
+                        StatusSolicitacao.CANCELADO,
+                    ],
+                )
+                | Q(
+                    sol_tipo=TipoSolicitacao.COORIENTACAO,
+                    sol_status__in=[
+                        StatusSolicitacao.AGUARDANDO_ACEITE,
+                        StatusSolicitacao.ACEITO,
+                        StatusSolicitacao.RECUSADO,
+                        StatusSolicitacao.CANCELADO,
+                    ],
+                ),
+                name="ck_solicitacoes_orientacao_status_por_tipo",
+            ),
+            # Um pedido de orientação pendente por TCC (índice único parcial).
+            models.UniqueConstraint(
+                fields=["sol_tcc"],
+                condition=Q(
+                    sol_tipo__in=[TipoSolicitacao.ORIENTACAO, TipoSolicitacao.TROCA_DE_ORIENTACAO],
+                    sol_status=StatusSolicitacao.AGUARDANDO_RESPOSTA,
+                ),
+                name="uq_solicitacoes_orientacao_pedido_pendente",
+            ),
+        ]
         verbose_name = "solicitação de orientação"
         verbose_name_plural = "solicitações de orientação"
 
@@ -549,6 +711,20 @@ class HistoricoStatusTCC(models.Model):
 
     class Meta:
         db_table = "Historico_Status_TCC"
+        constraints = [
+            restricao_dominio(
+                "ck_historico_status_tcc_hst_status_anterior",
+                "hst_status_anterior",
+                StatusTCC,
+                aceita_nulo=True,
+            ),
+            restricao_dominio(
+                "ck_historico_status_tcc_hst_status_novo", "hst_status_novo", StatusTCC
+            ),
+            restricao_dominio(
+                "ck_historico_status_tcc_hst_gatilho", "hst_gatilho", GatilhoStatusTCC
+            ),
+        ]
         verbose_name = "histórico de status do TCC"
         verbose_name_plural = "históricos de status do TCC"
 
@@ -579,6 +755,20 @@ class Artigos(models.Model):
 
     class Meta:
         db_table = "Artigos"
+        constraints = [
+            restricao_dominio(
+                "ck_artigos_art_qualis_capes", "art_qualis_capes", QualisCapes, aceita_nulo=True
+            ),
+            restricao_dominio(
+                "ck_artigos_art_status_submissao",
+                "art_status_submissao",
+                StatusSubmissao,
+                aceita_nulo=True,
+            ),
+            restricao_dominio(
+                "ck_artigos_art_homologacao", "art_homologacao", Homologacao, aceita_nulo=True
+            ),
+        ]
         verbose_name = "artigo"
         verbose_name_plural = "artigos"
 
