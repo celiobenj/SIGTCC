@@ -3,9 +3,18 @@
 [US-10][US-11][US-12][US-38][FR-003][Q12]
 """
 
-from django import forms
+import re
 
+from django import forms
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+
+from sigtcc.apps.cadastro import mensagens, services
 from sigtcc.apps.cadastro.mensagens import M14_CAMPO_OBRIGATORIO
+from sigtcc.apps.cadastro.validators import RegraSenhaSigtcc
+
+MATRICULA = re.compile(r"\d{10}")
+DOMINIO_UEA = "@uea.edu.br"
 
 
 class FormularioPrimeiroErro(forms.Form):
@@ -33,15 +42,17 @@ class FormularioPrimeiroErro(forms.Form):
             return
         for nome in self.fields:
             if nome in self._errors:
-                primeiro = self._errors[nome]
+                primeiro = self._errors[nome].data[:1]
                 self._errors.clear()
-                self._errors[nome] = primeiro[:1]
+                self._errors[nome] = self.error_class(primeiro, renderer=self.renderer)
                 return
         # Erro geral do formulário (sem campo): mantém só o primeiro.
         geral = self._errors.get(forms.forms.NON_FIELD_ERRORS)
         self._errors.clear()
         if geral:
-            self._errors[forms.forms.NON_FIELD_ERRORS] = geral[:1]
+            self._errors[forms.forms.NON_FIELD_ERRORS] = self.error_class(
+                geral.data[:1], error_class="nonfield", renderer=self.renderer
+            )
 
     def primeiro_erro(self):
         """Texto do único erro que sobrou, ou "" se o formulário é válido."""
@@ -71,3 +82,117 @@ class FormularioLogin(forms.Form):
         widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
     )
     next = forms.CharField(required=False, widget=forms.HiddenInput)
+
+
+def _email_no_formato(email):
+    """E-mail no formato nome@domínio, com até 100 caracteres (FR-001). [US-10][RBN-CAD-06.2]"""
+    if not email or len(email) > 100:
+        return False
+    try:
+        validate_email(email)
+    except ValidationError:
+        return False
+    return True
+
+
+def email_institucional(email):
+    """E-mail no formato nome@uea.edu.br, com até 100 caracteres. [US-10][RBN-CAD-06.1]"""
+    return _email_no_formato(email) and email.lower().endswith(DOMINIO_UEA)
+
+
+class PrimeiroAcessoAlunoForm(FormularioPrimeiroErro):
+    """Primeiro acesso do Aluno: Matrícula e E-mail Institucional (FR-001, FR-003; Q12).
+
+    Matrícula: formato, existência (com turma) e status, nessa ordem. E-mail: formato e domínio
+    e, no Aluno ainda sem e-mail, unicidade (Q15). Só o primeiro erro aparece.
+    [US-10][RBN-CAD-06.1][FR-001][FR-003][Q2][Q12][Q15]
+    """
+
+    matricula = forms.CharField(
+        label="Matrícula",
+        widget=forms.TextInput(attrs={"inputmode": "numeric", "maxlength": 10}),
+    )
+    email = forms.CharField(
+        label="E-mail Institucional",
+        widget=forms.EmailInput(attrs={"maxlength": 100, "autocomplete": "email"}),
+    )
+
+    conta = None
+
+    def clean_matricula(self):
+        matricula = self.cleaned_data["matricula"].strip()
+        if not MATRICULA.fullmatch(matricula):
+            raise ValidationError(mensagens.MATRICULA_FORMATO)
+        conta = services.conta_do_aluno_para_primeiro_acesso(matricula)
+        if conta is None:
+            raise ValidationError(mensagens.DADOS_NAO_ENCONTRADOS)
+        recusa = services.recusa_por_status(conta)
+        if recusa:
+            raise ValidationError(recusa)
+        self.conta = conta
+        return matricula
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip()
+        if not email_institucional(email):
+            raise ValidationError(mensagens.EMAIL_INSTITUCIONAL)
+        if (
+            self.conta is not None
+            and not self.conta.usu_email
+            and services.email_em_uso(email, exceto=self.conta)
+        ):
+            raise ValidationError(mensagens.EMAIL_DE_OUTRA_CONTA_ALUNO)
+        return email
+
+
+class PrimeiroAcessoEmailForm(FormularioPrimeiroErro):
+    """Primeiro acesso de Docente, Secretaria ou Membro Externo: E-mail (FR-001, FR-003; Q8).
+
+    [US-10][RBN-CAD-06.2][FR-001][FR-003][Q8][Q12]
+    """
+
+    email = forms.CharField(
+        label="E-mail",
+        widget=forms.EmailInput(attrs={"maxlength": 100, "autocomplete": "email"}),
+    )
+
+    conta = None
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip()
+        if not _email_no_formato(email):
+            raise ValidationError(mensagens.M10_EMAIL_INVALIDO)
+        conta = services.conta_por_email_para_primeiro_acesso(email)
+        if conta is None:
+            raise ValidationError(mensagens.DADOS_NAO_ENCONTRADOS)
+        recusa = services.recusa_por_status(conta)
+        if recusa:
+            raise ValidationError(recusa)
+        self.conta = conta
+        return email
+
+
+class AtivacaoForm(FormularioPrimeiroErro):
+    """Senha e Confirmação de Senha, mascaradas (FR-004). [US-10][RBN-CAD-06.3][Q17]"""
+
+    senha = forms.CharField(
+        label="Senha",
+        help_text=mensagens.REGRA_SENHA,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+    confirmacao = forms.CharField(
+        label="Confirmação de Senha",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+
+    def clean_senha(self):
+        senha = self.cleaned_data["senha"]
+        RegraSenhaSigtcc().validate(senha)
+        return senha
+
+    def clean(self):
+        dados = super().clean()
+        senha, confirmacao = dados.get("senha"), dados.get("confirmacao")
+        if senha and confirmacao is not None and senha != confirmacao:
+            self.add_error("confirmacao", mensagens.SENHAS_NAO_CONFEREM)
+        return dados

@@ -1,0 +1,20 @@
+{% extends "base_publica.html" %}
+{% comment %}
+  Link de ativação vencido (ou de conta resetada, sem e-mail): aviso e o botão "Reenviar link de
+  ativação", por POST, sem o formulário de senha. A ação usa {% url ... as %} porque a rota do
+  reenvio nasce na fase 6 (US-37).
+  [US-37][RBN-CAD-06.9][US-10][FR-016][FR-017][FR-018][Q5]
+{% endcomment %}
+{% block titulo %}Link vencido · SIGTCC{% endblock %}
+{% block cabecalho %}Ativar conta{% endblock %}
+{% block conteudo %}
+{% url 'cadastro:reenviar_link' as url_reenviar %}
+<div class="alerta aviso" role="alert"><span class="ms">schedule</span><span class="texto">Este link de ativação venceu</span></div>
+<form method="post" action="{{ url_reenviar }}">
+  {% csrf_token %}
+  <div class="flex entre">
+    <a class="btn txt" href="{% url 'cadastro:entrar' %}">Voltar ao login</a>
+    <button type="submit" class="btn pri">Reenviar link de ativação</button>
+  </div>
+</form>
+{% endblock %}

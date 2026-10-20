@@ -5,6 +5,7 @@ As regras ficam em services.py e permissoes.py; os textos, em mensagens.py.
 [US-10][US-11][US-12][US-37][US-38][FR-025] research A20
 """
 
+from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -12,9 +13,14 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from sigtcc.apps.cadastro import mensagens, services
-from sigtcc.apps.cadastro.forms import FormularioLogin
+from sigtcc.apps.cadastro.forms import (
+    AtivacaoForm,
+    FormularioLogin,
+    PrimeiroAcessoAlunoForm,
+    PrimeiroAcessoEmailForm,
+)
 from sigtcc.apps.cadastro.permissoes import papeis, perfil_requerido, tipo_conta
-from sigtcc.apps.cadastro.services import EstadoLogin
+from sigtcc.apps.cadastro.services import SESSAO_TOKEN_ATIVACAO, EstadoLink, EstadoLogin
 
 # Texto de cada tipo de conta no painel (spec FR-010).
 _ROTULO_TIPO = {
@@ -115,3 +121,101 @@ def sair(request):
     """Encerra a sessão e volta ao login (só POST). [US-11][FR-011]"""
     logout(request)
     return redirect("cadastro:entrar")
+
+
+# ---------------------------------------------------------------------------------------------
+# Primeiro acesso (US-10) e link de ativação (US-10, US-37)
+# ---------------------------------------------------------------------------------------------
+
+
+def primeiro_acesso(request):
+    """Escolha entre "Aluno" e "Docente, Secretaria ou Membro Externo" (FR-001; Q8).
+
+    [US-10][RBN-CAD-06.1][RBN-CAD-06.2][FR-001][Q8]
+    """
+    return render(request, "cadastro/primeiro_acesso.html")
+
+
+def _pedir_primeiro_acesso(request, classe_formulario, titulo):
+    """Valida o formulário (primeiro erro, Q12) e pede o link ao serviço (FR-002, FR-003)."""
+    formulario = classe_formulario(request.POST or None)
+    contexto = {"form": formulario, "titulo": titulo}
+    if request.method == "POST":
+        erro = ""
+        if formulario.is_valid():
+            resultado = services.pedir_primeiro_acesso(
+                formulario.conta, formulario.cleaned_data["email"]
+            )
+            if resultado.enviado:
+                messages.success(request, resultado.mensagem)
+                return redirect("cadastro:entrar")
+            contexto["erro"] = erro = resultado.mensagem
+        else:
+            erro = formulario.primeiro_erro()
+        if erro == mensagens.CONTA_JA_ATIVA:
+            # Complemento de "Esta conta já está ativa" (M-03, provisória).
+            contexto["orientacao"] = mensagens.M03_ORIENTACAO_CONTA_ATIVA
+    return render(request, "cadastro/primeiro_acesso_form.html", contexto)
+
+
+def primeiro_acesso_aluno(request):
+    """Formulário do Aluno: Matrícula e E-mail Institucional. [US-10][RBN-CAD-06.1][FR-001]"""
+    return _pedir_primeiro_acesso(request, PrimeiroAcessoAlunoForm, "Primeiro acesso do Aluno")
+
+
+def primeiro_acesso_email(request):
+    """Formulário de Docente, Secretaria ou Membro Externo: E-mail. [US-10][RBN-CAD-06.2]"""
+    return _pedir_primeiro_acesso(
+        request, PrimeiroAcessoEmailForm, "Primeiro acesso de Docente, Secretaria ou Membro Externo"
+    )
+
+
+def ativar(request, token):
+    """Guarda o token na sessão e redireciona para a URL fixa, sem o token (research A3).
+
+    [US-10][RBN-CAD-06.1][FR-016]
+    """
+    request.session[SESSAO_TOKEN_ATIVACAO] = token
+    return redirect("cadastro:definir_senha")
+
+
+def _tela_do_link(request, resultado):
+    """Tela de cada estado do link de ativação que não é VALIDO (FR-016; data-model).
+
+    [US-10][US-37][RBN-CAD-06.9][FR-016][Q5][Q23][Q26]
+    """
+    estado = resultado.estado
+    if estado in (EstadoLink.VENCIDO, EstadoLink.SEM_EMAIL):
+        # O token fica na sessão para o "Reenviar link de ativação" (US-37).
+        return render(request, "cadastro/link_vencido.html")
+    request.session.pop(SESSAO_TOKEN_ATIVACAO, None)
+    if estado == EstadoLink.ATIVA:
+        messages.info(request, mensagens.CONTA_JA_ATIVA)
+        return redirect("cadastro:entrar")
+    erro = {
+        EstadoLink.INATIVA: mensagens.M15_CONTA_INATIVA,
+        EstadoLink.EXPIRADA: mensagens.M16_ACESSO_EXPIRADO,
+    }.get(estado, mensagens.LINK_SUBSTITUIDO)
+    return render(request, "cadastro/ativar.html", {"erro": erro})
+
+
+def definir_senha(request):
+    """Formulário de ativação: só no link VALIDO; revalida no POST com a conta travada (A17).
+
+    [US-10][RBN-CAD-06.1][RBN-CAD-06.3][FR-004][FR-005][FR-016][I4]
+    """
+    token = request.session.get(SESSAO_TOKEN_ATIVACAO)
+    if not token:
+        return _tela_do_link(request, services.ResultadoLink(EstadoLink.ADULTERADO))
+    formulario = AtivacaoForm(request.POST or None)
+    if request.method == "POST" and formulario.is_valid():
+        resultado = services.ativar_conta(token, formulario.cleaned_data["senha"])
+        if resultado.estado != EstadoLink.VALIDO:
+            return _tela_do_link(request, resultado)
+        request.session.pop(SESSAO_TOKEN_ATIVACAO, None)
+        messages.success(request, mensagens.CONTA_ATIVADA)
+        return redirect("cadastro:entrar")
+    resultado = services.validar_link_ativacao(token)
+    if resultado.estado != EstadoLink.VALIDO:
+        return _tela_do_link(request, resultado)
+    return render(request, "cadastro/ativar.html", {"form": formulario})

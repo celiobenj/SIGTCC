@@ -7,6 +7,7 @@ caches locais e SIGTCC_EMAIL_SINCRONO = True (research A5).
 """
 
 import logging
+import re
 from contextlib import contextmanager
 from datetime import timedelta
 from unittest import mock
@@ -153,3 +154,10 @@ def criar_notificacao(usuario, mensagem=None, link=None, lida=False, data_hora=N
         not_data_hora=data_hora or timezone.now(),
         not_lida=lida,
     )
+
+
+def caminho_do_link(mensagem):
+    """Caminho do link que está no corpo do e-mail (SITE_URL = http://testserver nos testes)."""
+    achado = re.search(r"http://testserver(/\S+)", mensagem.body)
+    assert achado, "o e-mail não tem link"
+    return achado.group(1)

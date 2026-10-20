@@ -1,0 +1,10 @@
+{% comment %}E-mail com o link de ativação (24 horas). [US-10][US-37][RBN-CAD-06.1][RBN-CAD-06.9]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
+
+Use o link abaixo para criar a sua senha e ativar a sua conta no SIGTCC. Ele vale por 24 horas e só o link mais recente funciona.
+
+{{ link }}
+
+Se você não pediu o primeiro acesso, ignore este e-mail.
+
+SIGTCC · Núcleo de Computação · EST/UEA
+{% endautoescape %}

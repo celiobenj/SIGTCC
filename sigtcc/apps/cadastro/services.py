@@ -14,18 +14,30 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.base_user import BaseUserManager
+from django.core import signing
 from django.core.cache import caches
 from django.core.mail import send_mail
+from django.db import IntegrityError, transaction
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 
 from sigtcc.apps.cadastro.choices import StatusConta
-from sigtcc.apps.cadastro.mensagens import ITEM_INDISPONIVEL
+from sigtcc.apps.cadastro.mensagens import (
+    CONTA_JA_ATIVA,
+    EMAIL_DE_OUTRA_CONTA_ALUNO,
+    ITEM_INDISPONIVEL,
+    LINK_ATIVACAO_ENVIADO,
+    M15_CONTA_INATIVA,
+    M16_ACESSO_EXPIRADO,
+    M17_FALHA_ENVIO,
+)
 from sigtcc.apps.cadastro.models import Alunos, Usuarios
-from sigtcc.apps.cadastro.permissoes import validade_vencida
+from sigtcc.apps.cadastro.permissoes import tipo_conta, validade_vencida
 from sigtcc.apps.cadastro.validators import tamanho_de_senha_valido
 
 registro_acesso = logging.getLogger("sigtcc.acesso")
@@ -275,3 +287,257 @@ def autenticar(credencial, senha):
     if usuario.usu_status == StatusConta.EXPIRADA or validade_vencida(usuario):
         return ResultadoLogin(EstadoLogin.EXPIRADA, usuario)
     return ResultadoLogin(EstadoLogin.OK, usuario)
+
+
+# =============================================================================================
+# Links de ativação e primeiro acesso (US-10, US-37; FR-002, FR-006, FR-016, FR-026; A3, A5, A17)
+# =============================================================================================
+
+VALIDADE_LINK = timedelta(hours=24)
+SALT_ATIVACAO = "sigtcc.ativacao"
+SESSAO_TOKEN_ATIVACAO = "token_ativacao"
+
+
+class FalhaEnvioEmail(Exception):
+    """O e-mail não pôde ser enviado; a transação em volta é desfeita (A5). [Q13][M-17]"""
+
+
+class EstadoLink(enum.Enum):
+    """Estados de um link, avaliados na ordem do data-model (FR-016; Q5, Q23, Q26).
+
+    [US-10][US-37][US-12][RBN-CAD-06.1][RBN-CAD-06.9][FR-016]
+    """
+
+    ADULTERADO = "adulterado"
+    ATIVA = "ativa"
+    INATIVA = "inativa"
+    EXPIRADA = "expirada"
+    SEM_EMAIL = "sem_email"
+    SUBSTITUIDO = "substituido"
+    VENCIDO = "vencido"
+    VALIDO = "valido"
+
+
+@dataclass
+class ResultadoLink:
+    """Estado do link e a conta a que ele se refere (quando a assinatura é válida)."""
+
+    estado: EstadoLink
+    usuario: object = None
+
+
+@dataclass
+class ResultadoPedido:
+    """Resultado de um pedido que envia e-mail: enviado, ou a mensagem de recusa."""
+
+    enviado: bool
+    mensagem: str = ""
+
+
+def _conta(usu_id, travar=False):
+    """Conta pelo id, com as especializações; travada (select_for_update) se pedido (A17)."""
+    contas = Usuarios.objects.select_related("alunos", "docentes", "membrosexternos", "secretarios")
+    if travar:
+        # Só a linha de Usuarios: o PostgreSQL não trava o lado opcional de um outer join.
+        contas = contas.select_for_update(of=("self",))
+    return contas.filter(pk=usu_id).first()
+
+
+def _gravar_link_gerado_em(usuario):
+    """Grava usu_link_gerado_em = agora (invalida os links anteriores) e relê do banco (A3)."""
+    Usuarios.objects.filter(pk=usuario.pk).update(usu_link_gerado_em=timezone.now())
+    usuario.refresh_from_db(fields=["usu_link_gerado_em"])
+    return usuario.usu_link_gerado_em
+
+
+def _url_absoluta(nome_rota, token):
+    """Link absoluto com o SITE_URL do .env (A5)."""
+    return settings.SITE_URL + reverse(nome_rota, args=[token])
+
+
+def _ler_token(token, salt):
+    """Abre um token assinado; devolve (usu_id, dados) ou None se adulterado (Q23)."""
+    try:
+        dados = signing.loads(token, salt=salt)
+        return int(dados["u"]), dados
+    except (signing.BadSignature, KeyError, TypeError, ValueError):
+        return None
+
+
+def gerar_link_ativacao(usuario):
+    """Gera o link de ativação (24 h) e invalida os anteriores. Devolve a URL absoluta.
+
+    Pode ser chamada por outras features e por testes (contrato §4; história 6, cenário 5).
+    [US-10][US-37][RBN-CAD-06.1][RBN-CAD-06.2][RBN-CAD-06.9][FR-006][FR-026]
+    """
+    gerado_em = _gravar_link_gerado_em(usuario)
+    token = signing.dumps({"u": usuario.pk, "g": gerado_em.isoformat()}, salt=SALT_ATIVACAO)
+    return _url_absoluta("cadastro:ativar", token)
+
+
+def _estado_da_conta(usuario):
+    """'Inativa' ou 'Expirada' (status ou validade vencida, Q4), ou None. [Q6][Q26]"""
+    if usuario.usu_status == StatusConta.INATIVA:
+        return EstadoLink.INATIVA
+    if usuario.usu_status == StatusConta.EXPIRADA or validade_vencida(usuario):
+        return EstadoLink.EXPIRADA
+    return None
+
+
+def validar_link_ativacao(token, travar=False):
+    """Estado do link de ativação, na ordem do data-model (FR-016; Q5, Q23, Q26; B1).
+
+    ADULTERADO → ATIVA → INATIVA → EXPIRADA → SEM_EMAIL → SUBSTITUIDO → VENCIDO → VALIDO.
+    Com travar=True, a conta vem travada (usar dentro de transaction.atomic, A17).
+    [US-10][US-37][RBN-CAD-06.1][RBN-CAD-06.9][FR-016][FR-026]
+    """
+    lido = _ler_token(token, SALT_ATIVACAO)
+    if lido is None:
+        return ResultadoLink(EstadoLink.ADULTERADO)
+    usu_id, dados = lido
+    try:
+        gerado_em = datetime.fromisoformat(dados["g"])
+    except (KeyError, TypeError, ValueError):
+        return ResultadoLink(EstadoLink.ADULTERADO)
+    usuario = _conta(usu_id, travar)
+    if usuario is None:
+        return ResultadoLink(EstadoLink.ADULTERADO)
+    if usuario.usu_status == StatusConta.ATIVA:
+        return ResultadoLink(EstadoLink.ATIVA, usuario)
+    estado = _estado_da_conta(usuario)
+    if estado is not None:
+        return ResultadoLink(estado, usuario)
+    if not usuario.usu_email:
+        return ResultadoLink(EstadoLink.SEM_EMAIL, usuario)
+    if usuario.usu_link_gerado_em != gerado_em:
+        return ResultadoLink(EstadoLink.SUBSTITUIDO, usuario)
+    if timezone.now() - gerado_em > VALIDADE_LINK:
+        return ResultadoLink(EstadoLink.VENCIDO, usuario)
+    return ResultadoLink(EstadoLink.VALIDO, usuario)
+
+
+def _gerar_e_enviar_ativacao(usuario):
+    """Gera o link e envia o e-mail de ativação; em falha levanta FalhaEnvioEmail.
+
+    Deve rodar dentro de transaction.atomic(), para a falha desfazer tudo (A5, I5).
+    """
+    link = gerar_link_ativacao(usuario)
+    try:
+        enviar_email(
+            usuario.usu_email,
+            "SIGTCC: ative a sua conta",
+            "cadastro/emails/ativacao.txt",
+            {"nome": usuario.usu_nome, "link": link},
+            conta=usuario,
+        )
+    except Exception as erro:
+        raise FalhaEnvioEmail from erro
+
+
+def enviar_link_ativacao(usuario):
+    """Gera, grava e envia o link de ativação numa transação; False se o envio falhar.
+
+    Com False, nada fica gravado e quem chama mostra a M-17 (contrato §4; Q13).
+    [US-10][US-37][RBN-CAD-06.1][RBN-CAD-06.9][FR-026][Q13]
+    """
+    try:
+        with transaction.atomic():
+            _gerar_e_enviar_ativacao(usuario)
+    except FalhaEnvioEmail:
+        return False
+    return True
+
+
+def recusa_por_status(usuario):
+    """Mensagem de recusa do primeiro acesso pelo status da conta, ou "" se pode pedir.
+
+    'Ativa' → "Esta conta já está ativa"; 'Inativa' → M-15; 'Expirada' ou validade vencida →
+    M-16 (spec Q6). [US-10][RBN-CAD-06.1][RBN-CAD-06.2][FR-003][Q6]
+    """
+    if usuario.usu_status == StatusConta.ATIVA:
+        return CONTA_JA_ATIVA
+    estado = _estado_da_conta(usuario)
+    if estado == EstadoLink.INATIVA:
+        return M15_CONTA_INATIVA
+    if estado == EstadoLink.EXPIRADA:
+        return M16_ACESSO_EXPIRADO
+    return ""
+
+
+def conta_do_aluno_para_primeiro_acesso(matricula):
+    """Conta do Aluno pela matrícula, com pelo menos uma turma; None se não houver.
+
+    [US-10][RBN-CAD-06.1][FR-003][US-10 E1]
+    """
+    aluno = (
+        Alunos.objects.select_related("alu")
+        .filter(alu_matricula=matricula, alunosturmas__isnull=False)
+        .first()
+    )
+    return aluno.alu if aluno else None
+
+
+def conta_por_email_para_primeiro_acesso(email):
+    """Conta de Docente, Secretaria ou Membro Externo pelo e-mail; None se não houver.
+
+    E-mail de Aluno ou de conta sem tipo não é aceito aqui (spec Q8; research A9).
+    [US-10][RBN-CAD-06.2][FR-001][FR-003][Q8][Q13]
+    """
+    contas = list(
+        Usuarios.objects.select_related(
+            "alunos", "docentes", "membrosexternos", "secretarios"
+        ).filter(usu_email__iexact=email)[:2]
+    )
+    if len(contas) != 1:
+        if len(contas) > 1:
+            registrar_evento(EventoAcesso.EMAIL_DUPLICADO, None, detalhe="contas=2+")
+        return None
+    conta = contas[0]
+    return conta if tipo_conta(conta) in ("docente", "secretaria", "membro_externo") else None
+
+
+def pedir_primeiro_acesso(usuario, email_informado=None):
+    """Envia o link de ativação de uma conta 'Aguardando Ativação' (FR-002).
+
+    Com a conta travada, confere o status de novo; no Aluno sem e-mail, registra o e-mail
+    informado (se livre); no Aluno com e-mail, ignora o informado e usa o registrado (Q2, Q15).
+    Falha no envio desfaz tudo e devolve a M-17 (I5).
+    [US-10][RBN-CAD-06.1][RBN-CAD-06.2][FR-002][FR-003][Q2][Q13][Q15][I5]
+    """
+    try:
+        with transaction.atomic():
+            conta = _conta(usuario.pk, travar=True)
+            recusa = recusa_por_status(conta)
+            if recusa:
+                return ResultadoPedido(False, recusa)
+            if tipo_conta(conta) == "aluno" and not conta.usu_email:
+                email = normalizar_email(email_informado)
+                if email_em_uso(email, exceto=conta):
+                    return ResultadoPedido(False, EMAIL_DE_OUTRA_CONTA_ALUNO)
+                conta.usu_email = email
+                conta.save(update_fields=["usu_email"])
+            _gerar_e_enviar_ativacao(conta)
+    except FalhaEnvioEmail:
+        return ResultadoPedido(False, M17_FALHA_ENVIO)
+    except IntegrityError:
+        return ResultadoPedido(False, EMAIL_DE_OUTRA_CONTA_ALUNO)
+    return ResultadoPedido(True, LINK_ATIVACAO_ENVIADO)
+
+
+def ativar_conta(token, senha):
+    """Ativa a conta pelo link: revalida com a conta travada e grava a senha (FR-005; A17).
+
+    Só no estado VALIDO grava a senha (só hash) e muda o status para 'Ativa'. O link deixa de
+    valer porque o estado ATIVA vem antes de VALIDO; a senha não altera usu_link_gerado_em (A3).
+    Devolve o ResultadoLink (VALIDO quando ativou).
+    [US-10][RBN-CAD-06.1][RBN-CAD-06.3][FR-004][FR-005][I4]
+    """
+    with transaction.atomic():
+        resultado = validar_link_ativacao(token, travar=True)
+        if resultado.estado != EstadoLink.VALIDO:
+            return resultado
+        conta = resultado.usuario
+        conta.set_password(senha)
+        conta.usu_status = StatusConta.ATIVA
+        conta.save(update_fields=["password", "usu_status"])
+    return resultado
