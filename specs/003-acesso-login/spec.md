@@ -120,6 +120,15 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
   entrega. A proposta (por conta, no máximo 1 pedido por minuto e 5 por hora; acima disso, o link não é
   enviado) vai como sugestão à Product Owner, sem prazo (docs/questoes-a-rever.md, S-01). Até a
   decisão, não há limite.
+- Q21: Quais eventos de acesso o sistema deve registrar para consulta posterior, com usuário, data e
+  hora? → A: Registro técnico em arquivo de log (sem tabela e sem tela de consulta) de: login com senha
+  errada, bloqueio, troca e redefinição de senha, reset de primeiro acesso e troca de e-mail, com a
+  conta, a data e a hora e nunca com senhas. O arquivo fica numa pasta ignorada pelo Git (por exemplo
+  `logs/`), com o caminho configurado no .env; a entrada no .gitignore é item de configuração para o
+  Célio Benjamim no PR (docs/questoes-a-rever.md, Q-23).
+- Q22: As telas desta feature (e a base visual que as outras vão usar) precisam funcionar bem no
+  celular, ou basta o computador? → A: Computador e celular: o layout se ajusta como no protótipo, a
+  partir de 360 pixels de largura, nas versões atuais de Chrome, Firefox, Edge e Safari.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -415,6 +424,8 @@ de ativação funciona chamada de fora das telas desta feature.
 - **Link de outro tipo**: um link de redefinição de senha não serve para ativação, e vice-versa.
 - **Senha trocada com outra sessão aberta** (Q19): a sessão aberta em outro computador ou navegador
   cai, e a próxima página interna nela leva ao login.
+- **Tela estreita** (Q22): em celular (a partir de 360 pixels), o menu lateral recolhe e os
+  formulários ocupam a largura da tela, sem rolagem horizontal; abaixo de 360 pixels não há garantia.
 - **Sessão sem uso** (Q18): depois de 60 minutos sem uso, ou com o navegador fechado e aberto de novo,
   a próxima página interna leva ao login e, depois dele, de volta à página pedida.
 - **Membro Externo com a validade vencida mas ainda 'Ativa'** (Q4): o login é negado com a mensagem
@@ -560,7 +571,9 @@ de ativação funciona chamada de fora das telas desta feature.
 - **FR-024**: O sistema DEVE ter um layout base com o visual do protótipo de 17/10: paleta, fontes
   Roboto e Figtree, ícones Material Symbols, barra superior (nome do sistema, sino, menu do usuário),
   menu lateral por perfil e padrões de botão, campo, mensagem de erro por campo, alerta e aviso
-  temporário. Todas as telas desta feature o usam, e as demais features DEVEM usá-lo. A lógica em
+  temporário. O layout DEVE se ajustar a telas de computador e de celular, como no protótipo (ajustes
+  em 600 e 900 pixels), a partir de 360 pixels de largura, nas versões atuais de Chrome, Firefox, Edge
+  e Safari (Q22). Todas as telas desta feature o usam, e as demais features DEVEM usá-lo. A lógica em
   JavaScript do protótipo não é reaproveitada. A conferência visual segue um checklist de revisão
   (paleta, fontes, ícones, barra superior, menu lateral, componentes; Q16). [base de todas as US;
   protótipo de 17/10][RNF de Operabilidade do RAN-CAD-06]
@@ -583,6 +596,13 @@ de ativação funciona chamada de fora das telas desta feature.
 - **FR-028**: Esta feature NÃO DEVE criar tabelas nem colunas: usa o modelo da spec 001 (Usuarios e
   especializações, Coordenadores, Turmas, Alunos_Turmas, Orientacoes, Coorientacoes, Notificacoes).
   NÃO DEVE criar contas pelas telas (US-03, US-05, US-08) nem gerar notificações de outras features.
+- **FR-029**: O sistema DEVE registrar em arquivo de log, com a conta afetada, quem fez a ação (quando
+  não for a própria conta, como no reset pelo Professor), a data e a hora: login com senha errada,
+  bloqueio por tentativas, troca de senha, redefinição de senha, reset de primeiro acesso e troca de
+  e-mail (pedido e confirmação). Senhas, links e códigos de ativação NUNCA são gravados. O registro não
+  usa tabela nem tem tela de consulta; a pasta do arquivo vem do .env e fica fora do Git (Q21).
+  [US-11][RBN-CAD-06.6][US-12][RBN-CAD-06.5][RBN-CAD-06.7][RBN-CAD-06.8][US-38][RBN-CAD-13.1]
+  [RNF de Confidencialidade do RAN-CAD-06]
 
 ### Key Entities *(include if feature involves data)*
 
@@ -619,8 +639,11 @@ Todas já existem (spec 001); nenhuma é criada.
 - **SC-006**: Todo link de ativação ou de redefinição deixa de funcionar em 24 horas, depois de usado
   ou quando outro mais recente é gerado para a mesma conta.
 - **SC-007**: Todas as telas desta feature usam o layout base, com a paleta, as fontes e os ícones do
-  protótipo, conferido pelo checklist de revisão visual com o protótipo lado a lado (Q16).
+  protótipo, conferido pelo checklist de revisão visual com o protótipo lado a lado (Q16), em
+  larguras de 360, 768 e 1280 pixels, sem rolagem horizontal nem conteúdo cortado (Q22).
 - **SC-008**: Nenhuma senha aparece em tela, em log ou no banco em texto puro.
+- **SC-009**: Cada um dos 6 tipos de evento de FR-029 gera exatamente uma linha no arquivo de log, com
+  conta, data e hora, e nenhuma linha contém senha, link ou código de ativação, verificado por teste.
 
 ## Mensagens a validar com a PO
 
@@ -677,6 +700,9 @@ implementação. Depois da resposta, cada linha vira o texto definitivo (ou é c
   notificações (cada feature que notifica); painel do aluno da US-41 (ver FR-015); envio do link na
   criação da conta (não existe, Clarifications Q1); limite de pedidos de link por conta (sugestão à
   PO, Q20).
+- **Arquivo de log** (Q21): fica numa pasta ignorada pelo Git (por exemplo `logs/`, com entrada no
+  .gitignore), com o caminho configurado no .env; a entrada no .gitignore e a variável no .env.example
+  são itens de configuração para o Célio Benjamim no PR desta feature (Q-23 do índice).
 - **Índice de pendências**: todas as pendências e itens a validar desta spec também estão em
   [docs/questoes-a-rever.md](../../docs/questoes-a-rever.md), que é o índice central; o registro local
   continua aqui.
