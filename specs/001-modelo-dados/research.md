@@ -4,7 +4,8 @@
 
 Cada item segue o formato Decisão / Justificativa / Alternativas. Os itens D1 a D7 são as decisões
 informadas pela responsável no `/speckit-plan`; os itens R1 a R13 são consequências técnicas
-levantadas no planejamento para cumprir o dicionário "exatamente" (FR-002). Revisado em 2026-10-19
+levantadas no planejamento para cumprir o dicionário "exatamente" (FR-002); R14 foi decidido na
+implementação. Revisado em 2026-10-19
 após a revisão do agente `arquiteto-django` (achados B1, I1–I4 e M1–M9, aplicados com aprovação de
 Julia Cohen).
 
@@ -310,6 +311,26 @@ versões exatas são as instaladas na tarefa de configuração (`pip freeze`), n
 **Observação**: o `lint.bat` do PGCS 3.3 aponta para `apps/sigtcc/`, que não existe na árvore do
 PGCS 2.3; o caminho correto é `sigtcc/`. Ajustar o script é mudança de configuração e passa pelo
 responsável pela configuração (Célio Benjamim), conforme o princípio IX.
+
+## R14. Ordem física das colunas
+
+**Status**: decidido por Julia Cohen em 2026-10-19, durante a T023 (`/speckit-implement`).
+
+**Contexto**: o gerador de migrações do Django cria as chaves estrangeiras no fim de cada tabela.
+Em 21 das 36 tabelas a ordem física das colunas ficou diferente da ordem do dicionário; nomes,
+tipos, tamanhos, precisão, nulidade e chaves conferem em todas.
+
+**Decisão**: aceitar a ordem gerada pelo Django. O teste de conformidade compara as colunas por
+nome, não por posição.
+
+**Justificativa**: o modelo relacional não dá significado à ordem das colunas, e o SC-001 cobre
+nome, tipo, tamanho e nulidade. Toda coluna acrescentada por uma feature futura também iria para
+o fim da tabela, então a ordem do dicionário não se manteria de qualquer forma.
+
+**Alternativa rejeitada**: reordenar à mão as `0001_initial` (fidelidade total, mas edição manual
+de migração gerada, que se perde se a migração for regenerada antes do merge).
+
+**Pendente**: informar a Maria Luiza Guimarães junto com as demais consultas (plan.md, Pendências).
 
 ## R13. Configuração conjunta de isort, black e flake8
 
