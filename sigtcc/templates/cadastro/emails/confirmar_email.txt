@@ -1,0 +1,10 @@
+{% comment %}E-mail com o link de confirmação do novo e-mail (24 horas). [US-38][RBN-CAD-13.1]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
+
+Recebemos um pedido para trocar o e-mail da sua conta no SIGTCC para este endereço. Abra o link abaixo e clique em "Confirmar novo e-mail". O link vale por 24 horas; até a confirmação, o e-mail anterior continua valendo.
+
+{{ link }}
+
+Se você não pediu a troca, ignore este e-mail.
+
+SIGTCC · Núcleo de Computação · EST/UEA
+{% endautoescape %}

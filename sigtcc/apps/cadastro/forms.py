@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
 from sigtcc.apps.cadastro import mensagens, services
+from sigtcc.apps.cadastro.choices import Titulacao
 from sigtcc.apps.cadastro.mensagens import M14_CAMPO_OBRIGATORIO
 from sigtcc.apps.cadastro.validators import RegraSenhaSigtcc
 
@@ -267,3 +268,83 @@ class NovaSenhaForm(AtivacaoForm):
         super().__init__(*args, **kwargs)
         self.fields["senha"].label = "Nova Senha"
         self.fields["confirmacao"].label = "Confirmação da Nova Senha"
+
+
+class _PerfilBase(FormularioPrimeiroErro):
+    """Base dos formulários de "Meu perfil": e-mail e assinatura, quando o papel permite.
+
+    [US-38][RBN-CAD-13.1][FR-019][FR-020][FR-021]
+    """
+
+    # Aluno exige o domínio @uea.edu.br no e-mail (M-11).
+    so_email_institucional = False
+    tipo_assinatura = None
+
+    def __init__(self, usuario, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.usuario = usuario
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip()
+        if not _email_no_formato(email):
+            raise ValidationError(mensagens.M10_EMAIL_INVALIDO)
+        if self.so_email_institucional and not email.lower().endswith(DOMINIO_UEA):
+            raise ValidationError(mensagens.M11_EMAIL_INSTITUCIONAL)
+        mesmo = email.lower() == (self.usuario.usu_email or "").lower()
+        if not mesmo and services.email_em_uso(email, exceto=self.usuario):
+            raise ValidationError(mensagens.M05_EMAIL_EM_USO)
+        return email
+
+    def clean_assinatura(self):
+        arquivo = self.cleaned_data.get("assinatura")
+        if not arquivo:
+            return None
+        self.tipo_assinatura = services.tipo_da_assinatura(arquivo)
+        if self.tipo_assinatura is None:
+            raise ValidationError(mensagens.M04_ASSINATURA_FORMATO)
+        return arquivo
+
+
+def _campo_assinatura():
+    """Imagem de Assinatura: PNG ou JPG com até 2 MB (FR-020). [US-38][RBN-CAD-13.1]"""
+    return forms.FileField(
+        label="Imagem de Assinatura",
+        required=False,
+        help_text="PNG ou JPG, com até 2 MB",
+        widget=forms.FileInput(attrs={"accept": ".png,.jpg,.jpeg"}),
+    )
+
+
+class PerfilAlunoForm(_PerfilBase):
+    """Aluno edita só o E-mail Institucional (FR-019). [US-38][RBN-CAD-13.1]"""
+
+    so_email_institucional = True
+
+    email = forms.CharField(
+        label="E-mail Institucional",
+        widget=forms.EmailInput(attrs={"maxlength": 100, "autocomplete": "email"}),
+    )
+
+
+class PerfilDocenteForm(_PerfilBase):
+    """Docente (inclusive Coordenador de Curso) edita só a Imagem de Assinatura (FR-019).
+
+    [US-38][RBN-CAD-13.1]
+    """
+
+    assinatura = _campo_assinatura()
+
+
+class PerfilMembroExternoForm(_PerfilBase):
+    """Membro Externo edita E-mail, Titulação, Instituição de Origem e Imagem de Assinatura.
+
+    [US-38][RBN-CAD-13.1][FR-019]
+    """
+
+    email = forms.CharField(
+        label="E-mail",
+        widget=forms.EmailInput(attrs={"maxlength": 100, "autocomplete": "email"}),
+    )
+    titulacao = forms.ChoiceField(label="Titulação", choices=Titulacao.choices)
+    instituicao = forms.CharField(label="Instituição de Origem", max_length=150)
+    assinatura = _campo_assinatura()

@@ -8,6 +8,9 @@ As regras ficam em services.py e permissoes.py; os textos, em mensagens.py.
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.core.exceptions import PermissionDenied
+from django.core.files.storage import default_storage
+from django.core.paginator import Paginator
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -20,10 +23,13 @@ from sigtcc.apps.cadastro.forms import (
     EsqueciSenhaForm,
     FormularioLogin,
     NovaSenhaForm,
+    PerfilAlunoForm,
+    PerfilDocenteForm,
+    PerfilMembroExternoForm,
     PrimeiroAcessoAlunoForm,
     PrimeiroAcessoEmailForm,
 )
-from sigtcc.apps.cadastro.models import Alunos
+from sigtcc.apps.cadastro.models import Alunos, Notificacoes
 from sigtcc.apps.cadastro.permissoes import (
     papeis,
     perfil_requerido,
@@ -35,6 +41,7 @@ from sigtcc.apps.cadastro.services import (
     SESSAO_TOKEN_REDEFINICAO,
     EstadoLink,
     EstadoLogin,
+    EstadoTroca,
 )
 
 # Texto de cada tipo de conta no painel (spec FR-010).
@@ -370,3 +377,162 @@ def resetar_primeiro_acesso(request, alu_id):
     return render(
         request, "cadastro/confirmar_reset.html", {"aluno": registro, "pergunta": pergunta}
     )
+
+
+# ---------------------------------------------------------------------------------------------
+# Perfil e notificações (US-38)
+# ---------------------------------------------------------------------------------------------
+
+_FORMULARIO_DO_PERFIL = {
+    "aluno": PerfilAlunoForm,
+    "docente": PerfilDocenteForm,
+    "membro_externo": PerfilMembroExternoForm,
+}
+
+
+def _dados_do_perfil(usuario, tipo):
+    """Dados só de leitura de "Meu perfil", por tipo de conta (FR-019). [US-38][RBN-CAD-13.1]"""
+    dados = [("Nome", usuario.usu_nome)]
+    if tipo == "aluno":
+        dados += [
+            ("Matrícula", usuario.alunos.alu_matricula),
+            ("Curso", services.curso_do_aluno(usuario.alunos)),
+        ]
+    elif tipo == "docente":
+        docente = usuario.docentes
+        rotulos = [_ROTULO_PAPEL[p] for p in sorted(papeis(usuario))]
+        dados += [
+            ("E-mail", usuario.usu_email),
+            ("Titulação", docente.doc_titulacao),
+            ("Curso de lotação", docente.doc_cur.cur_nome),
+            ("Papéis", ", ".join(rotulos) or "—"),
+        ]
+    elif tipo == "secretaria":
+        dados += [("E-mail", usuario.usu_email), ("Curso", usuario.secretarios.sec_cur.cur_nome)]
+    elif tipo == "membro_externo":
+        validade = usuario.membrosexternos.mem_validade_ate
+        dados += [("Validade do acesso", validade.strftime("%d/%m/%Y") if validade else "—")]
+    return dados
+
+
+def _valores_iniciais(usuario, tipo):
+    """Valores atuais dos campos editáveis."""
+    if tipo == "membro_externo":
+        membro = usuario.membrosexternos
+        return {
+            "email": usuario.usu_email,
+            "titulacao": membro.mem_titulacao,
+            "instituicao": membro.mem_instituicao,
+        }
+    return {"email": usuario.usu_email}
+
+
+@perfil_requerido()
+def perfil(request):
+    """ "Meu perfil": mostra os dados e libera só os campos do papel (FR-019 a FR-021).
+
+    Secretaria: tudo só leitura e sem "Salvar". Com troca de e-mail, só a M-06 (Q11).
+    [US-38][RBN-CAD-13.1][FR-019][FR-020][FR-021][Q11]
+    """
+    usuario = request.user
+    tipo = tipo_conta(usuario)
+    classe = _FORMULARIO_DO_PERFIL.get(tipo)
+    contexto = {"dados": _dados_do_perfil(usuario, tipo)}
+    if classe is None:
+        if request.method == "POST":
+            return redirect("cadastro:perfil")
+        return render(request, "cadastro/perfil.html", contexto)
+    if request.method == "POST":
+        formulario = classe(usuario, request.POST, request.FILES)
+        if formulario.is_valid():
+            dados = formulario.cleaned_data
+            resultado = services.atualizar_perfil(
+                usuario, dados, dados.get("assinatura"), formulario.tipo_assinatura
+            )
+            if resultado.sucesso:
+                messages.success(request, resultado.mensagem)
+                return redirect("cadastro:perfil")
+            if resultado.mensagem == mensagens.M05_EMAIL_EM_USO:
+                formulario.add_error("email", resultado.mensagem)
+            else:
+                contexto["erro"] = resultado.mensagem
+    else:
+        formulario = classe(usuario, initial=_valores_iniciais(usuario, tipo))
+    contexto["form"] = formulario
+    contexto["tem_assinatura"] = bool(services.caminho_da_assinatura(usuario))
+    return render(request, "cadastro/perfil.html", contexto)
+
+
+@perfil_requerido()
+def assinatura(request):
+    """Imagem de assinatura do próprio usuário, sem URL pública (research A11).
+
+    [US-38][RBN-CAD-13.1][FR-020]
+    """
+    caminho = services.caminho_da_assinatura(request.user)
+    if not caminho or not default_storage.exists(caminho):
+        raise Http404
+    arquivo = default_storage.open(caminho, "rb")
+    tipo = services.tipo_por_bytes(arquivo.read(8))
+    arquivo.seek(0)
+    if tipo is None:
+        arquivo.close()
+        raise Http404
+    return FileResponse(arquivo, content_type=services.mime_da_assinatura(tipo))
+
+
+def confirmar_email(request, token):
+    """Link de troca de e-mail: GET mostra o novo e-mail e o botão; POST confirma (Q28).
+
+    [US-38][RBN-CAD-13.1][FR-021][Q11][Q24][Q28]
+    """
+    if request.method == "POST":
+        mensagem = services.confirmar_troca_email(token)
+        chave = "sucesso" if mensagem == mensagens.M07_EMAIL_ATUALIZADO else "erro"
+        return render(request, "cadastro/confirmar_email.html", {chave: mensagem})
+    resultado = services.validar_link_troca_email(token)
+    if resultado.estado == EstadoTroca.VALIDO:
+        contexto = {"novo_email": resultado.novo_email}
+    elif resultado.estado == EstadoTroca.EM_USO:
+        contexto = {"erro": mensagens.M05_EMAIL_EM_USO}
+    else:
+        contexto = {"erro": mensagens.M09_LINK_EMAIL_INVALIDO}
+    return render(request, "cadastro/confirmar_email.html", contexto)
+
+
+@perfil_requerido()
+def notificacoes(request):
+    """Central de notificações: da mais recente para a mais antiga, 20 por página (Q14).
+
+    [US-38][RBN-CAD-13.2][FR-022][Q14]
+    """
+    lista = Notificacoes.objects.filter(not_usu_id=request.user.pk).order_by(
+        "-not_data_hora", "-not_id"
+    )
+    pagina = Paginator(lista, 20).get_page(request.GET.get("pagina"))
+    return render(request, "cadastro/notificacoes.html", {"pagina": pagina})
+
+
+@perfil_requerido()
+def abrir_notificacao(request, not_id):
+    """Marca como lida e abre a tela relacionada; item removido: "Este item não está mais
+    disponível" (Q10). Mudança de estado por GET aceita (research A12).
+    [US-38][RBN-CAD-13.2][FR-023][Q10]
+    """
+    aberta = services.abrir_notificacao(request.user, not_id)
+    if aberta is None:
+        raise Http404
+    notificacao, destino = aberta
+    if destino:
+        return redirect(destino)
+    if notificacao.not_link_tela:
+        return services.item_indisponivel(request)
+    return redirect("cadastro:notificacoes")
+
+
+@require_POST
+@perfil_requerido()
+def marcar_lidas(request):
+    """ "Marcar como lidas": zera o contador. [US-38][RBN-CAD-13.2][FR-022]"""
+    services.marcar_todas_lidas(request.user)
+    return redirect("cadastro:notificacoes")

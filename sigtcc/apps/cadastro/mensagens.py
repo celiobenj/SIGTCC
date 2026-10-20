@@ -60,6 +60,8 @@ NOVO_LINK_ENVIADO = "Enviamos um novo link para o seu e-mail"
 PERFIL_ATUALIZADO = "Perfil atualizado"
 SEM_NOTIFICACOES = "Você não tem notificações"
 ITEM_INDISPONIVEL = "Este item não está mais disponível"
+# Curso do Aluno sem correspondência na equivalência (matriz, RBN-CAD-05.7).
+CURSO_NAO_RECONHECIDO = "Código não reconhecido"
 
 # ---------------------------------------------------------------------------------------------
 # Rótulos de botões e links, como escritos nas US

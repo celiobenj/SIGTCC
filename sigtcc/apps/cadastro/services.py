@@ -11,9 +11,11 @@ import enum
 import logging
 import math
 import re
+import secrets
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.contrib import messages
@@ -21,27 +23,35 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.core import signing
 from django.core.cache import caches
 from django.core.exceptions import PermissionDenied
+from django.core.files.storage import default_storage
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import Resolver404, resolve, reverse
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare, salted_hmac
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from sigtcc.apps.cadastro.choices import StatusConta
 from sigtcc.apps.cadastro.mensagens import (
     CONTA_JA_ATIVA,
+    CURSO_NAO_RECONHECIDO,
     EMAIL_DE_OUTRA_CONTA_ALUNO,
     ITEM_INDISPONIVEL,
     LINK_ATIVACAO_ENVIADO,
+    M05_EMAIL_EM_USO,
+    M06_CONFIRMACAO_EMAIL_ENVIADA,
+    M07_EMAIL_ATUALIZADO,
     M08_REFAZER_PRIMEIRO_ACESSO,
+    M09_LINK_EMAIL_INVALIDO,
     M15_CONTA_INATIVA,
     M16_ACESSO_EXPIRADO,
     M17_FALHA_ENVIO,
     NOVO_LINK_ENVIADO,
+    PERFIL_ATUALIZADO,
 )
-from sigtcc.apps.cadastro.models import Alunos, Usuarios
+from sigtcc.apps.cadastro.models import Alunos, EquivalenciaCursos, Notificacoes, Usuarios
 from sigtcc.apps.cadastro.permissoes import (
     pode_resetar_primeiro_acesso,
     tipo_conta,
@@ -733,3 +743,286 @@ def resetar_primeiro_acesso(professor, aluno):
         conta.usu_link_gerado_em = timezone.now()
         conta.save(update_fields=["usu_email", "password", "usu_status", "usu_link_gerado_em"])
     registrar_evento(EventoAcesso.RESET_PRIMEIRO_ACESSO, conta, autor=professor)
+
+
+# =============================================================================================
+# Perfil, assinatura e troca de e-mail (US-38; FR-019 a FR-021; research A4, A11)
+# =============================================================================================
+
+SALT_TROCA_EMAIL = "sigtcc.troca_email"
+TAMANHO_MAXIMO_ASSINATURA = 2 * 1024 * 1024
+# Tipo da imagem pelos bytes iniciais e as extensões aceitas para cada tipo (A11).
+_TIPOS_ASSINATURA = {
+    "png": (b"\x89PNG\r\n\x1a\n", ("png",), "image/png"),
+    "jpg": (b"\xff\xd8\xff", ("jpg", "jpeg"), "image/jpeg"),
+}
+
+
+class EmailEmUso(Exception):
+    """O novo e-mail já é de outra conta (M-05). [US-38][RBN-CAD-13.1]"""
+
+
+class EstadoTroca(enum.Enum):
+    """Estados do link de troca de e-mail (A4; spec Q11, Q24, Q28). [US-38][RBN-CAD-13.1]"""
+
+    VALIDO = "valido"
+    INVALIDO = "invalido"
+    EM_USO = "em_uso"
+
+
+@dataclass
+class ResultadoTroca:
+    """Estado do link de troca, a conta e o novo e-mail."""
+
+    estado: EstadoTroca
+    usuario: object = None
+    novo_email: str = ""
+
+
+@dataclass
+class ResultadoPerfil:
+    """Resultado de salvar o perfil: sucesso e a mensagem a mostrar."""
+
+    sucesso: bool
+    mensagem: str
+
+
+def curso_do_aluno(aluno):
+    """Nome do curso pela equivalência do código da UEA, ou "Código não reconhecido".
+
+    [US-38][RBN-CAD-13.1][RBN-CAD-05.7]
+    """
+    equivalencia = (
+        EquivalenciaCursos.objects.select_related("eqc_cur")
+        .filter(eqc_codigo_uea=aluno.alu_codigo_curso)
+        .first()
+    )
+    return equivalencia.eqc_cur.cur_nome if equivalencia else CURSO_NAO_RECONHECIDO
+
+
+def tipo_por_bytes(inicio):
+    """ "png", "jpg" ou None, pelos bytes iniciais do arquivo (A11)."""
+    for tipo, (assinatura_bytes, _extensoes, _mime) in _TIPOS_ASSINATURA.items():
+        if inicio.startswith(assinatura_bytes):
+            return tipo
+    return None
+
+
+def tipo_da_assinatura(arquivo):
+    """Tipo da imagem enviada ("png" ou "jpg"), ou None se não for aceita (M-04).
+
+    Até 2 MB; o tipo vem dos bytes e a extensão do nome precisa bater com ele (I7).
+    [US-38][RBN-CAD-13.1][FR-020]
+    """
+    if arquivo.size > TAMANHO_MAXIMO_ASSINATURA:
+        return None
+    arquivo.seek(0)
+    inicio = arquivo.read(8)
+    arquivo.seek(0)
+    tipo = tipo_por_bytes(inicio)
+    extensao = arquivo.name.rsplit(".", 1)[-1].lower() if "." in arquivo.name else ""
+    if tipo is None or extensao not in _TIPOS_ASSINATURA[tipo][1]:
+        return None
+    return tipo
+
+
+def mime_da_assinatura(tipo):
+    """Content-Type do tipo detectado. [FR-020]"""
+    return _TIPOS_ASSINATURA[tipo][2]
+
+
+def _registro_com_assinatura(conta):
+    """Docentes ou MembrosExternos da conta (quem tem assinatura), ou None."""
+    tipo = tipo_conta(conta)
+    if tipo == "docente":
+        return conta.docentes, "doc_assinatura_path"
+    if tipo == "membro_externo":
+        return conta.membrosexternos, "mem_assinatura_path"
+    return None, None
+
+
+def caminho_da_assinatura(usuario):
+    """Caminho da imagem de assinatura do usuário (relativo a MEDIA_ROOT), ou None. [FR-020]"""
+    registro, campo = _registro_com_assinatura(usuario)
+    return getattr(registro, campo) if registro is not None else None
+
+
+def salvar_assinatura(conta, arquivo, tipo):
+    """Grava a imagem em assinaturas/<usu_id>_<aleatório>.<ext> e o caminho no registro.
+
+    O arquivo anterior é apagado só depois do commit (A11). Devolve o caminho novo.
+    [US-38][RBN-CAD-13.1][FR-020]
+    """
+    registro, campo = _registro_com_assinatura(conta)
+    nome = f"assinaturas/{conta.pk}_{secrets.token_hex(8)}.{tipo}"
+    caminho = default_storage.save(nome, arquivo)
+    anterior = getattr(registro, campo)
+    setattr(registro, campo, caminho)
+    registro.save(update_fields=[campo])
+    if anterior:
+        transaction.on_commit(lambda: default_storage.delete(anterior))
+    return caminho
+
+
+def _resumo_do_email(email):
+    """Resumo (HMAC) do e-mail atual: o link de troca cai se o e-mail da conta mudar (A4)."""
+    return salted_hmac("sigtcc.troca_email.atual", (email or "").lower()).hexdigest()[:12]
+
+
+def pedir_troca_email(conta, novo):
+    """Envia ao novo e-mail o link de confirmação (24 h); o e-mail atual continua valendo.
+
+    Levanta EmailEmUso (M-05) ou FalhaEnvioEmail (M-17); deve rodar dentro de
+    transaction.atomic(), para a falha desfazer o salvamento inteiro (A5, m13).
+    [US-38][RBN-CAD-13.1][FR-021][Q11][Q24][FR-029]
+    """
+    if email_em_uso(novo, exceto=conta):
+        raise EmailEmUso
+    dados = {
+        "u": conta.pk,
+        "r": _resumo_do_email(conta.usu_email),
+        "n": novo,
+        "e": timezone.now().isoformat(),
+    }
+    link = _url_absoluta("cadastro:confirmar_email", signing.dumps(dados, salt=SALT_TROCA_EMAIL))
+    try:
+        enviar_email(
+            novo,
+            "SIGTCC: confirme o seu novo e-mail",
+            "cadastro/emails/confirmar_email.txt",
+            {"nome": conta.usu_nome, "link": link},
+            conta=conta,
+        )
+    except Exception as erro:
+        raise FalhaEnvioEmail from erro
+    registrar_evento(EventoAcesso.TROCA_EMAIL_PEDIDA, conta, detalhe=dominio_do_email(novo))
+
+
+def atualizar_perfil(usuario, dados, arquivo=None, tipo_arquivo=None):
+    """Salva só os campos que o papel pode editar (FR-019); troca de e-mail pede confirmação.
+
+    Aluno: e-mail. Docente: assinatura. Membro Externo: e-mail, titulação, instituição e
+    assinatura. Secretaria: nada. Com troca de e-mail, a mensagem é só a M-06 (Q11); falha no
+    envio desfaz tudo (M-17).
+    [US-38][RBN-CAD-13.1][FR-019][FR-020][FR-021][Q11]
+    """
+    tipo = tipo_conta(usuario)
+    novo = normalizar_email(dados.get("email")) if tipo in ("aluno", "membro_externo") else None
+    troca = novo is not None and novo.lower() != (usuario.usu_email or "").lower()
+    caminho_novo = None
+    try:
+        with transaction.atomic():
+            conta = _conta(usuario.pk, travar=True)
+            if tipo == "membro_externo":
+                membro = conta.membrosexternos
+                membro.mem_titulacao = dados["titulacao"]
+                membro.mem_instituicao = dados["instituicao"]
+                membro.save(update_fields=["mem_titulacao", "mem_instituicao"])
+            if arquivo is not None and tipo in ("docente", "membro_externo"):
+                caminho_novo = salvar_assinatura(conta, arquivo, tipo_arquivo)
+            if troca:
+                pedir_troca_email(conta, novo)
+    except (FalhaEnvioEmail, EmailEmUso) as erro:
+        if caminho_novo:
+            default_storage.delete(caminho_novo)
+        mensagem = M05_EMAIL_EM_USO if isinstance(erro, EmailEmUso) else M17_FALHA_ENVIO
+        return ResultadoPerfil(False, mensagem)
+    return ResultadoPerfil(True, M06_CONFIRMACAO_EMAIL_ENVIADA if troca else PERFIL_ATUALIZADO)
+
+
+def validar_link_troca_email(token, travar=False):
+    """Estado do link de troca de e-mail (A4; spec Q11, Q24, Q28).
+
+    INVALIDO: adulterado, com mais de 24 h ou com o e-mail da conta já mudado (inclusive por esta
+    troca). EM_USO: o novo e-mail passou a ser de outra conta.
+    [US-38][RBN-CAD-13.1][FR-021]
+    """
+    lido = _ler_token(token, SALT_TROCA_EMAIL)
+    if lido is None:
+        return ResultadoTroca(EstadoTroca.INVALIDO)
+    usu_id, dados = lido
+    try:
+        emitido_em = datetime.fromisoformat(dados["e"])
+        resumo, novo = dados["r"], dados["n"]
+    except (KeyError, TypeError, ValueError):
+        return ResultadoTroca(EstadoTroca.INVALIDO)
+    conta = _conta(usu_id, travar)
+    if (
+        conta is None
+        or timezone.now() - emitido_em > VALIDADE_LINK
+        or not constant_time_compare(resumo, _resumo_do_email(conta.usu_email))
+    ):
+        return ResultadoTroca(EstadoTroca.INVALIDO)
+    if email_em_uso(novo, exceto=conta):
+        return ResultadoTroca(EstadoTroca.EM_USO, conta, novo)
+    return ResultadoTroca(EstadoTroca.VALIDO, conta, novo)
+
+
+def confirmar_troca_email(token):
+    """Confirma a troca (POST do botão "Confirmar novo e-mail"), com a conta travada (Q28).
+
+    Devolve a mensagem: M-07 (trocado), M-09 (link inválido) ou M-05 (e-mail ocupado).
+    [US-38][RBN-CAD-13.1][FR-021][Q28][FR-029]
+    """
+    with transaction.atomic():
+        resultado = validar_link_troca_email(token, travar=True)
+        if resultado.estado == EstadoTroca.INVALIDO:
+            return M09_LINK_EMAIL_INVALIDO
+        if resultado.estado == EstadoTroca.EM_USO:
+            return M05_EMAIL_EM_USO
+        conta = resultado.usuario
+        conta.usu_email = resultado.novo_email
+        try:
+            with transaction.atomic():
+                conta.save(update_fields=["usu_email"])
+        except IntegrityError:
+            return M05_EMAIL_EM_USO
+    registrar_evento(
+        EventoAcesso.TROCA_EMAIL_CONFIRMADA, conta, detalhe=dominio_do_email(conta.usu_email)
+    )
+    return M07_EMAIL_ATUALIZADO
+
+
+# =============================================================================================
+# Central de notificações (US-38; FR-022, FR-023; research A12)
+# =============================================================================================
+
+
+def destino_da_notificacao(link):
+    """Caminho interno de not_link_tela, ou None se não leva a uma página existente.
+
+    Aceita só caminho relativo começando com "/", sem host, com query opcional; o caminho
+    precisa resolver numa rota (Q10) e passar por url_has_allowed_host_and_scheme (A12).
+    [US-38][RBN-CAD-13.2][FR-023][Q10]
+    """
+    if not link or not link.startswith("/") or link.startswith("//") or "\\" in link:
+        return None
+    partes = urlsplit(link)
+    if partes.scheme or partes.netloc:
+        return None
+    try:
+        resolve(partes.path)
+    except Resolver404:
+        return None
+    if not url_has_allowed_host_and_scheme(link, allowed_hosts=None):
+        return None
+    return link
+
+
+def abrir_notificacao(usuario, not_id):
+    """Marca a notificação do usuário como lida e devolve (notificação, destino) ou None.
+
+    None quando a notificação não existe ou é de outra conta (a view responde 404).
+    [US-38][RBN-CAD-13.2][FR-023]
+    """
+    notificacao = Notificacoes.objects.filter(pk=not_id, not_usu_id=usuario.pk).first()
+    if notificacao is None:
+        return None
+    if not notificacao.not_lida:
+        Notificacoes.objects.filter(pk=notificacao.pk).update(not_lida=True)
+    return notificacao, destino_da_notificacao(notificacao.not_link_tela)
+
+
+def marcar_todas_lidas(usuario):
+    """ "Marcar como lidas": todas as notificações do usuário. [US-38][RBN-CAD-13.2][FR-022]"""
+    Notificacoes.objects.filter(not_usu_id=usuario.pk, not_lida=False).update(not_lida=True)

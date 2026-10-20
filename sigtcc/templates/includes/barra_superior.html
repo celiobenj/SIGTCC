@@ -1,17 +1,16 @@
 {% comment %}
   Barra superior: botão do menu, nome do sistema, sino com as notificações não lidas e menu do
-  usuário. Só usa {% url %} de rotas que já existem (tasks H1): "Sair" entra em T020, "Meu perfil"
-  e o link do sino para a central entram em T042.
+  usuário com "Meu perfil" e "Sair".
   [FR-024][FR-022][US-11][US-38][RBN-CAD-13.2]
 {% endcomment %}
 <header class="topbar">
   <button type="button" class="iconbtn" data-alternar-menu aria-controls="menu-lateral" aria-label="Menu principal"><span class="ms">menu</span></button>
   <a class="logo" href="{% url 'cadastro:painel' %}"><span class="logo-mark"><span class="ms">school</span></span><span class="nome">SIGTCC</span></a>
   <div class="spacer"></div>
-  <span class="iconbtn" aria-label="Notificações não lidas: {{ notificacoes_nao_lidas|default:0 }}" data-sino>
+  <a class="iconbtn" href="{% url 'cadastro:notificacoes' %}" aria-label="Notificações não lidas: {{ notificacoes_nao_lidas|default:0 }}" data-sino>
     <span class="ms">notifications</span>
     {% if notificacoes_nao_lidas %}<span class="badge" data-contador>{{ notificacoes_nao_lidas }}</span>{% endif %}
-  </span>
+  </a>
   <details class="menu-usuario">
     <summary class="iconbtn" aria-label="Conta"><span class="avatar">{{ user.usu_nome|slice:":1"|upper }}</span></summary>
     <div class="menu-user">
@@ -19,6 +18,7 @@
       <div class="nome">{{ user.usu_nome }}</div>
       <div class="muted">{{ user.usu_email|default:"" }}</div>
       <div class="flex flex-wrap acoes">
+        <a class="btn" href="{% url 'cadastro:perfil' %}"><span class="ms">person</span>Meu perfil</a>
         <form method="post" action="{% url 'cadastro:sair' %}">{% csrf_token %}<button type="submit" class="btn txt"><span class="ms">logout</span>Sair</button></form>
       </div>
     </div>

@@ -1,0 +1,25 @@
+{% extends "base_publica.html" %}
+{% comment %}
+  Confirmação da troca de e-mail: o GET mostra o novo e-mail e o botão; só o POST troca (Q28).
+  [US-38][RBN-CAD-13.1][FR-021][Q11][Q24][Q28]
+{% endcomment %}
+{% block titulo %}Confirmar novo e-mail · SIGTCC{% endblock %}
+{% block cabecalho %}Confirmar novo e-mail{% endblock %}
+{% block conteudo %}
+{% if sucesso %}
+  <div class="alerta sucesso" role="status"><span class="ms">check_circle</span><span class="texto">{{ sucesso }}</span></div>
+  <div class="links"><a href="{% url 'cadastro:entrar' %}">Ir para o SIGTCC</a></div>
+{% elif erro %}
+  <div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>
+  <div class="links"><a href="{% url 'cadastro:entrar' %}">Ir para o SIGTCC</a></div>
+{% else %}
+  <p>Novo e-mail: <b>{{ novo_email }}</b></p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="flex entre">
+      <span></span>
+      <button type="submit" class="btn pri">Confirmar novo e-mail</button>
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

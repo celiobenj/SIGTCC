@@ -23,7 +23,13 @@ urlpatterns = [
     path("redefinir-senha/nova/", views.nova_senha, name="nova_senha"),
     path("redefinir-senha/<str:token>/", views.redefinir_senha, name="redefinir_senha"),
     path("painel/", views.painel, name="painel"),
+    path("perfil/", views.perfil, name="perfil"),
+    path("perfil/assinatura/", views.assinatura, name="assinatura"),
     path("perfil/senha/", views.alterar_senha, name="alterar_senha"),
+    path("perfil/email/confirmar/<str:token>/", views.confirmar_email, name="confirmar_email"),
+    path("notificacoes/", views.notificacoes, name="notificacoes"),
+    path("notificacoes/marcar-lidas/", views.marcar_lidas, name="marcar_lidas"),
+    path("notificacoes/<int:not_id>/", views.abrir_notificacao, name="abrir_notificacao"),
     path("alunos/<int:alu_id>/", views.aluno, name="aluno"),
     path(
         "alunos/<int:alu_id>/resetar-primeiro-acesso/",
