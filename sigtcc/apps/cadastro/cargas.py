@@ -38,7 +38,9 @@ def carregar_cursos(apps, schema_editor):
 
 def remover_cursos(apps, schema_editor):
     """Reverte a carga de cursos (só os nomes carregados)."""
-    apps.get_model("cadastro", "Cursos").objects.filter(cur_nome__in=CURSOS).delete()
+    # Apaga por SQL: o delete() do ORM com os modelos históricos da migração falha ao percorrer o
+    # OneToOneField de Coordenadores. As FKs do banco continuam impedindo apagar linha referenciada.
+    schema_editor.execute('DELETE FROM "Cursos" WHERE cur_nome = ANY(%s)', [list(CURSOS)])
 
 
 def carregar_areas_interesse(apps, schema_editor):
@@ -49,7 +51,7 @@ def carregar_areas_interesse(apps, schema_editor):
 
 
 def remover_areas_interesse(apps, schema_editor):
-    """Reverte a carga de áreas (só os nomes carregados)."""
-    apps.get_model("cadastro", "AreasInteresse").objects.filter(
-        ari_nome__in=AREAS_INTERESSE
-    ).delete()
+    """Reverte a carga de áreas (só os nomes carregados), por SQL como remover_cursos."""
+    schema_editor.execute(
+        'DELETE FROM "Areas_Interesse" WHERE ari_nome = ANY(%s)', [list(AREAS_INTERESSE)]
+    )

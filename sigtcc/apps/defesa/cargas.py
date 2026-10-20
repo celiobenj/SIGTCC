@@ -55,7 +55,11 @@ def carregar_criterios_provisorios(apps, schema_editor):
 
 
 def remover_criterios(apps, schema_editor):
-    """Reverte a carga dos critérios (só os nomes carregados)."""
-    apps.get_model("defesa", "Criterios").objects.filter(
-        cri_nome__in=[nome for _, nome, _ in CRITERIOS]
-    ).delete()
+    """Reverte a carga dos critérios (só os nomes carregados).
+
+    Apaga por SQL, como no app cadastro, para não depender do delete() com modelos históricos.
+    As FKs do banco continuam impedindo apagar critério já usado em avaliação.
+    """
+    schema_editor.execute(
+        'DELETE FROM "Criterios" WHERE cri_nome = ANY(%s)', [[nome for _, nome, _ in CRITERIOS]]
+    )
