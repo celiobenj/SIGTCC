@@ -53,6 +53,7 @@ class Criterios(models.Model):
         verbose_name_plural = "critérios de avaliação"
 
     def __str__(self):
+        """Representação em texto do registro. [US-25][RBN-DEF-04.1][RBN-DEF-04.2]"""
         return self.cri_nome
 
 
@@ -77,6 +78,7 @@ class Ouvintes(models.Model):
         verbose_name_plural = "ouvintes"
 
     def __str__(self):
+        """Representação em texto do registro. [US-30][RBN-DEF-08.2]"""
         return self.ouv_nome
 
 

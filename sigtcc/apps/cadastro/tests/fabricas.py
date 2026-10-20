@@ -42,10 +42,12 @@ def proximo():
 
 
 def criar_curso(nome=None):
+    """Curso do NUCOMP. [US-39][RBN-CAD-14.1]"""
     return Cursos.objects.create(cur_nome=nome or f"Curso {proximo()}")
 
 
 def criar_usuario(email=None, status=StatusConta.ATIVA, **campos):
+    """Usuário com e-mail opcional, criado por create_user. [US-10][RBN-CAD-06.3]"""
     n = proximo()
     return Usuarios.objects.create_user(
         email if email is not None else f"usuario{n}@uea.edu.br",
@@ -56,6 +58,7 @@ def criar_usuario(email=None, status=StatusConta.ATIVA, **campos):
 
 
 def criar_docente(curso=None):
+    """Docente com usuário e curso de lotação próprios. [US-03][RBN-CAD-01.1]"""
     return Docentes.objects.create(
         doc=criar_usuario(),
         doc_titulacao=Titulacao.DOUTOR,
@@ -64,6 +67,10 @@ def criar_docente(curso=None):
 
 
 def criar_aluno(matricula=None):
+    """Aluno sem e-mail (antes do primeiro acesso), matrícula de 10 dígitos.
+
+    [US-08][RBN-CAD-05.1]
+    """
     return Alunos.objects.create(
         alu=criar_usuario(email=None, status=StatusConta.AGUARDANDO_ATIVACAO),
         alu_matricula=matricula or f"{2026000000 + proximo():010d}",
@@ -72,10 +79,12 @@ def criar_aluno(matricula=None):
 
 
 def criar_disciplina():
+    """Disciplina de TCC com código único. [US-07][RBN-CAD-04.1]"""
     return Disciplinas.objects.create(dis_codigo=f"DIS{proximo()}")
 
 
 def criar_turma(**campos):
+    """Turma de TCC 1 válida; os campos podem ser sobrescritos. [US-07][RBN-CAD-04.1]"""
     docente = campos.pop("tur_doc", None) or criar_docente()
     valores = {
         "tur_identificador": f"TUR_{proximo()}",
@@ -96,6 +105,7 @@ def criar_turma(**campos):
 
 
 def criar_tcc(**campos):
+    """TCC em 'Sem Proposta'. [US-13][RBN-CAD-07.1][US-14][RBN-CAD-08.3]"""
     valores = {
         "tcc_alu": campos.pop("tcc_alu", None) or criar_aluno(),
         "tcc_tur": campos.pop("tcc_tur", None) or criar_turma(),
@@ -106,6 +116,7 @@ def criar_tcc(**campos):
 
 
 def criar_tcc_com_proposta(**campos):
+    """TCC em 'Em Andamento' com título, resumo e modalidade. [US-13][RBN-CAD-07.1]"""
     valores = {
         "tcc_status": StatusTCC.EM_ANDAMENTO,
         "tcc_titulo": "Título do trabalho",
@@ -117,6 +128,7 @@ def criar_tcc_com_proposta(**campos):
 
 
 def criar_marco(turma=None, tipo=TipoEntrega.OUTRA):
+    """Entrega cadastrada na turma ('Outra' por padrão). [US-43][RBN-CAD-09.1]"""
     return TurmasMarcos.objects.create(
         tma_tur=turma or criar_turma(),
         tma_tipo=tipo,
@@ -126,6 +138,7 @@ def criar_marco(turma=None, tipo=TipoEntrega.OUTRA):
 
 
 def criar_coorientador_externo(email=None):
+    """Coorientador externo com e-mail opcional. [US-45][RBN-CAD-10.3]"""
     return CoorientadoresExternos.objects.create(cext_nome=f"Externo {proximo()}", cext_email=email)
 
 
@@ -135,6 +148,7 @@ def criar_coorientador_externo(email=None):
 
 
 def criar_defesa(tcc=None, **campos):
+    """Sessão de defesa presencial agendada. [US-21][RBN-DEF-01.1]"""
     from sigtcc.apps.defesa.choices import FormatoSessao, StatusSessao
     from sigtcc.apps.defesa.models import Defesas
 
@@ -150,6 +164,7 @@ def criar_defesa(tcc=None, **campos):
 
 
 def criar_criterio(**campos):
+    """Critério de avaliação de teste (fora da carga oficial). [US-25][RBN-DEF-04.1]"""
     from sigtcc.apps.defesa.choices import ComponenteCriterio
     from sigtcc.apps.defesa.models import Criterios
 
@@ -166,6 +181,7 @@ def criar_criterio(**campos):
 
 
 def criar_membro_banca(defesa=None, usuario=None, **campos):
+    """Membro da banca (1º Avaliador por padrão). [US-23][RBN-DEF-02.1]"""
     from sigtcc.apps.defesa.choices import PapelBanca
     from sigtcc.apps.defesa.models import BancaDefesa
 

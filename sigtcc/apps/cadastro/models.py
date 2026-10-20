@@ -60,6 +60,7 @@ class Cursos(models.Model):
         verbose_name_plural = "cursos"
 
     def __str__(self):
+        """Representação em texto do registro. [US-39][RBN-CAD-14.1][US-03][RBN-CAD-01.1]"""
         return self.cur_nome
 
 
@@ -78,6 +79,7 @@ class EquivalenciaCursos(models.Model):
         verbose_name_plural = "equivalências de cursos"
 
     def __str__(self):
+        """Representação em texto do registro. [US-08][RBN-CAD-05.7]"""
         return self.eqc_codigo_uea
 
 
@@ -98,6 +100,7 @@ class Disciplinas(models.Model):
         verbose_name_plural = "disciplinas"
 
     def __str__(self):
+        """Representação em texto do registro. [US-07][RBN-CAD-04.1]"""
         return self.dis_codigo
 
 
@@ -116,6 +119,7 @@ class AreasInteresse(models.Model):
         verbose_name_plural = "áreas de interesse"
 
     def __str__(self):
+        """Representação em texto do registro. [US-13][RBN-CAD-08.1]"""
         return self.ari_nome
 
 
@@ -186,6 +190,11 @@ class Usuarios(AbstractBaseUser):
         super().save(*args, **kwargs)
 
     def __str__(self):
+        """Representação em texto do registro.
+
+        [US-10][RBN-CAD-06.3][US-11][RBN-CAD-06.4][US-04][RBN-CAD-01.3][RBN-CAD-02.3][US-06]
+        [RBN-CAD-03.3]
+        """
         # O e-mail pode ser nulo (Aluno antes do primeiro acesso); por isso usa o nome.
         return self.usu_nome
 
@@ -212,6 +221,7 @@ class Alunos(models.Model):
         verbose_name_plural = "alunos"
 
     def __str__(self):
+        """Representação em texto do registro. [US-08][RBN-CAD-05.1][RBN-CAD-05.7]"""
         return self.alu_matricula
 
 
@@ -299,6 +309,7 @@ class CoorientadoresExternos(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
+        """Representação em texto do registro. [US-45][RBN-CAD-10.3]"""
         return self.cext_nome
 
 
@@ -365,6 +376,7 @@ class Turmas(models.Model):
         verbose_name_plural = "turmas"
 
     def __str__(self):
+        """Representação em texto do registro. [US-07][RBN-CAD-04.1][RBN-CAD-04.5]"""
         return self.tur_identificador
 
 
