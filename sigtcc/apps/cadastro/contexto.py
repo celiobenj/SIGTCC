@@ -16,7 +16,10 @@ from sigtcc.apps.cadastro.permissoes import tem_perfil
 
 
 def _itens_de_todos_os_apps():
-    """Junta os ITENS do menu.py de cada app instalado, sem duplicar e sem depender da ordem."""
+    """Junta os ITENS do menu.py de cada app instalado, sem duplicar e sem depender da ordem.
+
+    [FR-025]
+    """
     itens = []
     for config in apps.get_app_configs():
         nome_modulo = f"{config.name}.menu"

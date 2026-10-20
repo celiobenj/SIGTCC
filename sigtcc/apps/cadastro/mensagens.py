@@ -64,7 +64,7 @@ ITEM_INDISPONIVEL = "Este item não está mais disponível"
 CURSO_NAO_RECONHECIDO = "Código não reconhecido"
 
 # ---------------------------------------------------------------------------------------------
-# Rótulos de botões e links, como escritos nas US
+# Rótulos de botões e links, como escritos nas US ("Sair" vem da spec 003, FR-011)
 # ---------------------------------------------------------------------------------------------
 PRIMEIRO_ACESSO = "Primeiro acesso"
 ESQUECI_MINHA_SENHA = "Esqueci minha senha"

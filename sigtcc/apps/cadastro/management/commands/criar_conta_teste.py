@@ -48,7 +48,10 @@ class Command(BaseCommand):
     help = "Cria uma conta de teste de qualquer perfil (só com DEBUG = True)."
 
     def add_arguments(self, parser):
-        """Opções do contrato §6 (servicos-compartilhados.md)."""
+        """Opções do contrato §6 (servicos-compartilhados.md).
+
+        [FR-027]
+        """
         parser.add_argument("--perfil", required=True, choices=PERFIS)
         parser.add_argument("--status", default="aguardando", choices=tuple(STATUS))
         parser.add_argument("--email", help="obrigatório, exceto para Aluno")
@@ -61,7 +64,10 @@ class Command(BaseCommand):
         parser.add_argument("--validade", help="AAAA-MM-DD, validade do Membro Externo")
 
     def handle(self, *args, **opcoes):
-        """Confere as opções e cria a conta numa transação."""
+        """Confere as opções e cria a conta numa transação.
+
+        [FR-027]
+        """
         if not settings.DEBUG:
             raise CommandError("criar_conta_teste só roda em desenvolvimento (DEBUG = True).")
         perfil = opcoes["perfil"]
@@ -110,12 +116,18 @@ class Command(BaseCommand):
         )
 
     def _nome(self, perfil, email, matricula):
-        """Nome de teste legível."""
+        """Nome de teste legível.
+
+        [FR-027]
+        """
         sufixo = matricula if perfil == "aluno" else email.split("@")[0]
         return f"{perfil.replace('_', ' ').title()} Teste {sufixo}"
 
     def _criar_especializacao(self, usuario, perfil, curso, opcoes, validade):
-        """Cria o registro do tipo de conta; devolve o Docentes quando houver."""
+        """Cria o registro do tipo de conta; devolve o Docentes quando houver.
+
+        [FR-027]
+        """
         if perfil == "aluno":
             Alunos.objects.create(
                 alu=usuario, alu_matricula=opcoes["matricula"], alu_codigo_curso="TESTE"
@@ -140,7 +152,10 @@ class Command(BaseCommand):
         return None
 
     def _turma(self, opcoes, curso, docente):
-        """Reaproveita a turma pelo identificador ou cria uma turma de TCC 1 de teste."""
+        """Reaproveita a turma pelo identificador ou cria uma turma de TCC 1 de teste.
+
+        [FR-027]
+        """
         identificador = opcoes["turma"]
         turma = Turmas.objects.filter(tur_identificador=identificador).first()
         if turma is not None:
@@ -166,7 +181,10 @@ class Command(BaseCommand):
         )
 
     def _professor(self, email_professor, curso, docente):
-        """Professor da turma: --professor, o próprio docente ou um docente de teste."""
+        """Professor da turma: --professor, o próprio docente ou um docente de teste.
+
+        [FR-027]
+        """
         if email_professor:
             professor = Docentes.objects.filter(doc__usu_email__iexact=email_professor).first()
             if professor is None:

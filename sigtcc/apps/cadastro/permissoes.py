@@ -48,7 +48,10 @@ _RELACOES = (
 
 
 def _autenticado(usuario):
-    """Usuário logado (AnonymousUser e None não são)."""
+    """Usuário logado (AnonymousUser e None não são).
+
+    [FR-025]
+    """
     return usuario is not None and getattr(usuario, "is_authenticated", False)
 
 
@@ -167,8 +170,11 @@ def perfil_requerido(*perfis):
     """
 
     def decorador(view):
+        """Envolve a view com a conferência de login e perfil. [FR-025]"""
+
         @wraps(view)
         def envolta(request, *args, **kwargs):
+            """Confere login e perfil e chama a view. [FR-025][SC-004]"""
             if not request.user.is_authenticated:
                 return redirect_to_login(request.get_full_path())
             if not tem_perfil(request.user, *perfis):
@@ -186,7 +192,10 @@ class PerfilRequeridoMixin:
     perfis_permitidos = ()
 
     def dispatch(self, request, *args, **kwargs):
-        """Confere login e perfil antes de qualquer método da view."""
+        """Confere login e perfil antes de qualquer método da view.
+
+        [FR-025]
+        """
         if not request.user.is_authenticated:
             return redirect_to_login(request.get_full_path())
         if not tem_perfil(request.user, *self.perfis_permitidos):

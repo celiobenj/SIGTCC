@@ -38,10 +38,16 @@ class RegraSenhaSigtcc:
     """
 
     def validate(self, password, user=None):
-        """Levanta ValidationError com o texto exato da US-10 se a senha não seguir a regra."""
+        """Levanta ValidationError com o texto exato da US-10 se a senha não seguir a regra.
+
+        [US-10][RBN-CAD-06.3]
+        """
         if not senha_atende_regra(password):
             raise ValidationError(REGRA_SENHA, code="regra_senha_sigtcc")
 
     def get_help_text(self):
-        """Texto de ajuda mostrado com o campo de senha."""
+        """Texto de ajuda mostrado com o campo de senha.
+
+        [US-10][RBN-CAD-06.3]
+        """
         return REGRA_SENHA

@@ -32,12 +32,16 @@ class FormularioPrimeiroErro(forms.Form):
     use_required_attribute = False
 
     def __init__(self, *args, **kwargs):
+        """Usa a M-14 como mensagem de campo obrigatório. [FR-003][M-14]"""
         super().__init__(*args, **kwargs)
         for campo in self.fields.values():
             campo.error_messages["required"] = M14_CAMPO_OBRIGATORIO
 
     def full_clean(self):
-        """Valida e mantém, em errors, só o primeiro campo com erro, na ordem dos campos."""
+        """Valida e mantém, em errors, só o primeiro campo com erro, na ordem dos campos.
+
+        [FR-003][Q12]
+        """
         super().full_clean()
         if not self._errors:
             return
@@ -56,7 +60,10 @@ class FormularioPrimeiroErro(forms.Form):
             )
 
     def primeiro_erro(self):
-        """Texto do único erro que sobrou, ou "" se o formulário é válido."""
+        """Texto do único erro que sobrou, ou "" se o formulário é válido.
+
+        [FR-003][Q12]
+        """
         for lista in self.errors.values():
             return lista[0]
         return ""
@@ -121,6 +128,7 @@ class PrimeiroAcessoAlunoForm(FormularioPrimeiroErro):
     conta = None
 
     def clean_matricula(self):
+        """Formato, existência (com turma) e status, nessa ordem (Q12). [US-10][RBN-CAD-06.1]"""
         matricula = self.cleaned_data["matricula"].strip()
         if not MATRICULA.fullmatch(matricula):
             raise ValidationError(mensagens.MATRICULA_FORMATO)
@@ -134,6 +142,7 @@ class PrimeiroAcessoAlunoForm(FormularioPrimeiroErro):
         return matricula
 
     def clean_email(self):
+        """Formato e domínio; unicidade só no Aluno ainda sem e-mail (Q15). [US-10][RBN-CAD-06.1]"""
         email = self.cleaned_data["email"].strip()
         if not email_institucional(email):
             raise ValidationError(mensagens.EMAIL_INSTITUCIONAL)
@@ -160,6 +169,7 @@ class PrimeiroAcessoEmailForm(FormularioPrimeiroErro):
     conta = None
 
     def clean_email(self):
+        """Formato (M-10), existência e status, nessa ordem (Q12). [US-10][RBN-CAD-06.2]"""
         email = self.cleaned_data["email"].strip()
         if not _email_no_formato(email):
             raise ValidationError(mensagens.M10_EMAIL_INVALIDO)
@@ -187,11 +197,13 @@ class AtivacaoForm(FormularioPrimeiroErro):
     )
 
     def clean_senha(self):
+        """Regra de senha (FR-004). [US-10][RBN-CAD-06.3]"""
         senha = self.cleaned_data["senha"]
         RegraSenhaSigtcc().validate(senha)
         return senha
 
     def clean(self):
+        """Confirmação idêntica à senha (FR-004). [US-10][RBN-CAD-06.3]"""
         dados = super().clean()
         senha, confirmacao = dados.get("senha"), dados.get("confirmacao")
         if senha and confirmacao is not None and senha != confirmacao:
@@ -221,21 +233,25 @@ class AlterarSenhaForm(FormularioPrimeiroErro):
     )
 
     def __init__(self, usuario, *args, **kwargs):
+        """Guarda o usuário para conferir a senha atual. [US-12][RBN-CAD-06.5]"""
         super().__init__(*args, **kwargs)
         self.usuario = usuario
 
     def clean_senha_atual(self):
+        """Senha atual correta (FR-012). [US-12][RBN-CAD-06.5]"""
         senha = self.cleaned_data["senha_atual"]
         if not services.senha_atual_confere(self.usuario, senha):
             raise ValidationError(mensagens.SENHA_ATUAL_INCORRETA)
         return senha
 
     def clean_nova_senha(self):
+        """Regra de senha na nova senha (FR-012). [US-12][RBN-CAD-06.5]"""
         senha = self.cleaned_data["nova_senha"]
         RegraSenhaSigtcc().validate(senha)
         return senha
 
     def clean(self):
+        """Confirmação idêntica à nova senha (FR-012). [US-12][RBN-CAD-06.5]"""
         dados = super().clean()
         nova, confirmacao = dados.get("nova_senha"), dados.get("confirmacao")
         if nova and confirmacao is not None and nova != confirmacao:
@@ -252,6 +268,7 @@ class EsqueciSenhaForm(FormularioPrimeiroErro):
     )
 
     def clean_email(self):
+        """Formato do e-mail (M-10). [US-12][RBN-CAD-06.7][FR-013]"""
         email = self.cleaned_data["email"].strip()
         if not _email_no_formato(email):
             raise ValidationError(mensagens.M10_EMAIL_INVALIDO)
@@ -265,6 +282,7 @@ class NovaSenhaForm(AtivacaoForm):
     """
 
     def __init__(self, *args, **kwargs):
+        """Rótulos dos campos da redefinição. [US-12][RBN-CAD-06.7]"""
         super().__init__(*args, **kwargs)
         self.fields["senha"].label = "Nova Senha"
         self.fields["confirmacao"].label = "Confirmação da Nova Senha"
@@ -281,10 +299,12 @@ class _PerfilBase(FormularioPrimeiroErro):
     tipo_assinatura = None
 
     def __init__(self, usuario, *args, **kwargs):
+        """Guarda o usuário para a unicidade do e-mail. [US-38][RBN-CAD-13.1]"""
         super().__init__(*args, **kwargs)
         self.usuario = usuario
 
     def clean_email(self):
+        """Formato (M-10), domínio no Aluno (M-11) e unicidade (M-05). [US-38][RBN-CAD-13.1]"""
         email = self.cleaned_data["email"].strip()
         if not _email_no_formato(email):
             raise ValidationError(mensagens.M10_EMAIL_INVALIDO)
@@ -296,6 +316,7 @@ class _PerfilBase(FormularioPrimeiroErro):
         return email
 
     def clean_assinatura(self):
+        """PNG ou JPG com até 2 MB, pelos bytes (M-04). [US-38][RBN-CAD-13.1][FR-020]"""
         arquivo = self.cleaned_data.get("assinatura")
         if not arquivo:
             return None

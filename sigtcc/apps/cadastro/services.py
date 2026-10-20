@@ -191,7 +191,10 @@ class EstadoLogin(enum.Enum):
 
 @dataclass
 class ResultadoLogin:
-    """Estado do login, com o usuário (quando encontrado) e os minutos restantes do bloqueio."""
+    """Estado do login, com o usuário (quando encontrado) e os minutos restantes do bloqueio.
+
+    [US-11][RBN-CAD-06.4]
+    """
 
     estado: EstadoLogin
     usuario: object = None
@@ -199,15 +202,20 @@ class ResultadoLogin:
 
 
 def _cache_acesso():
-    """Cache próprio do bloqueio (alias "acesso", research A2)."""
+    """Cache próprio do bloqueio (alias "acesso", research A2).
+
+    [US-11][RBN-CAD-06.6]
+    """
     return caches["acesso"]
 
 
 def _chave_falhas(usuario):
+    """Chave do contador de senhas incorretas da conta. [US-11][RBN-CAD-06.6]"""
     return f"acesso:falhas:{usuario.pk}"
 
 
 def _chave_bloqueio(usuario):
+    """Chave do instante do fim do bloqueio da conta. [US-11][RBN-CAD-06.6]"""
     return f"acesso:bloqueio:{usuario.pk}"
 
 
@@ -221,7 +229,10 @@ def fim_do_bloqueio(usuario):
 
 
 def minutos_restantes(fim):
-    """ "N" da M-01: minutos restantes arredondados para cima, no mínimo 1 (spec Q16)."""
+    """ "N" da M-01: minutos restantes arredondados para cima, no mínimo 1 (spec Q16).
+
+    [US-11][RBN-CAD-06.6][Q16]
+    """
     segundos = (fim - timezone.now()).total_seconds()
     return max(1, math.ceil(segundos / 60))
 
@@ -339,7 +350,10 @@ class EstadoLink(enum.Enum):
 
 @dataclass
 class ResultadoLink:
-    """Estado do link e a conta a que ele se refere (quando a assinatura é válida)."""
+    """Estado do link e a conta a que ele se refere (quando a assinatura é válida).
+
+    [FR-016][FR-026]
+    """
 
     estado: EstadoLink
     usuario: object = None
@@ -347,14 +361,20 @@ class ResultadoLink:
 
 @dataclass
 class ResultadoPedido:
-    """Resultado de um pedido que envia e-mail: enviado, ou a mensagem de recusa."""
+    """Resultado de um pedido que envia e-mail: enviado, ou a mensagem de recusa.
+
+    [US-10][US-37][FR-026]
+    """
 
     enviado: bool
     mensagem: str = ""
 
 
 def _conta(usu_id, travar=False):
-    """Conta pelo id, com as especializações; travada (select_for_update) se pedido (A17)."""
+    """Conta pelo id, com as especializações; travada (select_for_update) se pedido (A17).
+
+    [FR-026][I4]
+    """
     contas = Usuarios.objects.select_related("alunos", "docentes", "membrosexternos", "secretarios")
     if travar:
         # Só a linha de Usuarios: o PostgreSQL não trava o lado opcional de um outer join.
@@ -363,19 +383,28 @@ def _conta(usu_id, travar=False):
 
 
 def _gravar_link_gerado_em(usuario):
-    """Grava usu_link_gerado_em = agora (invalida os links anteriores) e relê do banco (A3)."""
+    """Grava usu_link_gerado_em = agora (invalida os links anteriores) e relê do banco (A3).
+
+    [FR-006][FR-026]
+    """
     Usuarios.objects.filter(pk=usuario.pk).update(usu_link_gerado_em=timezone.now())
     usuario.refresh_from_db(fields=["usu_link_gerado_em"])
     return usuario.usu_link_gerado_em
 
 
 def _url_absoluta(nome_rota, token):
-    """Link absoluto com o SITE_URL do .env (A5)."""
+    """Link absoluto com o SITE_URL do .env (A5).
+
+    [FR-026]
+    """
     return settings.SITE_URL + reverse(nome_rota, args=[token])
 
 
 def _ler_token(token, salt):
-    """Abre um token assinado; devolve (usu_id, dados) ou None se adulterado (Q23)."""
+    """Abre um token assinado; devolve (usu_id, dados) ou None se adulterado (Q23).
+
+    [FR-016][Q23]
+    """
     try:
         dados = signing.loads(token, salt=salt)
         return int(dados["u"]), dados
@@ -439,6 +468,7 @@ def _gerar_e_enviar_ativacao(usuario):
     """Gera o link e envia o e-mail de ativação; em falha levanta FalhaEnvioEmail.
 
     Deve rodar dentro de transaction.atomic(), para a falha desfazer tudo (A5, I5).
+    [US-10][US-37][RBN-CAD-06.1][RBN-CAD-06.9][FR-002]
     """
     link = gerar_link_ativacao(usuario)
     try:
@@ -619,7 +649,10 @@ def alterar_senha(usuario, atual, nova):
 
 
 def _resumo_da_senha(usuario):
-    """Resumo (HMAC, 12 caracteres) do hash atual da senha: o link cai se a senha mudar (A3)."""
+    """Resumo (HMAC, 12 caracteres) do hash atual da senha: o link cai se a senha mudar (A3).
+
+    [US-12][RBN-CAD-06.7]
+    """
     return salted_hmac("sigtcc.redefinicao.senha", usuario.password or "").hexdigest()[:12]
 
 
@@ -655,6 +688,7 @@ def enviar_link_redefinicao(email):
         destino, contexto = conta.usu_email, {"nome": conta.usu_nome, "link": link}
 
         def enviar():
+            """Envia o e-mail de redefinição; falha só no log. [US-12][RBN-CAD-06.7][Q13]"""
             try:
                 enviar_email(
                     destino,
@@ -772,7 +806,10 @@ class EstadoTroca(enum.Enum):
 
 @dataclass
 class ResultadoTroca:
-    """Estado do link de troca, a conta e o novo e-mail."""
+    """Estado do link de troca, a conta e o novo e-mail.
+
+    [US-38][RBN-CAD-13.1]
+    """
 
     estado: EstadoTroca
     usuario: object = None
@@ -781,7 +818,10 @@ class ResultadoTroca:
 
 @dataclass
 class ResultadoPerfil:
-    """Resultado de salvar o perfil: sucesso e a mensagem a mostrar."""
+    """Resultado de salvar o perfil: sucesso e a mensagem a mostrar.
+
+    [US-38][RBN-CAD-13.1]
+    """
 
     sucesso: bool
     mensagem: str
@@ -801,7 +841,10 @@ def curso_do_aluno(aluno):
 
 
 def tipo_por_bytes(inicio):
-    """ "png", "jpg" ou None, pelos bytes iniciais do arquivo (A11)."""
+    """ "png", "jpg" ou None, pelos bytes iniciais do arquivo (A11).
+
+    [US-38][RBN-CAD-13.1][FR-020]
+    """
     for tipo, (assinatura_bytes, _extensoes, _mime) in _TIPOS_ASSINATURA.items():
         if inicio.startswith(assinatura_bytes):
             return tipo
@@ -832,7 +875,10 @@ def mime_da_assinatura(tipo):
 
 
 def _registro_com_assinatura(conta):
-    """Docentes ou MembrosExternos da conta (quem tem assinatura), ou None."""
+    """Docentes ou MembrosExternos da conta (quem tem assinatura), ou None.
+
+    [US-38][RBN-CAD-13.1][FR-020]
+    """
     tipo = tipo_conta(conta)
     if tipo == "docente":
         return conta.docentes, "doc_assinatura_path"
@@ -865,7 +911,10 @@ def salvar_assinatura(conta, arquivo, tipo):
 
 
 def _resumo_do_email(email):
-    """Resumo (HMAC) do e-mail atual: o link de troca cai se o e-mail da conta mudar (A4)."""
+    """Resumo (HMAC) do e-mail atual: o link de troca cai se o e-mail da conta mudar (A4).
+
+    [US-38][RBN-CAD-13.1][FR-021]
+    """
     return salted_hmac("sigtcc.troca_email.atual", (email or "").lower()).hexdigest()[:12]
 
 

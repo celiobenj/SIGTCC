@@ -18,11 +18,17 @@ class SigtccBackend(ModelBackend):
     """Único backend em AUTHENTICATION_BACKENDS. [US-11][RBN-CAD-06.4]"""
 
     def authenticate(self, request, **credenciais):
-        """Sempre None: nem authenticate() nem Client.login() pulam a ordem e o bloqueio (A1)."""
+        """Sempre None: nem authenticate() nem Client.login() pulam a ordem e o bloqueio (A1).
+
+        [US-11][RBN-CAD-06.4]
+        """
         return None
 
     def get_user(self, user_id):
-        """Carrega o usuário com as quatro especializações numa consulta só (A1, I9)."""
+        """Carrega o usuário com as quatro especializações numa consulta só (A1, I9).
+
+        [US-11][RBN-CAD-06.4]
+        """
         try:
             usuario = Usuarios.objects.select_related(
                 "alunos", "docentes", "membrosexternos", "secretarios"

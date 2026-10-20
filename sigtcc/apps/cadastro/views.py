@@ -159,7 +159,10 @@ def primeiro_acesso(request):
 
 
 def _pedir_primeiro_acesso(request, classe_formulario, titulo):
-    """Valida o formulário (primeiro erro, Q12) e pede o link ao serviço (FR-002, FR-003)."""
+    """Valida o formulário (primeiro erro, Q12) e pede o link ao serviço (FR-002, FR-003).
+
+    [US-10][RBN-CAD-06.1][RBN-CAD-06.2][FR-002][FR-003]
+    """
     formulario = classe_formulario(request.POST or None)
     contexto = {"form": formulario, "titulo": titulo}
     if request.method == "POST":
@@ -315,7 +318,10 @@ def redefinir_senha(request, token):
 
 
 def _tela_do_link_de_redefinicao(request, resultado):
-    """Mensagem de cada estado do link de redefinição que não é VALIDO (data-model; Q26)."""
+    """Mensagem de cada estado do link de redefinição que não é VALIDO (data-model; Q26).
+
+    [US-12][RBN-CAD-06.7][FR-014][Q26]
+    """
     request.session.pop(SESSAO_TOKEN_REDEFINICAO, None)
     erro = {
         EstadoLink.INATIVA: mensagens.M15_CONTA_INATIVA,
@@ -416,7 +422,10 @@ def _dados_do_perfil(usuario, tipo):
 
 
 def _valores_iniciais(usuario, tipo):
-    """Valores atuais dos campos editáveis."""
+    """Valores atuais dos campos editáveis.
+
+    [US-38][RBN-CAD-13.1]
+    """
     if tipo == "membro_externo":
         membro = usuario.membrosexternos
         return {

@@ -72,14 +72,16 @@ Comparar cada tela com `docs/fonte/prototipo/prototipo_17_10.html`, nas larguras
 ## 4. Testes automatizados (SC-001, SC-002, SC-004 a SC-006, SC-008, SC-009)
 
 ```bash
-python manage.py test sigtcc.apps.cadastro
+python manage.py test sigtcc.apps
 ```
 
-Esperado: todos passam, inclusive os 53 da feature 001. Arquivos novos: um por US
-(`test_us10_primeiro_acesso.py`, `test_us11_login.py`, `test_us12_senha.py`, `test_us37_reenvio.py`,
-`test_us38_perfil_notificacoes.py`), mais `test_base_comum.py` (história 6, `next`, 403, menu),
-`test_seguranca.py` (links em conta inativa ou expirada, link usado duas vezes, tempo de resposta sem
-conta, imagem disfarçada), `test_mensagens.py` (texto exato, SC-002), `test_log_acesso.py` (SC-009) e
+Esperado: todos passam, inclusive os 53 da feature 001 (apps `cadastro` e `defesa`); em 2026-10-20
+eram 229 testes. Arquivos novos: um por US (`test_us10_primeiro_acesso.py`, `test_us11_login.py`,
+`test_us12_senha.py`, `test_us37_reenvio.py`, `test_us38_perfil_notificacoes.py`, com os casos das
+Clarifications, como links em conta inativa ou expirada, hash calculado sem conta e imagem
+disfarçada), mais `test_base_comum.py` (história 6, `next`, 403, menu), `test_seguranca.py` (link
+usado duas vezes, reset concorrente, sessão de 60 minutos, cookies e todas as páginas internas,
+SC-004), `test_mensagens.py` (texto exato, SC-002), `test_log_acesso.py` (SC-009) e
 `test_criar_conta_teste.py` (com `override_settings(DEBUG=True)`). Os testes usam `force_login`,
 cache local, e-mail em memória e `SIGTCC_EMAIL_SINCRONO = True` com
 `captureOnCommitCallbacks(execute=True)` para o e-mail de "Esqueci minha senha".
