@@ -1,6 +1,6 @@
 # Feature Specification: Acesso e Login do SIGTCC
 
-**Feature Branch**: `feature/feat-02-turmas` (indicada pela responsável; ver Assumptions)
+**Feature Branch**: `feature/feat-02-acesso-e-login` (renomeada de `feature/feat-02-turmas`; aguarda confirmação do Célio, Q-09 do índice)
 
 **Created**: 2026-10-19
 
@@ -82,9 +82,9 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
   exibe "Este item não está mais disponível". O caso "cancelado" (US-38, cenário 9, convite de banca)
   é **pendência para a feature de Defesa**, que deve tratar o item cancelado na sua tela de destino.
 - Q11: Validade, "substituído" e mensagem da troca de e-mail? → A: O link de confirmação vale 24 horas,
-  a mesma validade que a matriz define para o link de primeiro acesso (RBN-CAD-06.1 e 06.9). Se um link
-  de troca deixa de valer quando outro é gerado ("substituído") é decisão do plano. Ao salvar uma
-  alteração que inclui troca de e-mail, aparece só a M-06 (sem "Perfil atualizado").
+  a mesma validade que a matriz define para o link de primeiro acesso (RBN-CAD-06.1 e 06.9). O caso
+  "substituído" foi decidido em Q24. Ao salvar uma alteração que inclui troca de e-mail, aparece só a
+  M-06 (sem "Perfil atualizado").
 - Q12: Ordem das validações? → A: No primeiro acesso, aparece só o erro do primeiro campo do formulário
   com problema, na ordem dos campos (no Aluno, Matrícula antes de E-mail Institucional); dentro de um
   campo, formato antes de existência, e existência antes de status. No login: campo vazio; conta não
@@ -129,6 +129,33 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
 - Q22: As telas desta feature (e a base visual que as outras vão usar) precisam funcionar bem no
   celular, ou basta o computador? → A: Computador e celular: o layout se ajusta como no protótipo, a
   partir de 360 pixels de largura, nas versões atuais de Chrome, Firefox, Edge e Safari.
+- Q23 (respondida por Julia Cohen no planejamento; Q-24 do índice): que mensagem aparece para um link
+  de ativação com assinatura adulterada (alterado à mão ou cortado)? → A: A mesma do link substituído:
+  "Link inválido. Use o link mais recente enviado ao seu e-mail".
+- Q24 (respondida por Julia Cohen no planejamento; Q-21 do índice): o link de confirmação de troca de
+  e-mail deixa de valer quando outro é gerado? → A: Não por ser gerado outro; ele deixa de valer
+  quando o e-mail da conta muda (por exemplo, quando outro link de troca é confirmado), além de
+  vencer em 24 horas e de não servir depois de usado. Enquanto nenhum for confirmado, os links
+  pendentes valem; o primeiro confirmado vence (research A4).
+- Q25 (decisão de Julia Cohen em 2026-10-20; Q-01 do índice): as 17 mensagens provisórias (M-01 a
+  M-17) continuam marcadas como provisórias até a validação da Product Owner, mas não bloqueiam as
+  tarefas nem a implementação.
+- Q26 (respondida por Julia Cohen em 2026-10-20; Q-25 do índice; achado B1 da revisão do arquiteto): o que acontece quando um link de
+  ativação válido é aberto numa conta 'Inativa' ou 'Expirada' (inclusive com a validade vencida), ou
+  quando um link de redefinição é usado numa conta que deixou de estar 'Ativa'? → A: Não ativa nem
+  redefine; mostra a mesma mensagem que o login mostraria para o status: "Conta inativa" (M-15) ou
+  "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador
+  de Curso" (M-16).
+- Q27 (respondida por Julia Cohen em 2026-10-20; Q-26 do índice): o papel "Professor da Disciplina"
+  vale para quem tem qualquer turma ou só turma ativa? → A: Vale para o docente com pelo menos uma
+  turma, ativa ou arquivada. Ações que alteram dados exigem turma não arquivada (mesmo critério do
+  reset do primeiro acesso), porque a turma arquivada "não recebe movimentação e fica para consulta"
+  (matriz, Glossário e RBN-CAD-04.5). É regra compartilhada por todas as features; as responsáveis
+  pelas outras features precisam tomar ciência (Q-29 a Q-32 do índice).
+- Q28 (correção técnica aceita por Julia Cohen em 2026-10-20, achado I6 da revisão do arquiteto): o
+  link de confirmação da troca de e-mail abre uma tela com o botão "Confirmar novo e-mail", e só o
+  clique troca o e-mail. Assim, leitores automáticos de e-mail que abrem links sozinhos não confirmam
+  a troca. Na confirmação, o novo e-mail precisa continuar livre (M-05).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -430,7 +457,11 @@ de ativação funciona chamada de fora das telas desta feature.
   a próxima página interna leva ao login e, depois dele, de volta à página pedida.
 - **Membro Externo com a validade vencida mas ainda 'Ativa'** (Q4): o login é negado com a mensagem
   de expiração, como se a conta estivesse 'Expirada'; a mudança do status em si é da US-06.
-- **Professor de turma arquivada** (Q9): vê a tela do aluno sem o botão "Resetar primeiro acesso".
+- **Professor de turma arquivada** (Q9, Q27): tem o papel Professor da Disciplina e vê a tela do
+  aluno, mas sem o botão "Resetar primeiro acesso"; ações que alteram dados exigem turma não
+  arquivada.
+- **Link aberto em conta inativa ou expirada** (Q26): ativação e redefinição não acontecem; aparece a
+  mensagem do status (M-15 ou M-16).
 - **Falha no envio de e-mail** (Q13): M-17 no primeiro acesso, no reenvio e na troca de e-mail; em
   "Esqueci minha senha", a mensagem genérica se mantém.
 
@@ -515,8 +546,10 @@ de ativação funciona chamada de fora das telas desta feature.
   mesmo se o envio falhar (Q13); só envia o link de redefinição (válido por 24 horas)
   se o e-mail for de uma conta 'Ativa'.
 - **FR-014**: O link de redefinição DEVE abrir Nova Senha e Confirmação (regra de FR-004), gravar a
-  senha, encerrar todas as sessões abertas da conta (Q19) e deixar de valer depois de usado; link vencido, usado ou substituído exibe "Link inválido ou
-  vencido. Solicite um novo".
+  senha, encerrar todas as sessões abertas da conta (Q19) e deixar de valer depois de usado; link
+  vencido, usado ou substituído exibe "Link inválido ou vencido. Solicite um novo". Se a conta deixou
+  de estar 'Ativa' (ou está com a validade vencida), a senha não é redefinida e aparece a mensagem do
+  status, M-15 ou M-16 (Q26).
 - **FR-015**: O Professor da Disciplina DEVE poder "Resetar primeiro acesso" de um aluno de turma sob
   sua responsabilidade, com confirmação: o sistema limpa o e-mail e a senha, invalida os links
   pendentes e volta a conta para 'Aguardando Ativação' (confirmação e conclusão com as mensagens
@@ -528,8 +561,10 @@ de ativação funciona chamada de fora das telas desta feature.
 
 **Reenvio do link vencido [US-37][RBN-CAD-06.9]**
 
-- **FR-016**: Um link de ativação DEVE ser avaliado nesta ordem (Q5): (1) conta já ativa – "Esta conta
-  já está ativa" e ida para o login; (2) conta sem e-mail (resetada) – tela de vencido com o botão; (3)
+- **FR-016**: Um link de ativação DEVE ser avaliado nesta ordem (Q5): (0) assinatura adulterada –
+  "Link inválido. Use o link mais recente enviado ao seu e-mail" (Q23); (1) conta já ativa – "Esta conta
+  já está ativa" e ida para o login; (1a) conta 'Inativa' – M-15; conta 'Expirada' ou com a validade
+  vencida – M-16, sem ativar (Q26); (2) conta sem e-mail (resetada) – tela de vencido com o botão; (3)
   link substituído por outro mais recente – "Link inválido. Use o link mais recente enviado ao seu
   e-mail"; (4) link vencido (mais de 24 horas, não usado) – "Este link de ativação venceu" e o botão
   "Reenviar link de ativação", sem o formulário de senha; (5) link válido – formulário de ativação.
@@ -553,10 +588,11 @@ de ativação funciona chamada de fora das telas desta feature.
   aparece só a M-06; Q11).
 - **FR-021**: A troca de e-mail (Aluno e Membro Externo) DEVE validar formato (M-10), domínio
   @uea.edu.br no Aluno (M-11) e unicidade (M-05), enviar um link de confirmação ao novo endereço (M-06)
-  e só trocar o e-mail depois que o link for aberto (M-07; link inválido: M-09); até lá, o e-mail
-  antigo continua valendo. O link de confirmação vale 24 horas, como o de primeiro acesso (Q11); se
-  ele deixa de valer quando outro é gerado é decisão do plano. Falha no envio: M-17. Todas essas
-  mensagens são PROVISÓRIAS.
+  e só trocar o e-mail depois que o link for aberto e a troca for confirmada no botão "Confirmar novo
+  e-mail" (Q28; M-07; link inválido: M-09; novo e-mail já em uso na confirmação: M-05); até lá, o
+  e-mail antigo continua valendo. O link de confirmação vale 24 horas, como o de primeiro acesso (Q11), e
+  deixa de valer depois de usado ou quando o e-mail da conta muda (Q24). Falha no envio: M-17. Todas
+  essas mensagens são PROVISÓRIAS.
 - **FR-022**: Todas as páginas internas DEVEM mostrar o sino com o número de notificações não lidas
   do usuário. A central DEVE listar todas as notificações, da mais recente para a mais antiga, 20 por
   página, com o texto, a data e a hora (Q14); "Marcar como lidas" marca todas e zera o contador; sem notificações, exibe "Você
@@ -599,7 +635,10 @@ de ativação funciona chamada de fora das telas desta feature.
 - **FR-029**: O sistema DEVE registrar em arquivo de log, com a conta afetada, quem fez a ação (quando
   não for a própria conta, como no reset pelo Professor), a data e a hora: login com senha errada,
   bloqueio por tentativas, troca de senha, redefinição de senha, reset de primeiro acesso e troca de
-  e-mail (pedido e confirmação). Senhas, links e códigos de ativação NUNCA são gravados. O registro não
+  e-mail (pedido e confirmação). Além desses 6 tipos, dois eventos técnicos também são registrados,
+  fora da contagem do SC-009: e-mail duplicado encontrado na busca da credencial (sem conta na linha,
+  só a quantidade de contas) e falha no envio de e-mail (só o tipo do erro). Senhas, links e códigos de
+  ativação NUNCA são gravados. O registro não
   usa tabela nem tem tela de consulta; a pasta do arquivo vem do .env e fica fora do Git (Q21).
   [US-11][RBN-CAD-06.6][US-12][RBN-CAD-06.5][RBN-CAD-06.7][RBN-CAD-06.8][US-38][RBN-CAD-13.1]
   [RNF de Confidencialidade do RAN-CAD-06]
@@ -648,8 +687,8 @@ Todas já existem (spec 001); nenhuma é criada.
 ## Mensagens a validar com a PO
 
 As mensagens abaixo **não têm texto definido nas US nem na matriz**. Os textos são **PROVISÓRIOS**:
-servem para planejar e testar, mas precisam da validação da Product Owner (Profa. Diana) antes da
-implementação. Depois da resposta, cada linha vira o texto definitivo (ou é corrigida) e a coluna
+servem para planejar, testar e implementar, e precisam da validação da Product Owner (Profa. Diana),
+mas não bloqueiam as tarefas nem a implementação (Q25). Depois da resposta, cada linha vira o texto definitivo (ou é corrigida) e a coluna
 "Situação" passa para "Validada". Todas as demais mensagens desta spec são cópias exatas das US.
 
 | ID | Situação em que aparece | Texto proposto (PROVISÓRIO) | Origem | Situação |
@@ -662,21 +701,21 @@ implementação. Depois da resposta, cada linha vira o texto definitivo (ou é c
 | M-06 | Troca de e-mail salva; link de confirmação enviado ao novo endereço. Aparece sozinha, no lugar de "Perfil atualizado" (Q11) | "Enviamos um link de confirmação para o novo e-mail." | US-38 passo 4 e cenário 5 | A validar |
 | M-07 | Link de confirmação do novo e-mail aberto com sucesso | "E-mail atualizado." | US-38 passo 4 | A validar |
 | M-08 | Reenvio pedido para conta resetada pelo Professor (sem e-mail vinculado) | "Refaça o primeiro acesso para receber um novo link." | US-37 E3 e cenário 5 | A validar |
-| M-09 | Link de confirmação de e-mail vencido (24 h, Q11) ou já usado; o caso "substituído" depende do plano | "Link inválido ou vencido. Solicite um novo" (reaproveita o texto da US-12) | US-38 (não trata o caso) | A validar |
+| M-09 | Link de confirmação de e-mail vencido (24 h, Q11), já usado ou sem efeito porque o e-mail da conta mudou (Q24) | "Link inválido ou vencido. Solicite um novo" (reaproveita o texto da US-12) | US-38 (não trata o caso) | A validar |
 | M-10 | E-mail fora do formato nome@domínio (perfil, primeiro acesso de Docente, Secretaria e Membro Externo, "Esqueci minha senha") | "Informe um e-mail válido." | US-38 E2; RBN-CAD-06.2, 06.7 e 13.1 | A validar |
 | M-11 | E-mail institucional do Aluno fora de @uea.edu.br em "Meu perfil" | "Informe o seu e-mail institucional da UEA (@uea.edu.br)" (reaproveita o texto da US-10) | US-38 E2 e cenário 6 | A validar |
 | M-12 | Confirmação do "Resetar primeiro acesso" (pergunta antes de executar) | "Resetar o primeiro acesso de NOME? O e-mail e a senha vinculados serão apagados e o aluno deverá refazer o primeiro acesso." | US-12 A2 e cenário 5; RBN-CAD-06.8 | A validar |
 | M-13 | Reset do primeiro acesso concluído | "Primeiro acesso resetado. O aluno já pode refazer o primeiro acesso." | US-12 A2 | A validar |
 | M-14 | Campo obrigatório vazio nos formulários desta feature (exceto o login, que já tem texto) | "Preencha este campo." | US-10, US-12 e US-38 (não tratam o caso) | A validar |
-| M-15 | Primeiro acesso de conta 'Inativa' (Q6) | "Conta inativa" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E5 | A validar |
-| M-16 | Primeiro acesso de conta 'Expirada' ou de Membro Externo com a validade vencida (Q4, Q6) | "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E3 | A validar |
+| M-15 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Inativa' (Q6, Q26) | "Conta inativa" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E5 | A validar |
+| M-16 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Expirada' ou de Membro Externo com a validade vencida (Q4, Q6, Q26) | "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E3 | A validar |
 | M-17 | Falha no envio do e-mail no primeiro acesso, no reenvio do link ou na troca de e-mail (Q13) | "Não foi possível enviar o e-mail agora. Tente novamente em alguns minutos." | Nenhuma fonte trata o caso | A validar |
 
 ## Assumptions
 
-- **Branch**: a responsável indicou `feature/feat-02-turmas`. No PGCS 4.3, `feat-02` é Turmas; a
-  confirmação do nome (ou a troca para uma branch de Acesso e Login) fica com o Célio Benjamim. O
-  número da spec (003) é independente da branch.
+- **Branch**: a responsável indicou `feature/feat-02-turmas` e, em 2026-10-20, renomeou a branch
+  para `feature/feat-02-acesso-e-login`. A confirmação do nome fica com o Célio Benjamim (Q-09 do
+  índice, aberta). O número da spec (003) é independente da branch.
 - **Precedência**: matriz de 17/10 > US v3.2. As divergências tratadas estão em Clarifications (Q4,
   Q8 e Q14).
 - **Mensagens sem texto exato nas US**: estão na seção "Mensagens a validar com a PO" (M-01 a
