@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-19
 
-**Status**: Draft
+**Status**: Aprovada por Julia Cohen em 2026-10-20
 
 **Input**: User description: "Use o número 003 para esta spec (002 está reservado para a Gestão de
 Contas da Maria Luísa). Acesso e Login do SIGTCC: US-10, US-11, US-12, US-37 e US-38. Use as seções
