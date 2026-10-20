@@ -6,7 +6,7 @@
 
 **Responsável**: Julia Cohen
 
-> **Dependência**: esta branch saiu da `feature/feat-01-modelo-de-dados`. Abrir este PR depois do merge da feat-01 na `develop`; até lá, os commits da feat-01 aparecem também aqui.
+> **Base**: a feat-01 já está na `develop` (PR #2, `b18c237`). Esta branch foi rebaseada sobre a `develop` (`a9c6f13`, PR #3), então o diff do PR traz só os commits da feat-02 (`git log develop..HEAD`).
 
 ### 1. Resumo da Alteração
 
@@ -31,21 +31,22 @@ Implementa o acesso ao SIGTCC sobre o modelo de dados da feat-01, **sem criar ta
 
 | Commit | Mensagem |
 |---|---|
-| e423bb3 | docs(feat-02): especificar acesso e login |
-| d740720 | docs: criar indice de questoes a rever |
-| 9fa8710 | docs(feat-02): esclarecer spec de acesso e login |
-| 3963315 | docs(feat-02): planejar acesso e login |
-| da0904f | docs(feat-02): detalhar tarefas de acesso e login |
-| 0c6f032 | feat(feat-02): implementar login com base visual e permissoes |
-| dee5a56 | feat(feat-02): implementar primeiro acesso com link de ativacao |
-| 96b8959 | test(feat-02): cobrir a base comum e o comando de conta de teste |
-| 04eadcf | feat(feat-02): reenviar link de ativacao vencido |
-| efa0169 | docs(feat-02): registrar reset so para conta ativa ou aguardando |
-| f2843cd | feat(feat-02): recuperar e alterar senha e resetar primeiro acesso |
-| b67f070 | feat(feat-02): editar perfil e mostrar notificacoes |
-| d8211d4 | test(feat-02): cobrir mensagens, log e seguranca do acesso |
-| b9dabdd | docs(feat-02): registrar entrega no changelog e texto do pr |
-| (este) | docs(feat-02): registrar validacao manual e responder q-19 |
+| 4de5375 | docs(feat-02): especificar acesso e login |
+| 4efdff7 | docs: criar indice de questoes a rever |
+| 0733512 | docs(feat-02): esclarecer spec de acesso e login |
+| 83fe484 | docs(feat-02): planejar acesso e login |
+| 265fcf9 | docs(feat-02): detalhar tarefas de acesso e login |
+| 2e51743 | feat(feat-02): implementar login com base visual e permissoes |
+| 1dd4d33 | feat(feat-02): implementar primeiro acesso com link de ativacao |
+| b4785a2 | test(feat-02): cobrir a base comum e o comando de conta de teste |
+| bfcf5f4 | feat(feat-02): reenviar link de ativacao vencido |
+| 5e37dcf | docs(feat-02): registrar reset so para conta ativa ou aguardando |
+| ccf73f9 | feat(feat-02): recuperar e alterar senha e resetar primeiro acesso |
+| ff5fb5d | feat(feat-02): editar perfil e mostrar notificacoes |
+| aa2ff68 | test(feat-02): cobrir mensagens, log e seguranca do acesso |
+| eb66138 | docs(feat-02): registrar entrega no changelog e texto do pr |
+| 3610a7f | docs(feat-02): registrar validacao manual e responder q-19 |
+| (este) | docs(feat-02): atualizar commits do texto do pr |
 
 ### 3. Checklist Técnico da Equipe (Definition of Done)
 
@@ -81,7 +82,7 @@ Suíte completa: `python manage.py test sigtcc.apps` → `Ran 229 tests ... OK` 
 **Transversais**
 - [x] SC-002: `test_mensagens.py` confere cada texto contra as US, a matriz e a tabela de mensagens provisórias da spec
 - [x] SC-009: `test_log_acesso.py` confere uma linha por evento, com conta e data, e sem dados sensíveis
-- [x] SC-004 e SC-008: `test_seguranca.py` cobre todas as páginas internas, a sessão de 60 minutos, os cookies, os links usados duas vezes e o reset concorrente
+- [x] SC-004, SC-006 e SC-008: `test_seguranca.py` cobre todas as páginas internas, a sessão de 60 minutos, os cookies, os links usados duas vezes e o reset concorrente
 
 ### Decisões e desvios registrados
 
