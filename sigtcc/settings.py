@@ -1,9 +1,11 @@
 """Configurações do projeto Django do SIGTCC.
 
 Segredos e dados do ambiente vêm do arquivo .env (PGCS 3.4), lido pelo python-dotenv.
-Decisões registradas em specs/001-modelo-dados/research.md (D1, D2, D4, R1).
+Decisões registradas em specs/001-modelo-dados/research.md (D1, D2, D4, R1) e em
+specs/003-acesso-login/research.md (A1, A2, A5, A6, A13, A19).
 
-[infraestrutura da feature 001, sem US específica]
+[infraestrutura da feature 001, sem US específica][infraestrutura da feature 003]
+[US-11][RBN-CAD-06.4][RBN-CAD-06.6][FR-011][FR-029]
 """
 
 import os
@@ -54,6 +56,9 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                # Menu lateral por perfil e contador do sino (research A8). [FR-022][FR-025]
+                "sigtcc.apps.cadastro.contexto.menu",
+                "sigtcc.apps.cadastro.contexto.notificacoes_nao_lidas",
             ],
         },
     },
@@ -76,8 +81,46 @@ DATABASES = {
 # Usuarios do dicionário de dados como modelo de usuário (research D1).
 AUTH_USER_MODEL = "cadastro.Usuarios"
 
-# Definidos pela US-10 (RBN-CAD-06.3); fora do escopo desta feature.
-AUTH_PASSWORD_VALIDATORS = []
+# Login próprio: o backend só carrega o usuário da sessão; a senha é conferida em
+# services.autenticar (research A1). [US-11][RBN-CAD-06.4]
+AUTHENTICATION_BACKENDS = ["sigtcc.apps.cadastro.backends.SigtccBackend"]
+LOGIN_URL = "cadastro:entrar"
+LOGIN_REDIRECT_URL = "cadastro:painel"
+
+# Regra de senha da US-10 e da US-12: 8 a 64 caracteres, 1 letra e 1 número (research A10).
+# [US-10][RBN-CAD-06.3][US-12][RBN-CAD-06.5]
+AUTH_PASSWORD_VALIDATORS = [{"NAME": "sigtcc.apps.cadastro.validators.RegraSenhaSigtcc"}]
+
+# Sessão: termina após 60 minutos sem uso e ao fechar o navegador (spec Q18; research A6).
+# [US-11][FR-011]
+SESSION_COOKIE_AGE = 3600
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+# Em produção (HTTPS), COOKIES_SEGUROS=True no .env (índice Q-27).
+COOKIES_SEGUROS = os.getenv("COOKIES_SEGUROS", "False") == "True"
+SESSION_COOKIE_SECURE = COOKIES_SEGUROS
+CSRF_COOKIE_SECURE = COOKIES_SEGUROS
+
+# Não afrouxar (A3, A11): o token dos links não vaza pelo Referer, e o navegador não adivinha
+# o tipo dos arquivos enviados.
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# E-mail (research A5). [US-10][US-12][US-37][US-38]
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "nao-responda@uea.edu.br")
+# Endereço base dos links enviados por e-mail.
+SITE_URL = os.getenv("SITE_URL", "http://localhost:8000").rstrip("/")
+# True só nos testes: o e-mail de "Esqueci minha senha" sai na própria requisição (A5).
+SIGTCC_EMAIL_SINCRONO = False
 
 LANGUAGE_CODE = "pt-br"
 # Fuso único do NUCOMP; datas e horas sem fuso, como as colunas TIMESTAMP do dicionário (R1).
@@ -95,11 +138,47 @@ MEDIA_ROOT = BASE_DIR / "sigtcc" / "media"
 # Inteiro de 32 bits, igual ao INT do dicionário (research D4).
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
-# Cache em arquivo para o bloqueio de login da US-11 (RBN-CAD-06.6), research D2.
-_cache_dir = Path(os.getenv("CACHE_DIR", "cache"))
+
+def _pasta(variavel, padrao):
+    """Pasta do .env, relativa à raiz do repositório quando não for absoluta."""
+    caminho = Path(os.getenv(variavel, padrao))
+    return caminho if caminho.is_absolute() else BASE_DIR / caminho
+
+
+# Cache padrão em arquivo (spec 001, research D2). O bloqueio de login da US-11 fica no alias
+# próprio "acesso", que não é limpo junto com o padrão (research A2). [US-11][RBN-CAD-06.6]
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
-        "LOCATION": str(_cache_dir if _cache_dir.is_absolute() else BASE_DIR / _cache_dir),
-    }
+        "LOCATION": str(_pasta("CACHE_DIR", "cache")),
+    },
+    "acesso": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": str(_pasta("CACHE_ACESSO_DIR", "cache_acesso")),
+        "OPTIONS": {"MAX_ENTRIES": 100000},
+    },
+}
+
+# Log de eventos de acesso, em arquivo, sem tabela (FR-029; spec Q21; research A13).
+# [US-11][RBN-CAD-06.6][US-12][US-38][FR-029]
+LOG_DIR = _pasta("LOG_DIR", "logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"acesso": {"format": "%(asctime)s | %(message)s"}},
+    "handlers": {
+        "arquivo_acesso": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": str(LOG_DIR / "acesso.log"),
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 5,
+            "delay": True,
+            "encoding": "utf-8",
+            "formatter": "acesso",
+        }
+    },
+    "loggers": {
+        "sigtcc.acesso": {"handlers": ["arquivo_acesso"], "level": "INFO", "propagate": False}
+    },
 }

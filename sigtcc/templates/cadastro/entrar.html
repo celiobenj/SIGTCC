@@ -1,0 +1,32 @@
+{% extends "base_publica.html" %}
+{% comment %}
+  Tela de login (US-11). Os links "Primeiro acesso" e "Esqueci minha senha" usam {% url ... as %},
+  que não quebra enquanto a rota não existe: aparecem quando as fases 4 e 7 criam as rotas.
+  [US-11][RBN-CAD-06.4][RBN-CAD-06.6][FR-007]-[FR-010]
+{% endcomment %}
+{% block titulo %}Entrar · SIGTCC{% endblock %}
+{% block cabecalho %}Entrar no SIGTCC{% endblock %}
+{% block conteudo %}
+{% url 'cadastro:primeiro_acesso' as url_primeiro_acesso %}
+{% url 'cadastro:esqueci_senha' as url_esqueci_senha %}
+{% if erro %}
+  <div class="alerta erro" role="alert">
+    <span class="ms">error</span>
+    <span class="texto">{{ erro }}{% if mostrar_primeiro_acesso and url_primeiro_acesso %} <a href="{{ url_primeiro_acesso }}">Primeiro acesso</a>{% endif %}</span>
+  </div>
+{% endif %}
+<form method="post" action="{% url 'cadastro:entrar' %}" novalidate>
+  {% csrf_token %}
+  {{ form.next }}
+  {% include "includes/campo.html" with campo=form.credencial %}
+  {% include "includes/campo.html" with campo=form.senha %}
+  <div class="flex entre">
+    <span></span>
+    <button type="submit" class="btn pri">Entrar</button>
+  </div>
+</form>
+<div class="links">
+  {% if url_primeiro_acesso %}<a href="{{ url_primeiro_acesso }}">Primeiro acesso</a>{% endif %}
+  {% if url_esqueci_senha %}<a href="{{ url_esqueci_senha }}">Esqueci minha senha</a>{% endif %}
+</div>
+{% endblock %}

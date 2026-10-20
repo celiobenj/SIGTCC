@@ -1,0 +1,30 @@
+{% comment %}
+  Template das telas públicas (sem login): cartão central do protótipo, sem menu e sem sino.
+  Blocos: titulo, cabecalho (título do cartão), conteudo e scripts.
+  [FR-024][US-10][US-11][US-12][US-37] research A14
+{% endcomment %}{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}SIGTCC{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/sigtcc.css' %}">
+</head>
+<body>
+  <div class="login-pg">
+    <div class="login-card">
+      <div class="marca"><span class="logo-mark grande"><span class="ms">school</span></span></div>
+      <h1>{% block cabecalho %}SIGTCC{% endblock %}</h1>
+      <p class="sub">Núcleo de Computação · EST/UEA</p>
+      {% include "includes/mensagens.html" %}
+      {% block conteudo %}{% endblock %}
+    </div>
+  </div>
+  <script src="{% static 'js/sigtcc.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
