@@ -82,6 +82,12 @@ Regras de precedência quando os documentos divergirem:
 - PR para `develop`, título `[Feat-XX] Descrição (US-XX, US-YY)`, com o template do PGCS 6.3
   preenchido e revisão de outra pessoa da equipe. Merge com `--no-ff`.
 - Não faça `git push`, merge ou tag sem a pessoa pedir.
+- Durante a implementação, faça commits atômicos: um por fase ou grupo de tarefas relacionadas,
+  só com os testes passando; model e migração no mesmo commit. Mostre o `git status` antes de cada
+  commit.
+- Toda pendência ou item a validar registrado numa spec (plan, spec, tasks, pr) também vai para
+  `docs/questoes-a-rever.md`, com o próximo ID. Quando a pessoa informar a resposta de uma questão,
+  siga a seção "Como usar" desse arquivo.
 
 ## Agentes do projeto (`.claude/agents/`)
 
