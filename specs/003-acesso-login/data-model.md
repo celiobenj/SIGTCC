@@ -50,7 +50,7 @@ esta feature (FR-028); nos testes, as fábricas criam as notificações.
 | Ativa | Aguardando Ativação | "Resetar primeiro acesso" por Professor da Disciplina com turma ativa do aluno (só Aluno) | FR-015 (US-12; RBN-CAD-06.8; Q27) |
 | Aguardando Ativação (com e-mail) | Aguardando Ativação (sem e-mail) | reset antes da ativação | FR-015 |
 
-'Inativa' e 'Expirada' são só lidas (US-04 e US-06, spec 002). Com `mem_validade_ate` vencida, a
+'Inativa' e 'Expirada' são só lidas (US-04 e US-06, spec 002); o reset não vale para elas (spec Q29). Com `mem_validade_ate` vencida, a
 conta é tratada como 'Expirada' sem mudar o status (Q4). Um link nunca tira uma conta de 'Inativa'
 ou 'Expirada' (Q26).
 

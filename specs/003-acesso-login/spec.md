@@ -156,6 +156,11 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
   link de confirmação da troca de e-mail abre uma tela com o botão "Confirmar novo e-mail", e só o
   clique troca o e-mail. Assim, leitores automáticos de e-mail que abrem links sozinhos não confirmam
   a troca. Na confirmação, o novo e-mail precisa continuar livre (M-05).
+- Q29 (respondida por Julia Cohen em 2026-10-20 durante a implementação; Q-33 do índice): o "Resetar
+  primeiro acesso" vale para aluno com a conta 'Inativa' ou 'Expirada'? → A: Não. Só para conta
+  'Ativa' ou 'Aguardando Ativação', como na tabela de transições do data-model. Para conta 'Inativa'
+  ou 'Expirada', a tela do aluno abre sem o botão e a ação é recusada (acesso não permitido, M-02);
+  reativar a conta continua sendo da US-04 (spec 002).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -556,7 +561,8 @@ de ativação funciona chamada de fora das telas desta feature.
   PROVISÓRIAS M-12 e M-13). Esta feature entrega a ação de reset, reutilizável, e uma tela mínima
   com os dados do aluno, aberta a Professores da Disciplina. O botão "Resetar primeiro acesso" só
   aparece, e a ação só é aceita, para o Professor da Disciplina de qualquer turma não arquivada do
-  aluno; para os demais, a tela abre sem o botão (Clarifications, Q3 e Q9). A US-41 incorporará o
+  aluno e com a conta 'Ativa' ou 'Aguardando Ativação' (Q29); para os demais casos, a tela abre sem
+  o botão (Clarifications, Q3, Q9 e Q29). A US-41 incorporará o
   botão ao painel do aluno.
 
 **Reenvio do link vencido [US-37][RBN-CAD-06.9]**
