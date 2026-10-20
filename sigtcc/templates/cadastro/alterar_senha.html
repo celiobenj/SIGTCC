@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% comment %}
+  "Alterar senha" em "Meu perfil": Senha Atual, Nova Senha e Confirmação, mascaradas.
+  [US-12][RBN-CAD-06.5][FR-012]
+{% endcomment %}
+{% block titulo %}Alterar senha · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Alterar senha</h2>
+<p class="pg-sub">Meu perfil</p>
+<div class="cartao">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form.senha_atual %}
+    {% include "includes/campo.html" with campo=form.nova_senha %}
+    {% include "includes/campo.html" with campo=form.confirmacao %}
+    <div class="flex entre">
+      <span></span>
+      <button type="submit" class="btn pri">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

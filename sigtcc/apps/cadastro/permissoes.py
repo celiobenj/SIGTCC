@@ -21,7 +21,12 @@ from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Exists, OuterRef
 from django.utils import timezone
 
-from sigtcc.apps.cadastro.choices import StatusCoorientacao, StatusOrientacao, StatusTurma
+from sigtcc.apps.cadastro.choices import (
+    StatusConta,
+    StatusCoorientacao,
+    StatusOrientacao,
+    StatusTurma,
+)
 from sigtcc.apps.cadastro.models import (
     Coordenadores,
     Coorientacoes,
@@ -147,9 +152,12 @@ def professor_com_turma_ativa(professor, aluno=None):
 def pode_resetar_primeiro_acesso(professor, aluno):
     """Decide se o botão "Resetar primeiro acesso" aparece e se a ação é aceita.
 
-    Professor da Disciplina de turma não arquivada do aluno (spec Q9, Q27).
-    [US-12][RBN-CAD-06.8][FR-015][Q9][Q27]
+    Professor da Disciplina de turma não arquivada do aluno (spec Q9, Q27), e só com a conta do
+    aluno 'Ativa' ou 'Aguardando Ativação' (spec Q29: reativar conta é da US-04).
+    [US-12][RBN-CAD-06.8][FR-015][Q9][Q27][Q29]
     """
+    if aluno.alu.usu_status not in (StatusConta.ATIVA, StatusConta.AGUARDANDO_ATIVACAO):
+        return False
     return professor_com_turma_ativa(professor, aluno)
 
 

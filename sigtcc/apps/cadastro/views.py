@@ -6,21 +6,36 @@ As regras ficam em services.py e permissoes.py; os textos, em mensagens.py.
 """
 
 from django.contrib import messages
-from django.contrib.auth import login, logout
-from django.shortcuts import redirect, render
+from django.contrib.auth import login, logout, update_session_auth_hash
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from sigtcc.apps.cadastro import mensagens, services
 from sigtcc.apps.cadastro.forms import (
+    AlterarSenhaForm,
     AtivacaoForm,
+    EsqueciSenhaForm,
     FormularioLogin,
+    NovaSenhaForm,
     PrimeiroAcessoAlunoForm,
     PrimeiroAcessoEmailForm,
 )
-from sigtcc.apps.cadastro.permissoes import papeis, perfil_requerido, tipo_conta
-from sigtcc.apps.cadastro.services import SESSAO_TOKEN_ATIVACAO, EstadoLink, EstadoLogin
+from sigtcc.apps.cadastro.models import Alunos
+from sigtcc.apps.cadastro.permissoes import (
+    papeis,
+    perfil_requerido,
+    pode_resetar_primeiro_acesso,
+    tipo_conta,
+)
+from sigtcc.apps.cadastro.services import (
+    SESSAO_TOKEN_ATIVACAO,
+    SESSAO_TOKEN_REDEFINICAO,
+    EstadoLink,
+    EstadoLogin,
+)
 
 # Texto de cada tipo de conta no painel (spec FR-010).
 _ROTULO_TIPO = {
@@ -244,3 +259,114 @@ def reenviar_link(request):
     contexto = {"concluido": True}
     contexto["sucesso" if pedido.enviado else "orientacao"] = pedido.mensagem
     return render(request, "cadastro/link_vencido.html", contexto)
+
+
+# ---------------------------------------------------------------------------------------------
+# Alterar e recuperar a senha; reset do primeiro acesso (US-12)
+# ---------------------------------------------------------------------------------------------
+
+
+@perfil_requerido()
+def alterar_senha(request):
+    """ "Alterar senha" em "Meu perfil": a sessão atual continua; as outras caem (Q19).
+
+    [US-12][RBN-CAD-06.5][FR-012][Q19]
+    """
+    formulario = AlterarSenhaForm(request.user, request.POST or None)
+    if request.method == "POST" and formulario.is_valid():
+        dados = formulario.cleaned_data
+        conta = services.alterar_senha(request.user, dados["senha_atual"], dados["nova_senha"])
+        if conta is None:
+            formulario.add_error("senha_atual", mensagens.SENHA_ATUAL_INCORRETA)
+        else:
+            update_session_auth_hash(request, conta)
+            messages.success(request, mensagens.SENHA_ALTERADA)
+            return redirect("cadastro:alterar_senha")
+    return render(request, "cadastro/alterar_senha.html", {"form": formulario})
+
+
+def esqueci_senha(request):
+    """ "Esqueci minha senha": com e-mail válido, sempre a mensagem genérica (FR-013; Q13).
+
+    [US-12][RBN-CAD-06.7][FR-013][Q13]
+    """
+    formulario = EsqueciSenhaForm(request.POST or None)
+    if request.method == "POST" and formulario.is_valid():
+        services.enviar_link_redefinicao(formulario.cleaned_data["email"])
+        messages.info(request, mensagens.ESQUECI_GENERICA)
+        return redirect("cadastro:entrar")
+    return render(request, "cadastro/esqueci_senha.html", {"form": formulario})
+
+
+def redefinir_senha(request, token):
+    """Guarda o token na sessão e redireciona para a URL fixa, sem o token (research A3).
+
+    [US-12][RBN-CAD-06.7][FR-014]
+    """
+    request.session[SESSAO_TOKEN_REDEFINICAO] = token
+    return redirect("cadastro:nova_senha")
+
+
+def _tela_do_link_de_redefinicao(request, resultado):
+    """Mensagem de cada estado do link de redefinição que não é VALIDO (data-model; Q26)."""
+    request.session.pop(SESSAO_TOKEN_REDEFINICAO, None)
+    erro = {
+        EstadoLink.INATIVA: mensagens.M15_CONTA_INATIVA,
+        EstadoLink.EXPIRADA: mensagens.M16_ACESSO_EXPIRADO,
+    }.get(resultado.estado, mensagens.LINK_INVALIDO_OU_VENCIDO)
+    return render(request, "cadastro/redefinir_senha.html", {"erro": erro})
+
+
+def nova_senha(request):
+    """Nova senha pelo link: só no estado VALIDO, revalidado no POST (FR-014; A17; Q26).
+
+    [US-12][RBN-CAD-06.7][FR-014][Q19][Q26]
+    """
+    token = request.session.get(SESSAO_TOKEN_REDEFINICAO)
+    if not token:
+        return _tela_do_link_de_redefinicao(request, services.ResultadoLink(EstadoLink.ADULTERADO))
+    formulario = NovaSenhaForm(request.POST or None)
+    if request.method == "POST" and formulario.is_valid():
+        resultado = services.redefinir_senha(token, formulario.cleaned_data["senha"])
+        if resultado.estado != EstadoLink.VALIDO:
+            return _tela_do_link_de_redefinicao(request, resultado)
+        request.session.pop(SESSAO_TOKEN_REDEFINICAO, None)
+        messages.success(request, mensagens.SENHA_ALTERADA)
+        return redirect("cadastro:entrar")
+    resultado = services.validar_link_redefinicao(token)
+    if resultado.estado != EstadoLink.VALIDO:
+        return _tela_do_link_de_redefinicao(request, resultado)
+    return render(request, "cadastro/redefinir_senha.html", {"form": formulario})
+
+
+@perfil_requerido("professor_disciplina")
+def aluno(request, alu_id):
+    """Tela mínima do aluno para o Professor da Disciplina, com o botão de reset quando pode.
+
+    [US-12][RBN-CAD-06.8][FR-015][Q3][Q9][Q27][Q29]
+    """
+    registro = get_object_or_404(Alunos.objects.select_related("alu"), pk=alu_id)
+    contexto = {
+        "aluno": registro,
+        "pode_resetar": pode_resetar_primeiro_acesso(request.user, registro),
+    }
+    return render(request, "cadastro/aluno.html", contexto)
+
+
+@perfil_requerido("professor_disciplina")
+def resetar_primeiro_acesso(request, alu_id):
+    """Confirmação (GET, M-12) e execução (POST, M-13) do reset do primeiro acesso.
+
+    [US-12][RBN-CAD-06.8][FR-015][Q27][Q29]
+    """
+    registro = get_object_or_404(Alunos.objects.select_related("alu"), pk=alu_id)
+    if request.method == "POST":
+        services.resetar_primeiro_acesso(request.user, registro)
+        messages.success(request, mensagens.M13_RESET_CONCLUIDO)
+        return redirect("cadastro:aluno", alu_id=registro.pk)
+    if not pode_resetar_primeiro_acesso(request.user, registro):
+        raise PermissionDenied
+    pergunta = mensagens.M12_CONFIRMAR_RESET.format(nome=registro.alu.usu_nome)
+    return render(
+        request, "cadastro/confirmar_reset.html", {"aluno": registro, "pergunta": pergunta}
+    )

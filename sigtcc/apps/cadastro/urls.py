@@ -19,5 +19,15 @@ urlpatterns = [
     path("primeiro-acesso/ativar/<str:token>/", views.ativar, name="ativar"),
     path("primeiro-acesso/definir-senha/", views.definir_senha, name="definir_senha"),
     path("primeiro-acesso/reenviar/", views.reenviar_link, name="reenviar_link"),
+    path("esqueci-minha-senha/", views.esqueci_senha, name="esqueci_senha"),
+    path("redefinir-senha/nova/", views.nova_senha, name="nova_senha"),
+    path("redefinir-senha/<str:token>/", views.redefinir_senha, name="redefinir_senha"),
     path("painel/", views.painel, name="painel"),
+    path("perfil/senha/", views.alterar_senha, name="alterar_senha"),
+    path("alunos/<int:alu_id>/", views.aluno, name="aluno"),
+    path(
+        "alunos/<int:alu_id>/resetar-primeiro-acesso/",
+        views.resetar_primeiro_acesso,
+        name="resetar_primeiro_acesso",
+    ),
 ]

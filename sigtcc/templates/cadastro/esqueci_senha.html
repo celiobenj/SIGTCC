@@ -1,0 +1,17 @@
+{% extends "base_publica.html" %}
+{% comment %}
+  "Esqueci minha senha": pede o e-mail cadastrado; a resposta é sempre a mensagem genérica.
+  [US-12][RBN-CAD-06.7][FR-013][Q13]
+{% endcomment %}
+{% block titulo %}Esqueci minha senha · SIGTCC{% endblock %}
+{% block cabecalho %}Esqueci minha senha{% endblock %}
+{% block conteudo %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% include "includes/campo.html" with campo=form.email %}
+  <div class="flex entre">
+    <a class="btn txt" href="{% url 'cadastro:entrar' %}">Voltar</a>
+    <button type="submit" class="btn pri">Enviar</button>
+  </div>
+</form>
+{% endblock %}

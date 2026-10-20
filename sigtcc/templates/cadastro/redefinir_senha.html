@@ -1,0 +1,26 @@
+{% extends "base_publica.html" %}
+{% comment %}
+  Nova senha pelo link de redefinição (link VALIDO) ou a mensagem do estado do link.
+  [US-12][RBN-CAD-06.7][FR-014][Q26]
+{% endcomment %}
+{% block titulo %}Redefinir senha · SIGTCC{% endblock %}
+{% block cabecalho %}Redefinir senha{% endblock %}
+{% block conteudo %}
+{% if erro %}
+  <div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>
+  <div class="links">
+    <a href="{% url 'cadastro:esqueci_senha' %}">Esqueci minha senha</a>
+    <a href="{% url 'cadastro:entrar' %}">Voltar ao login</a>
+  </div>
+{% else %}
+  <form method="post" action="{% url 'cadastro:nova_senha' %}" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form.senha %}
+    {% include "includes/campo.html" with campo=form.confirmacao %}
+    <div class="flex entre">
+      <span></span>
+      <button type="submit" class="btn pri">Salvar</button>
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

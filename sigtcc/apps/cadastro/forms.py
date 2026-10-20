@@ -196,3 +196,74 @@ class AtivacaoForm(FormularioPrimeiroErro):
         if senha and confirmacao is not None and senha != confirmacao:
             self.add_error("confirmacao", mensagens.SENHAS_NAO_CONFEREM)
         return dados
+
+
+class AlterarSenhaForm(FormularioPrimeiroErro):
+    """Senha Atual, Nova Senha e Confirmação da Nova Senha, mascaradas (FR-012).
+
+    A senha atual é conferida no campo (ordem dos campos, Q12) e de novo no serviço, com a conta
+    travada. [US-12][RBN-CAD-06.5][FR-012]
+    """
+
+    senha_atual = forms.CharField(
+        label="Senha Atual",
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
+    nova_senha = forms.CharField(
+        label="Nova Senha",
+        help_text=mensagens.REGRA_SENHA,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+    confirmacao = forms.CharField(
+        label="Confirmação da Nova Senha",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )
+
+    def __init__(self, usuario, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.usuario = usuario
+
+    def clean_senha_atual(self):
+        senha = self.cleaned_data["senha_atual"]
+        if not services.senha_atual_confere(self.usuario, senha):
+            raise ValidationError(mensagens.SENHA_ATUAL_INCORRETA)
+        return senha
+
+    def clean_nova_senha(self):
+        senha = self.cleaned_data["nova_senha"]
+        RegraSenhaSigtcc().validate(senha)
+        return senha
+
+    def clean(self):
+        dados = super().clean()
+        nova, confirmacao = dados.get("nova_senha"), dados.get("confirmacao")
+        if nova and confirmacao is not None and nova != confirmacao:
+            self.add_error("confirmacao", mensagens.SENHAS_NAO_CONFEREM)
+        return dados
+
+
+class EsqueciSenhaForm(FormularioPrimeiroErro):
+    """E-mail cadastrado para "Esqueci minha senha" (FR-013). [US-12][RBN-CAD-06.7][M-10]"""
+
+    email = forms.CharField(
+        label="E-mail cadastrado",
+        widget=forms.EmailInput(attrs={"maxlength": 100, "autocomplete": "email"}),
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip()
+        if not _email_no_formato(email):
+            raise ValidationError(mensagens.M10_EMAIL_INVALIDO)
+        return email
+
+
+class NovaSenhaForm(AtivacaoForm):
+    """Nova Senha e Confirmação pelo link de redefinição, com a regra de FR-004 (FR-014).
+
+    [US-12][RBN-CAD-06.7][FR-014]
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["senha"].label = "Nova Senha"
+        self.fields["confirmacao"].label = "Confirmação da Nova Senha"

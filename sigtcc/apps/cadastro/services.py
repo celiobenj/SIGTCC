@@ -11,6 +11,7 @@ import enum
 import logging
 import math
 import re
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -19,12 +20,14 @@ from django.contrib import messages
 from django.contrib.auth.base_user import BaseUserManager
 from django.core import signing
 from django.core.cache import caches
+from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.crypto import constant_time_compare, salted_hmac
 
 from sigtcc.apps.cadastro.choices import StatusConta
 from sigtcc.apps.cadastro.mensagens import (
@@ -39,7 +42,11 @@ from sigtcc.apps.cadastro.mensagens import (
     NOVO_LINK_ENVIADO,
 )
 from sigtcc.apps.cadastro.models import Alunos, Usuarios
-from sigtcc.apps.cadastro.permissoes import tipo_conta, validade_vencida
+from sigtcc.apps.cadastro.permissoes import (
+    pode_resetar_primeiro_acesso,
+    tipo_conta,
+    validade_vencida,
+)
 from sigtcc.apps.cadastro.validators import tamanho_de_senha_valido
 
 registro_acesso = logging.getLogger("sigtcc.acesso")
@@ -569,3 +576,160 @@ def reenviar_link_ativacao(token):
     except FalhaEnvioEmail:
         return resultado, ResultadoPedido(False, M17_FALHA_ENVIO)
     return resultado, ResultadoPedido(True, NOVO_LINK_ENVIADO)
+
+
+# =============================================================================================
+# Alterar e redefinir a senha; reset do primeiro acesso (US-12; FR-012 a FR-015; A3, A5, A16)
+# =============================================================================================
+
+SALT_REDEFINICAO = "sigtcc.redefinicao"
+SESSAO_TOKEN_REDEFINICAO = "token_redefinicao"
+
+
+def senha_atual_confere(usuario, senha):
+    """Senha atual de 8 a 64 caracteres e correta (RBN-CAD-06.5). [US-12][FR-012]"""
+    return tamanho_de_senha_valido(senha) and usuario.check_password(senha)
+
+
+def alterar_senha(usuario, atual, nova):
+    """Troca a senha em "Meu perfil", com a conta travada; devolve a conta ou None.
+
+    None quando a senha atual não confere ("Senha atual incorreta"). Quem chama mantém a
+    própria sessão com update_session_auth_hash; as outras caem (Q19).
+    [US-12][RBN-CAD-06.5][FR-012][Q19][FR-029]
+    """
+    with transaction.atomic():
+        conta = _conta(usuario.pk, travar=True)
+        if not senha_atual_confere(conta, atual):
+            return None
+        conta.set_password(nova)
+        conta.save(update_fields=["password"])
+    registrar_evento(EventoAcesso.SENHA_ALTERADA, conta)
+    return conta
+
+
+def _resumo_da_senha(usuario):
+    """Resumo (HMAC, 12 caracteres) do hash atual da senha: o link cai se a senha mudar (A3)."""
+    return salted_hmac("sigtcc.redefinicao.senha", usuario.password or "").hexdigest()[:12]
+
+
+def gerar_link_redefinicao(usuario):
+    """Gera o link de redefinição (24 h) e invalida os anteriores. Devolve a URL absoluta.
+
+    [US-12][RBN-CAD-06.7][FR-014][FR-026]
+    """
+    gerado_em = _gravar_link_gerado_em(usuario)
+    dados = {"u": usuario.pk, "g": gerado_em.isoformat(), "s": _resumo_da_senha(usuario)}
+    return _url_absoluta("cadastro:redefinir_senha", signing.dumps(dados, salt=SALT_REDEFINICAO))
+
+
+def enviar_link_redefinicao(email):
+    """ "Esqueci minha senha": só para conta 'Ativa' e com a validade em dia, sem revelar nada.
+
+    Recebe o e-mail digitado (contrato §4). O link é gerado na requisição e o e-mail sai depois do
+    commit, numa thread sem acesso ao banco (ou na própria requisição, com SIGTCC_EMAIL_SINCRONO).
+    Falha no envio só vai para o log; quem chama mostra sempre a mensagem genérica (Q13).
+    [US-12][RBN-CAD-06.7][FR-013][Q13][I1]
+    """
+    email = normalizar_email(email)
+    contas = list(Usuarios.objects.filter(usu_email__iexact=email)[:2]) if email else []
+    if len(contas) != 1:
+        if len(contas) > 1:
+            registrar_evento(EventoAcesso.EMAIL_DUPLICADO, None, detalhe="contas=2+")
+        return
+    conta = contas[0]
+    if conta.usu_status != StatusConta.ATIVA or validade_vencida(conta):
+        return
+    with transaction.atomic():
+        link = gerar_link_redefinicao(conta)
+        destino, contexto = conta.usu_email, {"nome": conta.usu_nome, "link": link}
+
+        def enviar():
+            try:
+                enviar_email(
+                    destino,
+                    "SIGTCC: redefinição de senha",
+                    "cadastro/emails/redefinicao.txt",
+                    contexto,
+                    conta=conta,
+                )
+            except Exception:
+                # Já registrado no log por enviar_email; a tela não muda (Q13).
+                pass
+
+        if settings.SIGTCC_EMAIL_SINCRONO:
+            transaction.on_commit(enviar)
+        else:
+            transaction.on_commit(lambda: threading.Thread(target=enviar, daemon=True).start())
+
+
+def validar_link_redefinicao(token, travar=False):
+    """Estado do link de redefinição (data-model; Q26; B1).
+
+    ADULTERADO → INATIVA → EXPIRADA → SUBSTITUIDO (outro link, senha já trocada ou conta
+    resetada) → VENCIDO → VALIDO (conta 'Ativa' e validade em dia).
+    [US-12][RBN-CAD-06.7][FR-014][Q26]
+    """
+    lido = _ler_token(token, SALT_REDEFINICAO)
+    if lido is None:
+        return ResultadoLink(EstadoLink.ADULTERADO)
+    usu_id, dados = lido
+    try:
+        gerado_em = datetime.fromisoformat(dados["g"])
+        resumo = dados["s"]
+    except (KeyError, TypeError, ValueError):
+        return ResultadoLink(EstadoLink.ADULTERADO)
+    usuario = _conta(usu_id, travar)
+    if usuario is None:
+        return ResultadoLink(EstadoLink.ADULTERADO)
+    estado = _estado_da_conta(usuario)
+    if estado is not None:
+        return ResultadoLink(estado, usuario)
+    if (
+        usuario.usu_status != StatusConta.ATIVA
+        or usuario.usu_link_gerado_em != gerado_em
+        or not constant_time_compare(resumo, _resumo_da_senha(usuario))
+    ):
+        return ResultadoLink(EstadoLink.SUBSTITUIDO, usuario)
+    if timezone.now() - gerado_em > VALIDADE_LINK:
+        return ResultadoLink(EstadoLink.VENCIDO, usuario)
+    return ResultadoLink(EstadoLink.VALIDO, usuario)
+
+
+def redefinir_senha(token, nova):
+    """Redefine a senha pelo link: revalida com a conta travada e grava (FR-014; A17).
+
+    Todas as sessões da conta caem (o resumo da senha na sessão muda, Q19).
+    [US-12][RBN-CAD-06.7][FR-014][Q19][Q26][FR-029]
+    """
+    with transaction.atomic():
+        resultado = validar_link_redefinicao(token, travar=True)
+        if resultado.estado != EstadoLink.VALIDO:
+            return resultado
+        conta = resultado.usuario
+        conta.set_password(nova)
+        conta.save(update_fields=["password"])
+    registrar_evento(EventoAcesso.SENHA_REDEFINIDA, conta)
+    return resultado
+
+
+def resetar_primeiro_acesso(professor, aluno):
+    """ "Resetar primeiro acesso": limpa e-mail e senha e volta a conta a 'Aguardando Ativação'.
+
+    professor: Usuarios logado (com Docentes); aluno: instância de Alunos. Confere a permissão de
+    novo com a conta travada (Q27, Q29) e levanta PermissionDenied se faltar. Grava
+    usu_link_gerado_em = agora, o que invalida os links pendentes; a sessão do aluno cai pelo
+    backend (A16).
+    [US-12][RBN-CAD-06.8][FR-015][Q9][Q27][Q29][FR-029]
+    """
+    with transaction.atomic():
+        conta = _conta(aluno.pk, travar=True)
+        aluno.alu = conta
+        if not pode_resetar_primeiro_acesso(professor, aluno):
+            raise PermissionDenied
+        conta.usu_email = None
+        conta.password = None
+        conta.usu_status = StatusConta.AGUARDANDO_ATIVACAO
+        conta.usu_link_gerado_em = timezone.now()
+        conta.save(update_fields=["usu_email", "password", "usu_status", "usu_link_gerado_em"])
+    registrar_evento(EventoAcesso.RESET_PRIMEIRO_ACESSO, conta, autor=professor)
