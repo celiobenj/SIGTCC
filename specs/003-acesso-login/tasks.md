@@ -154,13 +154,13 @@ link novo; o antigo não ativa.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T030 [US3] Criar `sigtcc/apps/cadastro/tests/test_us37_reenvio.py` com `test_cenario1` a `test_cenario5` da história 3 da spec (o 5 com a conta resetada: tela de vencido e, no clique, `M08_REFAZER_PRIMEIRO_ACESSO`, sem e-mail enviado); mais `test_reenvio_so_em_vencido` (POST com link válido, substituído, inativo ou ativo não reenvia e leva à tela do estado), `test_reenvio_sem_token_na_sessao` (`LINK_SUBSTITUIDO`), `test_falha_no_envio_do_reenvio` (`M17_FALHA_ENVIO`, link anterior intacto) e `test_token_sai_da_sessao_depois_do_reenvio`. — Rastreabilidade: [US-37][RBN-CAD-06.9][FR-016]–[FR-018][Q5][Q13]
+- [X] T030 [US3] Criar `sigtcc/apps/cadastro/tests/test_us37_reenvio.py` com `test_cenario1` a `test_cenario5` da história 3 da spec (o 5 com a conta resetada: tela de vencido e, no clique, `M08_REFAZER_PRIMEIRO_ACESSO`, sem e-mail enviado); mais `test_reenvio_so_em_vencido` (POST com link válido, substituído, inativo ou ativo não reenvia e leva à tela do estado), `test_reenvio_sem_token_na_sessao` (`LINK_SUBSTITUIDO`), `test_falha_no_envio_do_reenvio` (`M17_FALHA_ENVIO`, link anterior intacto) e `test_token_sai_da_sessao_depois_do_reenvio`. — Rastreabilidade: [US-37][RBN-CAD-06.9][FR-016]–[FR-018][Q5][Q13]
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] Acrescentar em `sigtcc/apps/cadastro/services.py` `reenviar_link_ativacao(token)`: com a conta travada, só reenvia no estado `VENCIDO` (chama `enviar_link_ativacao`); em `SEM_EMAIL` devolve o estado sem enviar; nos demais, devolve o estado. — Rastreabilidade: [US-37][RBN-CAD-06.9][FR-017][FR-018]
-- [ ] T032 [US3] Criar em `sigtcc/apps/cadastro/views.py` a view `reenviar_link` (só POST; lê o token da sessão; mostra `NOVO_LINK_ENVIADO`, `M08_REFAZER_PRIMEIRO_ACESSO`, `M17_FALHA_ENVIO` ou leva à tela do estado; remove o token da sessão ao terminar), ajustar `sigtcc/templates/cadastro/link_vencido.html` para mostrar o resultado e acrescentar a rota `reenviar_link` (`/primeiro-acesso/reenviar/`). — Rastreabilidade: [US-37][RBN-CAD-06.9][FR-017][FR-018]
-- [ ] T033 [US3] Rodar `python manage.py test sigtcc.apps.cadastro.tests.test_us37_reenvio` e `test_us10_primeiro_acesso` até passar. — Rastreabilidade: [US-37][SC-006]
+- [X] T031 [US3] Acrescentar em `sigtcc/apps/cadastro/services.py` `reenviar_link_ativacao(token)`: com a conta travada, só reenvia no estado `VENCIDO` (chama `enviar_link_ativacao`); em `SEM_EMAIL` devolve o estado sem enviar; nos demais, devolve o estado. — Rastreabilidade: [US-37][RBN-CAD-06.9][FR-017][FR-018]
+- [X] T032 [US3] Criar em `sigtcc/apps/cadastro/views.py` a view `reenviar_link` (só POST; lê o token da sessão; mostra `NOVO_LINK_ENVIADO`, `M08_REFAZER_PRIMEIRO_ACESSO`, `M17_FALHA_ENVIO` ou leva à tela do estado; remove o token da sessão ao terminar), ajustar `sigtcc/templates/cadastro/link_vencido.html` para mostrar o resultado e acrescentar a rota `reenviar_link` (`/primeiro-acesso/reenviar/`). — Rastreabilidade: [US-37][RBN-CAD-06.9][FR-017][FR-018]
+- [X] T033 [US3] Rodar `python manage.py test sigtcc.apps.cadastro.tests.test_us37_reenvio` e `test_us10_primeiro_acesso` até passar. — Rastreabilidade: [US-37][SC-006]
 
 ---
 

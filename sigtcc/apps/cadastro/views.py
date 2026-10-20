@@ -219,3 +219,28 @@ def definir_senha(request):
     if resultado.estado != EstadoLink.VALIDO:
         return _tela_do_link(request, resultado)
     return render(request, "cadastro/ativar.html", {"form": formulario})
+
+
+@require_POST
+def reenviar_link(request):
+    """ "Reenviar link de ativação": só reenvia no estado VENCIDO (US-37; A3).
+
+    Sucesso: "Enviamos um novo link para o seu e-mail". Conta resetada: M-08. Falha no envio:
+    M-17, com o botão de novo. Outros estados: a tela do estado. O token sai da sessão quando o
+    reenvio termina.
+    [US-37][RBN-CAD-06.9][FR-017][FR-018][Q5][Q13]
+    """
+    token = request.session.get(SESSAO_TOKEN_ATIVACAO)
+    if not token:
+        return _tela_do_link(request, services.ResultadoLink(EstadoLink.ADULTERADO))
+    resultado, pedido = services.reenviar_link_ativacao(token)
+    if pedido is None:
+        if resultado.estado == EstadoLink.VALIDO:
+            return redirect("cadastro:definir_senha")
+        return _tela_do_link(request, resultado)
+    if pedido.mensagem == mensagens.M17_FALHA_ENVIO:
+        return render(request, "cadastro/link_vencido.html", {"erro": pedido.mensagem})
+    request.session.pop(SESSAO_TOKEN_ATIVACAO, None)
+    contexto = {"concluido": True}
+    contexto["sucesso" if pedido.enviado else "orientacao"] = pedido.mensagem
+    return render(request, "cadastro/link_vencido.html", contexto)

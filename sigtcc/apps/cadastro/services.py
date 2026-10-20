@@ -32,9 +32,11 @@ from sigtcc.apps.cadastro.mensagens import (
     EMAIL_DE_OUTRA_CONTA_ALUNO,
     ITEM_INDISPONIVEL,
     LINK_ATIVACAO_ENVIADO,
+    M08_REFAZER_PRIMEIRO_ACESSO,
     M15_CONTA_INATIVA,
     M16_ACESSO_EXPIRADO,
     M17_FALHA_ENVIO,
+    NOVO_LINK_ENVIADO,
 )
 from sigtcc.apps.cadastro.models import Alunos, Usuarios
 from sigtcc.apps.cadastro.permissoes import tipo_conta, validade_vencida
@@ -541,3 +543,29 @@ def ativar_conta(token, senha):
         conta.usu_status = StatusConta.ATIVA
         conta.save(update_fields=["password", "usu_status"])
     return resultado
+
+
+# =============================================================================================
+# Reenvio do link de ativação vencido (US-37; FR-017, FR-018; research A3)
+# =============================================================================================
+
+
+def reenviar_link_ativacao(token):
+    """Reenvia o link só no estado VENCIDO, com a conta travada (A3, A17).
+
+    Devolve (ResultadoLink, ResultadoPedido ou None). Sem e-mail (conta resetada) não reenvia
+    (FR-018, M-08); nos demais estados, devolve só o estado para a tela correspondente.
+    Falha no envio desfaz tudo e mantém o link anterior (M-17, Q13).
+    [US-37][RBN-CAD-06.9][FR-017][FR-018][Q5][Q13]
+    """
+    try:
+        with transaction.atomic():
+            resultado = validar_link_ativacao(token, travar=True)
+            if resultado.estado == EstadoLink.SEM_EMAIL:
+                return resultado, ResultadoPedido(False, M08_REFAZER_PRIMEIRO_ACESSO)
+            if resultado.estado != EstadoLink.VENCIDO:
+                return resultado, None
+            _gerar_e_enviar_ativacao(resultado.usuario)
+    except FalhaEnvioEmail:
+        return resultado, ResultadoPedido(False, M17_FALHA_ENVIO)
+    return resultado, ResultadoPedido(True, NOVO_LINK_ENVIADO)

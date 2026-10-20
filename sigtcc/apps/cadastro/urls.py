@@ -18,5 +18,6 @@ urlpatterns = [
     path("primeiro-acesso/email/", views.primeiro_acesso_email, name="primeiro_acesso_email"),
     path("primeiro-acesso/ativar/<str:token>/", views.ativar, name="ativar"),
     path("primeiro-acesso/definir-senha/", views.definir_senha, name="definir_senha"),
+    path("primeiro-acesso/reenviar/", views.reenviar_link, name="reenviar_link"),
     path("painel/", views.painel, name="painel"),
 ]
