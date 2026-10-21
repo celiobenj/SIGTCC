@@ -121,10 +121,13 @@ def criar_coordenador(email=None, senha=SENHA):
     return usuario
 
 
-def criar_secretaria(email=None, senha=SENHA, status=StatusConta.ATIVA):
-    """Conta de Secretaria. Devolve o Usuarios. [US-03][RBN-CAD-02.1]"""
+def criar_secretaria(email=None, senha=SENHA, status=StatusConta.ATIVA, curso=None):
+    """Conta de Secretaria (do curso informado ou de um curso novo). Devolve o Usuarios.
+
+    [US-03][RBN-CAD-02.1][spec 004, research B24]
+    """
     usuario = _com_senha(criar_usuario(email=email, status=status), senha)
-    Secretarios.objects.create(sec=usuario, sec_cur=criar_curso())
+    Secretarios.objects.create(sec=usuario, sec_cur=curso or criar_curso())
     return usuario
 
 

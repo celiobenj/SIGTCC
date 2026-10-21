@@ -201,3 +201,44 @@ class PerfilRequeridoMixin:
         if not tem_perfil(request.user, *self.perfis_permitidos):
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
+
+
+# =============================================================================================
+# Permissões por turma (spec 004, research B2; spec Q9; regra Q27 da spec 003)
+# =============================================================================================
+
+
+def _e_professor_da_turma(usuario, turma):
+    """O usuário é o Professor da Disciplina desta turma (tur_doc). [US-07][RBN-CAD-04.2]"""
+    return tipo_conta(usuario) == "docente" and turma.tur_doc_id == usuario.pk
+
+
+def _e_secretaria_do_curso(usuario, turma):
+    """O usuário é a Secretaria do curso desta turma. [US-08][RBN-CAD-05.6][Q9]"""
+    secretaria = especializacao(usuario, "secretarios")
+    return secretaria is not None and secretaria.sec_cur_id == turma.tur_cur_id
+
+
+def pode_consultar_turma(usuario, turma):
+    """Abre a turma e a lista de alunos: o Professor da Disciplina da turma ou a Secretaria do
+    curso da turma (spec 004, Q9; matriz RAN-CAD-04 e RAN-CAD-05). Coordenador de Curso e outros
+    Docentes não abrem.
+    [US-07][US-08][RBN-CAD-04.5][FR-009][FR-010][Q9]
+    """
+    return _e_professor_da_turma(usuario, turma) or _e_secretaria_do_curso(usuario, turma)
+
+
+def pode_alterar_turma(usuario, turma):
+    """Altera a turma e os seus alunos: só o Professor da Disciplina desta turma. A turma não
+    arquivada é conferida à parte (services_turmas.turma_para), como manda a regra Q27.
+    [US-07][US-08][US-09][RBN-CAD-04.3][RBN-CAD-04.5][FR-009][Q27]
+    """
+    return _e_professor_da_turma(usuario, turma)
+
+
+def pode_transferir(usuario, turma):
+    """Transfere aluno da turma: o Professor da Disciplina da turma de origem ou a Secretaria do
+    curso (RBN-CAD-05.6).
+    [US-08][RBN-CAD-05.6][FR-020][Q9]
+    """
+    return _e_professor_da_turma(usuario, turma) or _e_secretaria_do_curso(usuario, turma)
