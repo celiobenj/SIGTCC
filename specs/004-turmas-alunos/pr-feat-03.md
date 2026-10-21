@@ -31,18 +31,20 @@ Implementa turmas e alunos sobre o modelo de dados da feat-01 e a base da feat-0
 
 | Commit | Mensagem |
 |---|---|
-| a58c5e2 | docs(feat-03) *(especificação da spec 004; mensagem sem descrição, já publicada no remoto)* |
-| c571581 | docs(feat-03): planejar turmas e alunos |
-| 97f9f14 | docs(feat-03): registrar aprovacao das tarefas e diagrama da us-08 |
-| 33bc22c | chore(feat-03): preparar dependencias e carga de cursos da uea |
-| b42e25a | feat(feat-03): adicionar permissoes por turma e servicos compartilhados |
-| 786211b | feat(feat-03): cadastrar, editar, excluir e arquivar turmas |
-| ece20eb | feat(feat-03): matricular aluno e editar dados do aluno |
-| eb8d630 | feat(feat-03): importar alunos por csv e xlsx com previa |
-| eafa81b | feat(feat-03): transferir aluno entre turmas de tcc 2 |
-| d6eaa06 | feat(feat-03): excluir aluno e encerrar participacao |
-| dc95011 | test(feat-03): conferir permissoes, mensagens e seguranca das turmas |
-| (este) | docs(feat-03): registrar entrega no changelog e texto do pr |
+| adc7cdc | docs(feat-03): especificar turmas e alunos |
+| 50aab55 | docs(feat-03): planejar turmas e alunos |
+| c1ba6a3 | docs(feat-03): registrar aprovacao das tarefas e diagrama da us-08 |
+| 8434e31 | chore(feat-03): preparar dependencias e carga de cursos da uea |
+| 9b8503c | feat(feat-03): adicionar permissoes por turma e servicos compartilhados |
+| a1fdf5d | feat(feat-03): cadastrar, editar, excluir e arquivar turmas |
+| 5ffc32e | feat(feat-03): matricular aluno e editar dados do aluno |
+| ba3b1a5 | feat(feat-03): importar alunos por csv e xlsx com previa |
+| 6cad246 | feat(feat-03): transferir aluno entre turmas de tcc 2 |
+| 9c67364 | feat(feat-03): excluir aluno e encerrar participacao |
+| 9a93c4f | test(feat-03): conferir permissoes, mensagens e seguranca das turmas |
+| d140b26 | docs(feat-03): registrar entrega no changelog e texto do pr |
+| db73f0f | docs(feat-03): registrar tempo do roteiro e importacao real pendente |
+| (este) | docs(feat-03): atualizar commits do texto do pr |
 
 ### 3. Checklist Técnico da Equipe (Definition of Done)
 
@@ -93,7 +95,7 @@ Suíte completa: `python manage.py test sigtcc.apps` → `Ran 421 tests ... OK` 
 | Recusa do aluno 'Aprovado para TCC 2' em turma de TCC 1 (MT-28) | research B6; índice Q-39 | Provisória até a resposta |
 | Resumo e "Cancelar" da importação só para o Professor (a Secretaria do curso abria as duas telas), como em `contracts/rotas.md` | commit `dc95011` | Correção sem mudança na spec |
 | Regras fora de `services.py` (`services_turmas.py`, `importacao.py`), exceção ao princípio IV | plan, Complexity Tracking; índice Q-42 (6) | A aprovar pelo Célio |
-| Mensagem do commit `a58c5e2` sem descrição; já publicada, não foi reescrita | PGCS 5 | Registrado |
+| Mensagem do primeiro commit (antes `docs(feat-03)`, sem descrição) reescrita para `docs(feat-03): especificar turmas e alunos`, com push forçado (`--force-with-lease`) | PGCS 5 | Feito a pedido de Julia Cohen (2026-10-21) |
 
 ### Itens de configuração para revisão do Célio Benjamim (constituição, princípio IX; índice Q-34 e Q-42)
 
