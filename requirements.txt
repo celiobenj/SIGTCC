@@ -1,14 +1,19 @@
 # Dependências do SIGTCC (Python 3.12), com versões exatas do pip freeze de 2026-10-19.
 # Item de configuração (PGCS 2.3): mudanças passam pela revisão do Célio Benjamim.
 # [infraestrutura da feature 001] research R12
+# XLSX da importação de alunos (spec 004, Q4; research B9): openpyxl, com defusedxml (XML seguro)
+# e et_xmlfile (dependência do openpyxl). Item de configuração (índice Q-42).
 asgiref==3.12.1
 black==26.10.1
 click==8.5.0
+defusedxml==0.7.1
 Django==5.2.18
+et_xmlfile==2.0.0
 flake8==7.4.1
 isort==9.0.2
 mccabe==0.7.0
 mypy_extensions==1.1.0
+openpyxl==3.1.5
 packaging==26.3
 pathspec==1.1.1
 platformdirs==4.13.5

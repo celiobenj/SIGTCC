@@ -184,6 +184,9 @@ conteúdo das 4 tabelas contra a matriz.
    Humano-Computador, Ciência de Dados, Computação Gráfica e Educação em Computação.
 4. **Dado que** a carga inicial foi aplicada e nenhum código de curso da UEA foi confirmado,
    **Quando** se consulta `Equivalencia_Cursos`, **Então** a tabela existe e está vazia.
+   *Atualização de 2026-10-21*: com os códigos confirmados (Q-17 e Q-37 do índice), a carga da spec
+   004 (FR-015a, migração `0005_carga_equivalencia_cursos`) preenche a tabela; o teste do cenário
+   confere que só há os códigos dessa carga.
 5. **Dado que** a carga inicial já foi aplicada, **Quando** ela é aplicada novamente, **Então**
    nenhum registro é duplicado nem alterado.
 

@@ -97,7 +97,8 @@ class PerfilTest(ComMidiaTemporaria):
         self.client.force_login(aluno.alu)
         resposta = self.client.get(URL_PERFIL)
         self.assertContains(resposta, "2026000001")
-        self.assertContains(resposta, "Código não reconhecido")
+        # EST08MCPD é reconhecido pela carga da spec 004 (FR-015a).
+        self.assertContains(resposta, "Engenharia de Computação")
         self.assertNotContains(resposta, 'name="matricula"')
         self.assertNotContains(resposta, 'name="curso"')
         self.salvar({"email": "ana@uea.edu.br", "matricula": "2026999999", "curso": "X"})

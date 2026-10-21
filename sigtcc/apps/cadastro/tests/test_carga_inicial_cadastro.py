@@ -41,8 +41,13 @@ class CargaInicialCadastroTest(TestCase):
         self.assertCountEqual(AreasInteresse.objects.values_list("ari_nome", flat=True), AREAS)
 
     def test_cenario4_equivalencia_vazia(self):
-        """Sem código de curso confirmado, Equivalencia_Cursos fica vazia (FR-016)."""
-        self.assertEqual(EquivalenciaCursos.objects.count(), 0)
+        """A carga da spec 001 não insere nada em Equivalencia_Cursos (FR-016).
+
+        Os códigos confirmados entram depois, pela carga da spec 004 (FR-015a; Q-17 do índice):
+        a tabela só pode conter os códigos dessa carga.
+        """
+        codigos = set(EquivalenciaCursos.objects.values_list("eqc_codigo_uea", flat=True))
+        self.assertEqual(codigos, {codigo for codigo, _ in cargas.EQUIVALENCIA_CURSOS})
 
     def test_cenario5_reaplicacao(self):
         """Aplicar a carga de novo não duplica nem muda identificadores (FR-017, SC-005)."""
@@ -58,7 +63,8 @@ class CargaInicialCadastroTest(TestCase):
     def test_fr017_nenhuma_outra_tabela_do_cadastro_com_dados(self):
         """A carga não insere usuários, turmas, TCCs nem nada além dos dois domínios (FR-017)."""
         for modelo in apps.get_app_config("cadastro").get_models():
-            if modelo in (Cursos, AreasInteresse):
+            # Equivalencia_Cursos recebe a carga da spec 004 (FR-015a), conferida no cenário 4.
+            if modelo in (Cursos, AreasInteresse, EquivalenciaCursos):
                 continue
             with self.subTest(tabela=modelo._meta.db_table):
                 self.assertEqual(modelo.objects.count(), 0)
