@@ -59,8 +59,8 @@ Suíte completa: `python manage.py test sigtcc.apps` → `Ran 421 tests ... OK` 
 
 **Validação manual (T042, Julia Cohen, 2026-10-21)**
 - [x] Roteiro do `quickstart.md` executado (seções 1 a 6, itens a a o), sem divergências
-- [ ] SC-007: itens a e d em [tempo] (limite: 5 minutos)
-- [ ] Importação de uma exportação real do sistema acadêmico da UEA (limite de compressão do XLSX, N7): [resultado]
+- [x] SC-007: itens a e d em menos de 2 minutos (limite: 5 minutos)
+- [ ] Importação de uma exportação real do sistema acadêmico da UEA (limite de compressão do XLSX, N7): a testar depois (índice Q-43); não bloqueia o merge
 - [x] Revisão visual em 360, 768 e 1280 px, lado a lado com o protótipo de 17/10, sem problemas
 
 **US-07 – Turmas** (`test_us07_turmas.py`, 33 testes)
@@ -114,6 +114,7 @@ Suíte completa: `python manage.py test sigtcc.apps` → `Ran 421 tests ... OK` 
 | Ciência da regra do encerramento (sessão ativa, pedidos e convites cancelados, MT-31) | Leandra Matos | Q-40 |
 | Criar os registros de entrega dos alunos já matriculados ao cadastrar entrega nova (US-43) | Leandra Matos | Q-41 |
 | Itens de configuração e nome da branch | Célio Benjamim | Q-34, Q-42 |
+| Importar uma exportação real do sistema acadêmico da UEA (N7) | Julia Cohen | Q-43 |
 
 ### 5. Revisão por Pares (Peer Review)
 
