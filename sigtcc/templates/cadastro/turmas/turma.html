@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% comment %}
+  Turma: dados, alunos e só as ações permitidas. Turma arquivada: só consulta (cenário 6 da US-07,
+  11 da US-08 e 11 da US-09). Links das fases seguintes com {% url ... as %}, que não quebra
+  enquanto a rota não existe.
+  [US-07][US-08][US-09][FR-008][FR-009][FR-010][Q9]
+{% endcomment %}
+{% block titulo %}{{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+{% url 'cadastro:matricular' turma.pk as url_matricular %}
+{% url 'cadastro:importar' turma.pk as url_importar %}
+{% url 'cadastro:excluidos_transferidos' turma.pk as url_excluidos %}
+<div class="flex entre flex-wrap">
+  <div>
+    <h2 class="pg">{{ turma.tur_identificador }}</h2>
+    <p class="pg-sub">{{ turma.tur_descricao }} · {{ turma.tur_cur.cur_nome }} · {{ turma.tur_ano }}/{{ turma.tur_semestre }}{% if arquivada %} · <span class="chip">Arquivada</span>{% endif %}</p>
+  </div>
+  {% if pode_alterar %}
+  <div class="flex flex-wrap">
+    <a class="btn" href="{% url 'cadastro:turma_editar' turma.pk %}"><span class="ms">edit</span>Editar</a>
+    <a class="btn" href="{% url 'cadastro:turma_arquivar' turma.pk %}"><span class="ms">inventory_2</span>Arquivar</a>
+    <a class="btn perigo" href="{% url 'cadastro:turma_excluir' turma.pk %}"><span class="ms">delete</span>Excluir</a>
+  </div>
+  {% endif %}
+</div>
+{% if arquivada %}<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Turma arquivada: só para consulta.</span></div>{% endif %}
+<div class="cartao">
+  <div class="dado"><span>Código da Disciplina</span><b>{{ turma.tur_dis.dis_codigo }}</b></div>
+  <div class="dado"><span>Professor da Disciplina</span><b>{{ turma.tur_doc.doc.usu_nome }}</b></div>
+  <div class="dado"><span>Dia e horário</span><b>{{ turma.tur_dia_da_semana }}, {{ turma.tur_hora_inicio|time:"H:i" }}–{{ turma.tur_hora_termino|time:"H:i" }}</b></div>
+  <div class="dado"><span>Local</span><b>{{ turma.tur_local }}</b></div>
+</div>
+<div class="flex entre flex-wrap mt16">
+  <h3>Alunos ({{ alunos|length }})</h3>
+  <div class="flex flex-wrap">
+    {% if pode_alterar and url_matricular %}<a class="btn pri" href="{{ url_matricular }}"><span class="ms">person_add</span>Matricular alunos</a>{% endif %}
+    {% if e_professor and url_excluidos %}<a class="btn txt" href="{{ url_excluidos }}"><span class="ms">history</span>Excluídos ou transferidos</a>{% endif %}
+  </div>
+</div>
+{% if alunos %}
+<div class="tabela-wrap">
+  <table class="tabela">
+    <thead><tr><th>Matrícula</th><th>Nome Completo</th><th>Curso</th><th>Status do TCC</th><th>Ações</th></tr></thead>
+    <tbody>
+      {% for linha in alunos %}
+      {% url 'cadastro:aluno_editar' turma.pk linha.aluno.pk as url_editar %}
+      {% url 'cadastro:aluno_transferir' turma.pk linha.aluno.pk as url_transferir %}
+      {% url 'cadastro:aluno_excluir' turma.pk linha.aluno.pk as url_excluir %}
+      {% url 'cadastro:aluno_encerrar' turma.pk linha.aluno.pk as url_encerrar %}
+      <tr>
+        <td>{{ linha.aluno.alu_matricula }}</td>
+        <td>{% if e_professor %}<a href="{% url 'cadastro:aluno' linha.aluno.pk %}">{{ linha.aluno.alu.usu_nome }}</a>{% else %}{{ linha.aluno.alu.usu_nome }}{% endif %}</td>
+        <td>{{ linha.curso }}</td>
+        <td>{{ linha.status_tcc }}</td>
+        <td class="acoes">
+          {% if pode_alterar %}
+            {% if url_editar %}<a class="btn txt" href="{{ url_editar }}">Editar</a>{% endif %}
+            {% if linha.status_tcc == "Sem Proposta" %}
+              {% if url_excluir %}<a class="btn txt perigo" href="{{ url_excluir }}">Excluir da turma</a>{% endif %}
+            {% elif not linha.encerrado %}
+              {% if url_encerrar %}<a class="btn txt" href="{{ url_encerrar }}">Encerrar participação</a>{% endif %}
+            {% endif %}
+          {% endif %}
+          {% if pode_transferir and url_transferir %}<a class="btn txt" href="{{ url_transferir }}">Transferir</a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="vazio"><span class="ms">person_off</span>Nenhum aluno matriculado.</div>
+{% endif %}
+{% endblock %}

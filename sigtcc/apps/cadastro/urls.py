@@ -5,7 +5,7 @@
 
 from django.urls import path
 
-from sigtcc.apps.cadastro import views
+from sigtcc.apps.cadastro import views, views_turmas
 
 app_name = "cadastro"
 
@@ -36,4 +36,12 @@ urlpatterns = [
         views.resetar_primeiro_acesso,
         name="resetar_primeiro_acesso",
     ),
+    # Spec 004: turmas (contracts/rotas.md). [US-07][US-08][US-09]
+    path("turmas/", views_turmas.turmas, name="turmas"),
+    path("turmas/arquivadas/", views_turmas.turmas_arquivadas, name="turmas_arquivadas"),
+    path("turmas/nova/", views_turmas.turma_nova, name="turma_nova"),
+    path("turmas/<int:tur_id>/", views_turmas.turma, name="turma"),
+    path("turmas/<int:tur_id>/editar/", views_turmas.turma_editar, name="turma_editar"),
+    path("turmas/<int:tur_id>/excluir/", views_turmas.turma_excluir, name="turma_excluir"),
+    path("turmas/<int:tur_id>/arquivar/", views_turmas.turma_arquivar, name="turma_arquivar"),
 ]

@@ -8,25 +8,39 @@ contrário (research B6, N2).
 """
 
 from django.core.exceptions import PermissionDenied
+from django.db import IntegrityError, transaction
 from django.http import Http404
+from django.utils import timezone
 
+from sigtcc.apps.cadastro import mensagens
 from sigtcc.apps.cadastro.cargas import CURSOS_COM_ORIENTADOR_AUTOMATICO
-from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusEntrega, StatusTCC, StatusTurma
+from sigtcc.apps.cadastro.choices import (
+    DescricaoTurma,
+    StatusEntrega,
+    StatusTCC,
+    StatusTurma,
+    TipoEntrega,
+)
 from sigtcc.apps.cadastro.models import (
     Alunos,
     AlunosTurmas,
+    Disciplinas,
     EntregasMarcos,
     HistoricoAlunosTurmas,
     HistoricoStatusTCC,
     TCCs,
     Turmas,
+    TurmasMarcos,
 )
 from sigtcc.apps.cadastro.permissoes import (
     pode_alterar_turma,
     pode_consultar_turma,
     pode_transferir,
+    tipo_conta,
 )
-from sigtcc.apps.cadastro.services import curso_do_codigo  # noqa: F401 (reexportada, contrato §3)
+from sigtcc.apps.cadastro.services import EventoAcesso, curso_do_codigo, registrar_evento
+from sigtcc.apps.defesa.choices import StatusSessao
+from sigtcc.apps.defesa.models import Defesas
 
 # Ações sobre a turma (research B2). [FR-009]
 CONSULTAR = "consultar"
@@ -39,6 +53,9 @@ STATUS_TCC_EM_CURSO = (StatusTCC.SEM_PROPOSTA, StatusTCC.EM_ANDAMENTO, StatusTCC
 
 # Participação encerrada (RBN-CAD-08.5). [US-09][RBN-CAD-08.4][RBN-CAD-08.5]
 STATUS_PARTICIPACAO_ENCERRADA = (StatusTCC.DESISTENTE, StatusTCC.REPROVADO, StatusTCC.JUBILADO)
+
+# Sessão de defesa ativa (RBN-DEF-01.2). [US-07][US-08][US-09][RBN-CAD-04.5][RBN-CAD-05.6]
+STATUS_SESSAO_ATIVA = (StatusSessao.AGENDADA, StatusSessao.REAGENDADA, StatusSessao.EM_ANDAMENTO)
 
 
 class TurmaArquivada(Exception):
@@ -188,3 +205,171 @@ def remover_entregas_sem_envio(aluno, turma):
     EntregasMarcos.objects.filter(
         ent_alu=aluno, ent_tma__tma_tur=turma, historicoenviosentregas__isnull=True
     ).delete()
+
+
+# =============================================================================================
+# Turmas: cadastro, edição, exclusão e arquivamento (US-07; research B3 a B5)
+# =============================================================================================
+
+
+class ErroTurma(Exception):
+    """Recusa de uma ação com a mensagem exata e, se houver, o campo a destacar.
+
+    [US-07][US-08][US-09][FR-002][FR-006][FR-007]
+    """
+
+    def __init__(self, mensagem, campo=None):
+        super().__init__(mensagem)
+        self.mensagem = mensagem
+        self.campo = campo
+
+
+def turmas_visiveis(usuario, arquivadas=False):
+    """Turmas que o usuário abre: as que o Docente é Professor da Disciplina ou as do curso da
+    Secretaria (spec Q9), ativas ou arquivadas.
+    [US-07][RBN-CAD-04.5][FR-008][FR-010][Q9]
+    """
+    status = StatusTurma.ARQUIVADA if arquivadas else StatusTurma.ATIVA
+    turmas = Turmas.objects.select_related("tur_cur", "tur_dis", "tur_doc__doc").filter(
+        tur_status=status
+    )
+    tipo = tipo_conta(usuario)
+    if tipo == "docente":
+        turmas = turmas.filter(tur_doc_id=usuario.pk)
+    elif tipo == "secretaria":
+        turmas = turmas.filter(tur_cur_id=usuario.secretarios.sec_cur_id)
+    else:
+        return Turmas.objects.none()
+    return turmas.order_by("-tur_ano", "-tur_semestre", "tur_identificador")
+
+
+def _aplicar_dados(turma, dados, travar_descricao_e_curso=False):
+    """Copia os dados do formulário para a turma (Descrição e Curso só sem trava, Q15)."""
+    disciplina, _ = Disciplinas.objects.get_or_create(dis_codigo=dados["codigo_disciplina"])
+    turma.tur_dis = disciplina
+    turma.tur_identificador = dados["identificador"]
+    turma.tur_ano = int(dados["ano"])
+    turma.tur_semestre = int(dados["semestre"])
+    turma.tur_dia_da_semana = dados["dia_semana"]
+    turma.tur_hora_inicio = dados["hora_inicio"]
+    turma.tur_hora_termino = dados["hora_termino"]
+    turma.tur_local = dados["local"]
+    if not travar_descricao_e_curso:
+        turma.tur_descricao = dados["descricao"]
+        turma.tur_cur = dados["curso"]
+
+
+def _salvar_turma(turma):
+    """Salva num savepoint; identificador repetido no banco (cadastro simultâneo) vira MT-03."""
+    try:
+        with transaction.atomic():
+            turma.save()
+    except IntegrityError as erro:
+        if "tur_identificador" in str(erro):
+            raise ErroTurma(mensagens.MT03_IDENTIFICADOR_REPETIDO, campo="identificador")
+        raise
+
+
+def criar_turma(docente, dados):
+    """Cadastra a turma com o Docente logado como Professor da Disciplina, 'Ativa'.
+
+    [US-07][RBN-CAD-04.1][RBN-CAD-04.2][FR-001][FR-003][m3]
+    """
+    with transaction.atomic():
+        turma = Turmas(tur_doc=docente.docentes, tur_status=StatusTurma.ATIVA)
+        _aplicar_dados(turma, dados)
+        _salvar_turma(turma)
+    return turma
+
+
+def editar_turma(professor, tur_id, dados):
+    """Edita a turma, com a turma travada; Descrição e Curso ficam como estão na turma que tem
+    ou já teve aluno (spec Q15). [US-07][RBN-CAD-04.3][FR-005][Q15][m3]
+    """
+    with transaction.atomic():
+        turma = turma_para(professor, tur_id, ALTERAR, travar=True)
+        _aplicar_dados(turma, dados, travar_descricao_e_curso=turma_ja_teve_aluno(turma))
+        _salvar_turma(turma)
+    return turma
+
+
+def excluir_turma(professor, tur_id):
+    """Exclui a turma que nunca teve aluno (spec Q12) e as entregas cadastradas nela; registra o
+    evento no log depois do commit (research B4).
+    [US-07][RBN-CAD-04.4][FR-006][Q12][m4]
+    """
+    with transaction.atomic():
+        turma = turma_para(professor, tur_id, ALTERAR, travar=True)
+        if turma_ja_teve_aluno(turma):
+            raise ErroTurma(mensagens.TURMA_COM_ALUNOS)
+        detalhe = f"tur_id={turma.pk} identificador={turma.tur_identificador}"
+        TurmasMarcos.objects.filter(tma_tur=turma).delete()
+        turma.delete()
+        transaction.on_commit(
+            lambda: registrar_evento(
+                EventoAcesso.TURMA_EXCLUIDA, None, autor=professor, detalhe=detalhe
+            )
+        )
+
+
+def motivo_para_nao_arquivar(turma):
+    """Primeiro motivo que impede o arquivamento, na ordem da US-07, ou "" (RBN-CAD-04.5).
+
+    [US-07][RBN-CAD-04.5][FR-007]
+    """
+    if TCCs.objects.filter(
+        tcc_tur=turma, tcc_status__in=(StatusTCC.EM_ANDAMENTO, StatusTCC.APTO_PARA_DEFESA)
+    ).exists():
+        return mensagens.ARQUIVAR_TCC_ATIVO
+    if Defesas.objects.filter(def_tcc__tcc_tur=turma, def_status__in=STATUS_SESSAO_ATIVA).exists():
+        return mensagens.ARQUIVAR_SESSAO_ATIVA
+    if turma.tur_descricao == DescricaoTurma.TCC_2:
+        versao_final = TurmasMarcos.objects.filter(
+            tma_tur=turma, tma_tipo=TipoEntrega.VERSAO_FINAL
+        ).first()
+        if versao_final is None or versao_final.tma_data_limite >= timezone.now():
+            return mensagens.ARQUIVAR_VERSAO_FINAL
+    return ""
+
+
+def arquivar_turma(professor, tur_id):
+    """Arquiva a turma com as três condições da RBN-CAD-04.5 atendidas, com a turma travada.
+
+    [US-07][RBN-CAD-04.5][FR-007][FR-008]
+    """
+    with transaction.atomic():
+        turma = turma_para(professor, tur_id, ALTERAR, travar=True)
+        motivo = motivo_para_nao_arquivar(turma)
+        if motivo:
+            raise ErroTurma(motivo)
+        turma.tur_status = StatusTurma.ARQUIVADA
+        turma.save(update_fields=["tur_status"])
+    return turma
+
+
+def alunos_da_turma(turma):
+    """Alunos matriculados, com Matrícula, Nome Completo, Curso e Status do TCC (FR-010).
+
+    [US-07][US-08][FR-010][RBN-CAD-05.7][RBN-CAD-08.3]
+    """
+    vinculos = (
+        AlunosTurmas.objects.filter(mat_tur=turma)
+        .select_related("mat_alu__alu")
+        .order_by("mat_alu__alu__usu_nome")
+    )
+    tccs = {t.tcc_alu_id: t for t in TCCs.objects.filter(tcc_tur=turma)}
+    linhas = []
+    for vinculo in vinculos:
+        aluno = vinculo.mat_alu
+        curso = curso_do_codigo(aluno.alu_codigo_curso)
+        tcc = tccs.get(aluno.pk)
+        linhas.append(
+            {
+                "aluno": aluno,
+                "curso": curso.cur_nome if curso else mensagens.CURSO_NAO_RECONHECIDO,
+                "tcc": tcc,
+                "status_tcc": tcc.tcc_status if tcc else "",
+                "encerrado": bool(tcc and participacao_encerrada(tcc)),
+            }
+        )
+    return linhas
