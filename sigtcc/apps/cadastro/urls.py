@@ -76,4 +76,19 @@ urlpatterns = [
         views_turmas.aluno_transferir,
         name="aluno_transferir",
     ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/excluir/",
+        views_turmas.aluno_excluir,
+        name="aluno_excluir",
+    ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/encerrar/",
+        views_turmas.aluno_encerrar,
+        name="aluno_encerrar",
+    ),
+    path(
+        "turmas/<int:tur_id>/excluidos-transferidos/",
+        views_turmas.excluidos_transferidos,
+        name="excluidos_transferidos",
+    ),
 ]

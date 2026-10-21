@@ -8,13 +8,15 @@ from functools import wraps
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
 from sigtcc.apps.cadastro import importacao, mensagens, services_turmas
 from sigtcc.apps.cadastro.forms_turmas import (
     EditarAlunoForm,
+    EncerramentoForm,
+    ExclusaoAlunoForm,
     ImportacaoForm,
     MatriculaForm,
     TransferenciaForm,
@@ -433,3 +435,91 @@ def aluno_transferir(request, tur_id, alu_id):
             erro = mensagens.MT19_SEM_DESTINO
     contexto = {"turma": registro, "aluno": aluno, "form": formulario, "erro": erro}
     return render(request, "cadastro/turmas/transferir.html", contexto)
+
+
+# ---------------------------------------------------------------------------------------------
+# Exclusão do aluno, encerramento da participação e lista de excluídos ou transferidos (US-09)
+# ---------------------------------------------------------------------------------------------
+
+
+@perfil_requerido("docente", "secretaria")
+@trata_turma_arquivada
+def aluno_excluir(request, tur_id, alu_id):
+    """ "Excluir da turma" em duas etapas: Justificativa e "Confirmar"; depois a confirmação final
+    (MT-24) com a justificativa num campo oculto, "Confirmar" e "Cancelar" (research B14).
+    [US-09][RBN-CAD-05.4][FR-023]
+    """
+    registro = services_turmas.turma_para(request.user, tur_id, ALTERAR)
+    aluno = services_turmas.vinculo_na_turma(registro, alu_id)
+    tcc = services_turmas.tcc_do_aluno(registro, aluno)
+    if not services_turmas.aluno_pode_ser_excluido(tcc):
+        messages.error(request, mensagens.ALUNO_TEM_PROPOSTA)
+        return redirect("cadastro:turma", tur_id=tur_id)
+    formulario = ExclusaoAlunoForm(request.POST if request.method == "POST" else None)
+    confirmacao_final = False
+    if request.method == "POST" and formulario.is_valid():
+        if request.POST.get("confirmacao_final"):
+            try:
+                services_turmas.excluir_aluno(
+                    request.user, tur_id, alu_id, formulario.cleaned_data["justificativa"]
+                )
+            except ErroTurma as erro:
+                messages.error(request, erro.mensagem)
+            else:
+                messages.success(request, mensagens.ALUNO_EXCLUIDO)
+            return redirect("cadastro:turma", tur_id=tur_id)
+        confirmacao_final = True
+    contexto = {
+        "turma": registro,
+        "aluno": aluno,
+        "form": formulario,
+        "confirmacao_final": confirmacao_final,
+        "pergunta": mensagens.MT24_CONFIRMAR_EXCLUSAO_ALUNO.format(nome=aluno.alu.usu_nome),
+    }
+    return render(request, "cadastro/turmas/excluir_aluno.html", contexto)
+
+
+@perfil_requerido("docente", "secretaria")
+@trata_turma_arquivada
+def aluno_encerrar(request, tur_id, alu_id):
+    """ "Encerrar participação": Status e Justificativa; sucesso MT-23, sessão ativa MT-30.
+
+    Só para TCC 'Em Andamento' ou 'Apto para Defesa'; nos outros, 404 (research B15).
+    [US-09][RBN-CAD-08.4][FR-024][Q14]
+    """
+    registro = services_turmas.turma_para(request.user, tur_id, ALTERAR)
+    aluno = services_turmas.vinculo_na_turma(registro, alu_id)
+    if not services_turmas.aluno_pode_ser_encerrado(services_turmas.tcc_do_aluno(registro, aluno)):
+        raise Http404
+    formulario = EncerramentoForm(request.POST if request.method == "POST" else None)
+    erro = ""
+    if request.method == "POST" and formulario.is_valid():
+        dados = formulario.cleaned_data
+        try:
+            services_turmas.encerrar_participacao(
+                request.user, tur_id, alu_id, dados["status"], dados["justificativa"]
+            )
+        except ErroTurma as falha:
+            erro = falha.mensagem
+        else:
+            messages.success(
+                request, mensagens.MT23_PARTICIPACAO_ENCERRADA.format(status=dados["status"])
+            )
+            return redirect("cadastro:turma", tur_id=tur_id)
+    contexto = {"turma": registro, "aluno": aluno, "form": formulario, "erro": erro}
+    return render(request, "cadastro/turmas/encerrar.html", contexto)
+
+
+@perfil_requerido("docente", "secretaria")
+def excluidos_transferidos(request, tur_id):
+    """Lista só de leitura dos alunos excluídos ou transferidos da turma, só para o Professor da
+    Disciplina, também na turma arquivada (research B16). [US-09][RBN-CAD-05.8][FR-026][I-4]
+    """
+    registro = services_turmas.turma_para(request.user, tur_id, CONSULTAR)
+    if not pode_alterar_turma(request.user, registro):
+        raise PermissionDenied
+    contexto = {
+        "turma": registro,
+        "registros": services_turmas.excluidos_e_transferidos(registro),
+    }
+    return render(request, "cadastro/turmas/excluidos_transferidos.html", contexto)

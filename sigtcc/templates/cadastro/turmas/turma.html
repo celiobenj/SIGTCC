@@ -57,7 +57,7 @@
             {% if url_editar %}<a class="btn txt" href="{{ url_editar }}">Editar</a>{% endif %}
             {% if linha.status_tcc == "Sem Proposta" %}
               {% if url_excluir %}<a class="btn txt perigo" href="{{ url_excluir }}">Excluir da turma</a>{% endif %}
-            {% elif not linha.encerrado %}
+            {% elif linha.encerravel %}
               {% if url_encerrar %}<a class="btn txt" href="{{ url_encerrar }}">Encerrar participação</a>{% endif %}
             {% endif %}
           {% endif %}

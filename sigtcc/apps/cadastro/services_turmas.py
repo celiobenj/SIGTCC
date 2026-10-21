@@ -43,6 +43,7 @@ from sigtcc.apps.cadastro.models import (
     Artigos,
     Coorientacoes,
     Disciplinas,
+    EncontroOrientacao,
     EntregasMarcos,
     HistoricoAlunosTurmas,
     HistoricoStatusTCC,
@@ -63,6 +64,7 @@ from sigtcc.apps.cadastro.permissoes import (
 from sigtcc.apps.cadastro.services import (
     EventoAcesso,
     curso_do_codigo,
+    montar_mensagem_cortada,
     notificar,
     registrar_evento,
 )
@@ -397,6 +399,7 @@ def alunos_da_turma(turma):
                 "tcc": tcc,
                 "status_tcc": tcc.tcc_status if tcc else "",
                 "encerrado": bool(tcc and participacao_encerrada(tcc)),
+                "encerravel": aluno_pode_ser_encerrado(tcc),
             }
         )
     return linhas
@@ -870,3 +873,147 @@ def transferir(autor, tur_origem_id, alu_id, tur_destino_id, justificativa):
         notificar(origem.tur_doc.doc, texto)
         notificar(destino.tur_doc.doc, texto, link=reverse("cadastro:turma", args=[destino.pk]))
     return destino
+
+
+# =============================================================================================
+# Exclusão do aluno e encerramento da participação (US-09; research B14 a B16)
+# =============================================================================================
+
+# Status em que o Professor encerra a participação (research B15). [RBN-CAD-08.4][FR-024]
+STATUS_TCC_ENCERRAVEL = (StatusTCC.EM_ANDAMENTO, StatusTCC.APTO_PARA_DEFESA)
+
+# Pedidos e convites ainda sem resposta, cancelados pelo encerramento (spec Q14). [Q14]
+STATUS_SOLICITACAO_PENDENTE = (
+    StatusSolicitacao.AGUARDANDO_RESPOSTA,
+    StatusSolicitacao.AGUARDANDO_ACEITE,
+)
+
+
+def tcc_do_aluno(turma, aluno):
+    """TCC do aluno nesta turma, ou None. [US-09][RBN-CAD-08.3]"""
+    return TCCs.objects.filter(tcc_alu=aluno, tcc_tur=turma).first()
+
+
+def _trabalho_movimentado(tcc):
+    """O TCC já tem solicitação, encontro, orientação por pedido, coorientação, palavra-chave,
+    publicação ou defesa: o trabalho já foi movimentado e a exclusão é recusada (research B14).
+    [US-09][RBN-CAD-05.4][FR-023]
+    """
+    return (
+        SolicitacoesOrientacao.objects.filter(sol_tcc=tcc).exists()
+        or EncontroOrientacao.objects.filter(enc_tcc=tcc).exists()
+        or Orientacoes.objects.filter(ori_tcc=tcc)
+        .exclude(ori_origem=OrigemOrientacao.AUTOMATICO)
+        .exists()
+        or Coorientacoes.objects.filter(coo_tcc=tcc).exists()
+        or PalavrasChaveTCC.objects.filter(pal_tcc=tcc).exists()
+        or Artigos.objects.filter(art=tcc).exists()
+        or Defesas.objects.filter(def_tcc=tcc).exists()
+    )
+
+
+def aluno_pode_ser_excluido(tcc):
+    """Sem TCC ou com TCC 'Sem Proposta' ainda não movimentado (RBN-CAD-05.4; research B14).
+
+    [US-09][RBN-CAD-05.4][FR-023]
+    """
+    return tcc is None or (
+        tcc.tcc_status == StatusTCC.SEM_PROPOSTA and not _trabalho_movimentado(tcc)
+    )
+
+
+def aluno_pode_ser_encerrado(tcc):
+    """TCC 'Em Andamento' ou 'Apto para Defesa' (research B15). [US-09][RBN-CAD-08.4][FR-024]"""
+    return tcc is not None and tcc.tcc_status in STATUS_TCC_ENCERRAVEL
+
+
+def excluir_aluno(professor, tur_id, alu_id, justificativa):
+    """Exclui da turma o aluno sem Proposta: apaga o histórico de status, a orientação automática
+    e o TCC 'Sem Proposta' (Q8), os registros de entrega sem envio (Q17) e o vínculo; grava a
+    exclusão no histórico da turma e avisa o aluno com a MT-21 (research B14; travas B17).
+    [US-09][RBN-CAD-05.4][RBN-CAD-05.8][FR-023][Q8][Q17][B-1]
+    """
+    with transaction.atomic():
+        turma = turma_para(professor, tur_id, ALTERAR, travar=True)
+        aluno = vinculo_na_turma(turma, alu_id)
+        tcc = TCCs.objects.select_for_update().filter(tcc_alu=aluno, tcc_tur=turma).first()
+        if not aluno_pode_ser_excluido(tcc):
+            raise ErroTurma(mensagens.ALUNO_TEM_PROPOSTA)
+        if tcc is not None:
+            HistoricoStatusTCC.objects.filter(hst_tcc=tcc).delete()
+            Orientacoes.objects.filter(ori_tcc=tcc, ori_origem=OrigemOrientacao.AUTOMATICO).delete()
+            tcc.delete()
+        remover_entregas_sem_envio(aluno, turma)
+        AlunosTurmas.objects.filter(mat_alu=aluno, mat_tur=turma).delete()
+        HistoricoAlunosTurmas.objects.create(
+            hat_alu=aluno,
+            hat_tur_origem=turma,
+            hat_tur_destino=None,
+            hat_tipo_evento=TipoEventoTurma.EXCLUSAO,
+            hat_justificativa=justificativa,
+            hat_data_hora=timezone.now(),
+            hat_usu=professor,
+        )
+        texto = montar_mensagem_cortada(
+            mensagens.MT21_NOTIFICACAO_EXCLUSAO,
+            "justificativa",
+            identificador=turma.tur_identificador,
+            justificativa=justificativa,
+        )
+        notificar(aluno.alu, texto)
+    return aluno
+
+
+def encerrar_participacao(professor, tur_id, alu_id, status, justificativa):
+    """Encerra a participação como Desistente, Reprovado ou Jubilado (RBN-CAD-08.4): muda o Status
+    com histórico, encerra orientação e coorientação ativas (Q10), cancela os pedidos e convites
+    pendentes e avisa cada docente com a MT-31 (Q14, Q19). Com sessão de defesa ativa, recusa com
+    a MT-30. Tudo conferido de novo depois de travar a turma e o TCC (research B15 e B17; I-2).
+    [US-09][RBN-CAD-08.4][RBN-CAD-08.5][RBN-CAD-08.7][FR-024][Q10][Q14][Q19][I-2]
+    """
+    if status not in STATUS_PARTICIPACAO_ENCERRADA:
+        raise ErroTurma(mensagens.SELECIONE_STATUS, campo="status")
+    with transaction.atomic():
+        turma = turma_para(professor, tur_id, ALTERAR, travar=True)
+        aluno = vinculo_na_turma(turma, alu_id)
+        tcc = TCCs.objects.select_for_update().filter(tcc_alu=aluno, tcc_tur=turma).first()
+        if not aluno_pode_ser_encerrado(tcc):
+            raise Http404
+        if Defesas.objects.filter(def_tcc=tcc, def_status__in=STATUS_SESSAO_ATIVA).exists():
+            raise ErroTurma(mensagens.MT30_ENCERRAMENTO_SESSAO)
+        agora = timezone.now()
+        anterior = tcc.tcc_status
+        tcc.tcc_status = status
+        tcc.tcc_justificativa_encerramento = justificativa
+        tcc.save(update_fields=["tcc_status", "tcc_justificativa_encerramento"])
+        _registrar_historico(
+            tcc, turma, professor, anterior, status, GatilhoStatusTCC.ENCERRAMENTO_DA_PARTICIPACAO
+        )
+        encerrar_orientacoes_ativas(tcc, agora)
+        pendentes = list(
+            SolicitacoesOrientacao.objects.select_related("sol_doc__doc").filter(
+                sol_tcc=tcc, sol_status__in=STATUS_SOLICITACAO_PENDENTE
+            )
+        )
+        SolicitacoesOrientacao.objects.filter(pk__in=[s.pk for s in pendentes]).update(
+            sol_status=StatusSolicitacao.CANCELADO, sol_data_resposta=agora
+        )
+        for solicitacao in pendentes:
+            notificar(
+                solicitacao.sol_doc.doc,
+                mensagens.MT31_PEDIDO_CANCELADO.format(
+                    tipo=solicitacao.sol_tipo.lower(), nome=aluno.alu.usu_nome
+                ),
+            )
+    return tcc
+
+
+def excluidos_e_transferidos(turma):
+    """Exclusões e transferências que saíram desta turma, da mais recente para a mais antiga
+    (research B16). Só leitura. [US-09][RBN-CAD-05.8][FR-026][I-4]
+    """
+    return (
+        HistoricoAlunosTurmas.objects.filter(hat_tur_origem=turma)
+        .select_related("hat_alu__alu", "hat_usu", "hat_tur_destino")
+        .order_by("-hat_data_hora", "-hat_id")
+    )

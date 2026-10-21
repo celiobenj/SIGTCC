@@ -12,7 +12,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 from sigtcc.apps.cadastro import mensagens
-from sigtcc.apps.cadastro.choices import DescricaoTurma, DiaSemana
+from sigtcc.apps.cadastro.choices import DescricaoTurma, DiaSemana, StatusTCC
 from sigtcc.apps.cadastro.mensagens import M14_CAMPO_OBRIGATORIO
 from sigtcc.apps.cadastro.models import Cursos, Turmas
 
@@ -320,4 +320,58 @@ class TransferenciaForm(FormularioSigtcc):
 
     def clean_justificativa(self):
         """Obrigatória, até 500 caracteres. [RBN-CAD-05.6][m9]"""
+        return validar_justificativa(self.cleaned_data["justificativa"])
+
+
+# =============================================================================================
+# Exclusão do aluno e encerramento da participação (US-09; research B14 e B15)
+# =============================================================================================
+
+
+class ExclusaoAlunoForm(FormularioSigtcc):
+    """Justificativa obrigatória, até 500 caracteres (RBN-CAD-05.4).
+
+    [US-09][RBN-CAD-05.4][FR-023]
+    """
+
+    justificativa = forms.CharField(
+        label="Justificativa",
+        help_text="Até 500 caracteres",
+        widget=forms.Textarea(attrs={"rows": 4, "maxlength": LIMITE_JUSTIFICATIVA}),
+    )
+
+    def clean_justificativa(self):
+        """Obrigatória, até 500 caracteres. [RBN-CAD-05.4][m9]"""
+        return validar_justificativa(self.cleaned_data["justificativa"])
+
+
+class EncerramentoForm(FormularioSigtcc):
+    """Status (Desistente, Reprovado ou Jubilado) e Justificativa até 500 (RBN-CAD-08.4).
+
+    [US-09][RBN-CAD-08.4][FR-024]
+    """
+
+    status = forms.ChoiceField(
+        label="Status",
+        choices=[
+            ("", "Selecione…"),
+            (StatusTCC.DESISTENTE, StatusTCC.DESISTENTE.label),
+            (StatusTCC.REPROVADO, StatusTCC.REPROVADO.label),
+            (StatusTCC.JUBILADO, StatusTCC.JUBILADO.label),
+        ],
+    )
+    justificativa = forms.CharField(
+        label="Justificativa",
+        help_text="Até 500 caracteres",
+        widget=forms.Textarea(attrs={"rows": 4, "maxlength": LIMITE_JUSTIFICATIVA}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Status vazio ou fora da lista → "Selecione o Status do aluno" (E3 da US-09). [FR-024]"""
+        super().__init__(*args, **kwargs)
+        erros = self.fields["status"].error_messages
+        erros["required"] = erros["invalid_choice"] = mensagens.SELECIONE_STATUS
+
+    def clean_justificativa(self):
+        """Obrigatória, até 500 caracteres. [RBN-CAD-08.4][m9]"""
         return validar_justificativa(self.cleaned_data["justificativa"])
