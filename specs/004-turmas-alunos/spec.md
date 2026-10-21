@@ -517,7 +517,7 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   Artigos, Encontro_Orientacao, Equivalencia_Cursos, Turmas_Marcos, Entregas_Marcos,
   Historico_Envios_Entregas, Defesas, Docentes, Secretarios e Notificacoes).
 - **FR-029**: Mensagens sem texto nas US DEVEM usar os textos PROVISÓRIOS da seção "Mensagens a
-  validar com a PO" (MT-01 a MT-31), até a validação da PO.
+  validar com a PO" (MT-01 a MT-32), até a validação da PO.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -600,6 +600,7 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
 | MT-29 | Aluno matriculado com a conta 'Inativa' ou 'Expirada' | "A conta deste aluno está STATUS: ele não consegue entrar até a conta ser reativada pela Gestão de Contas." | Clarifications, Q16 | A validar |
 | MT-30 | Encerramento com sessão de defesa ativa | "Não é possível encerrar a participação: há sessão de defesa ativa." | Clarifications, Q14; E4 da US-08 | A validar |
 | MT-31 | Notificação ao docente de pedido ou convite cancelado pelo encerramento | "O pedido de TIPO para o TCC de NOME foi cancelado porque a participação do aluno foi encerrada." | Clarifications, Q19 | A validar |
+| MT-32 | Confirmação da importação com prévia vencida (30 minutos), já usada ou de outra turma (research B10) | "A prévia da importação venceu ou não é desta turma. Envie o arquivo de novo." | Implementação (research B10, achado B-2) | A validar |
 
 ## Assumptions
 
@@ -622,7 +623,7 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
   arquivada, são das features donas; esta entrega oferece as verificações reutilizáveis (FR-008 e
   FR-025).
 - **Relatório de evasão (US-32)**: lê o histórico do Status do TCC; esta feature só grava a transição.
-- **Mensagens**: as MT-01 a MT-31 são provisórias e, como na spec 003 (Q25), não bloqueiam as
+- **Mensagens**: as MT-01 a MT-32 são provisórias e, como na spec 003 (Q25), não bloqueiam as
   tarefas nem a implementação.
 - **Equivalência de cursos** (Q5; índice Q-17, Q-37 e Q-38): carregada por esta feature (FR-015a)
   com os três códigos completos, no formato do exemplo do dicionário (`EST08MCPD`); o dicionário não

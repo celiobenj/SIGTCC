@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% comment %}
+  Prévia da importação: alunos novos, já cadastrados, linhas com erro e avisos de curso; nada é
+  gravado até "Confirmar importação" (diagrama "Matrícula por CSV"). O código da prévia vai num
+  campo oculto (achado B-2).
+  [US-08][RBN-CAD-05.2][RBN-CAD-05.7][FR-017]
+{% endcomment %}
+{% block titulo %}Prévia da importação · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Prévia da importação</h2>
+<p class="pg-sub">{{ turma.tur_identificador }} · {{ previa.validos|length }} para matricular, {{ previa.rejeitados|length }} linhas com erro, {{ previa.nao_reconhecidos }} códigos de curso não reconhecidos</p>
+<div class="tabela-wrap">
+  <table class="tabela">
+    <thead><tr><th>Linha</th><th>Matrícula</th><th>Nome Completo</th><th>Curso</th><th>Situação</th><th>Motivo ou aviso</th></tr></thead>
+    <tbody>
+      {% for item in previa.itens %}
+      <tr>
+        <td>{{ item.numero }}</td>
+        <td>{{ item.matricula }}</td>
+        <td>{{ item.nome }}</td>
+        <td>{{ item.curso }}</td>
+        <td>{{ item.situacao }}</td>
+        <td>{{ item.motivo }}{% for aviso in item.avisos %}<div class="muted">{{ aviso }}</div>{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="flex entre mt16">
+  <form method="post" action="{% url 'cadastro:importar_cancelar' turma.pk %}">{% csrf_token %}<button type="submit" class="btn txt">Cancelar</button></form>
+  <form method="post" action="{% url 'cadastro:importar_confirmar' turma.pk %}">
+    {% csrf_token %}
+    <input type="hidden" name="token" value="{{ token }}">
+    <button type="submit" class="btn pri">Confirmar importação</button>
+  </form>
+</div>
+{% endblock %}

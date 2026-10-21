@@ -200,6 +200,9 @@ MT29_CONTA_NAO_ATIVA = (
     "Gestão de Contas."
 )
 MT30_ENCERRAMENTO_SESSAO = "Não é possível encerrar a participação: há sessão de defesa ativa."
+MT32_PREVIA_INVALIDA = (
+    "A prévia da importação venceu ou não é desta turma. Envie o arquivo de novo."
+)
 MT31_PEDIDO_CANCELADO = (
     "O pedido de {tipo} para o TCC de {nome} foi cancelado porque a participação do aluno foi "
     "encerrada."

@@ -273,3 +273,17 @@ class EditarAlunoForm(_CamposDoAluno):
 
     [US-08][RBN-CAD-05.3][FR-019]
     """
+
+
+class ImportacaoForm(FormularioSigtcc):
+    """Envio do arquivo CSV ou XLSX (até 2 MB, até 200 linhas). O conteúdo é conferido em
+    importacao.ler_arquivo; arquivo vazio também vai para lá (fora do modelo).
+    [US-08][RBN-CAD-05.2][FR-016]
+    """
+
+    arquivo = forms.FileField(
+        label="Arquivo (CSV ou XLSX)",
+        allow_empty_file=True,
+        help_text="Até 2 MB e 200 alunos, com os cabeçalhos Matrícula, Nome Completo e Curso",
+        widget=forms.FileInput(attrs={"accept": ".csv,.xlsx"}),
+    )

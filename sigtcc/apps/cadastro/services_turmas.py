@@ -8,12 +8,16 @@ contrário (research B6, N2).
 """
 
 import enum
+import secrets
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 
+from django.core.cache import caches
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.http import Http404
 from django.utils import timezone
+from django.utils.crypto import constant_time_compare
 
 from sigtcc.apps.cadastro import mensagens
 from sigtcc.apps.cadastro.cargas import CURSOS_COM_ORIENTADOR_AUTOMATICO
@@ -676,3 +680,91 @@ def editar_aluno(professor, tur_id, alu_id, nome, codigo_curso):
         aluno.alu_codigo_curso = codigo_curso
         aluno.save(update_fields=["alu_codigo_curso"])
     return aluno
+
+
+# =============================================================================================
+# Importação: prévia na sessão e confirmação (US-08; research B10)
+# =============================================================================================
+
+CHAVE_PREVIA = "importacao"
+CHAVE_RESUMO = "importacao_resumo"
+VALIDADE_PREVIA = timedelta(minutes=30)
+
+
+class PreviaInvalida(Exception):
+    """Prévia ausente, vencida, de outra turma ou com código errado (MT-32; achado B-2)."""
+
+
+class ImportacaoRepetida(Exception):
+    """O mesmo código de prévia já foi confirmado (dois POST simultâneos; achado N3)."""
+
+
+def guardar_previa(sessao, turma, previa):
+    """Guarda na sessão só o mínimo: código, turma, instante, linhas válidas normalizadas e, das
+    linhas com erro, só o número e o motivo (achado I-10). Substitui a prévia anterior.
+    [US-08][RBN-CAD-05.2][FR-017][B-2][I-10]
+    """
+    token = secrets.token_urlsafe(16)
+    sessao[CHAVE_PREVIA] = {
+        "token": token,
+        "tur_id": turma.pk,
+        "instante": timezone.now().isoformat(),
+        "linhas": [[i.numero, i.matricula, i.nome, i.curso] for i in previa.validos],
+        "erros": [[i.numero, i.motivo] for i in previa.rejeitados],
+    }
+    return token
+
+
+def descartar_previa(sessao):
+    """ "Cancelar" na prévia: apaga a prévia da sessão. [US-08][B10]"""
+    sessao.pop(CHAVE_PREVIA, None)
+
+
+def _previa_vencida(previa):
+    return timezone.now() - datetime.fromisoformat(previa["instante"]) > VALIDADE_PREVIA
+
+
+def confirmar_importacao(professor, tur_id, token, sessao):
+    """ "Confirmar importação": confere a prévia (código, turma e prazo), tira a prévia da sessão,
+    marca o código como usado e matricula linha a linha, cada uma num savepoint (spec Q2).
+    Devolve o resumo da MT-15: n (matriculados), r (rejeitadas), c (códigos não reconhecidos) e a
+    lista de rejeitadas (linha e motivo).
+    [US-08][RBN-CAD-05.2][FR-018][Q2][B-2][N3][m8]
+    """
+    previa = sessao.get(CHAVE_PREVIA)
+    if previa is None or not token or not constant_time_compare(previa["token"], token):
+        raise PreviaInvalida
+    if previa["tur_id"] != tur_id or _previa_vencida(previa):
+        if _previa_vencida(previa):
+            descartar_previa(sessao)
+        raise PreviaInvalida
+    descartar_previa(sessao)
+    # O cache padrão pode descartar entradas, mas a marca só precisa durar os segundos entre dois
+    # POST simultâneos (análise D5).
+    if not caches["default"].add(f"importacao:{token}", 1, 3600):
+        raise ImportacaoRepetida
+    rejeitadas = [tuple(erro) for erro in previa["erros"]]
+    matriculados = nao_reconhecidos = 0
+    with transaction.atomic():
+        turma = turma_para(professor, tur_id, ALTERAR, travar=True)
+        matriculas = sorted(linha[1] for linha in previa["linhas"])
+        list(
+            Alunos.objects.select_for_update()
+            .filter(alu_matricula__in=matriculas)
+            .order_by("alu_matricula")
+        )
+        for numero, matricula, nome, codigo_curso in previa["linhas"]:
+            with transaction.atomic():
+                resultado = matricular(professor, turma, matricula, nome, codigo_curso)
+            if resultado.matriculado:
+                matriculados += 1
+                nao_reconhecidos += 0 if resultado.curso_reconhecido else 1
+            else:
+                rejeitadas.append((numero, resultado.mensagem))
+    rejeitadas.sort()
+    return {
+        "n": matriculados,
+        "r": len(rejeitadas),
+        "c": nao_reconhecidos,
+        "rejeitadas": [list(r) for r in rejeitadas],
+    }

@@ -7,10 +7,17 @@ importacao.py (constituição, princípio IV; research B1).
 from functools import wraps
 
 from django.contrib import messages
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
-from sigtcc.apps.cadastro import mensagens, services_turmas
-from sigtcc.apps.cadastro.forms_turmas import EditarAlunoForm, MatriculaForm, TurmaForm
+from sigtcc.apps.cadastro import importacao, mensagens, services_turmas
+from sigtcc.apps.cadastro.forms_turmas import (
+    EditarAlunoForm,
+    ImportacaoForm,
+    MatriculaForm,
+    TurmaForm,
+)
 from sigtcc.apps.cadastro.models import EquivalenciaCursos
 from sigtcc.apps.cadastro.permissoes import (
     perfil_requerido,
@@ -292,3 +299,89 @@ def aluno_editar(request, tur_id, alu_id):
         "codigos": _codigos_de_curso(),
     }
     return render(request, "cadastro/turmas/editar_aluno.html", contexto)
+
+
+# ---------------------------------------------------------------------------------------------
+# Importação por CSV ou XLSX (US-08; diagrama "Matrícula por CSV")
+# ---------------------------------------------------------------------------------------------
+
+
+@perfil_requerido("docente", "secretaria")
+@trata_turma_arquivada
+def importar(request, tur_id):
+    """Envio do arquivo e prévia (nada é gravado até "Confirmar importação").
+
+    [US-08][RBN-CAD-05.2][FR-016][FR-017][Q13]
+    """
+    registro = services_turmas.turma_para(request.user, tur_id, ALTERAR)
+    formulario = ImportacaoForm(
+        request.POST if request.method == "POST" else None,
+        request.FILES if request.method == "POST" else None,
+    )
+    erro = ""
+    if request.method == "POST" and formulario.is_valid():
+        try:
+            linhas = importacao.ler_arquivo(formulario.cleaned_data["arquivo"])
+        except importacao.ErroModelo:
+            erro = mensagens.ARQUIVO_FORA_DO_MODELO
+        else:
+            previa = importacao.montar_previa(registro, linhas)
+            token = services_turmas.guardar_previa(request.session, registro, previa)
+            contexto = {"turma": registro, "previa": previa, "token": token}
+            return render(request, "cadastro/turmas/previa.html", contexto)
+    contexto = {"turma": registro, "form": formulario, "erro": erro}
+    return render(request, "cadastro/turmas/importar.html", contexto)
+
+
+@require_POST
+@perfil_requerido("docente", "secretaria")
+@trata_turma_arquivada
+def importar_confirmar(request, tur_id):
+    """ "Confirmar importação": prévia presa à turma por código; resumo por POST/redirect/GET.
+
+    [US-08][RBN-CAD-05.2][FR-018][B-2][N3]
+    """
+    services_turmas.turma_para(request.user, tur_id, ALTERAR)
+    try:
+        resumo = services_turmas.confirmar_importacao(
+            request.user, tur_id, request.POST.get("token", ""), request.session
+        )
+    except services_turmas.PreviaInvalida:
+        messages.warning(request, mensagens.MT32_PREVIA_INVALIDA)
+        return redirect("cadastro:importar", tur_id=tur_id)
+    except services_turmas.ImportacaoRepetida:
+        return redirect("cadastro:turma", tur_id=tur_id)
+    request.session[services_turmas.CHAVE_RESUMO] = {"tur_id": tur_id, **resumo}
+    return redirect("cadastro:importar_resumo", tur_id=tur_id)
+
+
+@perfil_requerido("docente", "secretaria")
+def importar_resumo(request, tur_id):
+    """Resumo da importação (MT-15), mostrado uma vez; recarregar volta para a turma.
+
+    [US-08][RBN-CAD-05.2][FR-018]
+    """
+    registro = services_turmas.turma_para(request.user, tur_id, CONSULTAR)
+    resumo = request.session.pop(services_turmas.CHAVE_RESUMO, None)
+    if not resumo or resumo.get("tur_id") != tur_id:
+        return redirect("cadastro:turma", tur_id=tur_id)
+    texto = mensagens.MT15_RESUMO_IMPORTACAO.format(n=resumo["n"], r=resumo["r"], c=resumo["c"])
+    contexto = {"turma": registro, "texto": texto, "rejeitadas": resumo["rejeitadas"]}
+    return render(request, "cadastro/turmas/resumo.html", contexto)
+
+
+@require_POST
+@perfil_requerido("docente", "secretaria")
+def importar_cancelar(request, tur_id):
+    """ "Cancelar" na prévia: apaga a prévia e volta para a turma. [US-08][B10]"""
+    services_turmas.turma_para(request.user, tur_id, CONSULTAR)
+    services_turmas.descartar_previa(request.session)
+    return redirect("cadastro:turma", tur_id=tur_id)
+
+
+@perfil_requerido("docente")
+def modelo_importacao(request):
+    """Modelo de importação (CSV em UTF-8 com ";"; spec Q11). [US-08][RBN-CAD-05.2][FR-016]"""
+    resposta = HttpResponse(importacao.gerar_modelo_csv(), content_type="text/csv; charset=utf-8")
+    resposta["Content-Disposition"] = 'attachment; filename="modelo_importacao_alunos.csv"'
+    return resposta
