@@ -16,6 +16,7 @@ from django.core.cache import caches
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.http import Http404
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare
 
@@ -29,9 +30,12 @@ from sigtcc.apps.cadastro.choices import (
     StatusCoorientacao,
     StatusEntrega,
     StatusOrientacao,
+    StatusSolicitacao,
     StatusTCC,
     StatusTurma,
     TipoEntrega,
+    TipoEventoTurma,
+    TipoSolicitacao,
 )
 from sigtcc.apps.cadastro.models import (
     Alunos,
@@ -44,6 +48,7 @@ from sigtcc.apps.cadastro.models import (
     HistoricoStatusTCC,
     Orientacoes,
     PalavrasChaveTCC,
+    SolicitacoesOrientacao,
     TCCs,
     Turmas,
     TurmasMarcos,
@@ -55,7 +60,12 @@ from sigtcc.apps.cadastro.permissoes import (
     pode_transferir,
     tipo_conta,
 )
-from sigtcc.apps.cadastro.services import EventoAcesso, curso_do_codigo, registrar_evento
+from sigtcc.apps.cadastro.services import (
+    EventoAcesso,
+    curso_do_codigo,
+    notificar,
+    registrar_evento,
+)
 from sigtcc.apps.defesa.choices import StatusSessao
 from sigtcc.apps.defesa.models import Defesas
 
@@ -768,3 +778,95 @@ def confirmar_importacao(professor, tur_id, token, sessao):
         "c": nao_reconhecidos,
         "rejeitadas": [list(r) for r in rejeitadas],
     }
+
+
+# =============================================================================================
+# Transferência para a turma de TCC 2 de outro orientador (US-08; RBN-CAD-05.6; research B13)
+# =============================================================================================
+
+STATUS_TCC_TRANSFERIVEL = (StatusTCC.EM_ANDAMENTO, StatusTCC.APTO_PARA_DEFESA)
+
+
+def turmas_destino_possiveis(turma_origem, aluno):
+    """Turmas de TCC 2, do mesmo curso e período, 'Ativa', de outro Professor da Disciplina e sem
+    vínculo nem TCC do aluno (evita as unicidades; achado I-1).
+    [US-08][RBN-CAD-05.6][FR-020][I-1]
+    """
+    return (
+        Turmas.objects.filter(
+            tur_descricao=DescricaoTurma.TCC_2,
+            tur_cur_id=turma_origem.tur_cur_id,
+            tur_ano=turma_origem.tur_ano,
+            tur_semestre=turma_origem.tur_semestre,
+            tur_status=StatusTurma.ATIVA,
+        )
+        .exclude(tur_doc_id=turma_origem.tur_doc_id)
+        .exclude(alunosturmas__mat_alu=aluno)
+        .exclude(tccs__tcc_alu=aluno)
+        .select_related("tur_doc__doc")
+        .order_by("tur_identificador")
+    )
+
+
+def _travar_turmas_em_ordem(*tur_ids):
+    """Trava as turmas em ordem de tur_id, para duas transferências não se travarem (B17)."""
+    list(Turmas.objects.select_for_update().filter(pk__in=tur_ids).order_by("pk"))
+
+
+def transferir(autor, tur_origem_id, alu_id, tur_destino_id, justificativa):
+    """Transfere o aluno: o mesmo TCC, com o Status e o histórico, vai para a turma de destino e o
+    professor dela passa a orientar (RBN-CAD-05.6; research B13).
+    [US-08][RBN-CAD-05.6][RBN-CAD-04.2][FR-020][FR-021][FR-022][Q17][I-1][m6][m11]
+    """
+    with transaction.atomic():
+        _travar_turmas_em_ordem(tur_origem_id, tur_destino_id)
+        origem = turma_para(autor, tur_origem_id, TRANSFERIR)
+        if not turma_tem_orientador_automatico(origem):
+            raise PermissionDenied
+        aluno = vinculo_na_turma(origem, alu_id)
+        tcc = TCCs.objects.select_for_update().get(tcc_alu=aluno, tcc_tur=origem)
+        if tcc.tcc_status not in STATUS_TCC_TRANSFERIVEL:
+            raise ErroTurma(mensagens.MT17_TRANSFERENCIA_STATUS)
+        if Defesas.objects.filter(def_tcc=tcc, def_status__in=STATUS_SESSAO_ATIVA).exists():
+            raise ErroTurma(mensagens.MT18_TRANSFERENCIA_SESSAO)
+        destino = turmas_destino_possiveis(origem, aluno).filter(pk=tur_destino_id).first()
+        if destino is None:
+            raise ErroTurma(mensagens.MT19_SEM_DESTINO)
+        agora = timezone.now()
+        Orientacoes.objects.filter(ori_tcc=tcc, ori_status=StatusOrientacao.ATIVA).update(
+            ori_status=StatusOrientacao.ENCERRADA, ori_data_fim=agora
+        )
+        tcc.tcc_tur = destino
+        tcc.save(update_fields=["tcc_tur"])
+        AlunosTurmas.objects.filter(mat_alu=aluno, mat_tur=origem).delete()
+        AlunosTurmas.objects.create(mat_alu=aluno, mat_tur=destino, mat_data_inscricao=agora)
+        _criar_orientacao_automatica(tcc, destino)
+        Coorientacoes.objects.filter(
+            coo_tcc=tcc, coo_doc_id=destino.tur_doc_id, coo_status=StatusCoorientacao.ATIVA
+        ).update(coo_status=StatusCoorientacao.ENCERRADA, coo_data_fim=agora)
+        SolicitacoesOrientacao.objects.filter(
+            sol_tcc=tcc,
+            sol_doc_id=destino.tur_doc_id,
+            sol_tipo=TipoSolicitacao.COORIENTACAO,
+            sol_status=StatusSolicitacao.AGUARDANDO_ACEITE,
+        ).update(sol_status=StatusSolicitacao.CANCELADO, sol_data_resposta=agora)
+        remover_entregas_sem_envio(aluno, origem)
+        criar_entregas_do_aluno(aluno, destino)
+        HistoricoAlunosTurmas.objects.create(
+            hat_alu=aluno,
+            hat_tur_origem=origem,
+            hat_tur_destino=destino,
+            hat_tipo_evento=TipoEventoTurma.TRANSFERENCIA,
+            hat_justificativa=justificativa,
+            hat_data_hora=agora,
+            hat_usu=autor,
+        )
+        texto = mensagens.MT22_NOTIFICACAO_TRANSFERENCIA.format(
+            nome=aluno.alu.usu_nome,
+            origem=origem.tur_identificador,
+            destino=destino.tur_identificador,
+        )
+        notificar(aluno.alu, texto)
+        notificar(origem.tur_doc.doc, texto)
+        notificar(destino.tur_doc.doc, texto, link=reverse("cadastro:turma", args=[destino.pk]))
+    return destino

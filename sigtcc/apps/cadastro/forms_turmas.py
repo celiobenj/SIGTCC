@@ -57,10 +57,14 @@ class FormularioSigtcc(forms.Form):
     use_required_attribute = False
 
     def __init__(self, *args, **kwargs):
-        """Usa a M-14 como mensagem de campo obrigatório. [FR-002][M-14]"""
+        """Usa a M-14 como mensagem de campo obrigatório; na Justificativa vazia, o texto da US-09
+        (E1). [FR-002][M-14][US-09][RBN-CAD-05.4]
+        """
         super().__init__(*args, **kwargs)
-        for campo in self.fields.values():
-            campo.error_messages["required"] = M14_CAMPO_OBRIGATORIO
+        for nome, campo in self.fields.items():
+            campo.error_messages["required"] = (
+                mensagens.JUSTIFICATIVA_500 if nome == "justificativa" else M14_CAMPO_OBRIGATORIO
+            )
 
 
 # =============================================================================================
@@ -287,3 +291,33 @@ class ImportacaoForm(FormularioSigtcc):
         help_text="Até 2 MB e 200 alunos, com os cabeçalhos Matrícula, Nome Completo e Curso",
         widget=forms.FileInput(attrs={"accept": ".csv,.xlsx"}),
     )
+
+
+class TransferenciaForm(FormularioSigtcc):
+    """Turma de Destino (só as possíveis) e Justificativa até 500 (RBN-CAD-05.6).
+
+    [US-08][RBN-CAD-05.6][FR-020]
+    """
+
+    destino = forms.ModelChoiceField(
+        label="Turma de Destino", queryset=Turmas.objects.none(), empty_label=None
+    )
+    justificativa = forms.CharField(
+        label="Justificativa",
+        help_text="Até 500 caracteres",
+        widget=forms.Textarea(attrs={"rows": 4, "maxlength": LIMITE_JUSTIFICATIVA}),
+    )
+
+    def __init__(self, *args, destinos=None, **kwargs):
+        """Lista só as turmas de destino possíveis. [RBN-CAD-05.6][I-1]"""
+        super().__init__(*args, **kwargs)
+        self.fields["destino"].queryset = (
+            destinos if destinos is not None else Turmas.objects.none()
+        )
+        self.fields["destino"].label_from_instance = lambda t: (
+            f"{t.tur_identificador} – {t.tur_doc.doc.usu_nome}"
+        )
+
+    def clean_justificativa(self):
+        """Obrigatória, até 500 caracteres. [RBN-CAD-05.6][m9]"""
+        return validar_justificativa(self.cleaned_data["justificativa"])

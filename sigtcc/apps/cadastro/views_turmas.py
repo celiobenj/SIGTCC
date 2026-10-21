@@ -7,6 +7,7 @@ importacao.py (constituição, princípio IV; research B1).
 from functools import wraps
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
@@ -16,6 +17,7 @@ from sigtcc.apps.cadastro.forms_turmas import (
     EditarAlunoForm,
     ImportacaoForm,
     MatriculaForm,
+    TransferenciaForm,
     TurmaForm,
 )
 from sigtcc.apps.cadastro.models import EquivalenciaCursos
@@ -28,6 +30,7 @@ from sigtcc.apps.cadastro.permissoes import (
 from sigtcc.apps.cadastro.services_turmas import (
     ALTERAR,
     CONSULTAR,
+    TRANSFERIR,
     ErroTurma,
     TurmaArquivada,
 )
@@ -385,3 +388,48 @@ def modelo_importacao(request):
     resposta = HttpResponse(importacao.gerar_modelo_csv(), content_type="text/csv; charset=utf-8")
     resposta["Content-Disposition"] = 'attachment; filename="modelo_importacao_alunos.csv"'
     return resposta
+
+
+# ---------------------------------------------------------------------------------------------
+# Transferência (US-08; RBN-CAD-05.6)
+# ---------------------------------------------------------------------------------------------
+
+
+@perfil_requerido("docente", "secretaria")
+@trata_turma_arquivada
+def aluno_transferir(request, tur_id, alu_id):
+    """ "Transferir": Turma de Destino e Justificativa; Professor da turma ou Secretaria do curso.
+
+    [US-08][RBN-CAD-05.6][FR-020]-[FR-022][Q9]
+    """
+    registro = services_turmas.turma_para(request.user, tur_id, TRANSFERIR)
+    if not services_turmas.turma_tem_orientador_automatico(registro):
+        raise PermissionDenied
+    aluno = services_turmas.vinculo_na_turma(registro, alu_id)
+    destinos = services_turmas.turmas_destino_possiveis(registro, aluno)
+    if not destinos.exists():
+        messages.error(request, mensagens.MT19_SEM_DESTINO)
+        return redirect("cadastro:turma", tur_id=tur_id)
+    formulario = TransferenciaForm(
+        request.POST if request.method == "POST" else None, destinos=destinos
+    )
+    erro = ""
+    if request.method == "POST":
+        if formulario.is_valid():
+            dados = formulario.cleaned_data
+            try:
+                destino = services_turmas.transferir(
+                    request.user, tur_id, alu_id, dados["destino"].pk, dados["justificativa"]
+                )
+            except ErroTurma as falha:
+                erro = falha.mensagem
+            else:
+                messages.success(
+                    request,
+                    mensagens.MT16_TRANSFERIDO.format(identificador=destino.tur_identificador),
+                )
+                return redirect("cadastro:turma", tur_id=tur_id)
+        elif "destino" in formulario.errors:
+            erro = mensagens.MT19_SEM_DESTINO
+    contexto = {"turma": registro, "aluno": aluno, "form": formulario, "erro": erro}
+    return render(request, "cadastro/turmas/transferir.html", contexto)

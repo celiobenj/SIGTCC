@@ -71,4 +71,9 @@ urlpatterns = [
         views_turmas.aluno_editar,
         name="aluno_editar",
     ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/transferir/",
+        views_turmas.aluno_transferir,
+        name="aluno_transferir",
+    ),
 ]
