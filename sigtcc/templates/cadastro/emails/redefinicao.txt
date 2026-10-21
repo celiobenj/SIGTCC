@@ -1,0 +1,10 @@
+{% comment %}E-mail com o link de redefinição de senha (24 horas). [US-12][RBN-CAD-06.7]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
+
+Recebemos um pedido para redefinir a sua senha no SIGTCC. Use o link abaixo para criar uma nova senha. Ele vale por 24 horas e deixa de valer depois de usado.
+
+{{ link }}
+
+Se você não pediu a redefinição, ignore este e-mail: a sua senha continua a mesma.
+
+SIGTCC · Núcleo de Computação · EST/UEA
+{% endautoescape %}

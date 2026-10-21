@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% comment %}
+  Confirmação do "Resetar primeiro acesso" (M-12, provisória); o POST executa (M-13).
+  [US-12][RBN-CAD-06.8][FR-015]
+{% endcomment %}
+{% block titulo %}Resetar primeiro acesso · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Resetar primeiro acesso</h2>
+<div class="cartao">
+  <p>{{ pergunta }}</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="flex entre">
+      <a class="btn txt" href="{% url 'cadastro:aluno' aluno.pk %}">Cancelar</a>
+      <button type="submit" class="btn pri perigo">Resetar primeiro acesso</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

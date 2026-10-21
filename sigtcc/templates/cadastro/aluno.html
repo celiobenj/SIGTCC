@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% comment %}
+  Tela mínima do aluno para o Professor da Disciplina. O botão "Resetar primeiro acesso" só
+  aparece quando pode_resetar_primeiro_acesso permite (Q9, Q27, Q29). A US-41 levará o botão ao
+  painel do aluno (índice Q-13).
+  [US-12][RBN-CAD-06.8][FR-015][Q3][Q9][Q27][Q29]
+{% endcomment %}
+{% block titulo %}{{ aluno.alu.usu_nome }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">{{ aluno.alu.usu_nome }}</h2>
+<p class="pg-sub">Aluno</p>
+<div class="cartao">
+  <div class="dado"><span>Nome</span><b>{{ aluno.alu.usu_nome }}</b></div>
+  <div class="dado"><span>Matrícula</span><b>{{ aluno.alu_matricula }}</b></div>
+  <div class="dado"><span>E-mail Institucional</span><b>{{ aluno.alu.usu_email|default:"—" }}</b></div>
+  <div class="dado"><span>Status da Conta</span><b>{{ aluno.alu.usu_status }}</b></div>
+</div>
+{% if pode_resetar %}
+  <a class="btn perigo" href="{% url 'cadastro:resetar_primeiro_acesso' aluno.pk %}"><span class="ms">restart_alt</span>Resetar primeiro acesso</a>
+{% endif %}
+{% endblock %}

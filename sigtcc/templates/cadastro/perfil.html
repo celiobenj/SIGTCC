@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% comment %}
+  "Meu perfil": dados só de leitura e, quando o papel permite, o formulário com os campos
+  editáveis (Aluno: e-mail; Docente: assinatura; Membro Externo: e-mail, titulação, instituição e
+  assinatura). Secretaria: tudo só leitura, sem "Salvar".
+  [US-38][RBN-CAD-13.1][FR-019][FR-020][FR-021][US-12][FR-012]
+{% endcomment %}
+{% block titulo %}Meu perfil · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <h2 class="pg">Meu perfil</h2>
+  <a class="btn" href="{% url 'cadastro:alterar_senha' %}"><span class="ms">key</span>Alterar senha</a>
+</div>
+{% if erro %}<div class="alerta erro mt16" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>{% endif %}
+<div class="cartao mt16">
+  {% for rotulo, valor in dados %}<div class="dado"><span>{{ rotulo }}</span><b>{{ valor|default:"—" }}</b></div>{% endfor %}
+</div>
+{% if form %}
+<div class="cartao">
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% for campo in form %}
+      {% include "includes/campo.html" with campo=campo %}
+      {% if campo.name == "assinatura" and tem_assinatura %}<img class="assin" src="{% url 'cadastro:assinatura' %}" alt="Imagem de assinatura atual">{% endif %}
+    {% endfor %}
+    <div class="flex entre mt16">
+      <span></span>
+      <button type="submit" class="btn pri">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

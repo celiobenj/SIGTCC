@@ -1,0 +1,27 @@
+{% extends "base_publica.html" %}
+{% comment %}
+  Ativação da conta: formulário de senha (link VALIDO) ou a mensagem do estado do link
+  (adulterado, substituído, conta inativa ou expirada). O token não aparece na página (A3).
+  [US-10][RBN-CAD-06.1][RBN-CAD-06.3][FR-004][FR-005][FR-016][Q23][Q26]
+{% endcomment %}
+{% block titulo %}Ativar conta · SIGTCC{% endblock %}
+{% block cabecalho %}Ativar conta{% endblock %}
+{% block conteudo %}
+{% if erro %}
+  <div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>
+  <div class="links">
+    <a href="{% url 'cadastro:primeiro_acesso' %}">Primeiro acesso</a>
+    <a href="{% url 'cadastro:entrar' %}">Voltar ao login</a>
+  </div>
+{% else %}
+  <form method="post" action="{% url 'cadastro:definir_senha' %}" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form.senha %}
+    {% include "includes/campo.html" with campo=form.confirmacao %}
+    <div class="flex entre">
+      <span></span>
+      <button type="submit" class="btn pri">Ativar conta</button>
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

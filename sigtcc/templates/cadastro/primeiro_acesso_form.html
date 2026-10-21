@@ -1,0 +1,20 @@
+{% extends "base_publica.html" %}
+{% comment %}
+  Formulário do primeiro acesso (Aluno, ou Docente, Secretaria e Membro Externo). Só o erro do
+  primeiro campo com problema aparece, com o campo destacado (spec Q12).
+  [US-10][RBN-CAD-06.1][RBN-CAD-06.2][FR-001]-[FR-003][Q12]
+{% endcomment %}
+{% block titulo %}Primeiro acesso · SIGTCC{% endblock %}
+{% block cabecalho %}{{ titulo }}{% endblock %}
+{% block conteudo %}
+{% if erro %}<div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>{% endif %}
+{% if orientacao %}<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">{{ orientacao }}</span></div>{% endif %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% for campo in form %}{% include "includes/campo.html" with campo=campo %}{% endfor %}
+  <div class="flex entre">
+    <a class="btn txt" href="{% url 'cadastro:primeiro_acesso' %}">Voltar</a>
+    <button type="submit" class="btn pri">Enviar</button>
+  </div>
+</form>
+{% endblock %}

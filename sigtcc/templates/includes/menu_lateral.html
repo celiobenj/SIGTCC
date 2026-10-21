@@ -1,0 +1,10 @@
+{% comment %}
+  Menu lateral com os itens permitidos ao perfil (processador de contexto "menu", research A8).
+  [FR-025][FR-024][FR-010][Q7]
+{% endcomment %}
+<nav class="drawer" id="menu-lateral" aria-label="Menu principal">
+  {% for item in menu_itens %}
+    {% ifchanged item.secao %}{% if item.secao %}<div class="dr-sec">{{ item.secao }}</div>{% endif %}{% endifchanged %}
+    <a class="dr-item{% if item.ativo %} ativo{% endif %}" href="{{ item.url }}"{% if item.ativo %} aria-current="page"{% endif %}><span class="ms">{{ item.icone }}</span>{{ item.rotulo }}</a>
+  {% endfor %}
+</nav>

@@ -1,0 +1,168 @@
+/*
+  Folha de estilo do SIGTCC: visual do protótipo de 17/10
+  (docs/fonte/prototipo/prototipo_17_10.html). Nenhum código JavaScript copiado.
+  Tokens de cor e fonte iguais aos do protótipo; componentes reescritos para os templates Django.
+  Ajustes em 900 e 600 px, como no protótipo; sem rolagem horizontal a partir de 360 px.
+  [FR-024][Q22][SC-007] research A14
+*/
+
+/* ===================== Tokens de design (do protótipo) ===================== */
+:root {
+  --azul: #1967d2; --azul-claro: #e8f0fe; --azul-btn: #1a73e8;
+  --verde: #137333; --verde-claro: #e6f4ea;
+  --laranja: #e37400; --amarelo: #f9ab00; --amarelo-claro: #fef7e0;
+  --vermelho: #c5221f; --vermelho-claro: #fce8e6;
+  --roxo: #9334e6; --teal: #129eaf;
+  --texto: #202124; --texto2: #5f6368; --texto3: #80868b;
+  --borda: #dadce0; --fundo: #fff; --fundo2: #f8f9fa; --hover: #f1f3f4;
+  --radius: 8px;
+  --sombra: 0 1px 2px 0 rgba(60, 64, 67, .3), 0 1px 3px 1px rgba(60, 64, 67, .15);
+  --sombra2: 0 1px 3px 0 rgba(60, 64, 67, .3), 0 4px 8px 3px rgba(60, 64, 67, .15);
+  --fonte: "Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --fonte-tit: "Figtree", "Roboto", system-ui, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--fonte); color: var(--texto); background: var(--fundo); font-size: 14px; line-height: 1.45; min-width: 360px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--azul); }
+:focus-visible { outline: 2px solid var(--azul-btn); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Ícones Material Symbols */
+.ms { font-family: "Material Symbols Outlined"; font-weight: normal; font-style: normal; font-size: 22px; line-height: 1; display: inline-block; vertical-align: middle; -webkit-font-smoothing: antialiased; user-select: none; width: 1em; overflow: hidden; flex: none; }
+/* Sem a fonte de ícones, o nome do ícone não aparece no lugar dele. */
+body:not(.icones) .ms { visibility: hidden; }
+
+/* ===================== Barra superior ===================== */
+.topbar { position: sticky; top: 0; z-index: 30; height: 64px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #fff; border-bottom: 1px solid var(--borda); }
+.iconbtn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--texto2); position: relative; text-decoration: none; }
+.iconbtn:hover { background: var(--hover); }
+.logo { display: flex; align-items: center; gap: 10px; font-family: var(--fonte-tit); font-size: 22px; color: var(--texto2); text-decoration: none; white-space: nowrap; }
+.logo-mark { width: 36px; height: 36px; border-radius: 8px; background: var(--verde); display: grid; place-items: center; color: #fff; }
+.logo-mark.grande { width: 48px; height: 48px; }
+.logo-mark.grande .ms { font-size: 28px; }
+.spacer { flex: 1; }
+.badge { position: absolute; top: 6px; right: 6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--vermelho); color: #fff; font-size: 11px; display: grid; place-items: center; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-weight: 500; font-size: 14px; flex: none; background: var(--azul); }
+.avatar.lg { width: 72px; height: 72px; font-size: 30px; }
+
+/* Menu do usuário (details/summary, sem JavaScript) */
+.menu-usuario { position: relative; }
+.menu-usuario > summary { list-style: none; }
+.menu-usuario > summary::-webkit-details-marker { display: none; }
+.menu-user { position: absolute; right: 0; top: 52px; width: 320px; background: #fff; border-radius: 8px; box-shadow: var(--sombra2); z-index: 50; padding: 20px; text-align: center; }
+.menu-user .nome { margin-top: 12px; font-size: 16px; font-weight: 500; }
+.menu-user .acoes { justify-content: center; margin-top: 12px; }
+.menu-user form { display: inline; }
+
+/* ===================== Layout principal ===================== */
+.shell { display: flex; min-height: calc(100vh - 64px); }
+.drawer { width: 300px; flex: none; border-right: 1px solid var(--borda); padding: 8px 0; overflow-y: auto; height: calc(100vh - 64px); position: sticky; top: 64px; background: #fff; }
+.drawer.oculto { display: none; }
+.dr-item { display: flex; align-items: center; gap: 20px; height: 48px; padding: 0 24px; margin-right: 12px; border-radius: 0 24px 24px 0; color: var(--texto); text-decoration: none; font-weight: 500; }
+.dr-item:hover { background: var(--hover); }
+.dr-item.ativo { background: var(--azul-claro); color: var(--azul); }
+.dr-item .ms { color: var(--texto2); }
+.dr-item.ativo .ms { color: var(--azul); }
+.dr-sec { padding: 14px 24px 6px; font-size: 13px; color: var(--texto2); border-top: 1px solid var(--borda); margin-top: 8px; }
+main { flex: 1; min-width: 0; padding: 24px; max-width: 100%; }
+.wrap { max-width: 1000px; margin: 0 auto; }
+h2.pg { font-family: var(--fonte-tit); font-weight: 500; font-size: 28px; margin: 0 0 4px; }
+p.pg-sub { color: var(--texto2); margin: 0 0 20px; }
+
+/* ===================== Botões ===================== */
+.btn { height: 36px; padding: 0 20px; border-radius: 4px; border: 1px solid var(--borda); background: #fff; color: var(--azul-btn); font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; text-decoration: none; }
+.btn:hover { background: #f6fafe; border-color: #d2e3fc; }
+.btn.pri { background: var(--azul-btn); color: #fff; border-color: var(--azul-btn); }
+.btn.pri:hover { background: #1765cc; box-shadow: var(--sombra); }
+.btn.txt { border-color: transparent; background: none; }
+.btn.txt:hover { background: #f6fafe; }
+.btn.perigo { color: var(--vermelho); }
+.btn.pri.perigo { background: var(--vermelho); color: #fff; border-color: var(--vermelho); }
+.btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.btn .ms { font-size: 18px; }
+
+/* ===================== Campos ===================== */
+.campo { margin-bottom: 16px; }
+.campo label { display: block; font-size: 12px; color: var(--texto2); margin-bottom: 4px; font-weight: 500; }
+.campo .dica { font-size: 12px; color: var(--texto3); margin-top: 3px; }
+/* Campos de qualquer formulário dentro de .campo recebem o visual, sem classe extra. */
+.inp, .campo :is(input:not([type=checkbox]):not([type=radio]), select, textarea) { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 4px; background: var(--fundo2); }
+.campo :is(input, select, textarea):hover { background: #f1f3f4; }
+.campo :is(input, select, textarea):focus { outline: none; border-color: var(--azul-btn); background: #fff; box-shadow: inset 0 -2px 0 var(--azul-btn); }
+.campo :is(input, select, textarea):is([readonly], :disabled) { color: var(--texto2); background: var(--fundo); }
+/* Campo com erro: destacado em vermelho (US-10 e US-38, "campo destacado"). */
+.campo.com-erro :is(input, select, textarea), .inp.erro { border-color: var(--vermelho); box-shadow: inset 0 -2px 0 var(--vermelho); }
+.msg-erro { color: var(--vermelho); font-size: 12px; margin-top: 4px; }
+.check { display: flex; align-items: center; gap: 8px; margin: 6px 0; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--azul-btn); }
+
+/* ===================== Alertas e avisos temporários ===================== */
+.alerta { border-radius: 8px; padding: 12px 16px; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; font-size: 13px; }
+.alerta .ms { font-size: 20px; }
+.alerta .texto { flex: 1; }
+.alerta .fechar { border: 0; background: none; color: inherit; cursor: pointer; padding: 0; }
+.alerta.info { background: var(--azul-claro); color: #174ea6; }
+.alerta.aviso { background: var(--amarelo-claro); color: #7a4a00; }
+.alerta.erro { background: var(--vermelho-claro); color: var(--vermelho); }
+.alerta.sucesso { background: var(--verde-claro); color: var(--verde); }
+
+/* ===================== Cartões, dados e tabelas ===================== */
+.cartao { border: 1px solid var(--borda); border-radius: 10px; padding: 14px 16px; background: #fff; margin-bottom: 16px; }
+.cartao > header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.cartao > header h3 { margin: 0; font-family: var(--fonte-tit); font-weight: 600; font-size: 16px; flex: 1; }
+.dado { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--hover); font-size: 13px; }
+.dado:last-of-type { border-bottom: 0; }
+.dado > span { color: var(--texto2); }
+.tabela-wrap { overflow-x: auto; border: 1px solid var(--borda); border-radius: var(--radius); }
+table.tabela { border-collapse: collapse; width: 100%; font-size: 13px; }
+.tabela th { text-align: left; font-weight: 500; color: var(--texto2); background: var(--fundo2); padding: 10px 12px; border-bottom: 1px solid var(--borda); white-space: nowrap; }
+.tabela td { padding: 10px 12px; border-bottom: 1px solid var(--borda); vertical-align: top; overflow-wrap: anywhere; }
+.tabela tr:last-child td { border-bottom: 0; }
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: var(--hover); color: var(--texto2); white-space: nowrap; }
+.chip.azul { background: var(--azul-claro); color: var(--azul); }
+.chip.verde { background: var(--verde-claro); color: var(--verde); }
+
+/* Lista de notificações */
+.item { display: flex; align-items: center; gap: 16px; padding: 12px 8px; border-bottom: 1px solid var(--borda); min-height: 56px; color: var(--texto); text-decoration: none; }
+.item:last-child { border-bottom: 0; }
+.item:hover { background: var(--hover); }
+.item.nova { background: var(--azul-claro); }
+.item .corpo { flex: 1; min-width: 0; }
+.item .corpo small { color: var(--texto2); display: block; margin-top: 4px; }
+.vazio { text-align: center; padding: 48px 16px; color: var(--texto2); }
+.vazio .ms { font-size: 56px; color: var(--borda); display: block; margin: 0 auto 8px; }
+.paginacao { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 16px; }
+
+/* Imagem de assinatura */
+.assin { height: 56px; max-width: 220px; object-fit: contain; background: #fff; border: 1px dashed var(--borda); border-radius: 6px; padding: 4px; }
+
+/* ===================== Login e páginas públicas ===================== */
+.login-pg { min-height: 100vh; display: grid; place-items: center; background: var(--fundo2); padding: 24px; }
+.login-card { background: #fff; border: 1px solid var(--borda); border-radius: 8px; width: 100%; max-width: 460px; padding: 40px 36px; }
+.login-card .marca { display: flex; justify-content: center; }
+.login-card h1 { font-family: var(--fonte-tit); font-weight: 500; font-size: 24px; margin: 16px 0 4px; text-align: center; }
+.login-card p.sub { text-align: center; color: var(--texto2); margin: 0 0 24px; }
+.login-card .links { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+/* ===================== Utilidades ===================== */
+.flex { display: flex; gap: 8px; align-items: center; }
+.flex-wrap { flex-wrap: wrap; }
+.entre { justify-content: space-between; }
+.muted { color: var(--texto2); }
+.mt16 { margin-top: 16px; }
+
+/* ===================== Responsividade (900 e 600 px, como no protótipo) ===================== */
+@media (max-width: 900px) {
+  .drawer { position: fixed; left: 0; top: 64px; z-index: 40; box-shadow: var(--sombra2); }
+}
+@media (max-width: 600px) {
+  main { padding: 16px; }
+  .logo .nome { display: none; }
+  .menu-user { right: -8px; width: calc(100vw - 16px); max-width: 320px; }
+  .dado { grid-template-columns: 1fr; gap: 2px; }
+  .login-card { padding: 32px 20px; }
+  .login-pg { padding: 16px; }
+}

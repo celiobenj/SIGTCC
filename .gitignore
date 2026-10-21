@@ -10,3 +10,6 @@ sigtcc/media/
 .claude/settings.local.json
 # Cache do bloqueio de login (research D2)
 /cache/
+# Log de eventos de acesso e cache do bloqueio de login (feature 003, research A2 e A13)
+/logs/
+/cache_acesso/
