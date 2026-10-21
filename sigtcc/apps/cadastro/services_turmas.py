@@ -7,6 +7,9 @@ contrário (research B6, N2).
 [US-07][US-08][US-09][RBN-CAD-04.1 a 04.5][RBN-CAD-05.1 a 05.8][RBN-CAD-08.4][RBN-CAD-08.5]
 """
 
+import enum
+from dataclasses import dataclass, field
+
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.http import Http404
@@ -16,7 +19,12 @@ from sigtcc.apps.cadastro import mensagens
 from sigtcc.apps.cadastro.cargas import CURSOS_COM_ORIENTADOR_AUTOMATICO
 from sigtcc.apps.cadastro.choices import (
     DescricaoTurma,
+    GatilhoStatusTCC,
+    OrigemOrientacao,
+    StatusConta,
+    StatusCoorientacao,
     StatusEntrega,
+    StatusOrientacao,
     StatusTCC,
     StatusTurma,
     TipoEntrega,
@@ -24,13 +32,18 @@ from sigtcc.apps.cadastro.choices import (
 from sigtcc.apps.cadastro.models import (
     Alunos,
     AlunosTurmas,
+    Artigos,
+    Coorientacoes,
     Disciplinas,
     EntregasMarcos,
     HistoricoAlunosTurmas,
     HistoricoStatusTCC,
+    Orientacoes,
+    PalavrasChaveTCC,
     TCCs,
     Turmas,
     TurmasMarcos,
+    Usuarios,
 )
 from sigtcc.apps.cadastro.permissoes import (
     pode_alterar_turma,
@@ -373,3 +386,293 @@ def alunos_da_turma(turma):
             }
         )
     return linhas
+
+
+# =============================================================================================
+# Matrícula de alunos e edição do aluno (US-08; research B6 a B8, B12)
+# =============================================================================================
+
+# Status em que algum TCC impede nova matrícula (spec Q7). [US-08][RBN-CAD-05.5][Q7]
+STATUS_TCC_CONCLUIDO = (StatusTCC.APROVADO, StatusTCC.APROVADO_COM_CORRECOES, StatusTCC.CONCLUIDO)
+
+
+class EstadoMatricula(enum.Enum):
+    """Resultado da matrícula de uma linha (individual ou do arquivo). [US-08][RBN-CAD-05.1]"""
+
+    CRIADO = "criado"
+    VINCULADO = "vinculado"
+    COPIADO = "copiado"
+    JA_NA_TURMA = "ja_na_turma"
+    TCC_EM_CURSO = "tcc_em_curso"
+    TCC_CONCLUIDO = "tcc_concluido"
+    APROVADO_EM_TURMA_TCC1 = "aprovado_em_turma_tcc1"
+
+
+RECUSAS = (
+    EstadoMatricula.JA_NA_TURMA,
+    EstadoMatricula.TCC_EM_CURSO,
+    EstadoMatricula.TCC_CONCLUIDO,
+    EstadoMatricula.APROVADO_EM_TURMA_TCC1,
+)
+
+
+@dataclass
+class ResultadoMatricula:
+    """Estado, aluno, mensagem principal e avisos (MT-13, MT-29) da matrícula.
+
+    [US-08][RBN-CAD-05.1][RBN-CAD-05.5][RBN-CAD-05.7][Q16]
+    """
+
+    estado: EstadoMatricula
+    aluno: object = None
+    mensagem: str = ""
+    avisos: list = field(default_factory=list)
+    curso_reconhecido: bool = True
+
+    @property
+    def matriculado(self):
+        return self.estado not in RECUSAS
+
+
+def _criar_aluno_novo(matricula, nome, codigo_curso):
+    """Conta 'Aguardando Ativação' sem e-mail, sem senha e sem link (spec 003, Q1) e o Aluno.
+
+    [US-08][RBN-CAD-05.1][FR-012]
+    """
+    usuario = Usuarios.objects.create_user(None, nome, usu_status=StatusConta.AGUARDANDO_ATIVACAO)
+    return Alunos.objects.create(
+        alu=usuario, alu_matricula=matricula, alu_codigo_curso=codigo_curso
+    )
+
+
+def _aluno_travado(matricula):
+    """Aluno pela matrícula, travado (select_for_update), ou None. [B6][m8]"""
+    return (
+        Alunos.objects.select_for_update(of=("self",))
+        .select_related("alu")
+        .filter(alu_matricula=matricula)
+        .first()
+    )
+
+
+def _registrar_historico(tcc, turma, autor, anterior, novo, gatilho):
+    """Uma transição do Status do TCC no histórico (RBN-CAD-08.7). [RBN-CAD-08.7][FR-012]"""
+    HistoricoStatusTCC.objects.create(
+        hst_tcc=tcc,
+        hst_tur=turma,
+        hst_status_anterior=anterior,
+        hst_status_novo=novo,
+        hst_gatilho=gatilho,
+        hst_data_hora=timezone.now(),
+        hst_usu=autor,
+    )
+
+
+def _criar_orientacao_automatica(tcc, turma):
+    """Professor da turma como Orientador, origem 'Automático' (RBN-CAD-04.2). [FR-004][B8]"""
+    Orientacoes.objects.create(
+        ori_tcc=tcc,
+        ori_doc=turma.tur_doc,
+        ori_origem=OrigemOrientacao.AUTOMATICO,
+        ori_status=StatusOrientacao.ATIVA,
+        ori_data_inicio=timezone.now(),
+    )
+
+
+def encerrar_orientacoes_ativas(tcc, agora=None):
+    """Orientações e coorientações 'Ativa' do TCC → 'Encerrada', com data de fim.
+
+    [US-08][US-09][RBN-CAD-05.6][RBN-CAD-08.4][RBN-CAD-08.6][Q10][B7]
+    """
+    agora = agora or timezone.now()
+    Orientacoes.objects.filter(ori_tcc=tcc, ori_status=StatusOrientacao.ATIVA).update(
+        ori_status=StatusOrientacao.ENCERRADA, ori_data_fim=agora
+    )
+    Coorientacoes.objects.filter(coo_tcc=tcc, coo_status=StatusCoorientacao.ATIVA).update(
+        coo_status=StatusCoorientacao.ENCERRADA, coo_data_fim=agora
+    )
+
+
+def _copiar_tcc_aprovado(autor, turma, aluno, tcc1):
+    """Aprovado em TCC 1 matriculado em TCC 2: novo TCC carregado com os dados do TCC 1, direto
+    'Em Andamento'; o TCC 1 fica como histórico (spec Q6; research B7).
+    [US-08][RBN-CAD-05.5][RBN-CAD-08.6][FR-013][Q6][I-13][m6]
+    """
+    agora = timezone.now()
+    orientacoes = list(Orientacoes.objects.filter(ori_tcc=tcc1, ori_status=StatusOrientacao.ATIVA))
+    coorientacoes = list(
+        Coorientacoes.objects.filter(coo_tcc=tcc1, coo_status=StatusCoorientacao.ATIVA)
+    )
+    encerrar_orientacoes_ativas(tcc1, agora)
+    novo = TCCs.objects.create(
+        tcc_alu=aluno,
+        tcc_tur=turma,
+        tcc_status=StatusTCC.EM_ANDAMENTO,
+        tcc_titulo=tcc1.tcc_titulo,
+        tcc_subtitulo=tcc1.tcc_subtitulo,
+        tcc_resumo=tcc1.tcc_resumo,
+        tcc_modalidade=tcc1.tcc_modalidade,
+        tcc_link_proposta=tcc1.tcc_link_proposta,
+        tcc_ari=tcc1.tcc_ari,
+    )
+    _registrar_historico(
+        novo,
+        turma,
+        autor,
+        StatusTCC.APROVADO_PARA_TCC_2,
+        StatusTCC.EM_ANDAMENTO,
+        GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2,
+    )
+    for palavra in PalavrasChaveTCC.objects.filter(pal_tcc=tcc1):
+        PalavrasChaveTCC.objects.create(pal_tcc=novo, pal_palavra=palavra.pal_palavra)
+    artigo = Artigos.objects.filter(art=tcc1).first()
+    if artigo is not None:
+        Artigos.objects.create(
+            art=novo,
+            art_veiculo_publicacao=artigo.art_veiculo_publicacao,
+            art_link_doi=artigo.art_link_doi,
+            art_qualis_capes=artigo.art_qualis_capes,
+            art_status_submissao=artigo.art_status_submissao,
+            art_homologacao=artigo.art_homologacao,
+            art_homologado_por=artigo.art_homologado_por,
+            art_data_homologacao=artigo.art_data_homologacao,
+        )
+    automatico = turma_tem_orientador_automatico(turma)
+    if automatico:
+        _criar_orientacao_automatica(novo, turma)
+    else:
+        for orientacao in orientacoes:
+            Orientacoes.objects.create(
+                ori_tcc=novo,
+                ori_doc_id=orientacao.ori_doc_id,
+                ori_origem=orientacao.ori_origem,
+                ori_status=StatusOrientacao.ATIVA,
+                ori_data_inicio=agora,
+            )
+    for coorientacao in coorientacoes:
+        if automatico and coorientacao.coo_doc_id == turma.tur_doc_id:
+            continue
+        Coorientacoes.objects.create(
+            coo_tcc=novo,
+            coo_doc_id=coorientacao.coo_doc_id,
+            coo_cext_id=coorientacao.coo_cext_id,
+            coo_status=StatusCoorientacao.ATIVA,
+            coo_data_inicio=agora,
+        )
+    return novo
+
+
+def _recusa_por_tccs(aluno, turma):
+    """Recusa da matrícula pelos TCCs do aluno (spec Q7; Q-39), ou None e o TCC a copiar.
+
+    [US-08][RBN-CAD-05.5][FR-013][Q7][m5]
+    """
+    tccs = TCCs.objects.filter(tcc_alu=aluno).select_related("tcc_tur")
+    em_curso = (
+        tccs.filter(tcc_status__in=STATUS_TCC_EM_CURSO)
+        .exclude(tcc_tur__tur_status=StatusTurma.ARQUIVADA)
+        .first()
+    )
+    if em_curso is not None:
+        mensagem = mensagens.MT26_TCC_EM_CURSO.format(
+            identificador=em_curso.tcc_tur.tur_identificador
+        )
+        return ResultadoMatricula(EstadoMatricula.TCC_EM_CURSO, aluno, mensagem), None
+    if tccs.filter(tcc_status__in=STATUS_TCC_CONCLUIDO).exists():
+        return (
+            ResultadoMatricula(EstadoMatricula.TCC_CONCLUIDO, aluno, mensagens.MT27_TCC_CONCLUIDO),
+            None,
+        )
+    ultimo = tccs.order_by("-tcc_id").first()
+    if ultimo is not None and ultimo.tcc_status == StatusTCC.APROVADO_PARA_TCC_2:
+        if turma.tur_descricao != DescricaoTurma.TCC_2:
+            # PROVISÓRIO até a resposta da Q-39 do índice (research B6).
+            return (
+                ResultadoMatricula(
+                    EstadoMatricula.APROVADO_EM_TURMA_TCC1,
+                    aluno,
+                    mensagens.MT28_APROVADO_EM_TURMA_TCC1,
+                ),
+                None,
+            )
+        return None, ultimo
+    return None, None
+
+
+def matricular(professor, turma, matricula, nome, codigo_curso):
+    """Matricula um aluno na turma (individual ou uma linha do arquivo), na ordem do diagrama
+    "Matrícula por CSV" e do research B6. A turma deve vir travada por quem chama.
+    [US-08][RBN-CAD-05.1][RBN-CAD-05.5][RBN-CAD-05.7][RBN-CAD-04.2][FR-011]-[FR-015][Q7][Q16]
+    [Q17][m7][m8]
+    """
+    curso = curso_do_codigo(codigo_curso)
+    avisos = []
+    aluno = _aluno_travado(matricula)
+    novo = False
+    if aluno is None:
+        try:
+            with transaction.atomic():
+                aluno = _criar_aluno_novo(matricula, nome, codigo_curso)
+            novo = True
+        except IntegrityError:
+            # Outra requisição cadastrou a matrícula no meio (m7): segue como aluno existente.
+            aluno = _aluno_travado(matricula)
+            if aluno is None:
+                raise
+    tcc_para_copiar = None
+    if not novo:
+        if AlunosTurmas.objects.filter(mat_tur=turma, mat_alu=aluno).exists():
+            return ResultadoMatricula(
+                EstadoMatricula.JA_NA_TURMA, aluno, mensagens.ALUNO_JA_NA_TURMA
+            )
+        recusa, tcc_para_copiar = _recusa_por_tccs(aluno, turma)
+        if recusa is not None:
+            return recusa
+        if aluno.alu.usu_status in (StatusConta.INATIVA, StatusConta.EXPIRADA):
+            avisos.append(mensagens.MT29_CONTA_NAO_ATIVA.format(status=aluno.alu.usu_status))
+        curso = curso_do_codigo(aluno.alu_codigo_curso)
+    AlunosTurmas.objects.create(mat_alu=aluno, mat_tur=turma, mat_data_inscricao=timezone.now())
+    if tcc_para_copiar is not None:
+        _copiar_tcc_aprovado(professor, turma, aluno, tcc_para_copiar)
+        estado = EstadoMatricula.COPIADO
+    else:
+        tcc = TCCs.objects.create(tcc_alu=aluno, tcc_tur=turma, tcc_status=StatusTCC.SEM_PROPOSTA)
+        _registrar_historico(
+            tcc, turma, professor, None, StatusTCC.SEM_PROPOSTA, GatilhoStatusTCC.VINCULO_A_TURMA
+        )
+        if turma_tem_orientador_automatico(turma):
+            _criar_orientacao_automatica(tcc, turma)
+        estado = EstadoMatricula.CRIADO if novo else EstadoMatricula.VINCULADO
+    criar_entregas_do_aluno(aluno, turma)
+    if curso is not None and curso.pk != turma.tur_cur_id:
+        avisos.append(
+            mensagens.MT13_CURSO_DIVERGENTE.format(
+                curso_aluno=curso.cur_nome, curso_turma=turma.tur_cur.cur_nome
+            )
+        )
+    return ResultadoMatricula(
+        estado, aluno, mensagens.ALUNO_MATRICULADO, avisos, curso_reconhecido=curso is not None
+    )
+
+
+def matricular_individual(professor, tur_id, matricula, nome, codigo_curso):
+    """Matrícula individual com a turma travada (research B17). [US-08][RBN-CAD-05.1][FR-011]"""
+    with transaction.atomic():
+        turma = turma_para(professor, tur_id, ALTERAR, travar=True)
+        return matricular(professor, turma, matricula, nome, codigo_curso)
+
+
+def editar_aluno(professor, tur_id, alu_id, nome, codigo_curso):
+    """Corrige Nome Completo e Curso do aluno da turma; a Matrícula não muda (RBN-CAD-05.3).
+
+    [US-08][RBN-CAD-05.3][FR-019][I-7]
+    """
+    with transaction.atomic():
+        turma = turma_para(professor, tur_id, ALTERAR, travar=True)
+        aluno = vinculo_na_turma(turma, alu_id)
+        aluno = _aluno_travado(aluno.alu_matricula)
+        aluno.alu.usu_nome = nome
+        aluno.alu.save(update_fields=["usu_nome"])
+        aluno.alu_codigo_curso = codigo_curso
+        aluno.save(update_fields=["alu_codigo_curso"])
+    return aluno

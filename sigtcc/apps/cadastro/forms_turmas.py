@@ -167,3 +167,109 @@ class TurmaForm(FormularioSigtcc):
         if inicio and termino and termino <= inicio:
             self.add_error("hora_termino", mensagens.HORARIO_TERMINO)
         return dados
+
+
+# =============================================================================================
+# Aluno: matrícula individual e edição (US-08; RBN-CAD-05.1 e 05.3; research B6)
+# =============================================================================================
+
+MATRICULA = re.compile(r"\d{10}")
+CODIGO_CURSO = re.compile(r"[A-Z0-9]{1,20}")
+LIMITE_NOME = 150
+
+
+def letra_latina(caractere):
+    """Letra latina, com ou sem acento (exclui ×, ÷, ª, º e outras escritas). [N6]"""
+    return caractere.isalpha() and unicodedata.name(caractere, "").startswith("LATIN")
+
+
+def validar_matricula(valor):
+    """Exatamente 10 dígitos ("A matrícula deve ter 10 dígitos numéricos"). [RBN-CAD-05.1]"""
+    texto = normalizar_texto(valor)
+    if not MATRICULA.fullmatch(texto):
+        raise ValidationError(mensagens.MATRICULA_FORMATO)
+    return texto
+
+
+def validar_nome(valor):
+    """Só letras latinas (com acentos) e espaços, até 150 (MT-11). [RBN-CAD-05.1][N6]"""
+    texto = normalizar_texto(valor)
+    if not texto or len(texto) > LIMITE_NOME or not all(c == " " or letra_latina(c) for c in texto):
+        raise ValidationError(mensagens.MT11_NOME_COMPLETO)
+    return texto
+
+
+def validar_curso(valor):
+    """Código de curso da UEA: letras maiúsculas e números, até 20 (MT-12). [RBN-CAD-05.1][Q3]"""
+    texto = normalizar_texto(valor)
+    if not CODIGO_CURSO.fullmatch(texto):
+        raise ValidationError(mensagens.MT12_CURSO)
+    return texto
+
+
+def validar_dados_do_aluno(matricula, nome, curso):
+    """Valida uma linha (matrícula individual ou arquivo). Devolve (dados, motivos de erro).
+
+    Campo vazio → M-14; senão a regra de cada campo, na ordem Matrícula, Nome Completo, Curso.
+    [US-08][RBN-CAD-05.1][RBN-CAD-05.2][FR-011][FR-016]
+    """
+    dados, motivos = {}, []
+    for campo, valor, validar in (
+        ("matricula", matricula, validar_matricula),
+        ("nome", nome, validar_nome),
+        ("curso", curso, validar_curso),
+    ):
+        if not normalizar_texto(valor):
+            motivos.append(M14_CAMPO_OBRIGATORIO)
+            continue
+        try:
+            dados[campo] = validar(valor)
+        except ValidationError as erro:
+            motivos.append(erro.messages[0])
+    return dados, motivos
+
+
+class _CamposDoAluno(FormularioSigtcc):
+    """Nome Completo e Curso, comuns à matrícula e à edição. [RBN-CAD-05.1][RBN-CAD-05.3]"""
+
+    nome = forms.CharField(
+        label="Nome Completo", widget=forms.TextInput(attrs={"maxlength": LIMITE_NOME})
+    )
+    curso = forms.CharField(
+        label="Curso",
+        help_text="Código de curso da UEA (ex.: EST08MCPD)",
+        widget=forms.TextInput(attrs={"maxlength": 20, "list": "codigos-curso"}),
+    )
+
+    def clean_nome(self):
+        """Regra do Nome Completo (MT-11). [RBN-CAD-05.1]"""
+        return validar_nome(self.cleaned_data["nome"])
+
+    def clean_curso(self):
+        """Regra do Curso (MT-12). [RBN-CAD-05.1]"""
+        return validar_curso(self.cleaned_data["curso"])
+
+
+class MatriculaForm(_CamposDoAluno):
+    """Matrícula individual: Matrícula, Nome Completo e Curso (RBN-CAD-05.1).
+
+    [US-08][RBN-CAD-05.1][FR-011]
+    """
+
+    field_order = ["matricula", "nome", "curso"]
+
+    matricula = forms.CharField(
+        label="Matrícula",
+        widget=forms.TextInput(attrs={"inputmode": "numeric", "maxlength": 10}),
+    )
+
+    def clean_matricula(self):
+        """Exatamente 10 dígitos. [RBN-CAD-05.1]"""
+        return validar_matricula(self.cleaned_data["matricula"])
+
+
+class EditarAlunoForm(_CamposDoAluno):
+    """Edição: Nome Completo e Curso; a Matrícula é só leitura (RBN-CAD-05.3).
+
+    [US-08][RBN-CAD-05.3][FR-019]
+    """

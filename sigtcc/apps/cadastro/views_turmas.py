@@ -10,7 +10,8 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 
 from sigtcc.apps.cadastro import mensagens, services_turmas
-from sigtcc.apps.cadastro.forms_turmas import TurmaForm
+from sigtcc.apps.cadastro.forms_turmas import EditarAlunoForm, MatriculaForm, TurmaForm
+from sigtcc.apps.cadastro.models import EquivalenciaCursos
 from sigtcc.apps.cadastro.permissoes import (
     perfil_requerido,
     pode_alterar_turma,
@@ -216,3 +217,78 @@ def turma_arquivar(request, tur_id):
         "perigo": False,
     }
     return render(request, "cadastro/turmas/confirmar.html", contexto)
+
+
+# ---------------------------------------------------------------------------------------------
+# Matrícula individual e edição do aluno (US-08)
+# ---------------------------------------------------------------------------------------------
+
+
+def _codigos_de_curso():
+    """Sugestões do campo Curso: códigos da equivalência com o nome do curso (sem JavaScript).
+
+    [US-08][RBN-CAD-05.7][B18]
+    """
+    return EquivalenciaCursos.objects.select_related("eqc_cur").order_by("eqc_codigo_uea")
+
+
+def _avisar_resultado(request, resultado):
+    """Mensagem principal e avisos (MT-13, MT-29) da matrícula. [US-08][Q16][RBN-CAD-05.7]"""
+    messages.success(request, resultado.mensagem)
+    for aviso in resultado.avisos:
+        messages.warning(request, aviso)
+
+
+@perfil_requerido("docente", "secretaria")
+@trata_turma_arquivada
+def matricular(request, tur_id):
+    """ "Matricular alunos": "Matrícula individual" e "Importar arquivo (CSV/XLSX)".
+
+    [US-08][RBN-CAD-05.1][RBN-CAD-05.5][FR-011]-[FR-015]
+    """
+    registro = services_turmas.turma_para(request.user, tur_id, ALTERAR)
+    formulario = MatriculaForm(request.POST if request.method == "POST" else None)
+    erro = ""
+    if request.method == "POST" and formulario.is_valid():
+        dados = formulario.cleaned_data
+        resultado = services_turmas.matricular_individual(
+            request.user, tur_id, dados["matricula"], dados["nome"], dados["curso"]
+        )
+        if resultado.matriculado:
+            _avisar_resultado(request, resultado)
+            return redirect("cadastro:turma", tur_id=tur_id)
+        erro = resultado.mensagem
+    contexto = {
+        "turma": registro,
+        "form": formulario,
+        "erro": erro,
+        "codigos": _codigos_de_curso(),
+    }
+    return render(request, "cadastro/turmas/matricular.html", contexto)
+
+
+@perfil_requerido("docente", "secretaria")
+@trata_turma_arquivada
+def aluno_editar(request, tur_id, alu_id):
+    """Edição do Nome Completo e do Curso; a Matrícula é só leitura (RBN-CAD-05.3).
+
+    [US-08][RBN-CAD-05.3][FR-019][I-7]
+    """
+    registro = services_turmas.turma_para(request.user, tur_id, ALTERAR)
+    aluno = services_turmas.vinculo_na_turma(registro, alu_id)
+    formulario = EditarAlunoForm(
+        request.POST if request.method == "POST" else None,
+        initial={"nome": aluno.alu.usu_nome, "curso": aluno.alu_codigo_curso},
+    )
+    if request.method == "POST" and formulario.is_valid():
+        dados = formulario.cleaned_data
+        services_turmas.editar_aluno(request.user, tur_id, alu_id, dados["nome"], dados["curso"])
+        messages.success(request, mensagens.MT14_ALUNO_ATUALIZADO)
+        return redirect("cadastro:turma", tur_id=tur_id)
+    contexto = {
+        "turma": registro,
+        "aluno": aluno,
+        "form": formulario,
+        "codigos": _codigos_de_curso(),
+    }
+    return render(request, "cadastro/turmas/editar_aluno.html", contexto)

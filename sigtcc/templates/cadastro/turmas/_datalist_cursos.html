@@ -1,0 +1,4 @@
+{% comment %}Sugestões do campo Curso: códigos da equivalência e o nome do curso. [US-08][RBN-CAD-05.7]{% endcomment %}
+<datalist id="codigos-curso">
+  {% for equivalencia in codigos %}<option value="{{ equivalencia.eqc_codigo_uea }}">{{ equivalencia.eqc_cur.cur_nome }}</option>{% endfor %}
+</datalist>

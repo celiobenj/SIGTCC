@@ -44,4 +44,10 @@ urlpatterns = [
     path("turmas/<int:tur_id>/editar/", views_turmas.turma_editar, name="turma_editar"),
     path("turmas/<int:tur_id>/excluir/", views_turmas.turma_excluir, name="turma_excluir"),
     path("turmas/<int:tur_id>/arquivar/", views_turmas.turma_arquivar, name="turma_arquivar"),
+    path("turmas/<int:tur_id>/matricular/", views_turmas.matricular, name="matricular"),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/editar/",
+        views_turmas.aluno_editar,
+        name="aluno_editar",
+    ),
 ]
