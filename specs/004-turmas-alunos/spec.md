@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Status**: Aprovada por Julia Cohen em 2026-10-20
 
 **Input**: User description: "Use o número 004 para esta spec. Turmas e Alunos do SIGTCC: US-07, US-08
 e US-09. Use as seções dessas US em docs/fonte/Historias_de_Usuario_v3_2.md, com regras (RBN), fluxos
@@ -90,6 +90,45 @@ conta 'Aguardando Ativação', log e mensagens provisórias).
 - Q11: Que variações de arquivo CSV a importação aceita? → A: CSV com separador ";" ou ","
   (detectado pela linha de cabeçalhos), em UTF-8 (com ou sem BOM) ou Windows-1252; no XLSX, só a
   primeira planilha é lida. O modelo de importação para download é um CSV em UTF-8 com ";".
+- Q12 (respondida por Julia Cohen em 2026-10-20, no planejamento): uma turma sem alunos, mas com
+  histórico de alunos excluídos ou transferidos, pode ser excluída? → A: Não. A exclusão vale só
+  para a turma que nunca teve aluno (criada por engano); com histórico, aparece "A turma possui
+  alunos matriculados. Use a opção Arquivar", e o registro de exclusões e transferências
+  (RBN-CAD-05.8) fica guardado.
+
+### Session 2026-10-21 (revisão do plano pelo arquiteto-django)
+
+- Q13 (achado B-3): há limite de linhas no arquivo de importação? → A: Sim, até 200 linhas de alunos
+  (sem contar o cabeçalho); acima disso, o arquivo não é processado e aparece "Arquivo fora do
+  modelo. Baixe o modelo de importação" (texto do cenário 5 da US-08).
+- Q14 (achado I-11): o encerramento da participação é permitido com sessão de defesa ativa, e o que
+  acontece com pedidos pendentes? → A: Mesmo critério da transferência (E4 da US-08): com sessão
+  'Agendada', 'Reagendada' ou 'Em Andamento', o encerramento é recusado (MT-30, PROVISÓRIA). Ao
+  encerrar, os pedidos de orientação e os convites de coorientação pendentes do TCC ('Aguardando
+  Resposta' ou 'Aguardando Aceite') passam a 'Cancelado'. Ciência da Leandra Matos (índice Q-40).
+- Q15 (achado I-12): Descrição e Curso continuam bloqueados quando todos os alunos saíram da turma? →
+  A: Sim, com o mesmo critério da Q12: ficam bloqueados na turma que tem ou já teve aluno (vínculo,
+  TCC ou histórico de exclusão ou transferência).
+- Q16 (achado m10): aluno já cadastrado com a conta 'Inativa' ou 'Expirada' pode ser matriculado? →
+  A: Sim, sem reativar a conta; o Professor vê o aviso MT-29 (PROVISÓRIA) de que o aluno não
+  consegue entrar até a conta ser reativada pela Gestão de Contas (spec 002).
+- Q17 (achado I-3): quem cria e remove os registros das entregas do aluno? → A: Esta feature cria os
+  registros do aluno para as entregas que a turma já tem, na matrícula e na transferência (na turma
+  de destino). Na exclusão do aluno, a exclusão NÃO é recusada: os registros sem envio são apagados
+  e os com envio ficam como histórico. Na transferência, vale a mesma regra para as entregas da
+  turma de origem. Ao cadastrar uma entrega nova, a US-43 (Leandra Matos) cria os registros dos
+  alunos já matriculados (índice Q-41).
+
+### Session 2026-10-21 (reconferência do arquiteto-django)
+
+- Q18 (achado N1): o aluno que volta a uma turma onde já esteve (rematrícula depois de exclusão, ou
+  transferência para uma turma de onde já saiu) e tem lá registros de entrega com envio guardados →
+  A: O registro antigo volta para 'Aguardando Envio' (sem avaliação, feedback nem conferência de
+  correções), e os envios anteriores ficam no histórico de envios. Assim o aluno não aparece como já
+  tendo entregado algo de outro vínculo.
+- Q19 (achado N5b): quando o encerramento cancela um pedido de orientação ou um convite de
+  coorientação pendente, o docente convidado é avisado? → A: Sim, por notificação (MT-31,
+  PROVISÓRIA).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -274,7 +313,8 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
 - **TCC 2 sem entrega do tipo Versão Final cadastrada**: o arquivamento é recusado com "A Data Limite
   da Versão Final ainda não venceu ou não foi cadastrada".
 - **Exclusão de turma**: a turma é removida definitivamente, e o evento fica registrado com autor,
-  data e hora (matriz, RAN-CAD-04, Responsabilização).
+  data e hora (matriz, RAN-CAD-04, Responsabilização). Só vale para a turma que nunca teve aluno;
+  com histórico de exclusões ou transferências, só arquivar (Q12).
 - **Orientador automático em TCC 2 de Sistemas de Informação ou em TCC 1**: não existe (RBN-CAD-04.2);
   o vínculo vem da indicação do orientador (US-17).
 - **Matrícula repetida no mesmo arquivo**: a segunda ocorrência é rejeitada com "Aluno já matriculado
@@ -285,6 +325,9 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   nova turma com um novo TCC 'Sem Proposta' e registra nova Proposta (US-13).
 - **Aluno com TCC ativo noutra turma ou já aprovado ou concluído** (Q7): a matrícula é recusada (MT-26
   ou MT-27); para mudar de turma no período, usa-se a Transferência.
+- **Aluno 'Aprovado para TCC 2' matriculado em turma de TCC 1**: caso não coberto pela US-08 nem pelo
+  diagrama; proposta do planejamento: recusar com MT-28 (PROVISÓRIA), a confirmar pela responsável
+  (índice Q-39).
 - **Curso do aluno diferente do curso da turma** (RBN-CAD-05.7): o aluno é matriculado e aparece um
   alerta de divergência; relatórios, filtros e permissões usam sempre o curso da turma.
 - **Arquivo com cabeçalhos em outra ordem**: aceito, desde que os três cabeçalhos estejam presentes
@@ -327,12 +370,14 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   alunos matriculados na turma (orientação de origem "Automático"). Em TCC 1 e em TCC 2 de Sistemas
   de Informação não há orientador automático (RBN-CAD-04.2).
 - **FR-005**: O Professor da Disciplina da turma DEVE poder editar todos os campos de FR-001, com as
-  mesmas validações; com alunos vinculados, Descrição e Curso ficam bloqueados (RBN-CAD-04.3).
-  Sucesso: MT-06 (PROVISÓRIA).
+  mesmas validações; na turma que tem ou já teve aluno (vínculo, TCC ou histórico de exclusão ou
+  transferência), Descrição e Curso ficam bloqueados (RBN-CAD-04.3; Clarifications, Q15). Sucesso:
+  MT-06 (PROVISÓRIA).
 - **FR-006**: O Professor da Disciplina DEVE poder excluir a turma sem alunos vinculados, depois de
   confirmar (MT-07), removendo-a definitivamente (MT-08) e registrando a exclusão com autor, data e
-  hora; com alunos, a exclusão é bloqueada com "A turma possui alunos matriculados. Use a opção
-  Arquivar" (RBN-CAD-04.4).
+  hora; com alunos, ou com histórico de alunos excluídos ou transferidos, a exclusão é bloqueada
+  com "A turma possui alunos matriculados. Use a opção Arquivar" (RBN-CAD-04.4; Clarifications,
+  Q12).
 - **FR-007**: O Professor da Disciplina DEVE poder arquivar a turma, depois de confirmar (MT-09), só
   se: (a) nenhum TCC da turma estiver Em Andamento ou Apto para Defesa – senão "Há TCC Em Andamento
   ou Apto para Defesa"; (b) nenhuma sessão de defesa de TCC da turma estiver Agendada, Reagendada ou
@@ -369,8 +414,10 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
 - **FR-012**: Para matrícula inexistente, o sistema DEVE criar a conta do aluno com o Status da Conta
   'Aguardando Ativação', sem e-mail e sem senha, sem enviar link (spec 003, Q1: o aluno pede o link
   em "Primeiro acesso"), vinculá-lo à turma com um TCC no Status 'Sem Proposta' (transição registrada
-  no histórico do Status do TCC com o gatilho "Vínculo à turma", RBN-CAD-08.3 e 08.7) e exibir
-  "Aluno matriculado com sucesso".
+  no histórico do Status do TCC com o gatilho "Vínculo à turma", RBN-CAD-08.3 e 08.7), criar os
+  registros do aluno nas entregas que a turma já tem (status 'Aguardando Envio'; Q17) e exibir
+  "Aluno matriculado com sucesso". Aluno já cadastrado com a conta 'Inativa' ou 'Expirada' é
+  matriculado sem reativar a conta, e o Professor vê o aviso MT-29 (Q16).
 - **FR-013**: Para matrícula já cadastrada, o sistema NÃO DEVE criar nova conta: vincula o aluno à
   turma mantendo conta, e-mail, senha e histórico. Se o Status do último TCC do aluno for 'Aprovado
   para TCC 2' e a turma for de TCC 2, o sistema cria na nova turma um TCC carregado com os dados do
@@ -378,8 +425,8 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   RBN-CAD-08.6), e o TCC 1 fica como histórico; se for 'Reprovado',
   'Desistente' ou 'Jubilado', o aluno ganha um novo TCC 'Sem Proposta' na nova turma (RBN-CAD-05.5).
   Se o aluno tiver TCC 'Sem Proposta', 'Em Andamento' ou 'Apto para Defesa' noutra turma não
-  arquivada, a matrícula é recusada com MT-26; se o último TCC estiver 'Aprovado', 'Aprovado com
-  Correções' ou 'Concluído', é recusada com MT-27 (Clarifications, Q7). Na importação, a recusa é
+  arquivada, a matrícula é recusada com MT-26; se algum TCC do aluno estiver 'Aprovado', 'Aprovado
+  com Correções' ou 'Concluído', é recusada com MT-27 (Clarifications, Q7). Na importação, a recusa é
   por linha, com o motivo na prévia e no resumo.
 - **FR-014**: Aluno já matriculado nesta turma DEVE ser ignorado com "Aluno já matriculado nesta
   turma" (uma mesma matrícula não pode ser vinculada duas vezes à mesma turma, RAN-CAD-05).
@@ -398,7 +445,8 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   importação"; o modelo de importação fica disponível para download na mesma tela. Formatos aceitos:
   CSV e XLSX (RBN-CAD-05.2; Clarifications, Q4). O CSV pode usar ";" ou "," como separador e estar
   em UTF-8 (com ou sem BOM) ou Windows-1252; do XLSX, só a primeira planilha é lida; o modelo para
-  download é um CSV em UTF-8 com ";" (Q11).
+  download é um CSV em UTF-8 com ";" (Q11). Arquivo com mais de 200 linhas de alunos também não é
+  processado e mostra a mesma mensagem (Q13).
 - **FR-017**: Antes de gravar, a importação DEVE exibir uma prévia com os alunos novos, os já
   cadastrados, as linhas com erro (número da linha e motivo) e os códigos de curso não reconhecidos;
   nada é gravado até o Professor clicar em "Confirmar importação" (US-08, passos 7 e 8).
@@ -422,8 +470,10 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
 - **FR-022**: Na transferência, o TCC, o Status do TCC e o histórico DEVEM ir para a turma de
   destino; o aluno passa a constar só nela; a orientação automática anterior é encerrada e o
   professor da turma de destino passa a ser o orientador; se ele era coorientador do trabalho, a
-  coorientação é encerrada; o aluno e os orientadores antigo e novo recebem notificação (MT-22); a
-  transferência fica registrada com autor, data, hora e justificativa; o sistema exibe MT-16.
+  coorientação é encerrada; os registros das entregas da turma de origem sem envio são apagados e
+  os com envio ficam como histórico, e o aluno ganha os registros das entregas da turma de destino
+  (Q17); o aluno e os orientadores antigo e novo recebem notificação (MT-22); a transferência fica
+  registrada com autor, data, hora e justificativa; o sistema exibe MT-16.
 
 **Exclusão e encerramento [US-09][RBN-CAD-05.4, 05.8, 08.4, 08.5]**
 
@@ -432,7 +482,8 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   até 500 caracteres"), clicar em "Confirmar" e confirmar na mensagem final (MT-24). O sistema retira
   o aluno da turma, registra autor, data, hora e justificativa, envia ao aluno uma notificação com o
   motivo (MT-21) e exibe "Aluno excluído da turma". A exclusão apaga o vínculo, o TCC 'Sem
-  Proposta' da turma e o histórico de status desse TCC (Clarifications, Q8). Cancelar na confirmação
+  Proposta' da turma e o histórico de status desse TCC (Clarifications, Q8), e os registros do aluno
+  nas entregas da turma sem envio; os com envio ficam como histórico (Q17). Cancelar na confirmação
   final não altera nada.
   Para aluno com Proposta, a exclusão é recusada com "O aluno já tem Proposta. Use Encerrar
   participação" (RBN-CAD-05.4).
@@ -442,8 +493,11 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   muda, a justificativa fica no TCC, a transição entra no histórico do Status do TCC com o Professor
   da Disciplina como responsável e o gatilho "Encerramento da participação" (RBN-CAD-08.7), e o
   registro passa a contar no relatório de evasão (US-32). A orientação e a coorientação 'Ativa' do
-  TCC passam a 'Encerrada', com data de fim (Clarifications, Q10). Sucesso: MT-23 (PROVISÓRIA)
-  (RBN-CAD-08.4).
+  TCC passam a 'Encerrada', com data de fim (Clarifications, Q10), e os pedidos de orientação e os
+  convites de coorientação pendentes passam a 'Cancelado' (Q14), e o docente de cada pedido
+  cancelado recebe a notificação MT-31 (Q19). Com sessão de defesa 'Agendada',
+  'Reagendada' ou 'Em Andamento', o encerramento é recusado com MT-30 (Q14). Sucesso: MT-23
+  (PROVISÓRIA) (RBN-CAD-08.4).
 - **FR-025**: O aluno com TCC 'Desistente', 'Reprovado' ou 'Jubilado' DEVE continuar entrando no
   sistema, só para consultar o próprio histórico. Esta feature DEVE oferecer às outras features uma
   verificação reutilizável de "participação encerrada", que elas usam para desabilitar, sem exceção,
@@ -459,10 +513,11 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   contrato de serviços da spec 003 (Q27).
 - **FR-028**: Esta feature NÃO DEVE criar tabelas nem colunas: usa o modelo da spec 001 (Turmas,
   Disciplinas, Cursos, Alunos, Usuarios, Alunos_Turmas, Historico_Alunos_Turmas, TCCs,
-  Historico_Status_TCC, Orientacoes, Coorientacoes, Equivalencia_Cursos, Turmas_Marcos, Defesas e
-  Notificacoes).
+  Historico_Status_TCC, Orientacoes, Coorientacoes, Solicitacoes_Orientacao, PalavrasChave_TCC,
+  Artigos, Encontro_Orientacao, Equivalencia_Cursos, Turmas_Marcos, Entregas_Marcos,
+  Historico_Envios_Entregas, Defesas, Docentes, Secretarios e Notificacoes).
 - **FR-029**: Mensagens sem texto nas US DEVEM usar os textos PROVISÓRIOS da seção "Mensagens a
-  validar com a PO" (MT-01 a MT-27), até a validação da PO.
+  validar com a PO" (MT-01 a MT-31), até a validação da PO.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -534,13 +589,17 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
 | MT-18 | Transferência com sessão de defesa ativa | "Não é possível transferir: há sessão de defesa ativa." | US-08 E4 e cenário 12 | A validar |
 | MT-19 | Sem turma de destino possível | "Não há turma de TCC 2 de outro orientador no mesmo curso e período." | US-08 E4 | A validar |
 | MT-20 | (reservado; a Justificativa vazia na transferência usa o texto da US-09, "Informe uma justificativa de até 500 caracteres") | — | US-09 E1; RBN-CAD-05.6 | — |
-| MT-21 | Notificação ao aluno excluído | "Você foi excluído da turma IDENTIFICADOR. Motivo: JUSTIFICATIVA" | US-09, passo 6; RBN-CAD-05.4 | A validar |
+| MT-21 | Notificação ao aluno excluído | "Você foi excluído da turma IDENTIFICADOR. Motivo: JUSTIFICATIVA" (a justificativa é cortada com "…" quando o texto passaria de 500 caracteres, o limite da notificação; achado B-1) | US-09, passo 6; RBN-CAD-05.4 | A validar |
 | MT-22 | Notificações da transferência (aluno e orientadores) | "NOME foi transferido da turma ORIGEM para a turma DESTINO." | US-08, fluxo 5; RBN-CAD-05.6 | A validar |
 | MT-23 | Participação encerrada | "Participação encerrada como STATUS." | US-09, fluxo 1 | A validar |
 | MT-24 | Confirmação final da exclusão do aluno | "Excluir NOME da turma? O aluno perderá o acesso a ela." | US-09, passos 4 e 5 | A validar |
 | MT-25 | Ação em turma arquivada pelo endereço direto | "Esta turma está arquivada e só pode ser consultada." | US-07 E4; RBN-CAD-04.5 | A validar |
 | MT-26 | Aluno com TCC em andamento noutra turma | "O aluno já tem TCC em andamento na turma IDENTIFICADOR. Use Transferir." | Clarifications, Q7; RBN-CAD-05.5 e 05.6 | A validar |
 | MT-27 | Aluno com TCC aprovado ou concluído | "O TCC deste aluno já foi aprovado ou concluído." | Clarifications, Q7 | A validar |
+| MT-28 | Aluno 'Aprovado para TCC 2' matriculado em turma de TCC 1 | "O aluno foi aprovado em TCC 1. Matricule-o numa turma de TCC 2." | Planejamento (research B6); índice Q-39 | A validar (comportamento a confirmar) |
+| MT-29 | Aluno matriculado com a conta 'Inativa' ou 'Expirada' | "A conta deste aluno está STATUS: ele não consegue entrar até a conta ser reativada pela Gestão de Contas." | Clarifications, Q16 | A validar |
+| MT-30 | Encerramento com sessão de defesa ativa | "Não é possível encerrar a participação: há sessão de defesa ativa." | Clarifications, Q14; E4 da US-08 | A validar |
+| MT-31 | Notificação ao docente de pedido ou convite cancelado pelo encerramento | "O pedido de TIPO para o TCC de NOME foi cancelado porque a participação do aluno foi encerrada." | Clarifications, Q19 | A validar |
 
 ## Assumptions
 
@@ -563,7 +622,7 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
   arquivada, são das features donas; esta entrega oferece as verificações reutilizáveis (FR-008 e
   FR-025).
 - **Relatório de evasão (US-32)**: lê o histórico do Status do TCC; esta feature só grava a transição.
-- **Mensagens**: as MT-01 a MT-27 são provisórias e, como na spec 003 (Q25), não bloqueiam as
+- **Mensagens**: as MT-01 a MT-31 são provisórias e, como na spec 003 (Q25), não bloqueiam as
   tarefas nem a implementação.
 - **Equivalência de cursos** (Q5; índice Q-17, Q-37 e Q-38): carregada por esta feature (FR-015a)
   com os três códigos completos, no formato do exemplo do dicionário (`EST08MCPD`); o dicionário não
