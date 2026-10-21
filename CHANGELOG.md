@@ -32,6 +32,24 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
     comando `criar_conta_teste`;
   - log de eventos de acesso em `LOG_DIR/acesso.log`, sem senhas, links nem e-mails completos;
   - 176 testes novos (229 no total).
+- Turmas e Alunos (spec 004, feat-03; US-07, US-08 e US-09), sem tabelas novas:
+  - turmas de TCC 1 e TCC 2: cadastro, edição (Descrição e Curso travados depois do primeiro
+    aluno), exclusão só da turma que nunca teve aluno e arquivamento com as condições da US-07;
+    turma arquivada só para consulta (MT-25 pelo endereço direto);
+  - matrícula individual e importação por CSV ou XLSX com prévia (até 2 MB e 200 linhas, ";" ou
+    ",", UTF-8 ou Windows-1252, XLSX com `defusedxml` e limite de descompressão), contas novas
+    'Aguardando Ativação' e orientador automático nas turmas de TCC 2 de Engenharia de Computação
+    e Licenciatura em Computação;
+  - transferência entre turmas de TCC 2 do mesmo curso e período, com o mesmo TCC, o histórico e
+    as notificações ao aluno e aos dois professores;
+  - exclusão do aluno sem Proposta (duas etapas, notificação com o motivo), encerramento da
+    participação como Desistente, Reprovado ou Jubilado e lista de excluídos ou transferidos;
+  - acesso por turma: Professor da Disciplina e Secretaria do curso (só consulta e
+    transferência); serviços compartilhados `participacao_encerrada`, `travar_turma_ativa` e
+    `notificar()`;
+  - carga da equivalência de cursos (EST08MCPD, EST31MSII e EST03MLV) e dependências `openpyxl`
+    e `defusedxml`;
+  - 192 testes novos (421 no total).
 
 ### Pendências registradas
 
@@ -39,11 +57,14 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
   M-17 com a PO (Q-01); confirmar a branch `feature/feat-02-acesso-e-login` (Q-09); aprovar os
   itens de configuração da feature 003 (Q-23 e Q-27); ciência da regra compartilhada do
   Professor da Disciplina (Q-29 a Q-32); índice único em `lower(usu_email)` (Q-28).
+- Spec 004 (índice `docs/questoes-a-rever.md`): validar os 31 textos provisórios MT-01 a MT-32
+  com a PO (Q-36); confirmar a branch `feature/feat-03-turmas-e-alunos` (Q-34); confirmar a recusa
+  do aluno 'Aprovado para TCC 2' em turma de TCC 1 (Q-39); ciência da regra do encerramento
+  (Q-40); registros de entrega ao cadastrar entrega nova (Q-41); aprovar os itens de configuração
+  da feature 004 (Q-42).
 
 - Trocar os descritores provisórios dos critérios pelos textos da planilha oficial de avaliação
   da EST/UEA antes do TP3 (18/11/2026) – spec 001, FR-014a e SC-007.
-- Carregar os códigos de curso da UEA em `Equivalencia_Cursos` quando confirmados no Lyceum ou
-  com a Secretaria – spec 001, FR-016.
 - Consultar Maria Luiza Guimarães sobre os desvios e as restrições descritas só em texto
   (identity BY DEFAULT, CHECKs de matrícula, ano, semestre e faixas de nota, `CHECK` de e-mail
   vazio e ordem física das colunas) – plan.md da spec 001, Pendências.

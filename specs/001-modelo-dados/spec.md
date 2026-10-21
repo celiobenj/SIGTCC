@@ -56,10 +56,12 @@ fora do banco), `docs/fonte/Matriz_Requisitos_17_10.md` (abas `Glossario_Status`
 
   | Curso do NUCOMP | Código(s) da UEA | Situação |
   |---|---|---|
-  | Engenharia de Computação | a obter | pendente |
-  | Sistemas de Informação | a obter | pendente |
-  | Licenciatura em Computação | a obter | pendente |
-  | (curso não informado) | `EST08MCPD` (exemplo citado em RBN-CAD-05.7 e no dicionário) | confirmar a qual curso pertence |
+  | Engenharia de Computação | `EST08MCPD` | confirmado por Julia Cohen em 2026-10-20 (índice Q-17 e Q-37) |
+  | Sistemas de Informação | `EST31MSII` | confirmado por Julia Cohen em 2026-10-20 (índice Q-37) |
+  | Licenciatura em Computação | `EST03MLV` | confirmado por Julia Cohen em 2026-10-20 (índice Q-37) |
+
+  Atualização de 2026-10-20: códigos definitivos, "sujeitos a mudança" (cada mudança entra por nova
+  carga). A carga sai pela spec 004 (FR-015a; Clarifications Q5).
 
 ### Session 2026-10-19 (planejamento)
 
@@ -182,6 +184,9 @@ conteúdo das 4 tabelas contra a matriz.
    Humano-Computador, Ciência de Dados, Computação Gráfica e Educação em Computação.
 4. **Dado que** a carga inicial foi aplicada e nenhum código de curso da UEA foi confirmado,
    **Quando** se consulta `Equivalencia_Cursos`, **Então** a tabela existe e está vazia.
+   *Atualização de 2026-10-21*: com os códigos confirmados (Q-17 e Q-37 do índice), a carga da spec
+   004 (FR-015a, migração `0005_carga_equivalencia_cursos`) preenche a tabela; o teste do cenário
+   confere que só há os códigos dessa carga.
 5. **Dado que** a carga inicial já foi aplicada, **Quando** ela é aplicada novamente, **Então**
    nenhum registro é duplicado nem alterado.
 
@@ -330,7 +335,8 @@ conteúdo das 4 tabelas contra a matriz.
 - **FR-016**: A carga inicial DEVE inserir em `Equivalencia_Cursos` somente códigos de curso da UEA
   confirmados no Lyceum ou pela Secretaria. Como nenhum está confirmado, a tabela fica vazia nesta
   feature; os códigos são incluídos depois por data migration (carga),
-  conforme a lista de pendências em Clarifications [US-08][RBN-CAD-05.7].
+  conforme a lista de pendências em Clarifications [US-08][RBN-CAD-05.7]. *Atualização de
+  2026-10-20*: a carga com EST08MCPD, EST31MSII e EST03MLV é feita pela spec 004 (FR-015a).
 - **FR-017**: A carga inicial DEVE poder ser reaplicada sem duplicar nem alterar registros e NÃO
   DEVE inserir dados em nenhuma outra tabela (nenhum usuário, turma ou TCC de exemplo).
 - **FR-018**: A estrutura e a carga inicial DEVEM ser reproduzíveis em qualquer ambiente da equipe a

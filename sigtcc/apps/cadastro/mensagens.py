@@ -110,3 +110,100 @@ M14_CAMPO_OBRIGATORIO = "Preencha este campo."
 M15_CONTA_INATIVA = CONTA_INATIVA
 M16_ACESSO_EXPIRADO = ACESSO_EXPIRADO
 M17_FALHA_ENVIO = "Não foi possível enviar o e-mail agora. Tente novamente em alguns minutos."
+
+# =============================================================================================
+# Spec 004: Turmas e Alunos (US-07, US-08, US-09)
+# =============================================================================================
+
+# US-07 [RBN-CAD-04.1 a 04.5]
+TURMA_CADASTRADA = "Turma cadastrada com sucesso"
+HORARIO_TERMINO = "O horário de término deve ser posterior ao de início"
+TURMA_COM_ALUNOS = "A turma possui alunos matriculados. Use a opção Arquivar"
+ARQUIVAR_TCC_ATIVO = "Há TCC Em Andamento ou Apto para Defesa"
+ARQUIVAR_SESSAO_ATIVA = "Há sessão de defesa ativa"
+ARQUIVAR_VERSAO_FINAL = "A Data Limite da Versão Final ainda não venceu ou não foi cadastrada"
+
+# US-08 [RBN-CAD-05.1 a 05.7] (MATRICULA_FORMATO e CURSO_NAO_RECONHECIDO já existem acima)
+ALUNO_MATRICULADO = "Aluno matriculado com sucesso"
+ALUNO_JA_NA_TURMA = "Aluno já matriculado nesta turma"
+ARQUIVO_FORA_DO_MODELO = "Arquivo fora do modelo. Baixe o modelo de importação"
+
+# US-09 [RBN-CAD-05.4, 08.4]
+ALUNO_EXCLUIDO = "Aluno excluído da turma"
+JUSTIFICATIVA_500 = "Informe uma justificativa de até 500 caracteres"
+SELECIONE_STATUS = "Selecione o Status do aluno"
+ALUNO_TEM_PROPOSTA = "O aluno já tem Proposta. Use Encerrar participação"
+
+# Rótulos de botões e opções, como escritos nas US-07, 08 e 09
+NOVA_TURMA = "Nova turma"
+EDITAR = "Editar"
+EXCLUIR = "Excluir"
+ARQUIVAR = "Arquivar"
+MATRICULAR_ALUNOS = "Matricular alunos"
+MATRICULA_INDIVIDUAL = "Matrícula individual"
+IMPORTAR_ARQUIVO = "Importar arquivo (CSV/XLSX)"
+CONFIRMAR_IMPORTACAO = "Confirmar importação"
+TRANSFERIR = "Transferir"
+EXCLUIR_DA_TURMA = "Excluir da turma"
+ENCERRAR_PARTICIPACAO = "Encerrar participação"
+CONFIRMAR = "Confirmar"
+
+# Mensagens PROVISÓRIAS da spec 004 (tabela "Mensagens a validar com a PO"; índice Q-36).
+# Os campos em maiúsculas da spec viram {identificador}, {nome}, {status} etc. A MT-20 é reservada.
+MT01_CODIGO_DISCIPLINA = (
+    "Use só letras maiúsculas e números, sem espaços, com até 20 caracteres (ex.: ESTCMP025)."
+)
+MT02_IDENTIFICADOR_FORMATO = (
+    "Use só letras maiúsculas, números e _, sem espaços, com até 30 caracteres (ex.: ECP06_T01)."
+)
+MT03_IDENTIFICADOR_REPETIDO = "Já existe uma turma com este Identificador."
+MT04_ANO = "Informe o ano com 4 dígitos (ex.: 2026)."
+MT05_LOCAL = "O Local deve ter até 100 caracteres."
+MT06_TURMA_ATUALIZADA = "Turma atualizada com sucesso."
+MT07_CONFIRMAR_EXCLUSAO_TURMA = "Excluir a turma {identificador}? Esta ação não pode ser desfeita."
+MT08_TURMA_EXCLUIDA = "Turma excluída."
+MT09_CONFIRMAR_ARQUIVAMENTO = (
+    "Arquivar a turma {identificador}? Ela ficará disponível só para consulta."
+)
+MT10_TURMA_ARQUIVADA = "Turma arquivada."
+MT11_NOME_COMPLETO = (
+    "Informe o Nome Completo só com letras, acentos e espaços, com até 150 caracteres."
+)
+MT12_CURSO = (
+    "Informe o código de curso da UEA, com letras maiúsculas e números, até 20 caracteres "
+    "(ex.: EST08MCPD)."
+)
+MT13_CURSO_DIVERGENTE = (
+    "O curso do aluno ({curso_aluno}) é diferente do curso da turma ({curso_turma})."
+)
+MT14_ALUNO_ATUALIZADO = "Dados do aluno atualizados."
+MT15_RESUMO_IMPORTACAO = (
+    "Importação concluída: {n} alunos matriculados, {r} linhas rejeitadas e {c} códigos de curso "
+    "não reconhecidos."
+)
+MT16_TRANSFERIDO = "Aluno transferido para a turma {identificador}."
+MT17_TRANSFERENCIA_STATUS = (
+    "Só é possível transferir aluno com TCC Em Andamento ou Apto para Defesa."
+)
+MT18_TRANSFERENCIA_SESSAO = "Não é possível transferir: há sessão de defesa ativa."
+MT19_SEM_DESTINO = "Não há turma de TCC 2 de outro orientador no mesmo curso e período."
+MT21_NOTIFICACAO_EXCLUSAO = "Você foi excluído da turma {identificador}. Motivo: {justificativa}"
+MT22_NOTIFICACAO_TRANSFERENCIA = "{nome} foi transferido da turma {origem} para a turma {destino}."
+MT23_PARTICIPACAO_ENCERRADA = "Participação encerrada como {status}."
+MT24_CONFIRMAR_EXCLUSAO_ALUNO = "Excluir {nome} da turma? O aluno perderá o acesso a ela."
+MT25_TURMA_ARQUIVADA = "Esta turma está arquivada e só pode ser consultada."
+MT26_TCC_EM_CURSO = "O aluno já tem TCC em andamento na turma {identificador}. Use Transferir."
+MT27_TCC_CONCLUIDO = "O TCC deste aluno já foi aprovado ou concluído."
+MT28_APROVADO_EM_TURMA_TCC1 = "O aluno foi aprovado em TCC 1. Matricule-o numa turma de TCC 2."
+MT29_CONTA_NAO_ATIVA = (
+    "A conta deste aluno está {status}: ele não consegue entrar até a conta ser reativada pela "
+    "Gestão de Contas."
+)
+MT30_ENCERRAMENTO_SESSAO = "Não é possível encerrar a participação: há sessão de defesa ativa."
+MT32_PREVIA_INVALIDA = (
+    "A prévia da importação venceu ou não é desta turma. Envie o arquivo de novo."
+)
+MT31_PEDIDO_CANCELADO = (
+    "O pedido de {tipo} para o TCC de {nome} foi cancelado porque a participação do aluno foi "
+    "encerrada."
+)

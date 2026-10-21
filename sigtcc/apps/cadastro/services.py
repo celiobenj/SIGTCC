@@ -83,6 +83,8 @@ class EventoAcesso(enum.Enum):
     TROCA_EMAIL_CONFIRMADA = "TROCA_EMAIL_CONFIRMADA"
     EMAIL_DUPLICADO = "EMAIL_DUPLICADO"
     FALHA_ENVIO_EMAIL = "FALHA_ENVIO_EMAIL"
+    # Spec 004 (research B4): exclusão definitiva de turma, sem tabela para o registro.
+    TURMA_EXCLUIDA = "TURMA_EXCLUIDA"
 
 
 def registrar_evento(evento, conta, autor=None, detalhe=""):
@@ -827,17 +829,29 @@ class ResultadoPerfil:
     mensagem: str
 
 
+def curso_do_codigo(codigo):
+    """Curso do NUCOMP pelo código de curso da UEA (código inteiro), ou None.
+
+    None = "Código não reconhecido". Fica aqui, no módulo de base, e é reexportada por
+    services_turmas, sem importação circular (spec 004, research B6 e N2).
+    [US-08][RBN-CAD-05.7][spec 004, FR-015][Q3][Q5]
+    """
+    if not codigo:
+        return None
+    equivalencia = (
+        EquivalenciaCursos.objects.select_related("eqc_cur").filter(eqc_codigo_uea=codigo).first()
+    )
+    return equivalencia.eqc_cur if equivalencia else None
+
+
 def curso_do_aluno(aluno):
     """Nome do curso pela equivalência do código da UEA, ou "Código não reconhecido".
 
+    Delega a curso_do_codigo (spec 004, research B6).
     [US-38][RBN-CAD-13.1][RBN-CAD-05.7]
     """
-    equivalencia = (
-        EquivalenciaCursos.objects.select_related("eqc_cur")
-        .filter(eqc_codigo_uea=aluno.alu_codigo_curso)
-        .first()
-    )
-    return equivalencia.eqc_cur.cur_nome if equivalencia else CURSO_NAO_RECONHECIDO
+    curso = curso_do_codigo(aluno.alu_codigo_curso)
+    return curso.cur_nome if curso else CURSO_NAO_RECONHECIDO
 
 
 def tipo_por_bytes(inicio):
@@ -1075,3 +1089,48 @@ def abrir_notificacao(usuario, not_id):
 def marcar_todas_lidas(usuario):
     """ "Marcar como lidas": todas as notificações do usuário. [US-38][RBN-CAD-13.2][FR-022]"""
     Notificacoes.objects.filter(not_usu_id=usuario.pk, not_lida=False).update(not_lida=True)
+
+
+# =============================================================================================
+# Criação de notificações (spec 004, research B21; contrato §4 da spec 004)
+# =============================================================================================
+
+LIMITE_NOTIFICACAO = 500
+RETICENCIAS = "…"
+
+
+def _cortar(texto, limite):
+    """Corta o texto no limite, terminando com reticências. [US-38][RBN-CAD-13.2][B-1]"""
+    if len(texto) <= limite:
+        return texto
+    return texto[: limite - len(RETICENCIAS)].rstrip() + RETICENCIAS
+
+
+def montar_mensagem_cortada(modelo, campo_longo, **campos):
+    """Monta a mensagem a partir do modelo (str.format) cortando primeiro o campo longo.
+
+    Assim a frase fica inteira e só a parte variável longa (a justificativa) perde o fim, para o
+    texto caber nos 500 caracteres da notificação (achado B-1).
+    [US-09][RBN-CAD-05.4][spec 004, B21][B-1]
+    """
+    sem_campo = modelo.format(**{**campos, campo_longo: ""})
+    espaco = LIMITE_NOTIFICACAO - len(sem_campo)
+    campos[campo_longo] = _cortar(campos[campo_longo], max(espaco, len(RETICENCIAS)))
+    return _cortar(modelo.format(**campos), LIMITE_NOTIFICACAO)
+
+
+def notificar(usuario, mensagem, link=None):
+    """Única forma de criar uma notificação (contrato §4 da spec 004).
+
+    Corta a mensagem em 500 caracteres com reticências; grava o link só se for interno e válido
+    (destino_da_notificacao), senão sem link; preenche data e hora e "não lida".
+    [US-38][RBN-CAD-13.2][US-08][US-09][spec 004, B21][I-5]
+    """
+    destino = destino_da_notificacao(link) if link else None
+    return Notificacoes.objects.create(
+        not_usu=usuario,
+        not_mensagem=_cortar(mensagem, LIMITE_NOTIFICACAO),
+        not_link_tela=destino,
+        not_data_hora=timezone.now(),
+        not_lida=False,
+    )

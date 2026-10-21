@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% comment %}
+  Encerramento da participação do aluno com Proposta: Status (Desistente, Reprovado ou Jubilado) e
+  Justificativa (tela "Encerrar participação do aluno" do protótipo de 17/10).
+  [US-09][RBN-CAD-08.4][FR-024][Q14]
+{% endcomment %}
+{% block titulo %}Encerrar participação · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Encerrar participação do aluno</h2>
+<p class="pg-sub">{{ aluno.alu.usu_nome }} · {{ aluno.alu_matricula }} · {{ turma.tur_identificador }}</p>
+<div class="cartao mt16">
+  {% if erro %}<div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>{% endif %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form.status %}
+    {% include "includes/campo.html" with campo=form.justificativa %}
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{% url 'cadastro:turma' turma.pk %}">Cancelar</a>
+      <button type="submit" class="btn pri perigo">Confirmar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

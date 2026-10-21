@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% comment %}
+  Turmas ativas do Docente (Professor da Disciplina) ou do curso da Secretaria.
+  [US-07][FR-010][Q9]
+{% endcomment %}
+{% block titulo %}Turmas · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <h2 class="pg">Turmas</h2>
+  <div class="flex flex-wrap">
+    <a class="btn txt" href="{% url 'cadastro:turmas_arquivadas' %}"><span class="ms">inventory_2</span>Turmas arquivadas</a>
+    {% if pode_criar %}<a class="btn pri" href="{% url 'cadastro:turma_nova' %}"><span class="ms">add</span>Nova turma</a>{% endif %}
+  </div>
+</div>
+<div class="mt16">{% include "cadastro/turmas/_lista_turmas.html" %}</div>
+{% endblock %}

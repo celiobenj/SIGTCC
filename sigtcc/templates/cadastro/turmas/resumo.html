@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% comment %}
+  Resumo da importação (MT-15) com as linhas rejeitadas e o motivo de cada uma.
+  [US-08][RBN-CAD-05.2][FR-018]
+{% endcomment %}
+{% block titulo %}Resumo da importação · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Resumo da importação</h2>
+<div class="alerta sucesso" role="status"><span class="ms">task_alt</span><span class="texto">{{ texto }}</span></div>
+{% if rejeitadas %}
+<div class="cartao">
+  <h3>Linhas rejeitadas</h3>
+  <ul>{% for numero, motivo in rejeitadas %}<li>Linha {{ numero }}: {{ motivo }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+<a class="btn pri" href="{% url 'cadastro:turma' turma.pk %}">Voltar para a turma</a>
+{% endblock %}

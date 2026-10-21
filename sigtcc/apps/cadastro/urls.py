@@ -5,7 +5,7 @@
 
 from django.urls import path
 
-from sigtcc.apps.cadastro import views
+from sigtcc.apps.cadastro import views, views_turmas
 
 app_name = "cadastro"
 
@@ -35,5 +35,60 @@ urlpatterns = [
         "alunos/<int:alu_id>/resetar-primeiro-acesso/",
         views.resetar_primeiro_acesso,
         name="resetar_primeiro_acesso",
+    ),
+    # Spec 004: turmas (contracts/rotas.md). [US-07][US-08][US-09]
+    path("turmas/", views_turmas.turmas, name="turmas"),
+    path("turmas/arquivadas/", views_turmas.turmas_arquivadas, name="turmas_arquivadas"),
+    path("turmas/nova/", views_turmas.turma_nova, name="turma_nova"),
+    path("turmas/<int:tur_id>/", views_turmas.turma, name="turma"),
+    path("turmas/<int:tur_id>/editar/", views_turmas.turma_editar, name="turma_editar"),
+    path("turmas/<int:tur_id>/excluir/", views_turmas.turma_excluir, name="turma_excluir"),
+    path("turmas/<int:tur_id>/arquivar/", views_turmas.turma_arquivar, name="turma_arquivar"),
+    path("turmas/<int:tur_id>/matricular/", views_turmas.matricular, name="matricular"),
+    path("turmas/<int:tur_id>/importar/", views_turmas.importar, name="importar"),
+    path(
+        "turmas/<int:tur_id>/importar/confirmar/",
+        views_turmas.importar_confirmar,
+        name="importar_confirmar",
+    ),
+    path(
+        "turmas/<int:tur_id>/importar/resumo/",
+        views_turmas.importar_resumo,
+        name="importar_resumo",
+    ),
+    path(
+        "turmas/<int:tur_id>/importar/cancelar/",
+        views_turmas.importar_cancelar,
+        name="importar_cancelar",
+    ),
+    path(
+        "turmas/modelo-importacao.csv",
+        views_turmas.modelo_importacao,
+        name="modelo_importacao",
+    ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/editar/",
+        views_turmas.aluno_editar,
+        name="aluno_editar",
+    ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/transferir/",
+        views_turmas.aluno_transferir,
+        name="aluno_transferir",
+    ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/excluir/",
+        views_turmas.aluno_excluir,
+        name="aluno_excluir",
+    ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/encerrar/",
+        views_turmas.aluno_encerrar,
+        name="aluno_encerrar",
+    ),
+    path(
+        "turmas/<int:tur_id>/excluidos-transferidos/",
+        views_turmas.excluidos_transferidos,
+        name="excluidos_transferidos",
     ),
 ]

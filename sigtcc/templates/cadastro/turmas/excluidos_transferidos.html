@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% comment %}
+  Alunos excluídos ou transferidos da turma, do mais recente para o mais antigo; só leitura e só
+  para o Professor da Disciplina. [US-09][RBN-CAD-05.8][FR-026][I-4]
+{% endcomment %}
+{% block titulo %}Excluídos ou transferidos · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Alunos excluídos ou transferidos</h2>
+<p class="pg-sub">{{ turma.tur_identificador }} · {{ turma.tur_descricao }} · {{ turma.tur_ano }}/{{ turma.tur_semestre }}</p>
+{% if registros %}
+<div class="tabela-wrap mt16">
+  <table class="tabela">
+    <thead><tr><th>Nome</th><th>Matrícula</th><th>Data e hora</th><th>Autor</th><th>Tipo</th><th>Justificativa</th></tr></thead>
+    <tbody>
+      {% for registro in registros %}
+      <tr>
+        <td>{{ registro.hat_alu.alu.usu_nome }}</td>
+        <td>{{ registro.hat_alu.alu_matricula }}</td>
+        <td>{{ registro.hat_data_hora|date:"d/m/Y H:i" }}</td>
+        <td>{{ registro.hat_usu.usu_nome }}</td>
+        <td>{{ registro.hat_tipo_evento }}{% if registro.hat_tur_destino %} para {{ registro.hat_tur_destino.tur_identificador }}{% endif %}</td>
+        <td>{{ registro.hat_justificativa }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="vazio mt16"><span class="ms">history</span>Nenhum aluno excluído ou transferido.</div>
+{% endif %}
+<div class="mt16"><a class="btn txt" href="{% url 'cadastro:turma' turma.pk %}"><span class="ms">arrow_back</span>Voltar para a turma</a></div>
+{% endblock %}

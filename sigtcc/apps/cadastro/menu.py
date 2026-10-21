@@ -14,4 +14,13 @@ ITENS = [
         "perfis": ("aluno", "docente", "secretaria", "membro_externo"),
         "ordem": 0,
     },
+    # Spec 004: turmas do Professor da Disciplina ou do curso da Secretaria (Q9). Enquanto a rota
+    # não existir, o processador de contexto esconde o item. [US-07][FR-010][Q9]
+    {
+        "rotulo": "Turmas",
+        "icone": "groups",
+        "rota": "cadastro:turmas",
+        "perfis": ("docente", "secretaria"),
+        "ordem": 10,
+    },
 ]

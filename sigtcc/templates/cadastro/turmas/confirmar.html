@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% comment %}
+  Confirmação de exclusão (MT-07) ou de arquivamento (MT-09) da turma, sem JavaScript.
+  [US-07][RBN-CAD-04.4][RBN-CAD-04.5][FR-006][FR-007]
+{% endcomment %}
+{% block titulo %}{{ titulo }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">{{ titulo }}</h2>
+<div class="cartao mt16">
+  <p>{{ pergunta }}</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="flex entre">
+      <a class="btn txt" href="{% url 'cadastro:turma' turma.pk %}">Cancelar</a>
+      <button type="submit" class="btn pri{% if perigo %} perigo{% endif %}">{{ rotulo }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

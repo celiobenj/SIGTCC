@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% comment %}
+  Área de turmas arquivadas, só para consulta (RBN-CAD-04.5).
+  [US-07][RBN-CAD-04.5][FR-008][FR-010]
+{% endcomment %}
+{% block titulo %}Turmas arquivadas · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <h2 class="pg">Turmas arquivadas</h2>
+  <a class="btn txt" href="{% url 'cadastro:turmas' %}"><span class="ms">arrow_back</span>Turmas</a>
+</div>
+<p class="pg-sub">Só para consulta.</p>
+{% include "cadastro/turmas/_lista_turmas.html" %}
+{% endblock %}
