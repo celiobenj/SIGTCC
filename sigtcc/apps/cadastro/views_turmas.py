@@ -56,6 +56,16 @@ def trata_turma_arquivada(view):
     return envolta
 
 
+def _turma_do_professor(usuario, tur_id):
+    """Turma (404) só para o Professor da Disciplina dela (403), também a arquivada: telas de
+    consulta que são só dele (contracts/rotas.md). [US-08][US-09][RBN-CAD-05.8][FR-018][FR-026]
+    """
+    registro = services_turmas.turma_para(usuario, tur_id, CONSULTAR)
+    if not pode_alterar_turma(usuario, registro):
+        raise PermissionDenied
+    return registro
+
+
 @perfil_requerido("docente", "secretaria")
 def turmas(request):
     """Turmas ativas do Docente (Professor da Disciplina) ou do curso da Secretaria (Q9).
@@ -126,7 +136,7 @@ def turma(request, tur_id):
 
 
 def _dados_iniciais(turma):
-    """Valores atuais da turma para o formulário de edição."""
+    """Valores atuais da turma para o formulário de edição. [US-07][FR-005]"""
     return {
         "codigo_disciplina": turma.tur_dis.dis_codigo,
         "descricao": turma.tur_descricao,
@@ -366,7 +376,7 @@ def importar_resumo(request, tur_id):
 
     [US-08][RBN-CAD-05.2][FR-018]
     """
-    registro = services_turmas.turma_para(request.user, tur_id, CONSULTAR)
+    registro = _turma_do_professor(request.user, tur_id)
     resumo = request.session.pop(services_turmas.CHAVE_RESUMO, None)
     if not resumo or resumo.get("tur_id") != tur_id:
         return redirect("cadastro:turma", tur_id=tur_id)
@@ -379,7 +389,7 @@ def importar_resumo(request, tur_id):
 @perfil_requerido("docente", "secretaria")
 def importar_cancelar(request, tur_id):
     """ "Cancelar" na prévia: apaga a prévia e volta para a turma. [US-08][B10]"""
-    services_turmas.turma_para(request.user, tur_id, CONSULTAR)
+    _turma_do_professor(request.user, tur_id)
     services_turmas.descartar_previa(request.session)
     return redirect("cadastro:turma", tur_id=tur_id)
 
@@ -515,9 +525,7 @@ def excluidos_transferidos(request, tur_id):
     """Lista só de leitura dos alunos excluídos ou transferidos da turma, só para o Professor da
     Disciplina, também na turma arquivada (research B16). [US-09][RBN-CAD-05.8][FR-026][I-4]
     """
-    registro = services_turmas.turma_para(request.user, tur_id, CONSULTAR)
-    if not pode_alterar_turma(request.user, registro):
-        raise PermissionDenied
+    registro = _turma_do_professor(request.user, tur_id)
     contexto = {
         "turma": registro,
         "registros": services_turmas.excluidos_e_transferidos(registro),

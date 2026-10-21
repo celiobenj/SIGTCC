@@ -1100,7 +1100,7 @@ RETICENCIAS = "…"
 
 
 def _cortar(texto, limite):
-    """Corta o texto no limite, terminando com reticências."""
+    """Corta o texto no limite, terminando com reticências. [US-38][RBN-CAD-13.2][B-1]"""
     if len(texto) <= limite:
         return texto
     return texto[: limite - len(RETICENCIAS)].rstrip() + RETICENCIAS

@@ -55,7 +55,7 @@ def carregar_cursos(apps, schema_editor):
 
 
 def remover_cursos(apps, schema_editor):
-    """Reverte a carga de cursos (só os nomes carregados)."""
+    """Reverte a carga de cursos (só os nomes carregados). [US-39][RBN-CAD-14.1][FR-013]"""
     # Apaga por SQL: o delete() do ORM com os modelos históricos da migração falha ao percorrer o
     # OneToOneField de Coordenadores. As FKs do banco continuam impedindo apagar linha referenciada.
     schema_editor.execute('DELETE FROM "Cursos" WHERE cur_nome = ANY(%s)', [list(CURSOS)])
@@ -69,7 +69,10 @@ def carregar_areas_interesse(apps, schema_editor):
 
 
 def remover_areas_interesse(apps, schema_editor):
-    """Reverte a carga de áreas (só os nomes carregados), por SQL como remover_cursos."""
+    """Reverte a carga de áreas (só os nomes carregados), por SQL como remover_cursos.
+
+    [US-13][RBN-CAD-08.1][FR-015]
+    """
     schema_editor.execute(
         'DELETE FROM "Areas_Interesse" WHERE ari_nome = ANY(%s)', [list(AREAS_INTERESSE)]
     )
@@ -89,7 +92,10 @@ def carregar_equivalencia_cursos(apps, schema_editor):
 
 
 def remover_equivalencia_cursos(apps, schema_editor):
-    """Reverte a carga da equivalência (só os códigos carregados), por SQL como as demais."""
+    """Reverte a carga da equivalência (só os códigos carregados), por SQL como as demais.
+
+    [US-08][RBN-CAD-05.7][Q17][Q38]
+    """
     schema_editor.execute(
         'DELETE FROM "Equivalencia_Cursos" WHERE eqc_codigo_uea = ANY(%s)',
         [[codigo for codigo, _ in EQUIVALENCIA_CURSOS]],

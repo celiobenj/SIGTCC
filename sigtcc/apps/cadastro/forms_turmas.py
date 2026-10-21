@@ -125,7 +125,10 @@ class TurmaForm(FormularioSigtcc):
     )
 
     def __init__(self, *args, turma=None, travar_descricao_e_curso=False, **kwargs):
-        """Guarda a turma em edição; com a trava, Descrição e Curso ficam desabilitados (Q15)."""
+        """Guarda a turma em edição; com a trava, Descrição e Curso ficam desabilitados.
+
+        [US-07][RBN-CAD-04.3][FR-005][Q15]
+        """
         super().__init__(*args, **kwargs)
         self.turma = turma
         if travar_descricao_e_curso:

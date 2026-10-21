@@ -36,7 +36,10 @@ class ErroModelo(Exception):
 
 @dataclass
 class Linha:
-    """Uma linha de dados do arquivo, com o número da linha no arquivo (cabeçalho = 1)."""
+    """Uma linha de dados do arquivo, com o número da linha no arquivo (cabeçalho = 1).
+
+    [US-08][RBN-CAD-05.2][FR-017]
+    """
 
     numero: int
     matricula: str
@@ -45,7 +48,7 @@ class Linha:
 
 
 def _texto_da_celula(valor):
-    """Célula do XLSX ou do CSV como texto; número inteiro sem ".0" (research B9)."""
+    """Célula do XLSX ou do CSV como texto; número inteiro sem ".0". [US-08][B9]"""
     if valor is None:
         return ""
     if isinstance(valor, float) and valor.is_integer():
@@ -69,7 +72,10 @@ def _mapear_cabecalho(cabecalho):
 
 
 def _linhas_de(registros):
-    """Aplica o cabeçalho às linhas, ignora as vazias e para acima de 200 (spec Q13)."""
+    """Aplica o cabeçalho às linhas, ignora as vazias e para acima de 200.
+
+    [US-08][RBN-CAD-05.2][Q13][B-3]
+    """
     iterador = iter(registros)
     try:
         posicoes = _mapear_cabecalho(next(iterador))
@@ -90,7 +96,7 @@ def _linhas_de(registros):
 
 
 def _ler_csv(conteudo):
-    """CSV em UTF-8 (com ou sem BOM) ou Windows-1252, com ";" ou "," (spec Q11; m20)."""
+    """CSV em UTF-8 (com ou sem BOM) ou Windows-1252, com ";" ou ",". [US-08][Q11][m20]"""
     try:
         texto = conteudo.decode("utf-8-sig")
     except UnicodeDecodeError:
@@ -106,7 +112,7 @@ def _ler_csv(conteudo):
 
 
 def _conferir_zip(conteudo):
-    """Recusa XLSX que não é ZIP ou que se expande demais (zip bomb; achado B-3)."""
+    """Recusa XLSX que não é ZIP ou que se expande demais (zip bomb). [US-08][B-3][N7]"""
     if not conteudo.startswith(b"PK\x03\x04"):
         raise ErroModelo
     with zipfile.ZipFile(io.BytesIO(conteudo)) as zipado:
@@ -119,7 +125,10 @@ def _conferir_zip(conteudo):
 
 
 def _ler_xlsx(conteudo):
-    """XLSX: só a primeira planilha, em modo só leitura, com XML seguro (defusedxml; Q11)."""
+    """XLSX: só a primeira planilha, em modo só leitura, com XML seguro (defusedxml).
+
+    [US-08][Q11][B-3]
+    """
     _conferir_zip(conteudo)
     livro = load_workbook(io.BytesIO(conteudo), read_only=True, data_only=True)
     try:
@@ -171,7 +180,10 @@ REJEITADO = "Rejeitado"
 
 @dataclass
 class ItemDaPrevia:
-    """Uma linha classificada na prévia, com o motivo da recusa e os avisos."""
+    """Uma linha classificada na prévia, com o motivo da recusa e os avisos.
+
+    [US-08][RBN-CAD-05.2][FR-017]
+    """
 
     numero: int
     matricula: str
@@ -190,14 +202,17 @@ class Previa:
 
     @property
     def validos(self):
+        """Linhas Novo ou Já cadastrado. [FR-017]"""
         return [item for item in self.itens if item.situacao != REJEITADO]
 
     @property
     def rejeitados(self):
+        """Linhas rejeitadas, com o motivo. [FR-017]"""
         return [item for item in self.itens if item.situacao == REJEITADO]
 
     @property
     def nao_reconhecidos(self):
+        """Linhas válidas com código de curso não reconhecido. [RBN-CAD-05.7][FR-018]"""
         return sum(1 for item in self.validos if mensagens.CURSO_NAO_RECONHECIDO in item.avisos)
 
 

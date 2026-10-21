@@ -94,6 +94,7 @@ class TurmaArquivada(Exception):
     """
 
     def __init__(self, turma):
+        """Guarda a turma arquivada. [FR-008]"""
         super().__init__(turma.tur_identificador)
         self.turma = turma
 
@@ -248,6 +249,7 @@ class ErroTurma(Exception):
     """
 
     def __init__(self, mensagem, campo=None):
+        """Guarda a mensagem exata e o campo. [FR-002]"""
         super().__init__(mensagem)
         self.mensagem = mensagem
         self.campo = campo
@@ -273,7 +275,10 @@ def turmas_visiveis(usuario, arquivadas=False):
 
 
 def _aplicar_dados(turma, dados, travar_descricao_e_curso=False):
-    """Copia os dados do formulário para a turma (Descrição e Curso só sem trava, Q15)."""
+    """Copia os dados do formulário para a turma (Descrição e Curso só sem trava).
+
+    [US-07][RBN-CAD-04.1][RBN-CAD-04.3][FR-005][Q15]
+    """
     disciplina, _ = Disciplinas.objects.get_or_create(dis_codigo=dados["codigo_disciplina"])
     turma.tur_dis = disciplina
     turma.tur_identificador = dados["identificador"]
@@ -289,7 +294,10 @@ def _aplicar_dados(turma, dados, travar_descricao_e_curso=False):
 
 
 def _salvar_turma(turma):
-    """Salva num savepoint; identificador repetido no banco (cadastro simultâneo) vira MT-03."""
+    """Salva num savepoint; identificador repetido no banco (cadastro simultâneo) vira MT-03.
+
+    [US-07][RBN-CAD-04.1][FR-002][MT-03]
+    """
     try:
         with transaction.atomic():
             turma.save()
@@ -448,6 +456,7 @@ class ResultadoMatricula:
 
     @property
     def matriculado(self):
+        """O aluno ficou vinculado à turma (não foi recusado). [US-08][RBN-CAD-05.1]"""
         return self.estado not in RECUSAS
 
 
@@ -705,11 +714,11 @@ VALIDADE_PREVIA = timedelta(minutes=30)
 
 
 class PreviaInvalida(Exception):
-    """Prévia ausente, vencida, de outra turma ou com código errado (MT-32; achado B-2)."""
+    """Prévia ausente, vencida, de outra turma ou com código errado. [US-08][MT-32][B10][B-2]"""
 
 
 class ImportacaoRepetida(Exception):
-    """O mesmo código de prévia já foi confirmado (dois POST simultâneos; achado N3)."""
+    """O mesmo código de prévia já foi confirmado (dois POST simultâneos). [US-08][B10][N3]"""
 
 
 def guardar_previa(sessao, turma, previa):
@@ -734,6 +743,7 @@ def descartar_previa(sessao):
 
 
 def _previa_vencida(previa):
+    """Prévia com mais de 30 minutos. [US-08][RBN-CAD-05.2][B10]"""
     return timezone.now() - datetime.fromisoformat(previa["instante"]) > VALIDADE_PREVIA
 
 
@@ -812,7 +822,10 @@ def turmas_destino_possiveis(turma_origem, aluno):
 
 
 def _travar_turmas_em_ordem(*tur_ids):
-    """Trava as turmas em ordem de tur_id, para duas transferências não se travarem (B17)."""
+    """Trava as turmas em ordem de tur_id, para duas transferências não se travarem.
+
+    [US-08][RBN-CAD-05.6][B17][I-2]
+    """
     list(Turmas.objects.select_for_update().filter(pk__in=tur_ids).order_by("pk"))
 
 
