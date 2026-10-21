@@ -73,7 +73,7 @@ cerca de 14 telas e 18 rotas; turmas de até 60 alunos, dezenas de turmas por se
 
 | Princípio | Verificação | Resultado |
 |---|---|---|
-| I. Especificação primeiro | spec 004 e plan aprovados por Julia Cohen em 2026-10-20, sem marcadores pendentes; tasks será aprovado antes do código. | PASSA (aprovação do tasks pendente) |
+| I. Especificação primeiro | spec 004 e plan aprovados por Julia Cohen em 2026-10-20 e tasks em 2026-10-21, sem marcadores pendentes. | PASSA |
 | II. Rastreabilidade | Serviços, views, formulários, templates e testes levam [US-XX][RBN-...]; testes nomeados pelo cenário da US. | PASSA |
 | III. Modelo de dados oficial | Nenhuma tabela ou coluna nova ([data-model.md](data-model.md)); `Equivalencia_Cursos` guarda os códigos no formato do dicionário (spec Q5, índice Q-38); curso do aluno no `alu_codigo_curso` existente (Q3). Única migração: carga de dados da equivalência. | PASSA |
 | IV. Arquitetura | Tudo em `sigtcc/apps/cadastro`; regras em `services_turmas.py`, `importacao.py` e `permissoes.py`, views só orquestram, templates sem regra; templates em `sigtcc/templates/cadastro/turmas/`, static em `sigtcc/static/`. O princípio fala em `services.py`: os módulos `services_turmas.py` e `importacao.py` são exceção justificada (Complexity Tracking; Célio, Q-42). | PASSA com exceção justificada |

@@ -1,0 +1,232 @@
+@startuml
+actor "Professor da Disciplina : Actor" #FFFFCC
+boundary ":TelaMatricula : Boundary" #FFFFCC
+control ":MatriculaController : Control" #FFFFCC
+control ":LeitorArquivo : Control" #FFFFCC
+entity ":EquivalenciaCurso : Entity" #FFFFCC
+entity ":Aluno : Entity" #FFFFCC
+entity ":Usuario : Entity" #FFFFCC
+entity ":Matricula : Entity" #FFFFCC
+entity ":TCC : Entity" #FFFFCC
+entity ":HistoricoStatusTCC : Entity" #FFFFCC
+
+"Professor da Disciplina : Actor" -> ":TelaMatricula : Boundary":clicarMatricularAlunos(turmaId)
+activate "Professor da Disciplina : Actor"
+activate ":TelaMatricula : Boundary"
+":TelaMatricula : Boundary" --> "Professor da Disciplina : Actor":exibirOpcoes()
+deactivate ":TelaMatricula : Boundary"
+deactivate "Professor da Disciplina : Actor"
+":TelaMatricula : Boundary" -> ":MatriculaController : Control":importarAlunos(turmaId, arquivo)
+activate ":TelaMatricula : Boundary"
+activate ":MatriculaController : Control"
+"Professor da Disciplina : Actor" -> ":TelaMatricula : Boundary":importarArquivo(arquivo)
+activate "Professor da Disciplina : Actor"
+activate ":TelaMatricula : Boundary"
+":MatriculaController : Control" -> ":LeitorArquivo : Control":ler(arquivo)
+activate ":MatriculaController : Control"
+activate ":LeitorArquivo : Control"
+deactivate ":LeitorArquivo : Control"
+deactivate ":MatriculaController : Control"
+":LeitorArquivo : Control" -> ":MatriculaController : Control":erroFormato
+activate ":LeitorArquivo : Control"
+activate ":MatriculaController : Control"
+break arquivo fora do modelo
+deactivate ":MatriculaController : Control"
+deactivate ":LeitorArquivo : Control"
+":MatriculaController : Control" --> ":TelaMatricula : Boundary":erroFormato
+deactivate ":MatriculaController : Control"
+deactivate ":TelaMatricula : Boundary"
+":TelaMatricula : Boundary" --> "Professor da Disciplina : Actor":exibirMensagem(erroArquivo)
+deactivate ":TelaMatricula : Boundary"
+":LeitorArquivo : Control" -> ":MatriculaController : Control":linhas
+activate ":LeitorArquivo : Control"
+activate ":MatriculaController : Control"
+deactivate "Professor da Disciplina : Actor"
+end
+deactivate ":MatriculaController : Control"
+deactivate ":LeitorArquivo : Control"
+":MatriculaController : Control" -> ":MatriculaController : Control":validarLinha(linha)
+activate ":MatriculaController : Control"
+loop para cada linha
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+":MatriculaController : Control" -> ":EquivalenciaCurso : Entity":buscarCurso(codigoUEA)
+activate ":MatriculaController : Control"
+activate ":EquivalenciaCurso : Entity"
+deactivate ":MatriculaController : Control"
+deactivate ":EquivalenciaCurso : Entity"
+":EquivalenciaCurso : Entity" -> ":MatriculaController : Control":curso
+activate ":EquivalenciaCurso : Entity"
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":EquivalenciaCurso : Entity"
+":MatriculaController : Control" -> ":MatriculaController : Control":marcarAlertaCurso(linha)
+activate ":MatriculaController : Control"
+opt código não reconhecido ou curso divergente
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+":MatriculaController : Control" -> ":Aluno : Entity":buscarPorMatricula(matricula)
+activate ":MatriculaController : Control"
+activate ":Aluno : Entity"
+deactivate ":MatriculaController : Control"
+end
+deactivate ":Aluno : Entity"
+deactivate ":MatriculaController : Control"
+":Aluno : Entity" -> ":MatriculaController : Control":aluno
+activate ":Aluno : Entity"
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+":MatriculaController : Control" -> ":Matricula : Entity":existe(aluno, turma)
+activate ":MatriculaController : Control"
+activate ":Matricula : Entity"
+deactivate ":Aluno : Entity"
+deactivate ":Matricula : Entity"
+deactivate ":MatriculaController : Control"
+":Matricula : Entity" -> ":MatriculaController : Control":jaMatriculado
+activate ":Matricula : Entity"
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+alt linha inválida
+deactivate ":Matricula : Entity"
+":MatriculaController : Control" -> ":MatriculaController : Control":adicionarErro(linha)
+activate ":MatriculaController : Control"
+else já matriculado na turma
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+":MatriculaController : Control" -> ":MatriculaController : Control":ignorarLinha(linha)
+activate ":MatriculaController : Control"
+else aluno já cadastrado
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+":MatriculaController : Control" -> ":MatriculaController : Control":marcarParaVincular(aluno)
+activate ":MatriculaController : Control"
+else aluno novo
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+":MatriculaController : Control" -> ":MatriculaController : Control":marcarParaCriar(linha)
+activate ":MatriculaController : Control"
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+end
+end
+":MatriculaController : Control" -> ":TelaMatricula : Boundary":previa
+activate ":MatriculaController : Control"
+activate ":TelaMatricula : Boundary"
+deactivate ":TelaMatricula : Boundary"
+":TelaMatricula : Boundary" -> "Professor da Disciplina : Actor":exibirPrevia
+activate ":TelaMatricula : Boundary"
+activate "Professor da Disciplina : Actor"
+deactivate ":MatriculaController : Control"
+deactivate "Professor da Disciplina : Actor"
+"Professor da Disciplina : Actor" -> ":TelaMatricula : Boundary":confirmarImportacao
+activate "Professor da Disciplina : Actor"
+activate ":TelaMatricula : Boundary"
+deactivate ":TelaMatricula : Boundary"
+":TelaMatricula : Boundary" -> ":MatriculaController : Control":confirmar(turmaId)
+activate ":TelaMatricula : Boundary"
+activate ":MatriculaController : Control"
+loop para cada linha válida
+activate ":MatriculaController : Control"
+activate ":Usuario : Entity"
+deactivate ":Usuario : Entity"
+activate ":Usuario : Entity"
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":Usuario : Entity"
+activate ":MatriculaController : Control"
+activate ":Aluno : Entity"
+activate ":Aluno : Entity"
+activate ":MatriculaController : Control"
+deactivate ":Aluno : Entity"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":Aluno : Entity"
+activate ":MatriculaController : Control"
+activate ":Matricula : Entity"
+deactivate ":Matricula : Entity"
+activate ":MatriculaController : Control"
+activate ":TCC : Entity"
+deactivate ":MatriculaController : Control"
+deactivate ":TCC : Entity"
+activate ":TCC : Entity"
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":TCC : Entity"
+activate ":MatriculaController : Control"
+activate ":HistoricoStatusTCC : Entity"
+deactivate ":HistoricoStatusTCC : Entity"
+deactivate ":MatriculaController : Control"
+activate ":MatriculaController : Control"
+activate ":Matricula : Entity"
+deactivate ":Matricula : Entity"
+activate ":MatriculaController : Control"
+activate ":TCC : Entity"
+deactivate ":MatriculaController : Control"
+deactivate ":TCC : Entity"
+activate ":TCC : Entity"
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":TCC : Entity"
+activate ":MatriculaController : Control"
+activate ":TCC : Entity"
+deactivate ":TCC : Entity"
+activate ":TCC : Entity"
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":TCC : Entity"
+activate ":MatriculaController : Control"
+activate ":HistoricoStatusTCC : Entity"
+deactivate ":HistoricoStatusTCC : Entity"
+deactivate ":MatriculaController : Control"
+activate ":MatriculaController : Control"
+activate ":TCC : Entity"
+deactivate ":TCC : Entity"
+activate ":TCC : Entity"
+activate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+deactivate ":MatriculaController : Control"
+activate ":MatriculaController : Control"
+activate ":HistoricoStatusTCC : Entity"
+deactivate ":TCC : Entity"
+deactivate ":HistoricoStatusTCC : Entity"
+deactivate ":MatriculaController : Control"
+end
+alt aluno novo
+":MatriculaController : Control" -> ":Usuario : Entity":criarConta
+":Usuario : Entity" -> ":MatriculaController : Control":usuario
+":MatriculaController : Control" -> ":Aluno : Entity":criar(dadosAluno, usuario)
+":Aluno : Entity" -> ":MatriculaController : Control":aluno
+":MatriculaController : Control" -> ":Matricula : Entity":criar(aluno, turma)
+":MatriculaController : Control" -> ":TCC : Entity":criar(aluno, turma)
+":TCC : Entity" -> ":MatriculaController : Control":tcc
+":MatriculaController : Control" -> ":HistoricoStatusTCC : Entity":registrar(tcc, semProposta)
+else aluno já cadastrado
+":MatriculaController : Control" -> ":Matricula : Entity":criar(aluno, turma)
+":MatriculaController : Control" -> ":TCC : Entity":buscarUltimo(aluno)
+":TCC : Entity" -> ":MatriculaController : Control":tccAnterior
+alt Aprovado para TCC 2
+":MatriculaController : Control" -> ":TCC : Entity":criar(aluno, turma, tccAnterior)
+":TCC : Entity" -> ":MatriculaController : Control":tcc
+":MatriculaController : Control" -> ":HistoricoStatusTCC : Entity":registrar(tcc, emAndamento)
+else Reprovado, Desistente ou Jubilado
+":MatriculaController : Control" -> ":TCC : Entity":criar(aluno, turma)
+":TCC : Entity" -> ":MatriculaController : Control":tcc
+":MatriculaController : Control" -> ":HistoricoStatusTCC : Entity":registrar(tcc, semProposta)
+end
+end
+":MatriculaController : Control" --> ":TelaMatricula : Boundary":resumo
+deactivate ":MatriculaController : Control"
+":TelaMatricula : Boundary" --> "Professor da Disciplina : Actor":exibirResumo()
+deactivate ":TelaMatricula : Boundary"
+deactivate "Professor da Disciplina : Actor"
+deactivate ":TelaMatricula : Boundary"
+@enduml

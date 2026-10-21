@@ -8,6 +8,8 @@
 [contracts/servicos-compartilhados.md](contracts/servicos-compartilhados.md),
 [quickstart.md](quickstart.md), diagrama `docs/diagramas/US-08_matricula_por_csv.puml`
 
+**Aprovação**: tasks aprovado por Julia Cohen em 2026-10-21.
+
 **Tests**: obrigatórios (constituição, princípio VI): cada cenário Dado/Quando/Então das US-07 (13),
 US-08 (14) e US-09 (11) vira pelo menos um teste, mais os casos das Clarifications, de permissão, de
 mensagens exatas e de segurança. Os testes de cada fase vêm antes da implementação e devem falhar
