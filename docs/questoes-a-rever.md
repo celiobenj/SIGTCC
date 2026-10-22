@@ -4,9 +4,11 @@
 registrada também no documento de origem (spec, plan, research, tasks, PR); este arquivo reúne tudo
 num lugar só e **não substitui** os registros locais.
 
-Abrangência atual: spec 001 (Modelo de dados), spec 003 (Acesso e Login) e spec 004 (Turmas e Alunos). Atualizado em 2026-10-20
-(respostas da Q-21, Q-24, Q-25 e Q-26; observações na Q-01 e na Q-09; novas Q-27 a Q-32 e S-02; Q-33
-respondida na implementação; Q-17, Q-19, Q-35, Q-37 e Q-38 respondidas; novas Q-34 a Q-42).
+Abrangência atual: spec 001 (Modelo de dados), spec 003 (Acesso e Login), spec 004 (Turmas e
+Alunos) e spec 005 (Fluxo do TCC e Entregas). Atualizado em 2026-10-20 (respostas da Q-21, Q-24,
+Q-25 e Q-26; observações na Q-01 e na Q-09; novas Q-27 a Q-32 e S-02; Q-33 respondida na
+implementação; Q-17, Q-19, Q-35, Q-37 e Q-38 respondidas; novas Q-34 a Q-42) e em 2026-10-22 (novas
+Q-44 e Q-45, spec 005, conferência do analista-requisitos).
 
 ## Como usar
 
@@ -99,6 +101,8 @@ Status: **Aberta** (aguarda resposta) ou **Respondida**.
 | Q-37 | Quais são os códigos de curso da UEA (dígitos 5 e 6 da matrícula) de Sistemas de Informação e de Licenciatura em Computação? Até a resposta, a carga usa os códigos de exemplo 09 e 10, PROVISÓRIOS. | [spec 004, Clarifications Q5 e FR-015a](../specs/004-turmas-alunos/spec.md#clarifications); [spec 001, Clarifications](../specs/001-modelo-dados/spec.md#clarifications); Q-17 | carga da equivalência (nova migração de dados) e testes da spec 004 | Respondida | Sistemas de Informação = 31 (EST31MSII) e Licenciatura em Computação = 03 (EST03MLV), definitivos. Registrado na spec 004 (Q5, FR-015a) e na spec 001. Respondida por Julia Cohen. | 2026-10-20 |
 | Q-39 | O aluno com Status do TCC 'Aprovado para TCC 2' que for matriculado numa turma de TCC 1 deve ser recusado (MT-28, "O aluno foi aprovado em TCC 1. Matricule-o numa turma de TCC 2.")? A US-08 e o diagrama "Matrícula por CSV" não tratam o caso; a proposta do plano é recusar. | [spec 004, casos de borda](../specs/004-turmas-alunos/spec.md#edge-cases); [research 004, B6](../specs/004-turmas-alunos/research.md) | spec 004 (FR-013, MT-28), serviço de matrícula e testes | Aberta | | |
 | Q-43 | Importar uma exportação real do sistema acadêmico da UEA (CSV ou XLSX) e conferir se a prévia lê os cabeçalhos, a codificação e o XLSX dentro do limite de descompressão (achado N7). O roteiro manual da T042 foi feito com arquivos de teste. | [tasks 004, T042](../specs/004-turmas-alunos/tasks.md); [PR feat-03, seção 4](../specs/004-turmas-alunos/pr-feat-03.md) | `importacao.py` (limites e leitura do XLSX), testes da importação e quickstart, se algo diferir | Aberta | | |
+| Q-44 | A US-43 (v3.3) diz, no passo 1 do fluxo principal, "abre a aba Entregas", mas usa "aba Atividades" em todos os outros passos e nos fluxos alternativos e de exceção; as US-15 e US-16 (mesma feature) usam só "aba Atividades". Qual é o nome oficial da aba: Atividades ou Entregas? A spec 005 adotou "Atividades" como provisório, por maioria de ocorrências. | [spec 005, Clarifications](../specs/005-fluxo-do-tcc/spec.md#clarifications); `docs/fonte/Historias_de_Usuario_v3_3.md`, US-43 (passo 1), US-15 e US-16 | spec 005 (nome da aba nos requisitos, nas mensagens e nos templates); confirmar com a Profa. Diana ou com Leandra Matos (responsável pelas US-13 a 16, 29, 43 e 44) | Aberta | | |
+| Q-45 | A US-14 (v3.3) chama o link de consulta de "Histórico do Status do TCC" no fluxo principal (passo 6 e pré-condições), mas de apenas "Histórico" no fluxo alternativo A (consulta pelo Orientador na tela de orientandos). É o mesmo link com dois nomes, ou são nomes diferentes de verdade? A spec 005 adotou "Histórico do Status do TCC" como nome completo, provisoriamente. | [spec 005, Clarifications](../specs/005-fluxo-do-tcc/spec.md#clarifications); FR-009; `docs/fonte/Historias_de_Usuario_v3_3.md`, US-14 (passo 6 e fluxo alternativo A) | spec 005 (FR-009, nome do link nos templates da aba Meu TCC, da tela de orientandos e da tela do aluno); confirmar com a Profa. Diana ou com Leandra Matos (responsável pelas US-13 a 16, 29, 43 e 44) | Aberta | | |
 
 ---
 
