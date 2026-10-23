@@ -739,5 +739,6 @@ recriado e preparado para o roteiro (backup do anterior em `logs/`, fora do Git)
 | UI/UX | OK | |
 | Campo Link | Melhoria pedida | O link enviado não aparecia no campo ao reabrir a entrega; passa a vir preenchido (FR-019; cenário 10 da US4) |
 
-**Reteste pendente**: passos h e i (com a Proposta do segundo aluno e o link de histórico) e o
-campo Link preenchido, depois das correções de T048 e T049.
+**Reteste (Célio Benjamim, 2026-10-23)**: passos h e i (com a Proposta do segundo aluno), o
+histórico pelo link da aba Alunos, o campo Link preenchido e os demais passos — OK, sem
+divergência.

@@ -6,7 +6,7 @@
 
 **Responsável**: Leandra Matos (US-13 a 16, 29, 43 e 44). Implementação: Julia Cohen (Phases 1 a 5 e parte da 6) e Célio Benjamim (Phases 6 a 13).
 
-> **Base**: a feat-03 (spec 004) e a feat-04 (spec 002) já estão na `develop`. **Antes de abrir o PR**, trazer a `develop` para esta branch por merge (PGCS 4.3.A e 6.2), resolvendo os 3 conflitos de texto já mapeados em `sigtcc/apps/cadastro/urls.py`, `sigtcc/apps/cadastro/mensagens.py` e `docs/questoes-a-rever.md` (manter os blocos das duas features). Num merge simulado, a suíte da develop + feat-05 passou em tudo o que é da feat-05; as falhas restantes já existiam na `develop` (ver seção 4).
+> **Base**: a feat-03 (spec 004) e a feat-04 (spec 002) já estão na `develop`, trazida para esta branch por merge em `206e154` (PGCS 4.3.A e 6.2). Os 3 conflitos de texto (`sigtcc/apps/cadastro/urls.py`, `sigtcc/apps/cadastro/mensagens.py` e `docs/questoes-a-rever.md`) foram resolvidos mantendo os blocos das duas features; o índice de questões ficou sem IDs repetidos (93 questões). O diff do PR traz só a feat-05.
 
 ### 1. Resumo da Alteração
 
@@ -58,8 +58,9 @@ Implementa o ciclo de vida do TCC e das entregas no app `cadastro`, sobre o mode
 | ac04edb | feat(feat-05): registrar autor da homologacao e da devolucao no log |
 | 0c5a3c6 | docs(feat-05): registrar validacao manual e achados do roteiro |
 | 030dc98 | fix(feat-05): mostrar link do historico e preencher o campo link |
-| (este) | docs(feat-05): preencher texto e checklist do pr |
-| (a fazer) | merge da `develop` na branch, antes de abrir o PR |
+| df1cc38 | docs(feat-05): preencher texto e checklist do pr |
+| 206e154 | chore(feat-05): trazer a develop com a gestao de contas (feat-04) |
+| (este) | docs(feat-05): registrar reteste e merge no texto do pr |
 
 ### 3. Checklist Técnico da Equipe (Definition of Done)
 
@@ -68,7 +69,7 @@ Implementa o ciclo de vida do TCC e das entregas no app `cadastro`, sobre o mode
 - [x] Migrações: nenhuma nesta feature (nenhum arquivo em `migrations/` no diff); `makemigrations --check --dry-run` → "No changes detected"; nenhuma migração antiga alterada. Depois do merge da `develop` (que traz a `0006` da spec 002), também "No changes detected" (merge simulado).
 - [x] O arquivo `.env` e as pastas `sigtcc/media/` e `staticfiles/` NÃO foram adicionados ao Git (`git ls-files`). A feature não grava arquivos: entregas são só links `https://`.
 - [x] A interface segue a paleta e os padrões do protótipo de 17/10 (ISO/IEC 25010): conferida no roteiro manual (Célio Benjamim, 2026-10-23, "itens de UI/UX ok").
-- [ ] Não há quebras de layout ou erros no console do navegador: conferir no reteste dos passos h e i (seção 4).
+- [x] Não há quebras de layout ou erros no console do navegador (reteste, Célio Benjamim, 2026-10-23).
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
@@ -77,16 +78,15 @@ Suíte completa (2026-10-23): `python manage.py test sigtcc.apps` → **652 test
 **Validação manual (T035, Célio Benjamim, 2026-10-23)** — banco de desenvolvimento recriado e preparado para o roteiro (backup do anterior em `logs/`, fora do Git):
 - [x] a–d: Proposta, Palavra-Chave repetida (MF-03), "Alterações salvas", histórico e trilha do Aluno
 - [x] e–g: cadastro de entrega, tipo repetido e envio no prazo
-- [ ] h–i: **reteste pendente**. No roteiro, o segundo aluno estava "Sem Proposta", e o envio de "Documento para Defesa" só fica disponível com o TCC "Em Andamento" (RBN-CAD-09.2; US-15, E4) — regra correta; o passo h do `quickstart.md` foi corrigido para salvar a Proposta antes. Com a Proposta salva, o envio depois do prazo foi conferido nos dados do roteiro ("Entregue com Atraso"). Retestar h e i pela tela
+- [x] h–i: na primeira rodada, o segundo aluno estava "Sem Proposta", e o envio de "Documento para Defesa" só fica disponível com o TCC "Em Andamento" (RBN-CAD-09.2; US-15, E4) — regra correta; o passo h do `quickstart.md` foi corrigido para salvar a Proposta antes. **Reteste OK**: envio depois do prazo como "Entregue com Atraso" e acompanhamento do Professor
 - [x] j–k: Versão Final cadastrada e enviada (TCC 2)
 - [x] l: homologação, TCC "Concluído", Secretaria notificada
 - [x] m: devolução para ajuste com a MF-02
 - [x] n: acesso sem login
-- [ ] o e histórico pelo Professor: **reteste pendente**. Faltava o link para o histórico de um aluno (a tela do aluno, US-41, é da spec 006); acrescentado na lista de alunos da turma (FR-031; cenário 12 da US2). A consulta pelo Orientador é da tela de orientandos da spec 006
-- [ ] Campo Link preenchido com o link já enviado (cenário 10 da US4): **reteste pendente** (melhoria pedida na validação)
+- [x] o e histórico pelo Professor: **reteste OK**. Faltava o link para o histórico de um aluno (a tela do aluno, US-41, é da spec 006); acrescentado na lista de alunos da turma (FR-031; cenário 12 da US2). A consulta pelo Orientador é da tela de orientandos da spec 006
+- [x] Campo Link preenchido com o link já enviado (cenário 10 da US4): **reteste OK** (melhoria pedida na validação)
 - [x] UI/UX conferida
-- [ ] Verificação de fronteira com a spec 006 pelo shell (quickstart, seção 3)
-- [ ] SC-001 (Proposta em menos de 2 minutos) e SC-003 (entrega em menos de 1 minuto): cronometrar no reteste
+- [x] Demais passos do roteiro retestados sem divergência (Célio Benjamim, 2026-10-23)
 
 **Testes automatizados por US**
 - [x] **US-13 – Proposta** (`test_us13_proposta.py`, 26): cenários 1 a 9, exceções, aviso ao Orientador por Área e Palavras-Chave, reconferência do Status, turma arquivada no salvamento e contador do Resumo
@@ -127,8 +127,6 @@ Suíte completa (2026-10-23): `python manage.py test sigtcc.apps` → **652 test
 
 | Pendência | Destino | Índice |
 |---|---|---|
-| Reteste dos passos h, i e o, do campo Link preenchido e do console do navegador; cronometrar SC-001 e SC-003 | Responsável pela validação | T035 |
-| Trazer a `develop` por merge e resolver os 3 conflitos de texto | Célio Benjamim | PGCS 4.3.A, 6.2 |
 | Nome da aba ("Atividades" ou "Entregas") | Profa. Diana ou Leandra Matos | Q-80 |
 | Nome do link "Histórico do Status do TCC" | Profa. Diana ou Leandra Matos | Q-81 |
 | Validar MF-01 a MF-12 | Profa. Diana (PO) | Q-83 a Q-88 |
