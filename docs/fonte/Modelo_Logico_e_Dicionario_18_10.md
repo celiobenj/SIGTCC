@@ -162,7 +162,8 @@ alu_matricula, alu_codigo_curso)
 doc_titulacao, doc_cur_id *\[FK Cursos.cur_id\]*, doc_assinatura_path)
 
 **10. MembrosExternos** (**<u>mem_id</u>** *\[FK Usuarios.usu_id\]*,
-mem_titulacao, mem_instituicao, mem_assinatura_path, mem_validade_ate)
+mem_titulacao, mem_instituicao, mem_assinatura_path, mem_validade_ate,
+mem_prorrogado_ate)
 
 **11. Secretarios** (**<u>sec_id</u>** *\[FK Usuarios.usu_id\]*,
 sec_cur_id *\[FK Cursos.cur_id\]*)
@@ -374,7 +375,8 @@ Alunos podem estar sem e-mail antes do primeiro acesso).
 | mem_titulacao       | VARCHAR(20)  | Não       | \-        | Titulação acadêmica ('Especialista', 'Mestre', 'Doutor')                                                                                                                                            |
 | mem_instituicao     | VARCHAR(150) | Não       | \-        | Instituição de Origem (até 150 caracteres)                                                                                                                                                          |
 | mem_assinatura_path | VARCHAR(255) | Sim       | \-        | Caminho da imagem de assinatura do perfil (PNG ou JPG, até 2 MB), reutilizável na avaliação da banca                                                                                                |
-| mem_validade_ate    | DATE         | Sim       | \-        | Data final de validade da conta: 7 dias corridos após a defesa mais distante em que o membro está vinculado, ou a data resultante da prorrogação manual. Nulo enquanto não houver vínculo com banca |
+| mem_validade_ate    | DATE         | Sim       | \-        | Data final de validade da conta: no cadastro, a data do cadastro + 30 dias corridos; com banca, 7 dias corridos após a defesa mais distante em que o membro está vinculado; ou a data resultante da prorrogação manual. Nula só em contas anteriores a essa regra |
+| mem_prorrogado_ate  | DATE         | Sim       | \-        | Data de validade dada pela última prorrogação manual (US-50); o recálculo pela banca nunca deixa mem_validade_ate antes dela. Nula enquanto não houver prorrogação |
 
 ### 3.2.5 Tabela Secretarios
 
