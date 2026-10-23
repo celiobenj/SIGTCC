@@ -99,6 +99,17 @@ urlpatterns = [
         views_contas.docente_editar,
         name="contas_docente_editar",
     ),
+    # [US-04]
+    path(
+        "cadastros/docentes/<int:doc_id>/inativar/",
+        views_contas.docente_inativar,
+        name="contas_docente_inativar",
+    ),
+    path(
+        "cadastros/docentes/<int:doc_id>/reativar/",
+        views_contas.docente_reativar,
+        name="contas_docente_reativar",
+    ),
     path("cadastros/secretarias/", views_contas.secretarias, name="contas_secretarias"),
     path(
         "cadastros/secretarias/nova/",
@@ -109,6 +120,11 @@ urlpatterns = [
         "cadastros/secretarias/<int:sec_id>/editar/",
         views_contas.secretaria_editar,
         name="contas_secretaria_editar",
+    ),
+    path(
+        "cadastros/secretarias/<int:sec_id>/inativar/",
+        views_contas.secretaria_inativar,
+        name="contas_secretaria_inativar",
     ),
     # [US-05]
     path("cadastros/membros-externos/", views_contas.membros, name="contas_membros"),

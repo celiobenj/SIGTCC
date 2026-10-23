@@ -13,6 +13,7 @@ from django.shortcuts import redirect, render
 from django.urls import NoReverseMatch, reverse
 
 from sigtcc.apps.cadastro import mensagens, services_contas
+from sigtcc.apps.cadastro.choices import StatusConta
 from sigtcc.apps.cadastro.forms_contas import DocenteForm, MembroForm, SecretariaForm
 from sigtcc.apps.cadastro.models import Cursos
 from sigtcc.apps.cadastro.permissoes import curso_do_usuario, perfil_requerido, tem_perfil
@@ -336,3 +337,113 @@ def membro_editar(request, mem_id):
         "cancelar": reverse("cadastro:contas_membros"),
     }
     return render(request, "cadastro/contas/form_membro.html", contexto)
+
+
+# =============================================================================================
+# Inativação e reativação (US-04; FR-024 a FR-030)
+# =============================================================================================
+
+
+def _acao_de_status(request, preparar, executar, pergunta, rotulo, titulo, lista, perigo=True):
+    """GET: confere status e vínculos e mostra a confirmação (ou o alerta na lista); POST: grava,
+    repetindo as conferências (US-04 E7). Volta à lista com a mensagem (PRG).
+    [US-04][RBN-CAD-01.3][RBN-CAD-02.3][FR-024][FR-025][FR-027][FR-029][FR-030]
+    """
+    try:
+        nome = preparar()
+    except ForaDoCurso as erro:
+        return recusa_fora_do_curso(request, erro)
+    except (ErroDeCampo, services_contas.VinculosEmAberto) as erro:
+        messages.error(request, erro.mensagem)
+        return redirect(lista)
+    if request.method != "POST":
+        contexto = {
+            "titulo": titulo,
+            "pergunta": pergunta.format(nome=nome),
+            "rotulo": rotulo,
+            "perigo": perigo,
+            "voltar": reverse(lista),
+        }
+        return render(request, "cadastro/contas/confirmar.html", contexto)
+    try:
+        resultado = executar()
+    except ForaDoCurso as erro:
+        return recusa_fora_do_curso(request, erro)
+    except (ErroDeCampo, services_contas.VinculosEmAberto) as erro:
+        messages.error(request, erro.mensagem)
+    else:
+        _mostrar_resultado(request, resultado)
+    return redirect(lista)
+
+
+@perfil_requerido(*GESTAO)
+def docente_inativar(request, doc_id):
+    """Inativação do docente (US-04 fluxo principal, E1 a E7).
+
+    [US-04][RBN-CAD-01.3][FR-025][FR-026][FR-027][FR-028]
+    """
+
+    def preparar():
+        docente = services_contas.docente_para_status(request.user, doc_id)
+        if docente.doc.usu_status != StatusConta.ATIVA:
+            raise ErroDeCampo(None, mensagens.MC10_STATUS_INCOMPATIVEL)
+        alerta = services_contas.alerta_de_vinculos(services_contas.vinculos_do_docente(docente))
+        if alerta:
+            raise services_contas.VinculosEmAberto(alerta)
+        return docente.doc.usu_nome
+
+    return _acao_de_status(
+        request,
+        preparar,
+        lambda: services_contas.inativar_docente(request.user, doc_id),
+        mensagens.CONFIRMAR_INATIVAR_DOCENTE,
+        mensagens.INATIVAR,
+        "Inativar docente",
+        "cadastro:contas_docentes",
+    )
+
+
+@perfil_requerido(*GESTAO)
+def docente_reativar(request, doc_id):
+    """Reativação do docente (US-04 A1). [US-04][RBN-CAD-01.3][FR-029]"""
+
+    def preparar():
+        docente = services_contas.docente_para_status(request.user, doc_id)
+        if docente.doc.usu_status != StatusConta.INATIVA:
+            raise ErroDeCampo(None, mensagens.MC10_STATUS_INCOMPATIVEL)
+        return docente.doc.usu_nome
+
+    return _acao_de_status(
+        request,
+        preparar,
+        lambda: services_contas.reativar_docente(request.user, doc_id),
+        mensagens.MC01_CONFIRMAR_REATIVAR,
+        mensagens.REATIVAR,
+        "Reativar docente",
+        "cadastro:contas_docentes",
+        perigo=False,
+    )
+
+
+@perfil_requerido("coordenador")
+def secretaria_inativar(request, sec_id):
+    """Inativação da Secretaria pelo Coordenador do curso (US-04 A2).
+
+    [US-04][RBN-CAD-02.3][FR-024]
+    """
+
+    def preparar():
+        secretaria = services_contas.secretaria_para_status(request.user, sec_id)
+        if secretaria.sec.usu_status != StatusConta.ATIVA:
+            raise ErroDeCampo(None, mensagens.MC10_STATUS_INCOMPATIVEL)
+        return secretaria.sec.usu_nome
+
+    return _acao_de_status(
+        request,
+        preparar,
+        lambda: services_contas.inativar_secretaria(request.user, sec_id),
+        mensagens.MC03_CONFIRMAR_INATIVAR_SECRETARIA,
+        mensagens.INATIVAR,
+        "Inativar secretaria",
+        "cadastro:contas_secretarias",
+    )

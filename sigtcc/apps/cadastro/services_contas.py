@@ -20,7 +20,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.core.exceptions import PermissionDenied
 from django.db import DatabaseError, IntegrityError, transaction
-from django.db.models import Count, Exists, OuterRef, Subquery, Value
+from django.db.models import Count, Exists, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import Resolver404, resolve
@@ -32,16 +32,25 @@ from sigtcc.apps.cadastro.choices import (
     DescricaoTurma,
     StatusConta,
     StatusCoorientacao,
+    StatusEntrega,
     StatusOrientacao,
+    StatusSolicitacao,
+    StatusTCC,
+    StatusTurma,
+    TipoEntrega,
+    TipoSolicitacao,
 )
 from sigtcc.apps.cadastro.models import (
     Coordenadores,
     Coorientacoes,
     Cursos,
     Docentes,
+    EntregasMarcos,
     MembrosExternos,
     Orientacoes,
     Secretarios,
+    SolicitacoesOrientacao,
+    TCCs,
     Turmas,
     Usuarios,
 )
@@ -52,6 +61,8 @@ from sigtcc.apps.cadastro.permissoes import (
     tem_perfil,
     validade_vencida,
 )
+from sigtcc.apps.defesa.choices import StatusSessao
+from sigtcc.apps.defesa.models import BancaDefesa
 
 # Erros técnicos da Gestão de Contas, só com o tipo do erro (research C18, m3).
 registro_contas = logging.getLogger("sigtcc.contas")
@@ -821,3 +832,225 @@ def listar_membros(usuario):
             }
         )
     return linhas
+
+
+# =============================================================================================
+# Inativação e reativação (US-04; FR-024 a FR-030; research C8, C19)
+# =============================================================================================
+
+_TCC_ATIVO = (StatusTCC.EM_ANDAMENTO, StatusTCC.APTO_PARA_DEFESA)
+_TCC_APROVADO = (StatusTCC.APROVADO, StatusTCC.APROVADO_COM_CORRECOES)
+_SESSAO_EM_ABERTO = (StatusSessao.AGENDADA, StatusSessao.REAGENDADA, StatusSessao.EM_ANDAMENTO)
+
+
+class VinculosEmAberto(Exception):
+    """O docente tem vínculos que impedem a inativação; mensagem: o alerta do FR-027.
+
+    [US-04][RBN-CAD-01.3][FR-026][FR-027]
+    """
+
+    def __init__(self, mensagem):
+        """Guarda o alerta com todos os motivos. [FR-027]"""
+        super().__init__(mensagem)
+        self.mensagem = mensagem
+
+
+def vinculos_do_docente(docente):
+    """Quantidades dos cinco vínculos que impedem a inativação (US-04 E1 a E6; research C8).
+
+    (a) TCCs com orientação ou coorientação 'Ativa' do docente em Em Andamento ou Apto para
+    Defesa, ou Aprovado / Aprovado com Correções sem a Versão Final homologada, cada TCC uma
+    vez; (b) convites de coorientação 'Aguardando Aceite'; (c) bancas de sessão Agendada,
+    Reagendada ou Em Andamento; (d) turmas 'Ativa' do docente; (e) papel de Coordenador.
+    'Sem Proposta' não impede (Q16).
+    [US-04][RBN-CAD-01.3][FR-026][Q16][research C8]
+    """
+    versao_final_homologada = EntregasMarcos.objects.filter(
+        ent_alu=OuterRef("tcc_alu"),
+        ent_tma__tma_tur=OuterRef("tcc_tur"),
+        ent_tma__tma_tipo=TipoEntrega.VERSAO_FINAL,
+        ent_status=StatusEntrega.HOMOLOGADA,
+    )
+    com_o_docente = Q(
+        orientacoes__ori_doc=docente, orientacoes__ori_status=StatusOrientacao.ATIVA
+    ) | Q(coorientacoes__coo_doc=docente, coorientacoes__coo_status=StatusCoorientacao.ATIVA)
+    tccs = (
+        TCCs.objects.filter(com_o_docente)
+        .annotate(homologada=Exists(versao_final_homologada))
+        .filter(Q(tcc_status__in=_TCC_ATIVO) | Q(tcc_status__in=_TCC_APROVADO, homologada=False))
+        .values("pk")
+        .distinct()
+    )
+    return {
+        "tcc_ativo": tccs.count(),
+        "convites": SolicitacoesOrientacao.objects.filter(
+            sol_doc=docente,
+            sol_tipo=TipoSolicitacao.COORIENTACAO,
+            sol_status=StatusSolicitacao.AGUARDANDO_ACEITE,
+        ).count(),
+        "bancas": BancaDefesa.objects.filter(
+            ban_usu_id=docente.pk, ban_def__def_status__in=_SESSAO_EM_ABERTO
+        )
+        .values("ban_def")
+        .distinct()
+        .count(),
+        "turmas": Turmas.objects.filter(tur_doc=docente, tur_status=StatusTurma.ATIVA).count(),
+        "coordenador": Coordenadores.objects.filter(cor_doc=docente).exists(),
+    }
+
+
+def _plural(n, singular, plural):
+    """Motivo (b) a (d) com concordância de número (Q14). [FR-027]"""
+    return singular if n == 1 else plural.format(n=n)
+
+
+def alerta_de_vinculos(contagens):
+    """Alerta do FR-027 com todos os motivos, na ordem (a) a (e), ou None sem vínculos.
+
+    "Não é possível inativar: o docente MOTIVOS"; com mais de um motivo, unidos por vírgulas e
+    "e", terminando com ". Encerre ou transfira esses vínculos primeiro" (US-04 E1 e E6).
+    O motivo (a) fica sempre no plural (Q18).
+    [US-04][RBN-CAD-01.3][FR-027][Q14][Q18]
+    """
+    motivos = []
+    if contagens["tcc_ativo"]:
+        motivos.append(mensagens.MOTIVO_TCC_ATIVO.format(n=contagens["tcc_ativo"]))
+    if contagens["convites"]:
+        motivos.append(
+            _plural(contagens["convites"], mensagens.MC05_CONVITE_1, mensagens.MC05_CONVITES)
+        )
+    if contagens["bancas"]:
+        motivos.append(_plural(contagens["bancas"], mensagens.MC06_BANCA_1, mensagens.MC06_BANCAS))
+    if contagens["turmas"]:
+        motivos.append(_plural(contagens["turmas"], mensagens.MC07_TURMA_1, mensagens.MC07_TURMAS))
+    if contagens["coordenador"]:
+        motivos.append(mensagens.MOTIVO_COORDENADOR)
+    if not motivos:
+        return None
+    if len(motivos) == 1:
+        return mensagens.NAO_E_POSSIVEL_INATIVAR.format(motivos=motivos[0])
+    texto = ", ".join(motivos[:-1]) + " e " + motivos[-1]
+    return mensagens.NAO_E_POSSIVEL_INATIVAR.format(motivos=texto) + mensagens.FIM_ALERTA_VINCULOS
+
+
+def docente_para_status(usuario, doc_id):
+    """Docente que o usuário pode inativar ou reativar; fora do curso, ForaDoCurso com "Você só
+    pode alterar dados do seu curso" (US-04 cenário 18). [US-04][RBN-CAD-14.1][FR-009]
+    """
+    if not tem_perfil(usuario, "secretaria", "coordenador"):
+        raise PermissionDenied
+    docente = get_object_or_404(Docentes.objects.select_related("doc"), pk=doc_id)
+    exigir_curso(usuario, docente, mensagens.SO_DO_SEU_CURSO_ALTERACAO)
+    return docente
+
+
+def _mudar_status(usuario, conta, de, para, evento, detalhe):
+    """Grava só usu_status (C20) e registra o evento. Exige a conta travada e relida. [FR-047]"""
+    if conta.usu_status != de:
+        raise ErroDeCampo(None, mensagens.MC10_STATUS_INCOMPATIVEL)
+    conta.usu_status = para
+    conta.save(update_fields=["usu_status"])
+    return lambda: services.registrar_evento(evento, conta, autor=usuario, detalhe=detalhe)
+
+
+def inativar_docente(usuario, doc_id):
+    """Inativa o docente 'Ativa' sem vínculos (US-04 fluxo principal): trava a conta e o docente,
+    repete a verificação de vínculos (E7, cenário 15) e grava 'Inativa'. Com vínculo: o alerta
+    do FR-027, sem alterar nada. [US-04][RBN-CAD-01.3][FR-025][FR-026][FR-027][FR-030][B1]
+    """
+    docente_para_status(usuario, doc_id)
+    registrar = []
+
+    def gravar():
+        with transaction.atomic():
+            conta = travar_conta(doc_id)
+            docente = Docentes.objects.select_for_update().get(pk=doc_id)
+            exigir_curso(usuario, docente, mensagens.SO_DO_SEU_CURSO_ALTERACAO)
+            if conta.usu_status != StatusConta.ATIVA:
+                raise ErroDeCampo(None, mensagens.MC10_STATUS_INCOMPATIVEL)
+            alerta = alerta_de_vinculos(vinculos_do_docente(docente))
+            if alerta:
+                raise VinculosEmAberto(alerta)
+            registrar.append(
+                _mudar_status(
+                    usuario,
+                    conta,
+                    StatusConta.ATIVA,
+                    StatusConta.INATIVA,
+                    services.EventoAcesso.CONTA_INATIVADA,
+                    "docente",
+                )
+            )
+        return conta
+
+    conta = _gravar(gravar)
+    registrar[0]()
+    return Resultado(mensagens.DOCENTE_INATIVADO, conta)
+
+
+def reativar_docente(usuario, doc_id):
+    """Reativa o docente 'Inativa' do curso do usuário (US-04 A1): volta a 'Ativa', com a senha
+    que já tinha, como Docente comum. [US-04][RBN-CAD-01.3][FR-029][FR-030]
+    """
+    docente_para_status(usuario, doc_id)
+    registrar = []
+
+    def gravar():
+        with transaction.atomic():
+            conta = travar_conta(doc_id)
+            docente = Docentes.objects.select_for_update().get(pk=doc_id)
+            exigir_curso(usuario, docente, mensagens.SO_DO_SEU_CURSO_ALTERACAO)
+            registrar.append(
+                _mudar_status(
+                    usuario,
+                    conta,
+                    StatusConta.INATIVA,
+                    StatusConta.ATIVA,
+                    services.EventoAcesso.CONTA_REATIVADA,
+                    "docente",
+                )
+            )
+        return conta
+
+    conta = _gravar(gravar)
+    registrar[0]()
+    return Resultado(mensagens.MC02_DOCENTE_REATIVADO, conta)
+
+
+def secretaria_para_status(usuario, sec_id):
+    """Secretaria que o Coordenador do curso pode inativar (US-04 A2, E9). [FR-024]"""
+    if not tem_perfil(usuario, "coordenador"):
+        raise PermissionDenied
+    secretaria = get_object_or_404(Secretarios.objects.select_related("sec"), pk=sec_id)
+    exigir_curso(usuario, secretaria, mensagens.SO_DO_SEU_CURSO_ALTERACAO)
+    return secretaria
+
+
+def inativar_secretaria(usuario, sec_id):
+    """Inativa a Secretaria 'Ativa' do curso (US-04 A2): perde o login, mantém o histórico e o
+    curso fica livre para outra Secretaria (FR-021, FR-024; Q27: não há reativação).
+    [US-04][RBN-CAD-02.3][FR-024][FR-030][Q27]
+    """
+    secretaria_para_status(usuario, sec_id)
+    registrar = []
+
+    def gravar():
+        with transaction.atomic():
+            conta = travar_conta(sec_id)
+            secretaria = Secretarios.objects.select_for_update().get(pk=sec_id)
+            exigir_curso(usuario, secretaria, mensagens.SO_DO_SEU_CURSO_ALTERACAO)
+            registrar.append(
+                _mudar_status(
+                    usuario,
+                    conta,
+                    StatusConta.ATIVA,
+                    StatusConta.INATIVA,
+                    services.EventoAcesso.CONTA_INATIVADA,
+                    "secretaria",
+                )
+            )
+        return conta
+
+    conta = _gravar(gravar)
+    registrar[0]()
+    return Resultado(mensagens.MC04_SECRETARIA_INATIVADA, conta)
