@@ -72,7 +72,8 @@ de prazo fora de uma view síncrona (rotina agendada, a configurar pelo Célio �
 
 **Scale/Scope**: 7 US (97 cenários: 89 originais + 4 da conferência/clarify + 4 da navegação,
 sessão 2026-10-23), 32 FR (FR-001 a FR-031 e FR-007a), 3 mensagens provisórias (MF-01 a MF-03);
-cerca de 11 telas e 13 rotas novas (2 delas de navegação do Aluno, FR-031, Q-89).
+cerca de 9 telas e 11 rotas novas (9 do `contracts/rotas.md` original + 2 de navegação do Aluno,
+FR-031, Q-89).
 
 ## Constitution Check
 

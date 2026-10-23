@@ -602,7 +602,7 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
 
 ### Functional Requirements — Navegação até as telas desta spec (US-13, US-15, US-16, US-43)
 
-- **FR-031** [RAN-CAD-08, RAN-CAD-09]: O sistema MUST oferecer ao Aluno um item de menu "Turmas"
+- **FR-031** [US-13, US-15, US-16, US-43; RAN-CAD-08, RAN-CAD-09]: O sistema MUST oferecer ao Aluno um item de menu "Turmas"
   com as turmas não arquivadas em que ele está matriculado e o acesso a "Turmas arquivadas"
   (somente consulta); a turma escolhida MUST abrir na aba "Meu TCC", com as abas "Meu TCC" e
   "Atividades" (nome provisório, Q-80). Na tela da turma da spec 004, o sistema MUST exibir as

@@ -14,7 +14,7 @@ envio de entrega, T021; qualificadores de FR-007a; contagem de cenários do SC-0
 `LINK_HTTPS_500` confirmada como nova em T001).
 
 **Tests**: obrigatórios (constituição, princípio VI): cada cenário Dado/Quando/Então das US-13
-(7), US-14 (11), US-43 (5), US-15 (8), US-16 (5), US-29 (6) e US-44 (5) vira pelo menos um teste,
+(9), US-14 (11), US-43 (5), US-15 (9), US-16 (6), US-29 (6) e US-44 (5) vira pelo menos um teste,
 mais os casos das Clarifications, de permissão (Secretaria e Coorientador excluídos), de mensagens
 exatas e de concorrência (travas da revisão do `arquiteto-django`). Os testes de cada fase vêm
 antes da implementação e devem falhar primeiro.
