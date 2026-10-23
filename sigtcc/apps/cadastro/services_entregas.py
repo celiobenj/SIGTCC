@@ -21,8 +21,15 @@ from django.http import Http404
 from django.urls import reverse
 from django.utils import timezone
 
-from sigtcc.apps.cadastro import mensagens, services_turmas
-from sigtcc.apps.cadastro.choices import StatusEntrega, StatusTCC, StatusTurma, TipoEntrega
+from sigtcc.apps.cadastro import mensagens, services_tcc, services_turmas
+from sigtcc.apps.cadastro.choices import (
+    DescricaoTurma,
+    GatilhoStatusTCC,
+    StatusEntrega,
+    StatusTCC,
+    StatusTurma,
+    TipoEntrega,
+)
 from sigtcc.apps.cadastro.models import (
     AlunosTurmas,
     EntregasMarcos,
@@ -117,11 +124,52 @@ def cadastrar_entrega(professor, tur_id, dados):
 # =============================================================================================
 
 
+# Status do TCC que liberam o envio da Versão Final: resultado da banca liberado com parecer
+# Aprovado ou Aprovado com Correções (FR-024; research C7 — `tcc_status` já distingue o parecer).
+STATUS_TCC_LIBERA_VERSAO_FINAL = (StatusTCC.APROVADO, StatusTCC.APROVADO_COM_CORRECOES)
+
+
+def envio_liberado(entrega, tcc, agora=None):
+    """Regra única que decide se o Aluno pode enviar (ou substituir) o link desta entrega —
+    usada por `enviar_entrega`, que confere de novo com as travas, e pelas views, só para
+    mostrar ou esconder o campo Link e o botão Enviar (SC-004).
+
+    Nunca na entrega do tipo Proposta (cumprida ao salvar a Proposta, US-13), em turma arquivada
+    nem com a participação encerrada (FR-023; Reprovado incluído — E7 da US-29). Na Versão Final
+    (US-29), só com o resultado liberado como Aprovado ou Aprovado com Correções (FR-024) e nunca
+    depois de homologada (E6); nas demais, só com o TCC "Em Andamento" (FR-023). Com devolução
+    para ajuste pendente, o reenvio é sempre aceito (FR-019, FR-025); fora dela, depois de um
+    envio, a substituição só vale até a Data Limite (E3 da US-15, E5 da US-29).
+    [US-15][US-29][RBN-CAD-08.5][RBN-CAD-09.2][RBN-CAD-09.3][FR-019][FR-023 a FR-025]
+    """
+    marco = entrega.ent_tma
+    if marco.tma_tipo == TipoEntrega.PROPOSTA:
+        return False
+    if services_turmas.turma_arquivada(marco.tma_tur):
+        return False
+    if tcc is None or services_turmas.participacao_encerrada(tcc):
+        return False
+    if marco.tma_tipo == TipoEntrega.VERSAO_FINAL:
+        if tcc.tcc_status not in STATUS_TCC_LIBERA_VERSAO_FINAL:
+            return False
+        if entrega.ent_status == StatusEntrega.HOMOLOGADA:
+            return False
+    elif tcc.tcc_status != StatusTCC.EM_ANDAMENTO:
+        return False
+    if entrega.ent_status == StatusEntrega.DEVOLVIDA_PARA_AJUSTE:
+        return True
+    agora = agora or timezone.now()
+    ja_enviou = HistoricoEnviosEntregas.objects.filter(hen_ent=entrega).exists()
+    return not (ja_enviou and agora > marco.tma_data_limite)
+
+
 def enviar_entrega(aluno, tma_id, link):
-    """Envia ou substitui o link de uma entrega do Aluno (passos 4 a 7 e fluxo D da US-15
-    original): grava `Historico_Envios_Entregas` e recalcula `ent_status` a partir do
-    **primeiro** envio, nunca do mais recente (FR-019) — "Entregue" se o primeiro envio ocorreu
-    até 23:59 da Data Limite, "Entregue com Atraso" depois.
+    """Envia ou substitui o link de uma entrega do Aluno (passos 4 a 7 e fluxo D da US-15;
+    passos 5 a 7 e fluxos B, D e E da US-29): grava `Historico_Envios_Entregas` e recalcula
+    `ent_status` a partir do **primeiro** envio, nunca do mais recente (FR-019) — "Entregue" se o
+    primeiro envio ocorreu até 23:59 da Data Limite, "Entregue com Atraso" depois. No reenvio
+    após a devolução para ajuste da Versão Final (FR-025), a referência passa a ser a data do
+    próprio reenvio, já que o envio anterior foi devolvido.
 
     Trava `Entregas_Marcos` (a linha do aluno nesta entrega) **e** `TCCs` (o TCC do aluno nessa
     turma) antes de consultar o primeiro envio e de checar `tcc.tcc_status` (research C7, achado
@@ -132,13 +180,10 @@ def enviar_entrega(aluno, tma_id, link):
 
     Recusa com `Http404` (sem alterar nada), no mesmo padrão de `services_tcc.salvar_proposta` e
     de `services_turmas.encerrar_participacao` para uma ação cujo botão a view já esconde, se a
-    entrega não existir para este aluno, se for do tipo Proposta (cumprida ao salvar a Proposta,
-    US-13, sem campo de link aqui), se for do tipo Versão Final (tratada só na US-29, Phase 8
-    desta feature — ainda não liberada), se a turma estiver arquivada, se a participação do aluno
-    estiver encerrada, se o TCC não estiver "Em Andamento", ou se já existir um envio anterior e a
-    Data Limite já tiver passado sem devolução pendente (E3 da US-15 original). Notifica o
-    Professor da Disciplina a cada envio e a cada substituição (MF-07, Q-49).
-    [US-15][RBN-CAD-09.2][RBN-CAD-09.3][RBN-CAD-09.6][FR-018 a FR-021][FR-023][research C7]
+    entrega não existir para este aluno ou se `envio_liberado` não permitir. Notifica o Professor
+    da Disciplina a cada envio e a cada substituição (MF-07, Q-49).
+    [US-15][US-29][RBN-CAD-09.2][RBN-CAD-09.3][RBN-CAD-09.6][FR-018 a FR-021][FR-023 a FR-025]
+    [research C7]
     """
     with transaction.atomic():
         entrega = (
@@ -149,38 +194,25 @@ def enviar_entrega(aluno, tma_id, link):
         if entrega is None:
             raise Http404
         marco = entrega.ent_tma
-        if marco.tma_tipo in (TipoEntrega.PROPOSTA, TipoEntrega.VERSAO_FINAL):
-            raise Http404
         turma = marco.tma_tur
         tcc = TCCs.objects.select_for_update().filter(tcc_alu=aluno, tcc_tur=turma).first()
-        if tcc is None:
-            raise Http404
-        if turma.tur_status == StatusTurma.ARQUIVADA:
-            raise Http404
-        if services_turmas.participacao_encerrada(tcc):
-            raise Http404
-        if tcc.tcc_status != StatusTCC.EM_ANDAMENTO:
-            raise Http404
-
-        primeiro_envio = (
-            HistoricoEnviosEntregas.objects.filter(hen_ent=entrega)
-            .order_by("hen_data_envio", "hen_id")
-            .first()
-        )
         agora = timezone.now()
-        if (
-            primeiro_envio is not None
-            and agora > marco.tma_data_limite
-            and entrega.ent_status != StatusEntrega.DEVOLVIDA_PARA_AJUSTE
-        ):
-            # E3 (US-15 original): substituição após a Data Limite — campo somente leitura.
+        if not envio_liberado(entrega, tcc, agora):
             raise Http404
 
+        if entrega.ent_status == StatusEntrega.DEVOLVIDA_PARA_AJUSTE:
+            referencia = agora
+        else:
+            primeiro_envio = (
+                HistoricoEnviosEntregas.objects.filter(hen_ent=entrega)
+                .order_by("hen_data_envio", "hen_id")
+                .first()
+            )
+            referencia = primeiro_envio.hen_data_envio if primeiro_envio else agora
         HistoricoEnviosEntregas.objects.create(hen_ent=entrega, hen_link=link, hen_data_envio=agora)
-        data_do_primeiro_envio = primeiro_envio.hen_data_envio if primeiro_envio else agora
         entrega.ent_status = (
             StatusEntrega.ENTREGUE
-            if data_do_primeiro_envio <= marco.tma_data_limite
+            if referencia <= marco.tma_data_limite
             else StatusEntrega.ENTREGUE_COM_ATRASO
         )
         entrega.save(update_fields=["ent_status"])
@@ -195,6 +227,52 @@ def enviar_entrega(aluno, tma_id, link):
             link=reverse("cadastro:entrega_acompanhar", args=[turma.pk, marco.pk]),
         )
     return entrega
+
+
+def secao_versao_final(aluno, turma, tcc, agora=None):
+    """Dados da seção "Versão final" da aba Meu TCC (passo 2 e fluxos B, C e E e exceções E3 a
+    E7 da US-29), ou None quando a seção não aparece: turma de TCC 1 (E4) ou turma de TCC 2 sem a
+    entrega do tipo Versão Final cadastrada para o aluno (pré-condição da US-29).
+
+    Devolve: a entrega (`marco`) e o registro do aluno (`entrega`), o status exibido (`status`,
+    com "Não Entregue" depois da Data Limite sem envio, fluxo C), o parecer liberado pela banca
+    (`parecer`, lido do histórico do Status — gatilho "Liberação do resultado" — para continuar
+    visível depois de "Concluído"), se o resultado ainda não foi liberado (`resultado_pendente`,
+    E3, sem o campo Link), se o campo Link fica disponível (`pode_enviar`, `envio_liberado`), se
+    o aviso MF-01 aparece (`aviso_atraso`: envio liberado depois da Data Limite, fluxo B), o
+    envio mais recente (`ultimo_envio`, para o link somente leitura, E5/E6) e a mensagem da
+    devolução para ajuste (`feedback`, fluxo E). Consulta sem gravação.
+    [US-29][RBN-CAD-09.2][RBN-CAD-09.3][FR-023 a FR-025]
+    """
+    if turma.tur_descricao != DescricaoTurma.TCC_2 or tcc is None:
+        return None
+    entrega = (
+        EntregasMarcos.objects.select_related("ent_tma__tma_tur")
+        .filter(ent_alu=aluno, ent_tma__tma_tur=turma, ent_tma__tma_tipo=TipoEntrega.VERSAO_FINAL)
+        .first()
+    )
+    if entrega is None:
+        return None
+    agora = agora or timezone.now()
+    marco = entrega.ent_tma
+    liberacao = (
+        services_tcc.historico_do_status(tcc)
+        .filter(hst_gatilho=GatilhoStatusTCC.LIBERACAO_DO_RESULTADO)
+        .last()
+    )
+    pode_enviar = envio_liberado(entrega, tcc, agora)
+    devolvida = entrega.ent_status == StatusEntrega.DEVOLVIDA_PARA_AJUSTE
+    return {
+        "marco": marco,
+        "entrega": entrega,
+        "status": status_exibido(entrega, agora),
+        "parecer": liberacao.hst_status_novo if liberacao else None,
+        "resultado_pendente": tcc.tcc_status in services_turmas.STATUS_TCC_EM_CURSO,
+        "pode_enviar": pode_enviar,
+        "aviso_atraso": pode_enviar and agora > marco.tma_data_limite,
+        "ultimo_envio": link_mais_recente(entrega),
+        "feedback": entrega.ent_feedback if devolvida else None,
+    }
 
 
 def status_exibido(entrega, agora=None):

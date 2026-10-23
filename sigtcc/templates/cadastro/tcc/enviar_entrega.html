@@ -4,8 +4,10 @@
   Instruções, status de envio e, quando permitido, o campo Link e o botão Enviar. Na entrega do
   tipo Proposta, sem campo de link (fluxo F): mostra só o aviso de que ela é cumprida ao salvar a
   Proposta (US-13). Fora do prazo, com participação encerrada, turma arquivada ou TCC fora de "Em
-  Andamento", o campo Link fica somente leitura, sem o botão Enviar (E3 a E6).
-  [US-15][RBN-CAD-09.2][RBN-CAD-09.3][FR-018 a FR-023]
+  Andamento", o campo Link fica somente leitura, sem o botão Enviar (E3 a E6). Na Versão Final
+  (US-29), mostra a mensagem da devolução para ajuste (fluxo E) e o aviso MF-01 quando o envio
+  será registrado com atraso (fluxo B).
+  [US-15][US-29][RBN-CAD-09.2][RBN-CAD-09.3][FR-018 a FR-025]
 {% endcomment %}
 {% block titulo %}{{ marco.tma_titulo }} · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -14,6 +16,8 @@
 <div class="cartao mt16">
   {% if marco.tma_instrucao %}<p>{{ marco.tma_instrucao }}</p>{% endif %}
   <p><span class="chip">{{ status }}</span></p>
+  {% if feedback %}<div class="alerta info" role="status"><span class="ms">feedback</span><span class="texto">{{ feedback }}</span></div>{% endif %}
+  {% if aviso_atraso %}<div class="alerta info" role="status"><span class="ms">schedule</span><span class="texto">{{ aviso_atraso_texto }}</span></div>{% endif %}
 
   {% if eh_proposta %}
   <div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Esta entrega é cumprida ao salvar a Proposta</span></div>

@@ -232,6 +232,8 @@ ENTREGA_CUMPRIDA_PROPOSTA = "Esta entrega é cumprida ao salvar a Proposta"
 
 # US-29 [RBN-CAD-09.2][RBN-CAD-09.3]
 VERSAO_FINAL_ENVIADA = "Versão Final enviada"
+# US-29, E3/Cenário 9: seção Versão final antes da liberação do resultado (texto exato da US).
+VERSAO_FINAL_DISPONIVEL_APOS_RESULTADO = "Disponível após a liberação do resultado"
 
 # US-44 [RBN-CAD-09.3][RBN-CAD-09.5]
 VERSAO_FINAL_HOMOLOGADA = "Versão Final homologada"

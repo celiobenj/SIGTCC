@@ -4,7 +4,13 @@
   (somente leitura) e, depois da Proposta salva, Área de Interesse e Palavras-Chave. Com o Status
   diferente de "Sem Proposta"/"Em Andamento", com o Aluno Desistente/Reprovado/Jubilado ou com a
   turma arquivada, os campos aparecem apenas para leitura, sem os botões de salvar (E7 a E9).
-  [US-13][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][RBN-CAD-08.5][FR-001][FR-004][FR-005][FR-006]
+  Em turma de TCC 2 com a entrega Versão Final cadastrada, as seções Defesa (parecer, Data
+  Limite, botões Ata Final e Folha de Aprovação — gerados pela US-28, spec 006, ainda
+  indisponíveis, Q-51) e Versão final (US-29: status, aviso MF-01, mensagem da devolução, campo
+  Link com Enviar ou link somente leitura; "Disponível após a liberação do resultado" antes do
+  parecer). Sem regra aqui: tudo vem de `services_entregas.secao_versao_final`.
+  [US-13][US-29][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][RBN-CAD-08.5][RBN-CAD-09.2]
+  [FR-001][FR-004][FR-005][FR-006][FR-023][FR-024][FR-025]
 {% endcomment %}
 {% block titulo %}Meu TCC · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -54,4 +60,43 @@
     {% endif %}
   </form>
 </div>
+
+{% if versao_final %}
+{% with vf=versao_final %}
+<div class="cartao mt16">
+  <h3>Defesa</h3>
+  <p>Parecer: {% if vf.parecer %}{{ vf.parecer }}{% else %}{{ versao_final_pendente }}{% endif %}</p>
+  <p>Data Limite da Versão Final: {{ vf.marco.tma_data_limite|date:"d/m/Y H:i" }}</p>
+  <div class="flex mt16">
+    <button type="button" class="btn txt" disabled>Ata Final</button>
+    <button type="button" class="btn txt" disabled>Folha de Aprovação</button>
+  </div>
+</div>
+<div class="cartao mt16">
+  <h3>Versão final</h3>
+  {% if vf.resultado_pendente %}
+  <p>{{ versao_final_pendente }}</p>
+  {% else %}
+  <p><span class="chip">{{ vf.status }}</span></p>
+  {% if vf.feedback %}<div class="alerta info" role="status"><span class="ms">feedback</span><span class="texto">{{ vf.feedback }}</span></div>{% endif %}
+  {% if vf.pode_enviar %}
+  {% if vf.aviso_atraso %}<div class="alerta info" role="status"><span class="ms">schedule</span><span class="texto">{{ versao_final_atraso }}</span></div>{% endif %}
+  <form method="post" action="{% url 'cadastro:entrega_enviar' turma.pk vf.marco.pk %}" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form_versao_final.link %}
+    <div class="flex entre mt16">
+      <span></span>
+      <button type="submit" class="btn pri">Enviar</button>
+    </div>
+  </form>
+  {% elif vf.ultimo_envio %}
+  <div class="campo">
+    <label>Link da Versão Final</label>
+    <input type="text" value="{{ vf.ultimo_envio.hen_link }}" disabled>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+{% endwith %}
+{% endif %}
 {% endblock %}

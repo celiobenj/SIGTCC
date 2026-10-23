@@ -14,9 +14,9 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import mensagens, services_entregas, services_tcc, services_turmas
-from sigtcc.apps.cadastro.choices import StatusTCC, TipoEntrega
+from sigtcc.apps.cadastro.choices import StatusEntrega, StatusTCC, TipoEntrega
 from sigtcc.apps.cadastro.forms_entregas import CadastroEntregaForm, EnviarLinkForm
-from sigtcc.apps.cadastro.models import EntregasMarcos, HistoricoEnviosEntregas, TurmasMarcos
+from sigtcc.apps.cadastro.models import EntregasMarcos, TurmasMarcos
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import ALTERAR, CONSULTAR
 from sigtcc.apps.cadastro.views_turmas import trata_turma_arquivada
@@ -113,26 +113,6 @@ def entrega_acompanhar(request, tur_id, tma_id):
 # =============================================================================================
 
 
-def _pode_enviar(entrega, marco, turma, tcc):
-    """Replica, só para decidir se o botão Enviar aparece, as mesmas condições que
-    `services_entregas.enviar_entrega` confere de novo antes de gravar (SC-004, mesmo padrão da
-    spec 004: o serviço confere de novo, inclusive pelo endereço direto).
-    [US-15][RBN-CAD-09.2][RBN-CAD-08.5][FR-023][contracts/rotas.md]
-    """
-    if marco.tma_tipo in (TipoEntrega.PROPOSTA, TipoEntrega.VERSAO_FINAL):
-        return False
-    if services_turmas.turma_arquivada(turma):
-        return False
-    if tcc is None or services_turmas.participacao_encerrada(tcc):
-        return False
-    if tcc.tcc_status != StatusTCC.EM_ANDAMENTO:
-        return False
-    ja_enviou = HistoricoEnviosEntregas.objects.filter(hen_ent=entrega).exists()
-    if ja_enviou and timezone.now() > marco.tma_data_limite:
-        return False
-    return True
-
-
 @perfil_requerido("aluno")
 def minhas_entregas(request, tur_id):
     """Aba Atividades (passos 1 a 2 da US-15 original): lista das entregas da turma do próprio
@@ -158,15 +138,19 @@ def minhas_entregas(request, tur_id):
 
 @perfil_requerido("aluno")
 def entrega_enviar(request, tur_id, tma_id):
-    """Janela da entrega (passos 3 a 7 e fluxo D da US-15 original): GET abre com o status atual
-    e, quando permitido, o campo Link e o botão Enviar; POST chama
-    `services_entregas.enviar_entrega`. Na entrega do tipo Proposta, sem campo de link (fluxo F:
-    `ENTREGA_CUMPRIDA_PROPOSTA`). Restrita ao próprio Aluno da turma, dono da entrega (sem IDOR).
-    [US-15][RBN-CAD-09.2][RBN-CAD-09.3][FR-018 a FR-023][contracts/rotas.md]
+    """Janela da entrega (passos 3 a 7 e fluxo D da US-15; passos 5 a 7 e fluxos B, D e E da
+    US-29): GET abre com o status atual e, quando permitido, o campo Link e o botão Enviar; POST
+    chama `services_entregas.enviar_entrega`. Quem decide se o campo aparece é a mesma regra que
+    o serviço confere de novo antes de gravar (`services_entregas.envio_liberado`, SC-004). Na
+    entrega do tipo Proposta, sem campo de link (fluxo F: `ENTREGA_CUMPRIDA_PROPOSTA`). Na Versão
+    Final, o envio volta à aba Meu TCC com "Versão Final enviada" (passo 7 da US-29); nas
+    demais, à aba Atividades com "Entrega enviada". Restrita ao próprio Aluno da turma, dono da
+    entrega (sem IDOR).
+    [US-15][US-29][RBN-CAD-09.2][RBN-CAD-09.3][FR-018 a FR-025][contracts/rotas.md]
     """
     turma, aluno = services_tcc.turma_do_aluno(tur_id, request.user)
     entrega = (
-        EntregasMarcos.objects.select_related("ent_tma")
+        EntregasMarcos.objects.select_related("ent_tma__tma_tur")
         .filter(ent_tma_id=tma_id, ent_alu=aluno, ent_tma__tma_tur=turma)
         .first()
     )
@@ -175,24 +159,32 @@ def entrega_enviar(request, tur_id, tma_id):
     marco = entrega.ent_tma
     tcc = services_turmas.tcc_do_aluno(turma, aluno)
     eh_proposta = marco.tma_tipo == TipoEntrega.PROPOSTA
-    pode_enviar = _pode_enviar(entrega, marco, turma, tcc)
+    eh_versao_final = marco.tma_tipo == TipoEntrega.VERSAO_FINAL
+    agora = timezone.now()
+    pode_enviar = services_entregas.envio_liberado(entrega, tcc, agora)
 
     formulario = EnviarLinkForm(request.POST if request.method == "POST" and pode_enviar else None)
     if request.method == "POST" and pode_enviar and formulario.is_valid():
         services_entregas.enviar_entrega(aluno, tma_id, formulario.cleaned_data["link"])
+        if eh_versao_final:
+            messages.success(request, mensagens.VERSAO_FINAL_ENVIADA)
+            return redirect("cadastro:meu_tcc", tur_id=tur_id)
         messages.success(request, mensagens.ENTREGA_ENVIADA)
         return redirect("cadastro:minhas_entregas", tur_id=tur_id)
 
-    ultimo_envio = (
-        HistoricoEnviosEntregas.objects.filter(hen_ent=entrega).order_by("-hen_data_envio").first()
-    )
+    ultimo_envio = services_entregas.link_mais_recente(entrega)
+    devolvida = entrega.ent_status == StatusEntrega.DEVOLVIDA_PARA_AJUSTE
     contexto = {
         "turma": turma,
         "entrega": entrega,
         "marco": marco,
-        "status": services_entregas.status_exibido(entrega),
+        "status": services_entregas.status_exibido(entrega, agora),
         "eh_proposta": eh_proposta,
         "pode_enviar": pode_enviar,
+        # Aviso MF-01 (fluxo B da US-29): Versão Final com o envio liberado depois da Data Limite.
+        "aviso_atraso": eh_versao_final and pode_enviar and agora > marco.tma_data_limite,
+        "aviso_atraso_texto": mensagens.MF01_DATA_LIMITE_VENCIDA,
+        "feedback": entrega.ent_feedback if devolvida else None,
         "ultimo_link": ultimo_envio.hen_link if ultimo_envio else "",
         "form": formulario,
     }

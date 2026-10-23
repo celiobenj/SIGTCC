@@ -140,16 +140,20 @@ class EnviarEntregaServiceTest(EnviarEntregaTestBase):
             services_entregas.enviar_entrega(self.aluno, proposta.pk, LINK_VALIDO)
         self.assertFalse(HistoricoEnviosEntregas.objects.filter(hen_ent__ent_tma=proposta).exists())
 
-    def test_versao_final_ainda_nao_e_liberada_nesta_fase(self):
-        """A Versão Final (US-29) é tratada só na Phase 8 desta feature; nesta fase o envio ainda
-        não é liberado. [US-15][research C7]
+    def test_versao_final_nao_segue_a_regra_de_em_andamento(self):
+        """A Versão Final segue a regra da US-29 (só com o resultado liberado, FR-024), não a do
+        "Em Andamento" das outras entregas: com o TCC 2 "Em Andamento", o envio é recusado (os
+        casos liberados ficam em test_us29_versao_final). [US-15][US-29][FR-024][research C7]
         """
         turma_tcc2 = criar_turma_de(self.professor, descricao=DescricaoTurma.TCC_2, curso_nome=EC)
         aluno2 = matricular_aluno(
-            turma_tcc2, status_tcc=StatusTCC.APROVADO, status_conta=StatusConta.ATIVA
+            turma_tcc2, status_tcc=StatusTCC.EM_ANDAMENTO, status_conta=StatusConta.ATIVA
         )
         versao_final = cadastrar_entrega(
             turma_tcc2, tipo=TipoEntrega.VERSAO_FINAL, titulo="Versão Final"
+        )
+        EntregasMarcos.objects.create(
+            ent_tma=versao_final, ent_alu=aluno2, ent_status=StatusEntrega.AGUARDANDO_ENVIO
         )
         with self.assertRaises(Http404):
             services_entregas.enviar_entrega(aluno2, versao_final.pk, LINK_VALIDO)

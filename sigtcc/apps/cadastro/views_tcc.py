@@ -12,8 +12,9 @@ from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import redirect, render
 
-from sigtcc.apps.cadastro import mensagens, services_tcc, services_turmas
+from sigtcc.apps.cadastro import mensagens, services_entregas, services_tcc, services_turmas
 from sigtcc.apps.cadastro.choices import StatusTCC
+from sigtcc.apps.cadastro.forms_entregas import EnviarLinkForm
 from sigtcc.apps.cadastro.forms_tcc import DadosTCCForm, PropostaForm
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import CONSULTAR
@@ -45,9 +46,11 @@ def meu_tcc(request, tur_id):
     """Aba Meu TCC: seção Proposta (sempre) e, depois de salva, Área de Interesse e Palavras-
     Chave. GET exibe conforme o Status do TCC (editável, com Área/Palavras-Chave liberadas, ou
     somente leitura); POST chama `salvar_proposta` (botão "Salvar Proposta") ou
-    `salvar_alteracoes_tcc` (botão "Salvar alterações"). Restrita ao próprio Aluno da turma
-    (`vinculo_na_turma`, sem IDOR).
-    [US-13][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][FR-001][FR-006][contracts/rotas.md]
+    `salvar_alteracoes_tcc` (botão "Salvar alterações"). Em turma de TCC 2, também a seção
+    "Versão final" (US-29), cujo botão Enviar posta em `entrega_enviar`. Restrita ao próprio
+    Aluno da turma (`vinculo_na_turma`, sem IDOR).
+    [US-13][US-29][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][FR-001][FR-006][FR-023][FR-024]
+    [contracts/rotas.md]
     """
     turma, aluno = services_tcc.turma_do_aluno(tur_id, request.user)
     tcc = services_turmas.tcc_do_aluno(turma, aluno)
@@ -97,6 +100,11 @@ def meu_tcc(request, tur_id):
         "pode_salvar_alteracoes": pode_salvar_alteracoes,
         "somente_leitura": somente_leitura,
         "arquivada": arquivada,
+        # Seção "Versão final" (US-29, T028): None em TCC 1 ou sem a entrega cadastrada (E4).
+        "versao_final": services_entregas.secao_versao_final(aluno, turma, tcc),
+        "versao_final_pendente": mensagens.VERSAO_FINAL_DISPONIVEL_APOS_RESULTADO,
+        "versao_final_atraso": mensagens.MF01_DATA_LIMITE_VENCIDA,
+        "form_versao_final": EnviarLinkForm(),
     }
     return render(request, "cadastro/tcc/meu_tcc.html", contexto)
 
