@@ -72,6 +72,14 @@ def _dados_iniciais(tcc):
     return inicial
 
 
+def _form_versao_final(versao_final):
+    """Formulário do Link da Versão Final, preenchido com o link mais recente já enviado, para o
+    Aluno substituí-lo (US-29, fluxo D; FR-019). [US-29][FR-019]
+    """
+    ultimo = versao_final["ultimo_envio"] if versao_final else None
+    return EnviarLinkForm(initial={"link": ultimo.hen_link if ultimo else ""})
+
+
 @perfil_requerido("aluno")
 def meu_tcc(request, tur_id):
     """Aba Meu TCC: seção Proposta (sempre) e, depois de salva, Área de Interesse e Palavras-
@@ -129,6 +137,7 @@ def meu_tcc(request, tur_id):
             messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
             return redirect("cadastro:meu_tcc", tur_id=tur_id)
 
+    versao_final = services_entregas.secao_versao_final(aluno, turma, tcc)
     contexto = {
         "turma": turma,
         "tcc": tcc,
@@ -140,10 +149,11 @@ def meu_tcc(request, tur_id):
         "somente_leitura": somente_leitura,
         "arquivada": arquivada,
         # Seção "Versão final" (US-29, T028): None em TCC 1 ou sem a entrega cadastrada (E4).
-        "versao_final": services_entregas.secao_versao_final(aluno, turma, tcc),
+        "versao_final": versao_final,
         "versao_final_pendente": mensagens.VERSAO_FINAL_DISPONIVEL_APOS_RESULTADO,
         "versao_final_atraso": mensagens.MF01_DATA_LIMITE_VENCIDA,
-        "form_versao_final": EnviarLinkForm(),
+        # Campo Link da Versão Final com o link já enviado (US-29, fluxo D; FR-019).
+        "form_versao_final": _form_versao_final(versao_final),
     }
     return render(request, "cadastro/tcc/meu_tcc.html", contexto)
 

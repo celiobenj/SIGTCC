@@ -286,3 +286,15 @@ class VersaoFinalMeuTCCTest(VersaoFinalTestBase):
         self.client.force_login(self.aluno.alu)
         self.client.post(self.url_enviar(), {"link": LINK_PDF})
         self.assertFalse(HistoricoEnviosEntregas.objects.exists())
+
+
+class CampoLinkVersaoFinalPreenchidoTest(VersaoFinalTestBase):
+    """Cenário 10 da US4 aplicado à Versão Final (US-29, fluxo D; T049): a seção "Versão final"
+    mostra no campo o link já enviado. [US-29][FR-019]
+    """
+
+    def test_secao_versao_final_mostra_o_link_enviado_no_campo(self):
+        self.enviar()
+        resposta = self.abrir_meu_tcc()
+        self.assertContains(resposta, f'action="{self.url_enviar()}"')
+        self.assertContains(resposta, f'value="{LINK_PDF}"')

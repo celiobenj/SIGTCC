@@ -683,3 +683,27 @@ class AbaAtividadesVaziaTest(TesteTurmas):
         resposta = self.client.get(reverse("cadastro:minhas_entregas", args=[turma.pk]))
         self.assertContains(resposta, mensagens.NENHUMA_ENTREGA_CADASTRADA)
         self.assertNotContains(resposta, mensagens.NENHUMA_ENTREGA_CADASTRADA + ".")
+
+
+class CampoLinkPreenchidoTest(EnviarEntregaTestBase):
+    """Cenário 10 da US4 (validação manual de 2026-10-23; T049): reaberta a entrega antes da Data
+    Limite, o campo Link mostra o link mais recente, pronto para ser substituído (US-15, fluxo D;
+    FR-019). [US-15][FR-019]
+    """
+
+    def test_campo_link_vem_com_o_link_mais_recente(self):
+        services_entregas.enviar_entrega(self.aluno, self.entrega.pk, LINK_VALIDO)
+        services_entregas.enviar_entrega(self.aluno, self.entrega.pk, LINK_SUBSTITUTO)
+        self.client.force_login(self.aluno.alu)
+        resposta = self.client.get(
+            reverse("cadastro:entrega_enviar", args=[self.turma.pk, self.entrega.pk])
+        )
+        self.assertContains(resposta, f'value="{LINK_SUBSTITUTO}"')
+        self.assertContains(resposta, ">Enviar<")
+
+    def test_sem_envio_o_campo_vem_vazio(self):
+        self.client.force_login(self.aluno.alu)
+        resposta = self.client.get(
+            reverse("cadastro:entrega_enviar", args=[self.turma.pk, self.entrega.pk])
+        )
+        self.assertNotContains(resposta, 'value="https://')

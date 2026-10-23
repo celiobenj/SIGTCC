@@ -300,8 +300,8 @@ Q-90).
 **Purpose**: corrigir o que a validação manual (Célio Benjamim, 2026-10-23) mostrou faltando na
 navegação e no campo Link, e o roteiro do passo h (Clarifications, sessão 2026-10-23).
 
-- [ ] T048 [P] [US2] Em `sigtcc/templates/cadastro/turmas/turma.html` (spec 004, só acréscimo): link "Histórico do Status do TCC" (`historico_status`) em cada aluno da lista, só quando `e_professor` (cenário 12 da US2; FR-009, FR-031); teste em `test_navegacao_tcc.py` (Professor vê e abre; Secretaria não vê). — Rastreabilidade: [US-14][RBN-CAD-08.7][FR-009][FR-031]
-- [ ] T049 [P] [US4][US6] Campo Link preenchido com o link mais recente já enviado, quando editável, em `entrega_enviar` e na seção "Versão final" de `meu_tcc` (cenário 10 da US4; FR-019; US-15 e US-29, fluxo D); testes em `test_us15_envio_entrega.py` e `test_us29_versao_final.py`. — Rastreabilidade: [US-15][US-29][RBN-CAD-09.2][FR-019]
+- [X] T048 [P] [US2] Em `sigtcc/templates/cadastro/turmas/turma.html` (spec 004, só acréscimo): link "Histórico do Status do TCC" (`historico_status`) em cada aluno da lista, só quando `e_professor` (cenário 12 da US2; FR-009, FR-031); teste em `test_navegacao_tcc.py` (Professor vê e abre; Secretaria não vê). — Rastreabilidade: [US-14][RBN-CAD-08.7][FR-009][FR-031]
+- [X] T049 [P] [US4][US6] Campo Link preenchido com o link mais recente já enviado, quando editável, em `entrega_enviar` e na seção "Versão final" de `meu_tcc` (cenário 10 da US4; FR-019; US-15 e US-29, fluxo D); testes em `test_us15_envio_entrega.py` e `test_us29_versao_final.py`. — Rastreabilidade: [US-15][US-29][RBN-CAD-09.2][FR-019]
 - [ ] T050 Atualizar os passos h e i do `quickstart.md` (pré-condição da Proposta do segundo aluno; histórico pela aba Alunos), registrar o resultado da validação manual no `spec.md` e no `pr-feat-05.md` e rodar lint e suíte completa. — Rastreabilidade: [SC-001][SC-003][quickstart.md]
 
 ---

@@ -166,3 +166,25 @@ class AbasDoProfessorTest(NavegacaoTestBase):
         resposta = self.client.get(reverse("cadastro:entregas", args=[self.turma.pk]))
         self.assertContains(resposta, _href("turma", self.turma.pk))
         self.assertContains(resposta, f'{_href("entregas", self.turma.pk)} aria-current="page"')
+
+
+class HistoricoPeloProfessorTest(NavegacaoTestBase):
+    """Cenário 12 da US2 (validação manual de 2026-10-23; T048): na lista de alunos da tela da
+    turma (spec 004), o Professor tem o link "Histórico do Status do TCC" de cada aluno; a
+    Secretaria do curso não vê o link. [US-14][FR-009][FR-031]
+    """
+
+    def test_professor_ve_e_abre_o_historico_do_aluno(self):
+        self.client.force_login(self.professor)
+        resposta = self.client.get(reverse("cadastro:turma", args=[self.turma.pk]))
+        self.assertContains(resposta, _href("historico_status", self.turma.pk, self.aluno.pk))
+        self.assertContains(resposta, "Histórico do Status do TCC")
+        resposta = self.client.get(
+            reverse("cadastro:historico_status", args=[self.turma.pk, self.aluno.pk])
+        )
+        self.assertEqual(resposta.status_code, 200)
+
+    def test_secretaria_nao_ve_o_link_do_historico(self):
+        self.client.force_login(criar_secretaria(curso=self.turma.tur_cur))
+        resposta = self.client.get(reverse("cadastro:turma", args=[self.turma.pk]))
+        self.assertNotContains(resposta, _href("historico_status", self.turma.pk, self.aluno.pk))

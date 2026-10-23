@@ -3,7 +3,8 @@
   Turma: dados, alunos e só as ações permitidas. Turma arquivada: só consulta (cenário 6 da US-07,
   11 da US-08 e 11 da US-09). Links das fases seguintes com {% url ... as %}, que não quebra
   enquanto a rota não existe. Spec 005: barra de abas "Alunos" | "Atividades" (esta só para o
-  Professor da Disciplina), só por inclusão (FR-031, Q-89).
+  Professor da Disciplina), só por inclusão, e o link "Histórico do Status do TCC" de cada aluno,
+  só para o Professor, até a tela do aluno (US-41) existir (FR-009, FR-031, Q-89).
   [US-07][US-08][US-09][FR-008][FR-009][FR-010][Q9]
 {% endcomment %}
 {% block titulo %}{{ turma.tur_identificador }} · SIGTCC{% endblock %}
@@ -49,6 +50,7 @@
       {% url 'cadastro:aluno_transferir' turma.pk linha.aluno.pk as url_transferir %}
       {% url 'cadastro:aluno_excluir' turma.pk linha.aluno.pk as url_excluir %}
       {% url 'cadastro:aluno_encerrar' turma.pk linha.aluno.pk as url_encerrar %}
+      {% url 'cadastro:historico_status' turma.pk linha.aluno.pk as url_historico %}
       <tr>
         <td>{{ linha.aluno.alu_matricula }}</td>
         <td>{% if e_professor %}<a href="{% url 'cadastro:aluno' linha.aluno.pk %}">{{ linha.aluno.alu.usu_nome }}</a>{% else %}{{ linha.aluno.alu.usu_nome }}{% endif %}</td>
@@ -64,6 +66,7 @@
             {% endif %}
           {% endif %}
           {% if pode_transferir and url_transferir %}<a class="btn txt" href="{{ url_transferir }}">Transferir</a>{% endif %}
+          {% if e_professor and url_historico %}<a class="btn txt" href="{{ url_historico }}">Histórico do Status do TCC</a>{% endif %}
         </td>
       </tr>
       {% endfor %}

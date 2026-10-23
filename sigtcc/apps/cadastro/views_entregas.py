@@ -174,7 +174,13 @@ def entrega_enviar(request, tur_id, tma_id):
     agora = timezone.now()
     pode_enviar = services_entregas.envio_liberado(entrega, tcc, agora)
 
-    formulario = EnviarLinkForm(request.POST if request.method == "POST" and pode_enviar else None)
+    ultimo_envio = services_entregas.link_mais_recente(entrega)
+    # Campo Link preenchido com o link mais recente, pronto para ser substituído (US-15 e US-29,
+    # fluxo D: "substitui o endereço no campo Link"; FR-019). [US-15][US-29][FR-019]
+    formulario = EnviarLinkForm(
+        request.POST if request.method == "POST" and pode_enviar else None,
+        initial={"link": ultimo_envio.hen_link if ultimo_envio else ""},
+    )
     if request.method == "POST" and pode_enviar and formulario.is_valid():
         services_entregas.enviar_entrega(aluno, tma_id, formulario.cleaned_data["link"])
         if eh_versao_final:
@@ -183,7 +189,6 @@ def entrega_enviar(request, tur_id, tma_id):
         messages.success(request, mensagens.ENTREGA_ENVIADA)
         return redirect("cadastro:minhas_entregas", tur_id=tur_id)
 
-    ultimo_envio = services_entregas.link_mais_recente(entrega)
     devolvida = entrega.ent_status == StatusEntrega.DEVOLVIDA_PARA_AJUSTE
     contexto = {
         "turma": turma,
