@@ -244,3 +244,12 @@ MF03_PALAVRA_CHAVE_REPETIDA = "Palavra-chave repetida."
 # uma notificação ao Orientador", sem citar o texto exato — mensagem nova, registrada como
 # PROVISÓRIA (Q-47) no mesmo padrão de MT21/MT22 (spec 004).
 MF04_NOTIFICACAO_MUDANCA_TEMA = "{nome} alterou os dados do TCC na turma {identificador}."
+# Notificação a cada aluno da turma ao cadastrar uma entrega (US-43, passo 7): a US pede "uma
+# notificação no sistema e um e-mail com o Título e a Data Limite", sem citar o texto exato —
+# mensagem nova, registrada como PROVISÓRIA (Q-48), no mesmo padrão da MF-04.
+MF05_NOTIFICACAO_ENTREGA_CADASTRADA = (
+    "Nova entrega cadastrada na turma {identificador}: {titulo}, com prazo até {data_limite}."
+)
+# Data Limite anterior à data do cadastro (US-43, E2, Cenário 8): a US só diz "destaca a Data
+# Limite", sem citar o texto exato — mensagem nova, registrada como PROVISÓRIA (Q-48).
+MF06_DATA_LIMITE_ANTERIOR_A_HOJE = "A Data Limite não pode ser anterior a hoje."

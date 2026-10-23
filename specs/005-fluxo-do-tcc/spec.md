@@ -118,6 +118,14 @@ antes de implementá-la.**
    gravação** (ver User Story 2, cenários 8 a 11), para que o mapeamento gatilho → Status não fique
    sem teste em nenhuma das duas specs; a spec 006 testa apenas o disparo (a chamada ao serviço),
    não o resultado da gravação.
+5. **Mensagens ausentes — US-43**: o passo 7 do fluxo principal pede "uma notificação no sistema e
+   um e-mail com o Título e a Data Limite" a cada aluno da turma, e o E2/Cenário 8 pede que o
+   sistema "destaque a Data Limite" quando ela for anterior à data do cadastro — nenhum dos dois
+   cita o texto exato. **Decisão: incluir.** A implementação (T018/T019) criou as mensagens
+   PROVISÓRIAS **MF-05** (notificação da entrega) e **MF-06** (Data Limite anterior a hoje), no
+   mesmo padrão da MF-04, registradas como **Q-48** em `docs/questoes-a-rever.md`. O envio por
+   e-mail do passo 7 não foi implementado nesta fase (só a notificação no sistema, única forma
+   coberta pelo contrato de `services.notificar` reaproveitado desta spec); ver Q-48.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -586,6 +594,8 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
 | MF-02 | Confirmação da devolução da Versão Final para ajuste | "Versão Final devolvida para ajuste." | US-44, fluxo alternativo D | A validar |
 | MF-03 | Palavra-Chave repetida entre as caixas preenchidas | "Palavra-chave repetida." | Clarifications, sessão 2026-10-22; FR-007 | A validar |
 | MF-04 | Notificação ao Orientador a cada mudança de tema (Título, Subtítulo, Resumo, Modalidade ou Link) | "{nome} alterou os dados do TCC na turma {identificador}." | US-13, fluxo alternativo A ("envia uma notificação ao Orientador", sem texto exato citado); índice Q-47 | A validar |
+| MF-05 | Notificação a cada aluno da turma ao cadastrar uma entrega | "Nova entrega cadastrada na turma {identificador}: {titulo}, com prazo até {data_limite}." | US-43, passo 7 ("uma notificação no sistema e um e-mail com o Título e a Data Limite", sem texto exato citado); índice Q-48 | A validar |
+| MF-06 | Data Limite anterior à data do cadastro, no formulário de cadastro de entrega | "A Data Limite não pode ser anterior a hoje." | US-43, E2 e Cenário 8 ("destaca a Data Limite", sem texto exato citado); índice Q-48 | A validar |
 
 ## Success Criteria *(mandatory)*
 

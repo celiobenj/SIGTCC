@@ -5,7 +5,7 @@
 
 from django.urls import path
 
-from sigtcc.apps.cadastro import views, views_tcc, views_turmas
+from sigtcc.apps.cadastro import views, views_entregas, views_tcc, views_turmas
 
 app_name = "cadastro"
 
@@ -102,5 +102,11 @@ urlpatterns = [
         "turmas/<int:tur_id>/alunos/<int:alu_id>/historico/",
         views_tcc.historico_status,
         name="historico_status",
+    ),
+    path("turmas/<int:tur_id>/entregas/", views_entregas.entregas, name="entregas"),
+    path(
+        "turmas/<int:tur_id>/entregas/nova/",
+        views_entregas.entrega_cadastrar,
+        name="entrega_cadastrar",
     ),
 ]
