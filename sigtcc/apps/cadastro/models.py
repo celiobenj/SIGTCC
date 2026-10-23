@@ -248,7 +248,7 @@ class Docentes(models.Model):
 class MembrosExternos(models.Model):
     """Especialização de Usuarios para o avaliador externo (dicionário 3.2.4).
 
-    [US-05][RBN-CAD-03.1][US-06][RBN-CAD-03.3]
+    [US-05][RBN-CAD-03.1][US-06][RBN-CAD-03.3][US-50]
     """
 
     mem = models.OneToOneField(Usuarios, on_delete=PROTECT, primary_key=True, db_column="mem_id")
@@ -256,6 +256,9 @@ class MembrosExternos(models.Model):
     mem_instituicao = models.CharField(max_length=150)
     mem_assinatura_path = models.CharField(max_length=255, null=True, blank=True)
     mem_validade_ate = models.DateField(null=True, blank=True)
+    # Data dada pela última prorrogação manual; o recálculo pela banca nunca deixa a validade
+    # antes dela (spec 002, Q15 e Q36; índice Q-69). [US-50][US-06][RBN-CAD-03.3]
+    mem_prorrogado_ate = models.DateField(null=True, blank=True)
 
     class Meta:
         db_table = "MembrosExternos"

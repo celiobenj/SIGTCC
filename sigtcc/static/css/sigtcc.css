@@ -178,3 +178,12 @@ table.tabela { border-collapse: collapse; width: 100%; font-size: 13px; }
   .login-card { padding: 32px 20px; }
   .login-pg { padding: 16px; }
 }
+
+/* Spec 002 (Gestão de Contas): abas Docentes | Secretarias | Membros externos, como no protótipo de
+   17/10 (aqui são links), e chips de status. [US-03][US-05][FR-011][FR-017] */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--borda); overflow-x: auto; margin-bottom: 16px; }
+.tab { height: 48px; padding: 0 20px; display: inline-flex; align-items: center; color: var(--texto2); font-weight: 500; border-bottom: 3px solid transparent; white-space: nowrap; text-decoration: none; }
+.tab:hover { background: var(--hover); color: var(--texto); }
+.tab.ativo { color: var(--azul); border-bottom-color: var(--azul); }
+.chip.amarelo { background: var(--amarelo-claro); color: #b06000; }
+.chip.vermelho { background: var(--vermelho-claro); color: var(--vermelho); }
