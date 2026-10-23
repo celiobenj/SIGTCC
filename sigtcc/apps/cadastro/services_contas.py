@@ -211,7 +211,10 @@ class ErroDeCampo(Exception):
     """
 
     def __init__(self, campo, mensagem):
-        """campo: nome do campo do formulário ou None; mensagem: texto da US ou da tabela MC."""
+        """campo: nome do campo do formulário ou None; mensagem: texto da US ou da tabela MC.
+
+        [US-03][US-05][FR-001][FR-006][FR-014][FR-021]
+        """
         super().__init__(mensagem)
         self.campo = campo
         self.mensagem = mensagem
@@ -285,6 +288,10 @@ def _criar_docente(dados, autor):
     coordenado = dados["curso_coordenado"] if dados["coordenador"] else None
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-03][RBN-CAD-01.1][RAN-CAD-01][FR-005][FR-012][FR-014][FR-045][C17]
+        """
         with transaction.atomic():
             travar_cursos(dados["curso_lotacao"].pk, coordenado.pk if coordenado else None)
             if coordenado is not None and _coordenador_do_curso(coordenado.pk):
@@ -359,6 +366,10 @@ def alterar_docente(usuario, doc_id, dados):
     alterados = []
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-03][RBN-CAD-01.2][FR-008][FR-009][FR-013][FR-014][FR-016][Q5][Q26][Q32]
+        """
         with transaction.atomic():
             conta = travar_conta(doc_id)
             docente = Docentes.objects.select_for_update().get(pk=doc_id)
@@ -439,6 +450,10 @@ def cadastrar_secretaria(usuario, dados):
         raise ErroDeCampo("curso_vinculado", mensagens.SO_DO_SEU_CURSO_CADASTRO)
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-03][RBN-CAD-02.1][RBN-CAD-14.1][FR-005][FR-020][FR-021][Q7]
+        """
         with transaction.atomic():
             travar_cursos(curso.pk)
             if _curso_tem_secretaria(curso.pk):
@@ -485,6 +500,10 @@ def alterar_secretaria(usuario, sec_id, dados):
     alterados = []
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-03][RBN-CAD-02.2][FR-008][FR-009][FR-021][FR-022][Q7][C20]
+        """
         with transaction.atomic():
             conta = travar_conta(sec_id)
             secretaria = Secretarios.objects.select_for_update().get(pk=sec_id)
@@ -736,6 +755,10 @@ def cadastrar_membro(usuario, dados):
         raise PermissionDenied
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-05][RBN-CAD-03.1][FR-005][FR-032][FR-033][FR-038][Q12]
+        """
         with transaction.atomic():
             _conferir_email_livre(dados["email"])
             conta = Usuarios.objects.create_user(
@@ -782,6 +805,10 @@ def alterar_membro(usuario, mem_id, dados):
     alterados = []
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-05][RBN-CAD-03.2][FR-008][FR-035][Q30][C20]
+        """
         with transaction.atomic():
             conta = travar_conta(mem_id)
             membro = MembrosExternos.objects.select_for_update().get(pk=mem_id)
@@ -964,6 +991,10 @@ def inativar_docente(usuario, doc_id):
     registrar = []
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-04][RBN-CAD-01.3][FR-025][FR-026][FR-027][FR-030][B1]
+        """
         with transaction.atomic():
             conta = travar_conta(doc_id)
             docente = Docentes.objects.select_for_update().get(pk=doc_id)
@@ -998,6 +1029,10 @@ def reativar_docente(usuario, doc_id):
     registrar = []
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-04][RBN-CAD-01.3][FR-029][FR-030]
+        """
         with transaction.atomic():
             conta = travar_conta(doc_id)
             docente = Docentes.objects.select_for_update().get(pk=doc_id)
@@ -1037,6 +1072,10 @@ def inativar_secretaria(usuario, sec_id):
     registrar = []
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-04][RBN-CAD-02.3][FR-024][FR-030][Q27]
+        """
         with transaction.atomic():
             conta = travar_conta(sec_id)
             secretaria = Secretarios.objects.select_for_update().get(pk=sec_id)
@@ -1224,6 +1263,10 @@ def prorrogar(usuario, mem_id):
     resultado = {}
 
     def gravar():
+        """Grava dentro da transação, com as travas e a releitura da C19.
+
+        [US-50][RBN-CAD-03.3][FR-042][FR-043][FR-044][Q36]
+        """
         with transaction.atomic():
             conta = travar_conta(mem_id)
             membro = MembrosExternos.objects.select_for_update().get(pk=mem_id)

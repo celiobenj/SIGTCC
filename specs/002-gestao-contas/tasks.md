@@ -221,10 +221,10 @@ login; conferir que o botão não aparece para quem não pode nem para 'Aguardan
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T040 [P] Completar `sigtcc/apps/cadastro/tests/test_permissoes_contas.py` (SC-004): para cada uma das 13 rotas e cada perfil (Aluno, Docente comum, Orientador, Professor só com turmas arquivadas, Secretaria, Coordenador, Membro Externo, visitante), o resultado esperado (200, 302 para o login com `next`, 403 com M-02, 403 com a mensagem do FR-009, 404 para id de outro tipo de conta), inclusive pelo endereço direto, e nenhum dado do registro na resposta 403. — Rastreabilidade: [US-03][US-04][US-05][US-50][SC-004][FR-009][FR-010][research C21][C22]
-- [ ] T041 [P] Criar `sigtcc/apps/cadastro/tests/test_concorrencia_contas.py` com `TransactionTestCase` e duas conexões (SC-003; research C24): mesmo e-mail com caixa diferente gravado ao mesmo tempo (só um passa, C4); dois Coordenadores para o mesmo curso; duas Secretarias para o mesmo curso; inativação simultânea a um vínculo novo criado com `travar_e_conferir_ativo` (o vínculo é recusado ou a inativação é recusada, nunca os dois gravados, B1); expiração simultânea a uma prorrogação (a conta prorrogada fica 'Ativa', I2); edição simultânea a uma inativação (o status não volta, C20). — Rastreabilidade: [US-03][US-04][US-06][US-50][SC-003][SC-005][research C4][C5][C15][C19][C20][B1][I2][I3]
-- [ ] T042 [P] Completar `sigtcc/apps/cadastro/tests/test_contrato_contas.py` (contrato de serviços 002): `recalcular_validade` dentro de uma transação externa (savepoint: falha não quebra a transação; chamada repetida não muda o resultado), `docentes_ativos`, `membros_externos_disponiveis`, `travar_e_conferir_ativo`, `expirar_se_vencida`, atalho da banca; e o teste de tempo do filtro de Curso com 60 docentes por curso, abaixo de 2 s com margem (SC-009). — Rastreabilidade: [US-04][US-05][US-06][FR-028][FR-034][FR-039][SC-009][research C3][C14]
-- [ ] T043 Rodar `lint.bat` (isort, black --line-length 100, flake8 --max-line-length 100) e corrigir só os arquivos desta feature; rodar `python manage.py test sigtcc.apps.cadastro sigtcc.apps.defesa` e comparar com a linha de base da T003 (nenhuma falha nova). — Rastreabilidade: [constituição V][SC-001]
+- [X] T040 [P] Completar `sigtcc/apps/cadastro/tests/test_permissoes_contas.py` (SC-004): para cada uma das 13 rotas e cada perfil (Aluno, Docente comum, Orientador, Professor só com turmas arquivadas, Secretaria, Coordenador, Membro Externo, visitante), o resultado esperado (200, 302 para o login com `next`, 403 com M-02, 403 com a mensagem do FR-009, 404 para id de outro tipo de conta), inclusive pelo endereço direto, e nenhum dado do registro na resposta 403. — Rastreabilidade: [US-03][US-04][US-05][US-50][SC-004][FR-009][FR-010][research C21][C22]
+- [X] T041 [P] Criar `sigtcc/apps/cadastro/tests/test_concorrencia_contas.py` com `TransactionTestCase` e duas conexões (SC-003; research C24): mesmo e-mail com caixa diferente gravado ao mesmo tempo (só um passa, C4); dois Coordenadores para o mesmo curso; duas Secretarias para o mesmo curso; inativação simultânea a um vínculo novo criado com `travar_e_conferir_ativo` (o vínculo é recusado ou a inativação é recusada, nunca os dois gravados, B1); expiração simultânea a uma prorrogação (a conta prorrogada fica 'Ativa', I2); edição simultânea a uma inativação (o status não volta, C20). — Rastreabilidade: [US-03][US-04][US-06][US-50][SC-003][SC-005][research C4][C5][C15][C19][C20][B1][I2][I3]
+- [X] T042 [P] Completar `sigtcc/apps/cadastro/tests/test_contrato_contas.py` (contrato de serviços 002): `recalcular_validade` dentro de uma transação externa (savepoint: falha não quebra a transação; chamada repetida não muda o resultado), `docentes_ativos`, `membros_externos_disponiveis`, `travar_e_conferir_ativo`, `expirar_se_vencida`, atalho da banca; e o teste de tempo do filtro de Curso com 60 docentes por curso, abaixo de 2 s com margem (SC-009). — Rastreabilidade: [US-04][US-05][US-06][FR-028][FR-034][FR-039][SC-009][research C3][C14]
+- [X] T043 Rodar `lint.bat` (isort, black --line-length 100, flake8 --max-line-length 100) e corrigir só os arquivos desta feature; rodar `python manage.py test sigtcc.apps.cadastro sigtcc.apps.defesa` e comparar com a linha de base da T003 (nenhuma falha nova). — Rastreabilidade: [constituição V][SC-001]
 - [ ] T044 Executar o [quickstart.md](quickstart.md) inteiro, cronometrando o SC-007 (até 10 min) e o SC-008 (docente em até 2 min; prorrogação em até 30 s), e registrar o resultado em "Notes". — Rastreabilidade: [SC-007][SC-008]
 - [ ] T045 Conferir a rastreabilidade de todos os arquivos novos e alterados (cada classe, função, template e teste com [US-XX][RBN-...]) e, antes do PR, rodar o agente `revisor-pgcs` e preparar o texto do PR `[Feat-04] Gestão de Contas (US-03, US-04, US-05, US-06, US-50)` com o template do PGCS 6.3, incluindo as pendências abertas (Q-52, Q-58, Q-63, Q-67, Q-68, Q-70, Q-71, Q-76, Q-77) e os testes marcados com Q-52 e Q-69. — Rastreabilidade: [constituição II][constituição VIII]
 
@@ -326,7 +326,19 @@ Task: "T042 test_contrato_contas.py"
   são gerados no mesmo instante gravado em `usu_link_gerado_em`, e o primeiro não fica "substituído";
   é intermitente e independe do código da spec 002 (avisar a Julia junto da Q-77). O `venv` precisou de
   `pip install -r requirements.txt` (faltava o `openpyxl` da spec 004).
-- Resultado do quickstart (T044): _a preencher_.
+- Resultado do quickstart (T044): não executado por mim. O roteiro grava no banco de desenvolvimento
+  (comando dos Coordenadores, contas, prorrogação) e o SC-007 e o SC-008 são testes manuais
+  cronometrados por uma pessoa; fica para a responsável antes do PR. Os mesmos passos estão cobertos
+  pelos testes automatizados de cada fase.
+- T043 (2026-10-23): isort, black e flake8 sem pendências na árvore `sigtcc/` (só checagem; nenhum
+  arquivo de outra spec foi reformatado). Suíte `cadastro` + `defesa`: 628 testes; só os 2 erros e a
+  falha intermitente da linha de base (Q-77) e 1 falha esperada (Q-52).
+- T045 (2026-10-23): rastreabilidade conferida em todo arquivo novo ou alterado (toda classe, função,
+  template e teste com [US]/[RBN]); faltam rodar o `revisor-pgcs` e preparar o texto do PR
+  `[Feat-04] Gestão de Contas (US-03, US-04, US-05, US-06, US-50)`.
+- Diagramas de sequência (2026-10-23): as US-03 a 06 não têm diagrama (seção do documento de US com o
+  modelo sem preencher) e a US-50 diz "sem diagrama próprio"; o diagrama ExecutarTarefasAgendadas
+  (Vida do TCC) põe a expiração da US-06 numa rotina única. Registrado na Q-79.
 - T009 (2026-10-22): as rotas entram na fase de cada view, e não como esqueletos que devolvem 404;
   o processador de contexto do menu já esconde o item enquanto a rota não existe. Nenhuma regra muda.
 - Fase 8: `recalcular_validade(usuario, hoje=None)` segue a assinatura do contrato; a função de

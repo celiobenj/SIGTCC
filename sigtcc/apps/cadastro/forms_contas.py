@@ -141,9 +141,10 @@ def campo_instituicao():
 
 
 def campo_sua_senha():
-    """ "Sua senha": senha de quem altera, exigida só com e-mail novo (FR-008; research C7).
+    """Campo "Sua senha": senha de quem altera, exigida só com e-mail novo (research C7).
 
     Nunca devolve o valor ao HTML (sem render_value).
+    [US-03][US-05][RBN-CAD-01.2][RBN-CAD-03.2][FR-008]
     """
     return forms.CharField(
         label=mensagens.SUA_SENHA,
@@ -179,7 +180,10 @@ class _ComEmailDoGestor(FormularioContas):
     """
 
     def __init__(self, *args, edicao=False, email_so_leitura=False, **kwargs):
-        """edicao: inclui "Sua senha"; email_so_leitura: campo E-mail só para leitura (Q30)."""
+        """edicao: inclui "Sua senha"; email_so_leitura: campo E-mail só para leitura (Q30).
+
+        [US-03][US-05][FR-008]
+        """
         super().__init__(*args, **kwargs)
         if edicao:
             self.fields["sua_senha"] = campo_sua_senha()
@@ -202,11 +206,17 @@ class DocenteForm(_ComEmailDoGestor):
     curso_coordenado = campo_curso("Curso Coordenado", required=False)
 
     def clean_nome(self):
-        """Só letras e espaços, até 150 (FR-002)."""
+        """Só letras e espaços, até 150 (FR-002).
+
+        [US-03][RBN-CAD-01.1][RBN-CAD-01.2][FR-012][FR-013][FR-016]
+        """
         return validar_nome_completo(self.cleaned_data["nome"])
 
     def clean_email(self):
-        """nome@uea.edu.br, até 100 (FR-012)."""
+        """nome@uea.edu.br, até 100 (FR-012).
+
+        [US-03][RBN-CAD-01.1][RBN-CAD-01.2][FR-012][FR-013][FR-016]
+        """
         return validar_email_institucional(self.cleaned_data["email"])
 
     def clean(self):
@@ -233,11 +243,14 @@ class SecretariaForm(_ComEmailDoGestor):
     curso_vinculado = campo_curso("Curso Vinculado")
 
     def clean_nome(self):
-        """Só letras e espaços, até 150 (FR-002)."""
+        """Só letras e espaços, até 150 (FR-002).
+
+        [US-03][RBN-CAD-02.1][RBN-CAD-02.2][FR-020][FR-022]
+        """
         return validar_nome_completo(self.cleaned_data["nome"])
 
     def clean_email(self):
-        """nome@uea.edu.br, até 100 (FR-012)."""
+        """nome@uea.edu.br, até 100 (FR-012). [US-03][RBN-CAD-02.1][RBN-CAD-02.2][FR-020][FR-022]"""
         return validar_email_institucional(self.cleaned_data["email"])
 
 
@@ -254,13 +267,22 @@ class MembroForm(_ComEmailDoGestor):
     voltar = forms.CharField(required=False, widget=forms.HiddenInput)
 
     def clean_nome(self):
-        """Só letras e espaços, até 150 (FR-002)."""
+        """Só letras e espaços, até 150 (FR-002).
+
+        [US-05][RBN-CAD-03.1][RBN-CAD-03.2][FR-032][FR-034][FR-035]
+        """
         return validar_nome_completo(self.cleaned_data["nome"])
 
     def clean_email(self):
-        """nome@domínio, de qualquer domínio, até 100 (FR-032)."""
+        """nome@domínio, de qualquer domínio, até 100 (FR-032).
+
+        [US-05][RBN-CAD-03.1][RBN-CAD-03.2][FR-032][FR-034][FR-035]
+        """
         return validar_email_qualquer(self.cleaned_data["email"])
 
     def clean_instituicao(self):
-        """Letras, números, espaços e pontuação, até 150 (FR-032)."""
+        """Letras, números, espaços e pontuação, até 150 (FR-032).
+
+        [US-05][RBN-CAD-03.1][RBN-CAD-03.2][FR-032][FR-034][FR-035]
+        """
         return validar_instituicao(self.cleaned_data["instituicao"])

@@ -385,6 +385,10 @@ def docente_inativar(request, doc_id):
     """
 
     def preparar():
+        """Confere registro, curso, status e vínculos antes da confirmação.
+
+        [US-04][RBN-CAD-01.3][FR-025][FR-026][FR-027][FR-028]
+        """
         docente = services_contas.docente_para_status(request.user, doc_id)
         if docente.doc.usu_status != StatusConta.ATIVA:
             raise ErroDeCampo(None, mensagens.MC10_STATUS_INCOMPATIVEL)
@@ -409,6 +413,10 @@ def docente_reativar(request, doc_id):
     """Reativação do docente (US-04 A1). [US-04][RBN-CAD-01.3][FR-029]"""
 
     def preparar():
+        """Confere registro, curso, status e vínculos antes da confirmação.
+
+        [US-04][RBN-CAD-01.3][FR-029]
+        """
         docente = services_contas.docente_para_status(request.user, doc_id)
         if docente.doc.usu_status != StatusConta.INATIVA:
             raise ErroDeCampo(None, mensagens.MC10_STATUS_INCOMPATIVEL)
@@ -434,6 +442,10 @@ def secretaria_inativar(request, sec_id):
     """
 
     def preparar():
+        """Confere registro, curso, status e vínculos antes da confirmação.
+
+        [US-04][RBN-CAD-02.3][FR-024]
+        """
         secretaria = services_contas.secretaria_para_status(request.user, sec_id)
         if secretaria.sec.usu_status != StatusConta.ATIVA:
             raise ErroDeCampo(None, mensagens.MC10_STATUS_INCOMPATIVEL)

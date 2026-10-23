@@ -4,6 +4,8 @@ mensagem (T007). A matriz completa de rotas e perfis entra na T040 (SC-004).
 [US-03][US-04][US-05][US-50][RBN-CAD-14.1][FR-009][FR-010][SC-004][Q5][Q26]
 """
 
+from django.urls import reverse
+
 from sigtcc.apps.cadastro import permissoes
 from sigtcc.apps.cadastro.tests.apoio_contas import (
     EC,
@@ -83,3 +85,108 @@ class RecusaComMensagemTest(TesteContas):
         resposta = self.client.get("/turmas/")
         self.assertEqual(resposta.status_code, 403)
         self.assertContains(resposta, mensagens.M02_ACESSO_NEGADO, status_code=403)
+
+
+class MatrizDePermissoesTest(TesteContas):
+    """SC-004: cada rota da Gestão de Contas para cada perfil, inclusive pelo endereço direto,
+    sem nenhum dado do registro na resposta 403 (tasks T040; contracts/rotas.md).
+    [US-03][US-04][US-05][US-50][SC-004][FR-009][FR-010][research C21][C22]
+    """
+
+    def setUp(self):
+        super().setUp()
+        from sigtcc.apps.cadastro.choices import StatusConta, StatusTCC, StatusTurma
+        from sigtcc.apps.cadastro.tests.apoio_acesso import criar_aluno_com_turma
+        from sigtcc.apps.cadastro.tests.apoio_contas import orientacao_ativa, turma_do_docente
+        from sigtcc.apps.cadastro.tests.apoio_turmas import matricular_aluno, tcc_de
+
+        professor = docente_de(EC)
+        turma = turma_do_docente(professor)
+        aluno = matricular_aluno(turma, status_tcc=StatusTCC.EM_ANDAMENTO)
+        orientador = docente_de(EC)
+        orientacao_ativa(orientador, tcc_de(aluno, turma))
+        arquivado = docente_de(EC)
+        turma_do_docente(arquivado, status=StatusTurma.ARQUIVADA)
+        self.perfis = {
+            "aluno": criar_aluno_com_turma(email="al@uea.edu.br", status=StatusConta.ATIVA).alu,
+            "docente comum": docente_de(EC),
+            "orientador": orientador,
+            "professor arquivado": arquivado,
+            "secretaria": secretaria_de(SI),
+            "coordenador": coordenador_de(SI),
+            "membro externo": membro(),
+        }
+        alvo_docente = docente_de(SI, email="alvo.docente@uea.edu.br")
+        alvo_inativo = docente_de(SI, email="alvo.inativo@uea.edu.br", status=StatusConta.INATIVA)
+        alvo_secretaria = secretaria_de(SI, email="alvo.sec@uea.edu.br")
+        alvo_membro = membro(email="alvo.membro@ufam.edu.br")
+        gestao = {"secretaria", "coordenador"}
+        self.rotas = [
+            ("contas_docentes", [], "get", gestao),
+            ("contas_docente_novo", [], "get", gestao),
+            ("contas_docente_editar", [alvo_docente.pk], "get", gestao),
+            ("contas_docente_inativar", [alvo_docente.pk], "get", gestao),
+            ("contas_docente_reativar", [alvo_inativo.pk], "get", gestao),
+            ("contas_secretarias", [], "get", gestao),
+            ("contas_secretaria_nova", [], "get", {"coordenador"}),
+            ("contas_secretaria_editar", [alvo_secretaria.pk], "get", {"coordenador"}),
+            ("contas_secretaria_inativar", [alvo_secretaria.pk], "get", {"coordenador"}),
+            (
+                "contas_membros",
+                [],
+                "get",
+                {"orientador", "professor arquivado", "secretaria", "coordenador"},
+            ),
+            ("contas_membro_novo", [], "get", {"orientador", "secretaria", "coordenador"}),
+            (
+                "contas_membro_editar",
+                [alvo_membro.pk],
+                "get",
+                {"orientador", "secretaria", "coordenador"},
+            ),
+            ("contas_membro_prorrogar", [alvo_membro.pk], "post", gestao),
+        ]
+        self.emails_dos_alvos = (
+            "alvo.docente@uea.edu.br",
+            "alvo.inativo@uea.edu.br",
+            "alvo.sec@uea.edu.br",
+            "alvo.membro@ufam.edu.br",
+        )
+
+    def test_cada_rota_para_cada_perfil(self):
+        for nome, args, metodo, permitidos in self.rotas:
+            url = reverse(f"cadastro:{nome}", args=args)
+            for perfil, conta in self.perfis.items():
+                with self.subTest(rota=nome, perfil=perfil):
+                    self.client.force_login(conta)
+                    resposta = getattr(self.client, metodo)(url)
+                    if perfil in permitidos:
+                        self.assertIn(resposta.status_code, (200, 302))
+                    else:
+                        self.assertEqual(resposta.status_code, 403)
+                        texto = resposta.content.decode()
+                        for email in self.emails_dos_alvos:
+                            self.assertNotIn(email, texto)
+
+    def test_visitante_vai_ao_login_com_next(self):
+        self.client.logout()
+        for nome, args, metodo, _ in self.rotas:
+            with self.subTest(rota=nome):
+                url = reverse(f"cadastro:{nome}", args=args)
+                resposta = getattr(self.client, metodo)(url)
+                self.assertEqual(resposta.status_code, 302)
+                self.assertIn(reverse("cadastro:entrar"), resposta["Location"])
+
+    def test_id_de_outro_tipo_de_conta_da_404(self):
+        self.client.force_login(self.perfis["coordenador"])
+        membro_id = membro().pk
+        docente_id = docente_de(SI).pk
+        for nome, alvo in (
+            ("contas_docente_editar", membro_id),
+            ("contas_docente_inativar", membro_id),
+            ("contas_secretaria_editar", docente_id),
+            ("contas_membro_editar", docente_id),
+        ):
+            with self.subTest(rota=nome):
+                url = reverse(f"cadastro:{nome}", args=[alvo])
+                self.assertEqual(self.client.get(url).status_code, 404)

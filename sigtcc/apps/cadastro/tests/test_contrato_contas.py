@@ -86,3 +86,52 @@ class AtalhoDaBancaTest(TesteContas):
         self.assertEqual(
             services_contas.com_parametro("/painel/", "membro", 9), "/painel/?membro=9"
         )
+
+
+class RecalculoNoContratoTest(TesteContas):
+    """recalcular_validade como a Defesa chama (contrato §2): dentro da transação dela,
+    idempotente, sem efeito para outro tipo de conta. [US-06][FR-039][FR-041][research C14][I1]
+    """
+
+    def test_dentro_da_transacao_de_quem_chama_e_idempotente(self):
+        from datetime import date
+
+        from sigtcc.apps.cadastro.models import MembrosExternos
+        from sigtcc.apps.cadastro.tests.apoio_contas import banca
+        from sigtcc.apps.cadastro.tests.fabricas import criar_defesa
+
+        conta = membro()
+        with transaction.atomic():
+            banca(criar_defesa(def_data=date(2026, 12, 1)), conta)
+            self.assertTrue(services_contas.recalcular_validade(conta, hoje=date(2026, 11, 1)))
+            self.assertTrue(services_contas.recalcular_validade(conta, hoje=date(2026, 11, 1)))
+        self.assertEqual(
+            MembrosExternos.objects.get(pk=conta.pk).mem_validade_ate, date(2026, 12, 8)
+        )
+
+    def test_outro_tipo_de_conta_devolve_true(self):
+        self.assertTrue(services_contas.recalcular_validade(docente_de()))
+
+
+class DesempenhoDoFiltroTest(TesteContas):
+    """SC-009: o filtro de Curso atualiza a lista em menos de 2 segundos (RNF de Comportamento
+    Temporal do RAN-CAD-14), medido com margem e sem contar consultas exatas (research C10).
+    [US-03][RBN-CAD-14.1][FR-018][SC-009]
+    """
+
+    def test_lista_com_60_docentes_por_curso(self):
+        import time
+
+        from django.urls import reverse
+
+        from sigtcc.apps.cadastro.tests.apoio_contas import EC, LC, SI, secretaria_de
+
+        for nome in (EC, SI, LC):
+            for _ in range(60):
+                docente_de(nome)
+        self.client.force_login(secretaria_de(SI))
+        inicio = time.perf_counter()
+        resposta = self.client.get(reverse("cadastro:contas_docentes"), {"curso": "todos"})
+        decorrido = time.perf_counter() - inicio
+        self.assertEqual(resposta.status_code, 200)
+        self.assertLess(decorrido, 2.0)

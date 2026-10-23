@@ -31,7 +31,10 @@ COLUNAS = ("curso", "nome", "email", "titulacao")
 
 
 class Recusa(Exception):
-    """Linha recusada, com o texto das telas de cadastro (FR-046)."""
+    """Linha recusada, com o texto das telas de cadastro (FR-046).
+
+    [RAN-CAD-01][RBN-CAD-06.2][FR-046]
+    """
 
 
 class Command(BaseCommand):
