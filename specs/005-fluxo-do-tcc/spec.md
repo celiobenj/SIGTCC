@@ -596,6 +596,7 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
 | MF-04 | Notificação ao Orientador a cada mudança de tema (Título, Subtítulo, Resumo, Modalidade ou Link) | "{nome} alterou os dados do TCC na turma {identificador}." | US-13, fluxo alternativo A ("envia uma notificação ao Orientador", sem texto exato citado); índice Q-47 | A validar |
 | MF-05 | Notificação a cada aluno da turma ao cadastrar uma entrega | "Nova entrega cadastrada na turma {identificador}: {titulo}, com prazo até {data_limite}." | US-43, passo 7 ("uma notificação no sistema e um e-mail com o Título e a Data Limite", sem texto exato citado); índice Q-48 | A validar |
 | MF-06 | Data Limite anterior à data do cadastro, no formulário de cadastro de entrega | "A Data Limite não pode ser anterior a hoje." | US-43, E2 e Cenário 8 ("destaca a Data Limite", sem texto exato citado); índice Q-48 | A validar |
+| MF-07 | Notificação ao Professor da Disciplina a cada envio ou substituição de link de uma entrega | "{nome} enviou a entrega {titulo} na turma {identificador}." | US-15, passo 6 e fluxo alternativo D (sem texto exato citado); índice Q-49 | A validar |
 
 ## Success Criteria *(mandatory)*
 

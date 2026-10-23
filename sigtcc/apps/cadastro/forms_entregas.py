@@ -18,6 +18,7 @@ from sigtcc.apps.cadastro.forms_turmas import FormularioSigtcc, normalizar_texto
 
 LIMITE_TITULO_ENTREGA = 100
 LIMITE_INSTRUCAO = 1000
+LIMITE_LINK_ENTREGA = 500
 
 # Tipos permitidos por etapa da turma (fluxo alternativo A da US-43; FR-013): TCC 1 não tem
 # Versão Final, TCC 2 não tem Proposta — "Outra" entra nas duas.
@@ -83,3 +84,26 @@ class CadastroEntregaForm(FormularioSigtcc):
         if valor < timezone.now().date():
             raise ValidationError(mensagens.MF06_DATA_LIMITE_ANTERIOR_A_HOJE)
         return datetime.combine(valor, time(23, 59, 59))
+
+
+class EnviarLinkForm(FormularioSigtcc):
+    """Link de envio ou substituição de uma entrega (US-15, passo 4): obrigatório, iniciado por
+    `https://`, até 500 caracteres — vazio, formato errado ou tamanho excedido mostram a mesma
+    mensagem exata (E2/Cenário 7 do `spec.md`), por isso o campo é `required=False` no Django (que
+    mostraria "Campo obrigatório") e a obrigatoriedade é conferida em `clean_link` junto com o
+    resto, com `LINK_HTTPS_500`.
+    [US-15][RBN-CAD-09.2][FR-018][FR-019]
+    """
+
+    link = forms.CharField(
+        label="Link",
+        required=False,
+        widget=forms.TextInput(attrs={"maxlength": LIMITE_LINK_ENTREGA}),
+    )
+
+    def clean_link(self):
+        """Obrigatório, iniciado por https://, até 500 caracteres (E2/Cenário 7). [FR-018]"""
+        valor = normalizar_texto(self.cleaned_data.get("link", ""))
+        if not valor or not valor.startswith("https://") or len(valor) > LIMITE_LINK_ENTREGA:
+            raise ValidationError(mensagens.LINK_HTTPS_500)
+        return valor

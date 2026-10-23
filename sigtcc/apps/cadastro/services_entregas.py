@@ -11,13 +11,30 @@ Professor da Disciplina (US-43), envio e substituição do link pelo Aluno, com 
 [research C1][research C5][research C6][research C7]
 """
 
+import operator
+from datetime import timedelta
+from functools import reduce
+
 from django.db import IntegrityError, transaction
+from django.db.models import Q
+from django.http import Http404
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import mensagens, services_turmas
-from sigtcc.apps.cadastro.choices import StatusEntrega
-from sigtcc.apps.cadastro.models import AlunosTurmas, EntregasMarcos, TCCs, TurmasMarcos
+from sigtcc.apps.cadastro.choices import StatusEntrega, StatusTCC, StatusTurma, TipoEntrega
+from sigtcc.apps.cadastro.models import (
+    AlunosTurmas,
+    EntregasMarcos,
+    HistoricoEnviosEntregas,
+    TCCs,
+    TurmasMarcos,
+)
 from sigtcc.apps.cadastro.services import notificar
+
+# Margens dos lembretes de prazo (FR-022; research C5): 7 dias, 48h e 24h antes da Data Limite,
+# com tolerância de ±1h entre execuções da rotina agendada.
+_MARGEM_LEMBRETE = timedelta(hours=1)
+_PRAZOS_LEMBRETE = (timedelta(days=7), timedelta(hours=48), timedelta(hours=24))
 
 
 class ErroEntrega(Exception):
@@ -89,3 +106,123 @@ def cadastrar_entrega(professor, tur_id, dados):
                 ),
             )
     return entrega
+
+
+# =============================================================================================
+# Envio e substituição do link pelo Aluno (US-15; FR-018 a FR-023; research C7)
+# =============================================================================================
+
+
+def enviar_entrega(aluno, tma_id, link):
+    """Envia ou substitui o link de uma entrega do Aluno (passos 4 a 7 e fluxo D da US-15
+    original): grava `Historico_Envios_Entregas` e recalcula `ent_status` a partir do
+    **primeiro** envio, nunca do mais recente (FR-019) — "Entregue" se o primeiro envio ocorreu
+    até 23:59 da Data Limite, "Entregue com Atraso" depois.
+
+    Trava `Entregas_Marcos` (a linha do aluno nesta entrega) **e** `TCCs` (o TCC do aluno nessa
+    turma) antes de consultar o primeiro envio e de checar `tcc.tcc_status` (research C7, achado
+    A1 da análise `/speckit-analyze`): sem essas travas, um duplo clique no "Enviar" poderia gerar
+    duas transações lendo `Historico_Envios_Entregas` vazio ao mesmo tempo, e uma corrida com
+    `encerrar_participacao`/`atualizar_status_tcc` (que travam turma → aluno → TCC) poderia deixar
+    passar um envio com o Status já mudado no meio da requisição.
+
+    Recusa com `Http404` (sem alterar nada), no mesmo padrão de `services_tcc.salvar_proposta` e
+    de `services_turmas.encerrar_participacao` para uma ação cujo botão a view já esconde, se a
+    entrega não existir para este aluno, se for do tipo Proposta (cumprida ao salvar a Proposta,
+    US-13, sem campo de link aqui), se for do tipo Versão Final (tratada só na US-29, Phase 8
+    desta feature — ainda não liberada), se a turma estiver arquivada, se a participação do aluno
+    estiver encerrada, se o TCC não estiver "Em Andamento", ou se já existir um envio anterior e a
+    Data Limite já tiver passado sem devolução pendente (E3 da US-15 original). Notifica o
+    Professor da Disciplina a cada envio e a cada substituição (MF-07, Q-49).
+    [US-15][RBN-CAD-09.2][RBN-CAD-09.3][RBN-CAD-09.6][FR-018 a FR-021][FR-023][research C7]
+    """
+    with transaction.atomic():
+        entrega = (
+            EntregasMarcos.objects.select_for_update().filter(ent_tma_id=tma_id, ent_alu=aluno).first()
+        )
+        if entrega is None:
+            raise Http404
+        marco = entrega.ent_tma
+        if marco.tma_tipo in (TipoEntrega.PROPOSTA, TipoEntrega.VERSAO_FINAL):
+            raise Http404
+        turma = marco.tma_tur
+        tcc = TCCs.objects.select_for_update().filter(tcc_alu=aluno, tcc_tur=turma).first()
+        if tcc is None:
+            raise Http404
+        if turma.tur_status == StatusTurma.ARQUIVADA:
+            raise Http404
+        if services_turmas.participacao_encerrada(tcc):
+            raise Http404
+        if tcc.tcc_status != StatusTCC.EM_ANDAMENTO:
+            raise Http404
+
+        primeiro_envio = (
+            HistoricoEnviosEntregas.objects.filter(hen_ent=entrega)
+            .order_by("hen_data_envio", "hen_id")
+            .first()
+        )
+        agora = timezone.now()
+        if (
+            primeiro_envio is not None
+            and agora > marco.tma_data_limite
+            and entrega.ent_status != StatusEntrega.DEVOLVIDA_PARA_AJUSTE
+        ):
+            # E3 (US-15 original): substituição após a Data Limite — campo somente leitura.
+            raise Http404
+
+        HistoricoEnviosEntregas.objects.create(hen_ent=entrega, hen_link=link, hen_data_envio=agora)
+        data_do_primeiro_envio = primeiro_envio.hen_data_envio if primeiro_envio else agora
+        entrega.ent_status = (
+            StatusEntrega.ENTREGUE
+            if data_do_primeiro_envio <= marco.tma_data_limite
+            else StatusEntrega.ENTREGUE_COM_ATRASO
+        )
+        entrega.save(update_fields=["ent_status"])
+        notificar(
+            turma.tur_doc.doc,
+            mensagens.MF07_NOTIFICACAO_ENVIO_ENTREGA.format(
+                nome=aluno.alu.usu_nome,
+                titulo=marco.tma_titulo,
+                identificador=turma.tur_identificador,
+            ),
+        )
+    return entrega
+
+
+def status_exibido(entrega, agora=None):
+    """Status "efetivo" para exibição (FR-020, Cenário 3 do `spec.md`; fluxo alternativo C da
+    US-15 original): enquanto "Aguardando Envio" e a Data Limite já tiver passado, mostra "Não
+    Entregue" sem gravar nada no banco — o envio continua disponível (`enviar_entrega` não
+    depende do valor gravado em `ent_status` para decidir se aceita um envio novo, só do
+    primeiro registro de `Historico_Envios_Entregas`) e, se ocorrer, segue o fluxo alternativo B
+    normalmente. Não altera o Status do TCC (FR-020, "sem reprovar o aluno").
+    [US-15][RBN-CAD-09.3][FR-020]
+    """
+    agora = agora or timezone.now()
+    if entrega.ent_status == StatusEntrega.AGUARDANDO_ENVIO and agora > entrega.ent_tma.tma_data_limite:
+        return StatusEntrega.NAO_ENTREGUE
+    return entrega.ent_status
+
+
+def entregas_para_lembrar(agora):
+    """`Entregas_Marcos` "Aguardando Envio" cuja Data Limite esteja a 7 dias, 48h ou 24h de
+    `agora` (margem ±1h, para tolerar o intervalo entre execuções da rotina agendada), em turma
+    não arquivada (fluxo alternativo E da US-15 original; FR-022). Função pura, sem notificar:
+    quem chama (o comando de gestão) decide o texto e envia (research C5).
+    [US-15][RBN-CAD-09.6][FR-022][research C5]
+    """
+    janelas = reduce(
+        operator.or_,
+        (
+            Q(
+                ent_tma__tma_data_limite__gte=agora + prazo - _MARGEM_LEMBRETE,
+                ent_tma__tma_data_limite__lte=agora + prazo + _MARGEM_LEMBRETE,
+            )
+            for prazo in _PRAZOS_LEMBRETE
+        ),
+    )
+    return EntregasMarcos.objects.filter(
+        janelas,
+        ent_status=StatusEntrega.AGUARDANDO_ENVIO,
+        ent_tma__tma_tur__tur_status=StatusTurma.ATIVA,
+    ).select_related("ent_tma__tma_tur", "ent_alu__alu")

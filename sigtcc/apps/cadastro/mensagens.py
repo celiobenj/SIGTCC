@@ -253,3 +253,8 @@ MF05_NOTIFICACAO_ENTREGA_CADASTRADA = (
 # Data Limite anterior à data do cadastro (US-43, E2, Cenário 8): a US só diz "destaca a Data
 # Limite", sem citar o texto exato — mensagem nova, registrada como PROVISÓRIA (Q-48).
 MF06_DATA_LIMITE_ANTERIOR_A_HOJE = "A Data Limite não pode ser anterior a hoje."
+# Notificação ao Professor da Disciplina a cada envio ou substituição de link (US-15, passo 6 e
+# fluxo alternativo D): a US diz só "envia... uma notificação no sistema com o envio" e "notifica
+# o Professor da Disciplina no sistema", sem citar o texto exato — mensagem nova, registrada como
+# PROVISÓRIA (Q-49), no mesmo padrão da MF-04/MF-05.
+MF07_NOTIFICACAO_ENVIO_ENTREGA = "{nome} enviou a entrega {titulo} na turma {identificador}."

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% comment %}
+  Aba Atividades do Aluno (nome provisório, Q-44; passos 1 e 2 da US-15 original): lista das
+  entregas da turma com Título, Data Limite e o status de envio do Aluno. O status "Não Entregue"
+  aparece calculado na exibição, sem gravar nada (FR-020), enquanto o envio continua disponível.
+  [US-15][RBN-CAD-09.2][RBN-CAD-09.3][FR-018 a FR-020]
+{% endcomment %}
+{% block titulo %}Atividades · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <div>
+    <h2 class="pg">Atividades</h2>
+    <p class="pg-sub">{{ turma.tur_identificador }} · {{ turma.tur_descricao }}{% if arquivada %} · <span class="chip">Arquivada</span>{% endif %}</p>
+  </div>
+</div>
+{% if arquivada %}
+<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Esta turma está arquivada e só pode ser consultada.</span></div>
+{% endif %}
+{% if linhas %}
+<div class="tabela-wrap mt16">
+  <table class="tabela">
+    <thead><tr><th>Título</th><th>Data Limite</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for linha in linhas %}
+      <tr>
+        <td><a href="{% url 'cadastro:entrega_enviar' turma.pk linha.entrega.ent_tma_id %}">{{ linha.entrega.ent_tma.tma_titulo }}</a></td>
+        <td>{{ linha.entrega.ent_tma.tma_data_limite|date:"d/m/Y H:i" }}</td>
+        <td><span class="chip">{{ linha.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="vazio mt16"><span class="ms">assignment</span>Nenhuma entrega cadastrada.</div>
+{% endif %}
+{% endblock %}
