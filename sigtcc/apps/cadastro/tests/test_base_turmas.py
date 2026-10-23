@@ -12,12 +12,20 @@ from django.utils import timezone
 from sigtcc.apps.cadastro import services, services_turmas
 from sigtcc.apps.cadastro.choices import (
     DescricaoTurma,
+    GatilhoStatusTCC,
+    ModalidadeTCC,
     StatusEntrega,
     StatusTCC,
     StatusTurma,
     TipoEventoTurma,
 )
-from sigtcc.apps.cadastro.models import EntregasMarcos, HistoricoAlunosTurmas, Turmas
+from sigtcc.apps.cadastro.models import (
+    EntregasMarcos,
+    HistoricoAlunosTurmas,
+    HistoricoStatusTCC,
+    TCCs,
+    Turmas,
+)
 from sigtcc.apps.cadastro.permissoes import (
     pode_alterar_turma,
     pode_consultar_turma,
@@ -200,3 +208,115 @@ class EntregasDoAlunoTest(TesteTurmas):
 
     def test_curso_do_codigo_reexportado(self):
         self.assertIs(services_turmas.curso_do_codigo, services.curso_do_codigo)
+
+
+class ServicoUnicoDeStatusTest(TesteTurmas):
+    """criar_tcc_com_historico e atualizar_status_tcc: serviço único de gravação do Status do TCC
+    (FR-008, FR-012, research C2). A transição é validada contra TRANSICOES_VALIDAS; fora da
+    tabela (gatilho inexistente ou transição não prevista), levanta ValueError sem gravar nada.
+    [US-14][RBN-CAD-08.3][RBN-CAD-08.7][FR-008][FR-012][SC-002][research C2]
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.professor = criar_docente_ativo()
+        self.turma = criar_turma_de(self.professor, descricao=DescricaoTurma.TCC_1)
+        self.aluno = criar_aluno_novo()
+
+    def test_criar_tcc_com_historico_grava_tcc_e_primeiro_registro(self):
+        """Gatilho de criação (Vínculo à turma): cria o TCC já com o Status inicial e o primeiro
+        registro do histórico, com status anterior vazio. [US-14][RBN-CAD-08.3][RBN-CAD-08.7]
+        """
+        tcc = services_turmas.criar_tcc_com_historico(
+            self.aluno,
+            self.turma,
+            self.professor,
+            StatusTCC.SEM_PROPOSTA,
+            GatilhoStatusTCC.VINCULO_A_TURMA,
+        )
+        self.assertEqual(tcc.tcc_status, StatusTCC.SEM_PROPOSTA)
+        historico = HistoricoStatusTCC.objects.get(hst_tcc=tcc)
+        self.assertIsNone(historico.hst_status_anterior)
+        self.assertEqual(historico.hst_status_novo, StatusTCC.SEM_PROPOSTA)
+        self.assertEqual(historico.hst_gatilho, GatilhoStatusTCC.VINCULO_A_TURMA)
+        self.assertEqual(historico.hst_usu_id, self.professor.pk)
+        self.assertEqual(historico.hst_tur_id, self.turma.pk)
+
+    def test_criar_tcc_com_historico_transicao_invalida_nao_grava_nada(self):
+        """Transição fora da tabela (ex.: gatilho de criação com Status final errado) levanta
+        ValueError sem criar TCC nem histórico. [US-14][FR-008][research C2]
+        """
+        with self.assertRaises(ValueError):
+            services_turmas.criar_tcc_com_historico(
+                self.aluno,
+                self.turma,
+                self.professor,
+                StatusTCC.EM_ANDAMENTO,
+                GatilhoStatusTCC.VINCULO_A_TURMA,
+            )
+        self.assertFalse(TCCs.objects.filter(tcc_alu=self.aluno, tcc_tur=self.turma).exists())
+        self.assertFalse(HistoricoStatusTCC.objects.filter(hst_tcc__tcc_alu=self.aluno).exists())
+
+    def test_atualizar_status_tcc_transicao_valida_grava_historico(self):
+        """Transição válida (Proposta salva: Sem Proposta → Em Andamento) muda tcc_status e grava
+        o histórico certo. [US-14][RBN-CAD-08.3][RBN-CAD-08.7][FR-008][FR-012]
+        """
+        aluno = matricular_aluno(self.turma, status_tcc=StatusTCC.SEM_PROPOSTA)
+        tcc = tcc_de(aluno, self.turma)
+        # Fora de "Sem Proposta", o CHECK do banco exige título/resumo/modalidade (spec 001); o
+        # preenchimento real é feito por services_tcc.salvar_proposta (US-13, fase 3, ainda não
+        # implementada); aqui só o suficiente para a transição de Status ser gravável.
+        tcc.tcc_titulo = "Título do trabalho"
+        tcc.tcc_resumo = "Resumo do trabalho"
+        tcc.tcc_modalidade = ModalidadeTCC.MONOGRAFIA
+        tcc.save(update_fields=["tcc_titulo", "tcc_resumo", "tcc_modalidade"])
+        services_turmas.atualizar_status_tcc(
+            tcc, self.turma, aluno.alu, StatusTCC.EM_ANDAMENTO, GatilhoStatusTCC.PROPOSTA_SALVA
+        )
+        tcc.refresh_from_db()
+        self.assertEqual(tcc.tcc_status, StatusTCC.EM_ANDAMENTO)
+        historico = HistoricoStatusTCC.objects.get(
+            hst_tcc=tcc, hst_gatilho=GatilhoStatusTCC.PROPOSTA_SALVA
+        )
+        self.assertEqual(historico.hst_status_anterior, StatusTCC.SEM_PROPOSTA)
+        self.assertEqual(historico.hst_status_novo, StatusTCC.EM_ANDAMENTO)
+        self.assertEqual(historico.hst_usu_id, aluno.alu_id)
+
+    def test_atualizar_status_tcc_transicao_fora_da_tabela_nao_grava_nada(self):
+        """Transição fora da tabela (Status atual incompatível com o gatilho) levanta ValueError
+        sem gravar nenhuma linha no histórico. [US-14][FR-008][SC-002][research C2]
+        """
+        aluno = matricular_aluno(self.turma, status_tcc=StatusTCC.SEM_PROPOSTA)
+        tcc = tcc_de(aluno, self.turma)
+        qtd_historico_antes = HistoricoStatusTCC.objects.filter(hst_tcc=tcc).count()
+        with self.assertRaises(ValueError):
+            services_turmas.atualizar_status_tcc(
+                tcc,
+                self.turma,
+                aluno.alu,
+                StatusTCC.APTO_PARA_DEFESA,
+                GatilhoStatusTCC.PROPOSTA_SALVA,
+            )
+        tcc.refresh_from_db()
+        self.assertEqual(tcc.tcc_status, StatusTCC.SEM_PROPOSTA)
+        self.assertEqual(
+            HistoricoStatusTCC.objects.filter(hst_tcc=tcc).count(), qtd_historico_antes
+        )
+
+    def test_atualizar_status_tcc_gatilho_inexistente_levanta_value_error(self):
+        """Gatilho fora de TRANSICOES_VALIDAS (string arbitrária) também levanta ValueError, sem
+        gravar nada. [US-14][FR-008][research C2]
+        """
+        aluno = matricular_aluno(self.turma, status_tcc=StatusTCC.SEM_PROPOSTA)
+        tcc = tcc_de(aluno, self.turma)
+        with self.assertRaises(ValueError):
+            services_turmas.atualizar_status_tcc(
+                tcc, self.turma, aluno.alu, StatusTCC.EM_ANDAMENTO, "Gatilho Inexistente"
+            )
+        tcc.refresh_from_db()
+        self.assertEqual(tcc.tcc_status, StatusTCC.SEM_PROPOSTA)
+        self.assertFalse(
+            HistoricoStatusTCC.objects.filter(
+                hst_tcc=tcc, hst_gatilho="Gatilho Inexistente"
+            ).exists()
+        )
