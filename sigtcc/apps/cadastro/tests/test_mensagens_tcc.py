@@ -35,8 +35,8 @@ TEXTOS_DAS_US = (
     "VERSAO_FINAL_HOMOLOGADA",
 )
 
-# MF-01 a MF-10 (PROVISÓRIAS): o número da tabela da spec ↔ prefixo da constante.
-NUMEROS_MF = range(1, 11)
+# MF-01 a MF-12 (PROVISÓRIAS): o número da tabela da spec ↔ prefixo da constante.
+NUMEROS_MF = range(1, 13)
 
 
 def _historias():
@@ -65,11 +65,11 @@ class MensagensTCCTest(SimpleTestCase):
             with self.subTest(constante=nome):
                 self.assertIn(f'"{texto}', historias)
 
-    def test_tabela_da_spec_tem_mf01_a_mf10(self):
+    def test_tabela_da_spec_tem_mf01_a_mf12(self):
         self.assertEqual(sorted(_mensagens_da_spec()), [f"MF-{n:02d}" for n in NUMEROS_MF])
 
     def test_mensagens_provisorias_iguais_a_tabela_da_spec(self):
-        """MF-01 a MF-10 iguais à tabela da spec (os campos {nome} etc. são os mesmos)."""
+        """MF-01 a MF-12 iguais à tabela da spec (os campos {nome} etc. são os mesmos)."""
         da_spec = _mensagens_da_spec()
         for numero in NUMEROS_MF:
             nomes = [n for n in dir(mensagens) if n.startswith(f"MF{numero:02d}_")]

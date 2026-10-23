@@ -276,3 +276,8 @@ MF09_NOTIFICACAO_VERSAO_FINAL_HOMOLOGADA = (
 MF10_NOTIFICACAO_VERSAO_FINAL_DEVOLVIDA = (
     "Versão Final devolvida para ajuste na turma {identificador}: {mensagem}"
 )
+# Assuntos dos e-mails da spec 005 (US-43, passo 7, e US-15, fluxo alternativo E: "e-mail com o
+# Título e a Data Limite"; FR-015, FR-022), sem texto exato nas US — PROVISÓRIOS (Q-84, Q-86). O
+# corpo repete a notificação (MF-05 e MF-08).
+MF11_ASSUNTO_NOVA_ENTREGA = "SIGTCC: nova entrega"
+MF12_ASSUNTO_LEMBRETE_PRAZO = "SIGTCC: lembrete de prazo"

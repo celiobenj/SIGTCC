@@ -587,3 +587,82 @@ class ConcorrenciaEnviarEntregaTest(TransactionTestCase):
         with self.assertRaises(Http404):
             services_entregas.enviar_entrega(self.aluno, self.entrega.pk, LINK_VALIDO)
         self.assertFalse(HistoricoEnviosEntregas.objects.filter(hen_ent=self.registro()).exists())
+
+
+class RotinaDasEntregasTest(EnviarEntregaTestBase):
+    """Rotina agendada (Phase 12, T044 e T045): grava "Não Entregue" nas entregas vencidas sem
+    envio (FR-020; dicionário 18/10, seção 4, item 7; Q-90), não lembra quem tem a participação
+    encerrada ou já saiu da turma (contrato de serviços, §3) e manda o lembrete também por e-mail
+    (FR-022; MF-12, Q-84).
+
+    [US-15][RBN-CAD-09.3][RBN-CAD-09.6][FR-020][FR-022][Q-90]
+    """
+
+    def vencer(self, horas=1):
+        self.entrega.tma_data_limite = timezone.now() - timedelta(hours=horas)
+        self.entrega.save(update_fields=["tma_data_limite"])
+
+    def test_marca_nao_entregue_quando_vence_sem_envio(self):
+        self.vencer()
+        self.assertEqual(services_entregas.marcar_nao_entregues(), 1)
+        self.assertEqual(self.registro().ent_status, StatusEntrega.NAO_ENTREGUE)
+        tcc = services_turmas.tcc_do_aluno(self.turma, self.aluno)
+        self.assertEqual(tcc.tcc_status, StatusTCC.EM_ANDAMENTO)
+
+    def test_envio_continua_disponivel_depois_de_marcado(self):
+        """FR-020: o envio continua disponível e segue o fluxo B (Entregue com Atraso)."""
+        self.vencer()
+        services_entregas.marcar_nao_entregues()
+        registro = services_entregas.enviar_entrega(self.aluno, self.entrega.pk, LINK_VALIDO)
+        self.assertEqual(registro.ent_status, StatusEntrega.ENTREGUE_COM_ATRASO)
+
+    def test_nao_marca_quem_ja_enviou_nem_prazo_futuro_nem_turma_arquivada(self):
+        # Prazo futuro: nada a marcar.
+        self.assertEqual(services_entregas.marcar_nao_entregues(), 0)
+        # Turma arquivada: só consulta, a rotina não grava.
+        self.vencer()
+        self.turma.tur_status = StatusTurma.ARQUIVADA
+        self.turma.save(update_fields=["tur_status"])
+        self.assertEqual(services_entregas.marcar_nao_entregues(), 0)
+        self.assertEqual(self.registro().ent_status, StatusEntrega.AGUARDANDO_ENVIO)
+
+    def test_lembrete_nao_vai_para_participacao_encerrada(self):
+        agora = timezone.now()
+        self.entrega.tma_data_limite = agora + timedelta(hours=24)
+        self.entrega.save(update_fields=["tma_data_limite"])
+        tcc = services_turmas.tcc_do_aluno(self.turma, self.aluno)
+        tcc.tcc_status = StatusTCC.DESISTENTE
+        tcc.save(update_fields=["tcc_status"])
+        self.assertNotIn(self.registro(), list(services_entregas.entregas_para_lembrar(agora)))
+
+    def test_lembrete_nao_vai_para_quem_saiu_da_turma(self):
+        from sigtcc.apps.cadastro.models import AlunosTurmas
+
+        agora = timezone.now()
+        self.entrega.tma_data_limite = agora + timedelta(hours=24)
+        self.entrega.save(update_fields=["tma_data_limite"])
+        AlunosTurmas.objects.filter(mat_alu=self.aluno, mat_tur=self.turma).delete()
+        self.assertNotIn(self.registro(), list(services_entregas.entregas_para_lembrar(agora)))
+
+    def test_lembrete_tambem_por_email(self):
+        from django.core import mail
+
+        self.aluno.alu.usu_email = "aluno.lembrete@uea.edu.br"
+        self.aluno.alu.save(update_fields=["usu_email"])
+        agora = timezone.now()
+        self.entrega.tma_data_limite = agora + timedelta(hours=48)
+        self.entrega.save(update_fields=["tma_data_limite"])
+        # O e-mail sai depois do commit (no comando real, em autocommit, na hora).
+        with self.captureOnCommitCallbacks(execute=True):
+            services_entregas.enviar_lembretes_de_prazo(agora)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, mensagens.MF12_ASSUNTO_LEMBRETE_PRAZO)
+        self.assertIn("Entrega do Documento", mail.outbox[0].body)
+
+    def test_comando_marca_nao_entregues_e_lembra(self):
+        self.vencer()
+        saida = StringIO()
+        call_command("enviar_lembretes_entrega", stdout=saida)
+        self.assertIn("1 entrega(s) marcada(s) como Não Entregue", saida.getvalue())
+        self.assertIn("0 lembrete(s)", saida.getvalue())
+        self.assertEqual(self.registro().ent_status, StatusEntrega.NAO_ENTREGUE)

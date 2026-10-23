@@ -372,3 +372,53 @@ class EntregasViewTest(TesteTurmas):
         self.assertEqual(
             self.client.get(reverse("cadastro:entrega_cadastrar", args=[0])).status_code, 404
         )
+
+
+class EmailNovaEntregaTest(TesteTurmas):
+    """FR-015 (US-43, passo 7): além da notificação, um e-mail com o Título e a Data Limite a
+    cada aluno com e-mail cadastrado, depois do commit (Phase 12, T045; MF-11, Q-84).
+
+    [US-43][RBN-CAD-09.6][FR-015][Q-84]
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.professor = criar_docente_ativo()
+        self.turma = criar_turma_de(self.professor, descricao=DescricaoTurma.TCC_1, curso_nome=EC)
+        self.com_email = matricular_aluno(
+            self.turma, status_tcc=StatusTCC.SEM_PROPOSTA, status_conta=StatusConta.ATIVA
+        )
+        self.com_email.alu.usu_email = "aluno.email@uea.edu.br"
+        self.com_email.alu.save(update_fields=["usu_email"])
+        self.sem_email = matricular_aluno(
+            self.turma, status_tcc=StatusTCC.SEM_PROPOSTA, status_conta=StatusConta.ATIVA
+        )
+
+    def test_email_com_titulo_e_data_limite_so_para_quem_tem_email(self):
+        from django.core import mail
+
+        with self.captureOnCommitCallbacks(execute=True):
+            entrega = services_entregas.cadastrar_entrega(
+                self.professor, self.turma.pk, _dados(titulo="Entrega do Documento")
+            )
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertEqual(email.to, ["aluno.email@uea.edu.br"])
+        self.assertEqual(email.subject, mensagens.MF11_ASSUNTO_NOVA_ENTREGA)
+        self.assertIn("Entrega do Documento", email.body)
+        self.assertIn(entrega.tma_data_limite.strftime("%d/%m/%Y"), email.body)
+        # A notificação no sistema continua para os dois.
+        self.assertEqual(Notificacoes.objects.count(), 2)
+
+    def test_falha_no_envio_nao_desfaz_o_cadastro(self):
+        from unittest import mock
+
+        from sigtcc.apps.cadastro import services
+
+        with mock.patch.object(services, "send_mail", side_effect=OSError("smtp fora")):
+            with self.assertLogs("sigtcc.acesso"):
+                with self.captureOnCommitCallbacks(execute=True):
+                    entrega = services_entregas.cadastrar_entrega(
+                        self.professor, self.turma.pk, _dados()
+                    )
+        self.assertTrue(TurmasMarcos.objects.filter(pk=entrega.pk).exists())

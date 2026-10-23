@@ -12,11 +12,13 @@ Professor da Disciplina (US-43), envio e substituição do link pelo Aluno, com 
 """
 
 import operator
+import threading
 from datetime import timedelta
 from functools import reduce
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.http import Http404
 from django.urls import reverse
 from django.utils import timezone
@@ -41,7 +43,7 @@ from sigtcc.apps.cadastro.models import (
     TCCs,
     TurmasMarcos,
 )
-from sigtcc.apps.cadastro.services import notificar
+from sigtcc.apps.cadastro.services import enviar_email, notificar
 
 # Margens dos lembretes de prazo (FR-022; research C5): 7 dias, 48h e 24h antes da Data Limite,
 # com tolerância de ±1h entre execuções da rotina agendada.
@@ -60,6 +62,33 @@ class ErroEntrega(Exception):
         super().__init__(mensagem)
         self.mensagem = mensagem
         self.campo = campo
+
+
+def _enviar_email_ao_aluno(usuario, assunto, texto):
+    """E-mail ao aluno com o mesmo texto da notificação (FR-015, FR-022), depois do commit, só
+    se a conta tiver e-mail. Mesmo padrão da spec 003 (`services.pedir_redefinicao`): a falha fica
+    só no log (`services.enviar_email` registra FALHA_ENVIO_EMAIL) e não desfaz a gravação.
+    [US-43][US-15][RBN-CAD-09.6][FR-015][FR-022][Q-84]
+    """
+    destino = usuario.usu_email
+    if not destino:
+        return
+    contexto = {"nome": usuario.usu_nome, "texto": texto}
+
+    def enviar():
+        """Envia o aviso; falha só no log. [FR-015][FR-022]"""
+        try:
+            enviar_email(
+                destino, assunto, "cadastro/emails/aviso_entrega.txt", contexto, conta=usuario
+            )
+        except Exception:
+            # Já registrado no log por enviar_email; a gravação não muda.
+            pass
+
+    if settings.SIGTCC_EMAIL_SINCRONO:
+        transaction.on_commit(enviar)
+    else:
+        transaction.on_commit(lambda: threading.Thread(target=enviar, daemon=True).start())
 
 
 # =============================================================================================
@@ -109,16 +138,19 @@ def cadastrar_entrega(professor, tur_id, dados):
             if tcc is not None and services_turmas.participacao_encerrada(tcc):
                 continue
             EntregasMarcos.objects.create(ent_tma=entrega, ent_alu=aluno, ent_status=status_inicial)
+            texto = mensagens.MF05_NOTIFICACAO_ENTREGA_CADASTRADA.format(
+                identificador=turma.tur_identificador,
+                titulo=entrega.tma_titulo,
+                data_limite=entrega.tma_data_limite.strftime("%d/%m/%Y"),
+            )
             notificar(
                 aluno.alu,
-                mensagens.MF05_NOTIFICACAO_ENTREGA_CADASTRADA.format(
-                    identificador=turma.tur_identificador,
-                    titulo=entrega.tma_titulo,
-                    data_limite=entrega.tma_data_limite.strftime("%d/%m/%Y"),
-                ),
+                texto,
                 # Acesso pela notificação (fluxo alternativo A da US-15): abre a aba Atividades.
                 link=reverse("cadastro:minhas_entregas", args=[turma.pk]),
             )
+            # E-mail com o Título e a Data Limite (passo 7 da US-43; FR-015; MF-11, Q-84).
+            _enviar_email_ao_aluno(aluno.alu, mensagens.MF11_ASSUNTO_NOVA_ENTREGA, texto)
     return entrega
 
 
@@ -304,8 +336,10 @@ def status_exibido(entrega, agora=None):
 def entregas_para_lembrar(agora):
     """`Entregas_Marcos` "Aguardando Envio" cuja Data Limite esteja a 7 dias, 48h ou 24h de
     `agora` (margem ±1h, para tolerar o intervalo entre execuções da rotina agendada), em turma
-    não arquivada (fluxo alternativo E da US-15 original; FR-022). Função pura, sem notificar:
-    quem chama (o comando de gestão) decide o texto e envia (research C5).
+    não arquivada (fluxo alternativo E da US-15 original; FR-022), só de alunos ainda matriculados
+    na turma (`Alunos_Turmas` atual) e com a participação não encerrada (regra das entregas do
+    contrato de serviços, §3). Função pura, sem notificar: quem chama (o comando de gestão)
+    decide o texto e envia (research C5).
     [US-15][RBN-CAD-09.6][FR-022][research C5]
     """
     janelas = reduce(
@@ -318,11 +352,23 @@ def entregas_para_lembrar(agora):
             for prazo in _PRAZOS_LEMBRETE
         ),
     )
-    return EntregasMarcos.objects.filter(
-        janelas,
-        ent_status=StatusEntrega.AGUARDANDO_ENVIO,
-        ent_tma__tma_tur__tur_status=StatusTurma.ATIVA,
-    ).select_related("ent_tma__tma_tur", "ent_alu__alu")
+    matriculado = AlunosTurmas.objects.filter(
+        mat_alu=OuterRef("ent_alu"), mat_tur=OuterRef("ent_tma__tma_tur")
+    )
+    encerrado = TCCs.objects.filter(
+        tcc_alu=OuterRef("ent_alu"),
+        tcc_tur=OuterRef("ent_tma__tma_tur"),
+        tcc_status__in=services_turmas.STATUS_PARTICIPACAO_ENCERRADA,
+    )
+    return (
+        EntregasMarcos.objects.filter(
+            janelas,
+            ent_status=StatusEntrega.AGUARDANDO_ENVIO,
+            ent_tma__tma_tur__tur_status=StatusTurma.ATIVA,
+        )
+        .filter(Exists(matriculado), ~Exists(encerrado))
+        .select_related("ent_tma__tma_tur", "ent_alu__alu")
+    )
 
 
 def enviar_lembretes_de_prazo(agora=None):
@@ -356,8 +402,30 @@ def enviar_lembretes_de_prazo(agora=None):
             mensagem,
             link=reverse("cadastro:entrega_enviar", args=[turma.pk, marco.pk]),
         )
+        # Lembrete também por e-mail (fluxo alternativo E da US-15; FR-022; MF-12, Q-84).
+        _enviar_email_ao_aluno(usuario, mensagens.MF12_ASSUNTO_LEMBRETE_PRAZO, mensagem)
         enviados += 1
     return enviados
+
+
+def marcar_nao_entregues(agora=None):
+    """Grava "Não Entregue" nas entregas ainda "Aguardando Envio" cuja Data Limite (23:59) já
+    passou, em turma não arquivada (fluxo alternativo C da US-15; FR-020; dicionário 18/10, seção
+    4, item 7; Q-90). Não mexe no Status do TCC nem bloqueia o envio, que continua disponível e
+    segue o fluxo B ("Entregue com Atraso"). Chamada pelo comando agendado
+    `enviar_lembretes_entrega`; enquanto ele não roda, `status_exibido` mostra o mesmo valor.
+
+    Um único UPDATE condicionado a "Aguardando Envio": se um envio travou e gravou a linha ao
+    mesmo tempo, o PostgreSQL reconfere a condição depois da trava e não sobrescreve o envio.
+    Devolve o número de registros marcados.
+    [US-15][US-29][RBN-CAD-09.3][FR-020][Q-90]
+    """
+    agora = agora or timezone.now()
+    return EntregasMarcos.objects.filter(
+        ent_status=StatusEntrega.AGUARDANDO_ENVIO,
+        ent_tma__tma_data_limite__lt=agora,
+        ent_tma__tma_tur__tur_status=StatusTurma.ATIVA,
+    ).update(ent_status=StatusEntrega.NAO_ENTREGUE)
 
 
 # =============================================================================================

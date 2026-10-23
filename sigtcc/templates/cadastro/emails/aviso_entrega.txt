@@ -1,0 +1,8 @@
+{% comment %}E-mail de nova entrega (MF-05) e de lembrete de prazo (MF-08): o mesmo texto da notificação, sem link (US-15, fluxo A: o e-mail só informa o Título e a Data Limite). [US-43][US-15][RBN-CAD-09.6][FR-015][FR-022]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
+
+{{ texto }}
+
+Para ver a entrega e enviar o link, acesse o SIGTCC.
+
+SIGTCC · Núcleo de Computação · EST/UEA
+{% endautoescape %}
