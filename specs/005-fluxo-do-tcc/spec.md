@@ -49,6 +49,12 @@
     acesso ao Status, ao histórico (FR-009) nem ao acompanhamento de entregas (FR-026); a 006
     decide, no seu próprio painel de orientandos, como e se reaproveita os serviços de consulta
     desta spec para o Coorientador (Clarifications, sessão 2026-10-22).
+- **Tela da turma e menu da spec 004** (FR-010 da spec 004, já mesclada): o item de menu "Turmas" e
+  a tela da turma (`/turmas/<tur_id>/`) continuam só do Professor da Disciplina e da Secretaria do
+  curso. Esta spec não abre essa tela ao Aluno: dá ao Aluno uma entrada própria (item "Turmas" do
+  Aluno, com as turmas em que está matriculado) e só **acrescenta** à tela da turma da spec 004 a
+  barra de abas "Alunos" e "Atividades" do Professor (FR-031; Clarifications, sessão 2026-10-23;
+  índice Q-89).
 
 ## Clarifications
 
@@ -66,6 +72,21 @@
   spec 006? → A: Fica com a spec 006; esta spec não altera permissões para o Coorientador — a 006
   decide como expor isso no seu próprio painel de orientandos, reaproveitando os serviços de
   consulta desta spec.
+
+### Session 2026-10-23
+
+- Q: Como o Aluno e o Professor chegam às abas "Meu TCC" e "Atividades"? As US-13, 14, 15 e 29
+  dizem que o Aluno acessa o item "Turmas" e seleciona a turma, que abre na aba "Meu TCC"; as
+  US-16 e 43 dizem que o Professor abre a turma e seleciona a aba "Atividades". Mas o FR-010 da
+  spec 004 (já mesclada) diz que só o Professor da Disciplina e a Secretaria do curso abrem a turma
+  e veem o item "Turmas". → A: Alternativa B (Célio Benjamim, 2026-10-23; índice Q-89): o Aluno
+  ganha um item de menu "Turmas" próprio, com a lista das turmas em que está matriculado e o
+  acesso às turmas arquivadas; a turma do Aluno abre na aba "Meu TCC", com as abas "Meu TCC" e
+  "Atividades" (rotas desta spec). A tela da turma da spec 004 continua fechada ao Aluno (FR-010 da
+  spec 004 sem mudança) e só ganha a barra de abas "Alunos" e "Atividades", com "Atividades"
+  visível apenas ao Professor da Disciplina da turma. Alternativas rejeitadas: abrir a tela da
+  turma da spec 004 ao Aluno (mudaria uma spec mesclada e exporia a lista de colegas) e só pôr links
+  no Painel (contraria o passo 1 das US e não atende "Turmas arquivadas", E9 da US-13).
 
 ### Divergência encontrada na US-43 (v3.3) — ponto a decidir
 
@@ -170,6 +191,14 @@ a Proposta pelo formulário, e verificar que o Status muda para "Em Andamento" e
 7. **Given** o Aluno informa a mesma Palavra-Chave em duas caixas diferentes (ex.: "IoT" duas
    vezes), **When** aciona "Salvar alterações", **Then** o sistema não salva, destaca as caixas
    repetidas e exibe "Palavra-chave repetida." (MF-03; Clarifications, sessão 2026-10-22).
+8. **Given** o Aluno está autenticado e matriculado numa turma não arquivada, **When** aciona o
+   item de menu "Turmas" e seleciona a turma, **Then** o sistema abre a turma na aba "Meu TCC",
+   com as abas "Meu TCC" e "Atividades"; a lista mostra só as turmas em que o Aluno está
+   matriculado, e a tela da turma do Professor (lista de alunos, spec 004) continua inacessível a
+   ele (US-13, passos 1 e 2; FR-031; Clarifications, sessão 2026-10-23).
+9. **Given** a turma do Aluno foi arquivada, **When** ele abre "Turmas arquivadas", **Then** a turma
+   aparece nessa lista (e não mais em "Turmas") e abre a aba "Meu TCC" apenas para consulta (US-13,
+   E9; FR-031).
 
 ---
 
@@ -303,6 +332,9 @@ leitura.
    não está "Em Andamento", ou o Aluno está Desistente/Reprovado/Jubilado, ou a turma está
    arquivada, **When** ele abre a entrega, **Then** o campo Link aparece apenas para leitura, sem o
    botão Enviar.
+9. **Given** o Aluno está numa das abas da sua turma, **When** seleciona a aba "Atividades",
+   **Then** o sistema lista as entregas da turma com Título, Data Limite e o status de envio do
+   Aluno (US-15, passos 1 e 2; FR-031).
 
 ---
 
@@ -332,6 +364,10 @@ e o link de quem enviou.
    entregas, **Then** o sistema exibe "Nenhuma entrega cadastrada" e o botão "Cadastrar atividade".
 5. **Given** um Docente não é o Professor da Disciplina da turma, **When** tenta abrir o
    acompanhamento, **Then** o sistema não exibe a lista.
+6. **Given** o Professor da Disciplina abriu a turma pelo item "Turmas" (tela da turma, aba
+   "Alunos", spec 004), **When** seleciona a aba "Atividades", **Then** o sistema abre a lista de
+   entregas da turma; a Secretaria do curso, que também abre essa tela, não vê a aba "Atividades"
+   (US-16, passos 1 e 2; US-43, passo 1; FR-027; FR-031).
 
 ---
 
@@ -564,6 +600,16 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
   não tiver enviado o link da Versão Final, ou para um Docente que não seja o Professor da
   Disciplina da turma.
 
+### Functional Requirements — Navegação até as telas desta spec (US-13, US-15, US-16, US-43)
+
+- **FR-031** [RAN-CAD-08, RAN-CAD-09]: O sistema MUST oferecer ao Aluno um item de menu "Turmas"
+  com as turmas não arquivadas em que ele está matriculado e o acesso a "Turmas arquivadas"
+  (somente consulta); a turma escolhida MUST abrir na aba "Meu TCC", com as abas "Meu TCC" e
+  "Atividades" (nome provisório, Q-80). Na tela da turma da spec 004, o sistema MUST exibir as
+  abas "Alunos" e "Atividades", esta só para o Professor da Disciplina da turma (FR-017, FR-027).
+  O item "Turmas" do Aluno MUST NOT dar acesso à tela da turma da spec 004 nem à lista de alunos,
+  que continuam restritas pelo FR-010 da spec 004 (Clarifications, sessão 2026-10-23; índice Q-89).
+
 ### Key Entities *(reaproveitadas da spec 001; nenhuma nova)*
 
 - **TCCs**: o trabalho de um aluno numa turma. Campos usados nesta spec: título, subtítulo, resumo,
@@ -613,10 +659,11 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
   que todos os alunos da turma foram notificados em menos de 1 minuto.
 - **SC-004**: O status de envio de uma entrega (Entregue, Entregue com Atraso ou Não Entregue) é
   calculado automaticamente, sem decisão manual de nenhum usuário, em 100% dos casos testados.
-- **SC-005**: Todos os 93 cenários de aceite desta spec (89 cenários originais das US-13, 14, 15,
+- **SC-005**: Todos os 97 cenários de aceite desta spec (89 cenários originais das US-13, 14, 15,
   16, 29, 43 e 44 — fluxos principais, alternativos e de exceção — mais os cenários novos
-  acrescentados na conferência do analista-requisitos e no `/speckit-clarify`, contados em
-  `plan.md`, Scale/Scope) têm pelo menos um teste automatizado correspondente.
+  acrescentados na conferência do analista-requisitos e no `/speckit-clarify`, e os 4 de navegação
+  da sessão 2026-10-23, contados em `plan.md`, Scale/Scope) têm pelo menos um teste automatizado
+  correspondente.
 - **SC-006**: 100% das mensagens exibidas ao usuário por esta feature são idênticas, caractere por
   caractere, ao texto entre aspas das US-13, 14, 15, 16, 29, 43 e 44, ou estão marcadas como
   provisórias em `docs/questoes-a-rever.md`.

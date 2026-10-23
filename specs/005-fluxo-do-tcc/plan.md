@@ -70,8 +70,9 @@ não de carga; sem meta de requisições por segundo.
 de prazo fora de uma view síncrona (rotina agendada, a configurar pelo Célio — mesmo padrão da
 `executar_rotina_agendada` do PGCS 3.6, se já existir, ou criada por esta feature).
 
-**Scale/Scope**: 7 US (93 cenários: 89 originais + 4 da conferência/clarify), 31 FR (FR-001 a
-FR-030 e FR-007a), 3 mensagens provisórias (MF-01 a MF-03); cerca de 10 telas e 11 rotas novas.
+**Scale/Scope**: 7 US (97 cenários: 89 originais + 4 da conferência/clarify + 4 da navegação,
+sessão 2026-10-23), 32 FR (FR-001 a FR-031 e FR-007a), 3 mensagens provisórias (MF-01 a MF-03);
+cerca de 11 telas e 13 rotas novas (2 delas de navegação do Aluno, FR-031, Q-89).
 
 ## Constitution Check
 
@@ -84,9 +85,9 @@ FR-030 e FR-007a), 3 mensagens provisórias (MF-01 a MF-03); cerca de 10 telas e
 | III. Modelo de dados oficial | Nenhuma tabela ou coluna nova ([data-model.md](data-model.md)); `TCCs`, `PalavrasChave_TCC`, `Historico_Status_TCC`, `Turmas_Marcos`, `Entregas_Marcos` e `Historico_Envios_Entregas` já existem com os campos, tipos e restrições do dicionário (confirmado em `models.py` e `choices.py`, spec 001). | PASSA |
 | IV. Arquitetura | Tudo em `sigtcc/apps/cadastro`; regras em `services_tcc.py` e `services_entregas.py` (novos), views só orquestram, templates sem regra; templates em `sigtcc/templates/cadastro/tcc/`, static reaproveitado. O princípio fala em `services.py`: `services_tcc.py` e `services_entregas.py` são exceção justificada, no mesmo padrão já aceito para `services_turmas.py` e `importacao.py` da spec 004 (Complexity Tracking). | PASSA com exceção justificada (mesma já aceita na spec 004) |
 | V. Qualidade | `lint.bat` (isort, black, flake8); comentários em português. | PASSA |
-| VI. Testes de aceitação | Um teste por cenário das 7 US (93), mais permissões (Secretaria e Coorientador excluídos, Clarifications), mensagens exatas e concorrência (trava turma → aluno → TCC antes de `atualizar_status_tcc`, duplo clique em envio de entrega e em Palavra-Chave, research C2, C3, C4 e C7, revisão do `arquiteto-django`). | PASSA |
+| VI. Testes de aceitação | Um teste por cenário das 7 US (97), mais permissões (Secretaria e Coorientador excluídos, Clarifications), mensagens exatas e concorrência (trava turma → aluno → TCC antes de `atualizar_status_tcc`, duplo clique em envio de entrega e em Palavra-Chave, research C2, C3, C4 e C7, revisão do `arquiteto-django`). | PASSA |
 | VII. Segurança e LGPD | Resumo da Proposta restrito por `services_tcc.pode_ver_resumo` (Aluno, Orientador, Coorientador do NUCOMP e Professor da Disciplina — FR-007a, RAN-CAD-07 NFR, research C3); Status/histórico restritos por `services_tcc.historico_do_status` + checagem na view (Aluno/Orientador/Professor, sem Secretaria nem Coorientador — Clarifications, research C9); link de entrega só `https://`; nenhum arquivo hospedado (só links); mudanças de Status, envios, homologação e devolução com autor, data e hora (`Historico_Status_TCC`, `Historico_Envios_Entregas`). | PASSA |
-| VIII. Gerência de configuração | Commits atômicos por fase; branch `feature/feat-05-fluxo-do-tcc`; `services_turmas.py` (spec 004, já mesclada) ganha `atualizar_status_tcc` pública e `TRANSICOES_VALIDAS`, sem alterar `_copiar_tcc_aprovado` (exceção documentada, research C2); testes de regressão da spec 004 (US-08, US-09) precisam continuar passando sem alteração, no mesmo PR. | PASSA (refatoração: ver Pendências, Q-82) |
+| VIII. Gerência de configuração | Commits atômicos por fase; branch `feature/feat-05-fluxo-do-tcc`; `services_turmas.py` (spec 004, já mesclada) ganha `atualizar_status_tcc` pública e `TRANSICOES_VALIDAS`, sem alterar `_copiar_tcc_aprovado` (exceção documentada, research C2); testes de regressão da spec 004 (US-08, US-09) precisam continuar passando sem alteração, no mesmo PR. Navegação (FR-031, Q-89): `menu.py` e `templates/cadastro/turmas/turma.html` (spec 004, já mesclados) recebem só acréscimos — um item de menu do Aluno e o include da barra de abas —, sem mudar o FR-010 da spec 004 nem os testes dela. | PASSA (refatoração e acréscimos: ver Pendências, Q-82 e Q-89) |
 | IX. Governança | Mensagens MF-01 a MF-03 pendentes de validação da PO; nomes de aba (Q-80) e do link de histórico (Q-81) pendentes de confirmação de Leandra Matos ou da PO; refatoração de `services_turmas.py` (Q-82) pendente de aprovação de Leandra e Célio. | PASSA (pendências não bloqueantes) |
 
 **Reavaliação depois do Phase 1 e da revisão do `arquiteto-django` (2026-10-22)**: 3 achados
@@ -131,10 +132,13 @@ sigtcc/apps/cadastro/
 │                                     #   continua privada, chamada só por essas duas
 ├── forms_tcc.py                     # novo: Proposta, TCC (área/palavras-chave)
 ├── forms_entregas.py                # novo: cadastro de entrega, envio de link, devolução
-├── views_tcc.py                     # novo: aba Meu TCC, histórico do Status
+├── views_tcc.py                     # novo: aba Meu TCC, histórico do Status, "Turmas" do Aluno
+│                                     #   (minhas_turmas, minhas_turmas_arquivadas; FR-031)
 ├── views_entregas.py                # novo: aba Atividades (cadastro, envio, acompanhamento), homologação
 ├── urls.py                          # + rotas novas (contracts/rotas.md)
-├── menu.py                          # sem mudança (usa o item "Turmas" já existente)
+├── menu.py                          # + item "Turmas" do Aluno (rota minhas_turmas), logo depois
+│                                     #   de "Início" (FR-031, Q-89); o item "Turmas" de Docente e
+│                                     #   Secretaria (spec 004) não muda
 ├── mensagens.py                     # + textos das US-13, 14, 15, 16, 29, 43, 44 e MF-01 a MF-03
 └── tests/
     ├── apoio_tcc.py                 # novo: fábricas de Proposta, entregas e links de envio
@@ -146,7 +150,8 @@ sigtcc/apps/cadastro/
     ├── test_us29_versao_final.py
     ├── test_us44_homologacao.py
     ├── test_permissoes_tcc.py        # Secretaria e Coorientador excluídos (Clarifications)
-    └── test_mensagens_tcc.py         # SC-006, igual ao padrão de test_mensagens_turmas.py
+    ├── test_mensagens_tcc.py         # SC-006, igual ao padrão de test_mensagens_turmas.py
+    └── test_navegacao_tcc.py         # FR-031: menu e lista do Aluno, abas por perfil (Q-89)
 sigtcc/templates/cadastro/tcc/
 ├── meu_tcc.html                     # Proposta + TCC + Status + link Histórico + Versão final
 ├── historico_status.html            # lista cronológica + trilha (US-14)
@@ -155,7 +160,12 @@ sigtcc/templates/cadastro/tcc/
 ├── acompanhamento_entrega.html       # tabela por aluno (US-16)
 ├── minhas_entregas.html             # aba Atividades do Aluno: lista com status
 ├── enviar_entrega.html              # envio/substituição de link (US-15, US-29)
-└── homologar_versao_final.html      # Homologar / Devolver para Ajuste (US-44)
+├── homologar_versao_final.html      # Homologar / Devolver para Ajuste (US-44)
+├── minhas_turmas.html               # "Turmas" e "Turmas arquivadas" do Aluno (FR-031)
+├── _abas_aluno.html                 # abas Meu TCC | Atividades (meu_tcc, minhas_entregas)
+└── _abas_professor.html             # abas Alunos | Atividades (turma.html da spec 004, entregas)
+sigtcc/templates/cadastro/turmas/
+└── turma.html                       # (spec 004) + include de _abas_professor.html (FR-031)
 ```
 
 **Structure Decision**: monólito Django do PGCS 2.3, app `cadastro` (Épico 1, "Cadastro e
@@ -175,6 +185,7 @@ vs. entregas), no mesmo padrão de divisão já aceito para a spec 004 (`service
 | Confirmar o nome do link de histórico ("Histórico do Status do TCC" ou "Histórico", US-14) | Profa. Diana ou Leandra Matos | Q-81 |
 | Rotina agendada para os lembretes de prazo (7 dias, 48h, 24h): usar `executar_rotina_agendada` do PGCS 3.6 se já existir, ou criar nesta feature | Célio Benjamim (config) | — |
 | "Correções Conferidas" (Orientador, Sistemas de Informação) e "Apto para Defesa": a UI fica na "tela de orientandos" da spec 006 (ainda não existe); esta spec só expõe `atualizar_status_tcc` e o campo `ent_correcoes_conferidas_em` para a 006 chamar | Célio Benjamim (spec 006) | contrato §2 e §3 |
+| Navegação (FR-031): item "Turmas" do Aluno e abas por perfil; `menu.py` e `turma.html` (spec 004) recebem só acréscimos — aprovar como item de configuração | Célio Benjamim (config) | Q-89 |
 | "Tela do aluno" completa (painel único, US-41) ainda não existe; a homologação (US-44) ganha rota própria `/turmas/<tur_id>/alunos/<alu_id>/versao-final/`, a ser levada ao painel depois, como já ocorreu com US-09 na spec 004 | Leandra Matos | spec 004, Assumptions (mesmo padrão) |
 
 ## Complexity Tracking
@@ -187,3 +198,4 @@ Nenhuma violação da constituição sem justificativa. Exceção já aceita (re
 | Dois módulos novos (`services_tcc.py`, `services_entregas.py`) em vez de um só | TCC/Status (US-13, 14) e entregas (US-43, 15, 16, 29, 44) são dois domínios de dados (`TCCs`/`Historico_Status_TCC` vs. `Turmas_Marcos`/`Entregas_Marcos`) com responsáveis e gatilhos diferentes; manter dois arquivos pequenos facilita revisão | Um módulo `services_fluxo_tcc.py` só: ficaria maior que `services_turmas.py` e misturaria dois domínios |
 | Promover `_registrar_historico` a `atualizar_status_tcc` pública, no mesmo arquivo `services_turmas.py` (spec 004) | Evita duplicar a lógica de gravação do histórico (violaria o próprio FR-012, "nunca alterado fora desse serviço"); manter no mesmo arquivo evita mover código já mesclado e revisado da spec 004 | Copiar a lógica para `services_tcc.py`: duplicaria código e criaria duas fontes de verdade para o histórico |
 | Rotas de entrega e de homologação fora do painel único do aluno (US-41, ainda não implementado) | Mesma solução já aceita na spec 004 para US-09 (excluir/encerrar antes do painel existir) | Esperar a US-41 para implementar esta spec: atrasaria a entrega sem necessidade |
+| Entrada própria do Aluno (item "Turmas" do Aluno e rotas `minhas_turmas`), com as abas desta spec, em vez de abrir ao Aluno a tela da turma da spec 004 (FR-031; Clarifications, sessão 2026-10-23) | Mantém o FR-010 da spec 004 (já mesclada) e não expõe a lista de colegas ao Aluno; as abas ficam em includes, reaproveitáveis pela spec 006 | Abrir `/turmas/<tur_id>/` ao Aluno: mudaria uma spec mesclada e os testes de permissão dela; só links no Painel: contraria o passo 1 das US-13 e 15 e não atende "Turmas arquivadas" |

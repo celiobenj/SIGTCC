@@ -249,7 +249,34 @@ Ajuste" e a notificação ao aluno.
 - [X] T032 [P] Criar `sigtcc/apps/cadastro/tests/test_mensagens_tcc.py` (padrão de `test_mensagens_turmas.py`, spec 004): cada constante exata de `mensagens.py` contra o texto entre aspas das US-13, 14, 15, 16, 29, 43 e 44; as MF-01 a MF-03 contra a tabela "Mensagens a validar com a PO" do `spec.md`. **Feito**: lê `Historias_de_Usuario_v3_3.md` (versão citada no `spec.md`, sem o escape `\:` do Markdown) e confere as MF-01 a MF-10 (as MF-04 a MF-10 foram criadas na implementação, Q-83 a Q-88). — Rastreabilidade: [SC-006]
 - [X] T033 [P] Criar `sigtcc/apps/cadastro/tests/test_permissoes_tcc.py` cobrindo todas as 8 rotas de `contracts/rotas.md`, perfil por perfil: sem login (redireciona com `next`); outro Docente (403); Secretaria do curso tentando ver histórico/entregas/Proposta de outro aluno (403 — Clarifications); Coorientador do NUCOMP tentando ver histórico (403 — Clarifications); aluno de outra turma tentando acessar `meu_tcc`/`minhas_entregas`/`entrega_enviar` de outro aluno (404, sem IDOR); turma arquivada (MT-25 nas ações, consulta liberada); só POST nas ações que mudam dado. **Feito**: cobre as 9 rotas (a 9ª, `aluno_versao_final`, veio da Phase 9); o Coorientador também recebe 403 em todas as rotas do Professor. — Rastreabilidade: [SC-004][Clarifications][contracts/rotas.md]
 - [ ] T034 Rodar `isort`, `black --line-length 100` e `flake8 --max-line-length 100` (ou `lint.bat`) sem erros; rodar `python manage.py makemigrations --check --dry-run` (deve responder "No changes detected" — nenhuma migração nesta feature); rodar a suíte completa (`python manage.py test sigtcc.apps`) até passar, incluindo a regressão da spec 004 (T006). **Situação (2026-10-23)**: `isort --check-only`, `black --check` e `flake8` em `sigtcc/` sem erros; `makemigrations --check --dry-run` → "No changes detected"; suíte completa 616 testes, 614 OK. Os 2 erros restantes são os mesmos de T009 (`test_mensagens.test_textos_das_us` e `test_mensagens_turmas.test_textos_das_us`, specs 003/004), que procuram `Historias_de_Usuario_v3_2.md`; só trocar o caminho para `v3_3` não basta, porque a v3.3 mudou o texto de vários rótulos de botão dessas US. Tarefa aberta até os responsáveis pelas specs 003/004 decidirem a correção. — Rastreabilidade: [constituição, princípios V e VI]
-- [ ] T035 Executar o roteiro manual do `quickstart.md` (passos a a o, mais a verificação de fronteira com a spec 006 via shell) e registrar o resultado (data, responsável, divergências) no `spec.md`, seção de validação manual, no mesmo formato já usado pela spec 004. — Rastreabilidade: [SC-001][SC-003][quickstart.md]
+- [ ] T035 Executar o roteiro manual do `quickstart.md` (passos a a o, mais a verificação de fronteira com a spec 006 via shell) e registrar o resultado (data, responsável, divergências) no `spec.md`, seção de validação manual, no mesmo formato já usado pela spec 004. **Depende da Phase 11** (navegação: sem ela, os passos a, e e g só abrem pelo endereço direto). — Rastreabilidade: [SC-001][SC-003][quickstart.md]
+
+---
+
+## Phase 11: Navegação até as telas da spec (FR-031; Clarifications, sessão 2026-10-23; Q-89)
+
+**Purpose**: o Aluno chega às abas "Meu TCC" e "Atividades" pelo item "Turmas" próprio, e o
+Professor chega à aba "Atividades" pela tela da turma da spec 004, sem abrir essa tela ao Aluno
+(FR-010 da spec 004 sem mudança). Acréscimos em `menu.py` e `turma.html` (spec 004, já mesclados)
+são só de inclusão — itens de configuração para o Célio (Q-89).
+
+**Independent Test**: logar como Aluno, abrir "Turmas", escolher a turma e alternar entre "Meu
+TCC" e "Atividades"; logar como Professor, abrir a turma e ir à aba "Atividades"; confirmar que o
+Aluno continua com 403 em `/turmas/<tur_id>/` e que a Secretaria não vê a aba "Atividades".
+
+### Tests for Navegação ⚠️
+
+- [ ] T036 [P] Criar `sigtcc/apps/cadastro/tests/test_navegacao_tcc.py` com os cenários 8 e 9 da US1, 9 da US4 e 6 da US5 do `spec.md`: o menu do Aluno mostra "Turmas" (rota `minhas_turmas`) e o do Docente e da Secretaria não mostra o item do Aluno; `minhas_turmas` lista só as turmas não arquivadas em que o Aluno está matriculado (não as de outros alunos) e cada uma leva a `meu_tcc`; `minhas_turmas_arquivadas` lista só as arquivadas, e a turma abre "Meu TCC" somente para consulta; `meu_tcc` e `minhas_entregas` mostram as abas "Meu TCC" e "Atividades" com a atual destacada; `turma.html` (spec 004) mostra "Alunos" e "Atividades" ao Professor da turma e só "Alunos" à Secretaria do curso; `entregas.html` mostra as mesmas abas do Professor; o Aluno continua recebendo 403 em `/turmas/<tur_id>/`; sem login, `minhas_turmas` leva ao login com `next`; Docente e Secretaria recebem 403 em `minhas_turmas`. Escrever antes da implementação; deve falhar. — Rastreabilidade: [US-13][US-15][US-16][US-43][FR-031][Q-89]
+
+### Implementation for Navegação
+
+- [ ] T037 Em `services_tcc.py`: `turmas_do_aluno(usuario, arquivadas=False)` (turmas com `Alunos_Turmas` do próprio Aluno, filtradas por `tur_status`, ordenadas por ano, semestre e identificador; consulta sem regra de permissão além do vínculo). Em `views_tcc.py`: `minhas_turmas(request)` e `minhas_turmas_arquivadas(request)`, com `@perfil_requerido("aluno")`; template `sigtcc/templates/cadastro/tcc/minhas_turmas.html` (mesma base visual de `cadastro/turmas/lista.html`, sem botão de criar; cada turma liga a `meu_tcc`; link "Turmas arquivadas" na lista ativa e "Turmas" na arquivada). Rotas em `urls.py` (contracts/rotas.md). — Rastreabilidade: [US-13][FR-031][contracts/rotas.md][Q-89]
+- [ ] T038 Em `menu.py` (spec 004): acrescentar o item "Turmas" do Aluno (`perfis=("aluno",)`, rota `cadastro:minhas_turmas`), logo depois do item "Início", sem alterar o item "Turmas" de Docente e Secretaria (posição escolhida para não conflitar com os itens da seção "Cadastros" da spec 002, já na `develop`). — Rastreabilidade: [US-13][US-15][FR-031][Q-89]
+- [ ] T039 [P] Criar `sigtcc/templates/cadastro/tcc/_abas_aluno.html` ("Meu TCC" → `meu_tcc`, "Atividades" → `minhas_entregas`, aba atual destacada; sem JavaScript) e incluí-lo em `meu_tcc.html` e `minhas_entregas.html`. — Rastreabilidade: [US-13][US-15][US-29][FR-031]
+- [ ] T040 [P] Criar `sigtcc/templates/cadastro/tcc/_abas_professor.html` ("Alunos" → `turma`, "Atividades" → `entregas`, esta só para o Professor da Disciplina da turma) e incluí-lo em `entregas.html` e em `sigtcc/templates/cadastro/turmas/turma.html` (spec 004: só a inclusão, sem mudar o resto do template nem a view; o contexto `e_professor` da spec 004 já decide a aba "Atividades"). Suíte da spec 004 passando sem alteração. — Rastreabilidade: [US-16][US-43][FR-027][FR-031][Q-89]
+- [ ] T041 Fechamento da navegação: acrescentar `minhas_turmas` e `minhas_turmas_arquivadas` em `test_permissoes_tcc.py` (sem login, Docente, Secretaria); atualizar os passos a, e e g do `quickstart.md` para usar o menu; rodar `isort`, `black --line-length 100`, `flake8 --max-line-length 100` e a suíte completa. — Rastreabilidade: [SC-004][FR-031][quickstart.md]
+
+**Checkpoint**: todas as telas da spec abrem pela navegação das US, sem endereço digitado.
 
 ---
 
@@ -264,7 +291,11 @@ Ajuste" e a notificação ao aluno.
   cadeia de dados (Proposta → Status → entregas → envio → acompanhamento → Versão Final →
   homologação), mas US3, US5 e US7 têm dependência direta de dados de US1/US2/US4/US6 só para o
   roteiro manual, não para os testes unitários (cada história usa fábricas, não a tela anterior).
-- **Polish (Phase 10)**: depende de todas as histórias desejadas estarem completas.
+- **Polish (Phase 10)**: depende de todas as histórias desejadas estarem completas; T035 (roteiro
+  manual) depende também da Phase 11.
+- **Navegação (Phase 11)**: depende de US1 (`meu_tcc`), US3 (`entregas`) e US4 (`minhas_entregas`)
+  existirem; T036 antes de T037 a T040; T039 e T040 em paralelo (templates diferentes); T041 por
+  último.
 
 ### User Story Dependencies
 
@@ -311,7 +342,7 @@ Ajuste" e a notificação ao aluno.
 4. US3 → US4 → ciclo de entregas completo (exceto Versão Final).
 5. US5 → acompanhamento do Professor.
 6. US6 → US7 → ciclo do TCC 2 completo, até "Concluído".
-7. Phase 10 → mensagens, permissões, roteiro completo.
+7. Phase 10 → mensagens, permissões; Phase 11 → navegação; depois o roteiro completo (T035).
 
 ## Notes
 
