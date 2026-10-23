@@ -110,4 +110,16 @@ urlpatterns = [
         views_contas.secretaria_editar,
         name="contas_secretaria_editar",
     ),
+    # [US-05]
+    path("cadastros/membros-externos/", views_contas.membros, name="contas_membros"),
+    path(
+        "cadastros/membros-externos/novo/",
+        views_contas.membro_novo,
+        name="contas_membro_novo",
+    ),
+    path(
+        "cadastros/membros-externos/<int:mem_id>/editar/",
+        views_contas.membro_editar,
+        name="contas_membro_editar",
+    ),
 ]

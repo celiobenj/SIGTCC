@@ -8,11 +8,12 @@ depois do POST (PRG).
 """
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.urls import NoReverseMatch, reverse
 
 from sigtcc.apps.cadastro import mensagens, services_contas
-from sigtcc.apps.cadastro.forms_contas import DocenteForm, SecretariaForm
+from sigtcc.apps.cadastro.forms_contas import DocenteForm, MembroForm, SecretariaForm
 from sigtcc.apps.cadastro.models import Cursos
 from sigtcc.apps.cadastro.permissoes import curso_do_usuario, perfil_requerido, tem_perfil
 from sigtcc.apps.cadastro.services_contas import ErroDeCampo, ForaDoCurso
@@ -238,3 +239,100 @@ def secretaria_editar(request, sec_id):
             return _depois_de_gravar(request, "cadastro:contas_secretarias")
     contexto = {"form": formulario, "titulo": "Alterar secretaria", "secretaria": secretaria}
     return render(request, "cadastro/contas/form_secretaria.html", contexto)
+
+
+# =============================================================================================
+# Membros externos (US-05; FR-031 a FR-036)
+# =============================================================================================
+
+
+@perfil_requerido(*MEMBROS)
+def membros(request):
+    """Lista de Membros externos, sem filtro de Curso (Q19), com "Editar" para quem pode alterar.
+
+    [US-05][US-50][RBN-CAD-03.1][FR-031][FR-036][Q19]
+    """
+    contexto = {
+        "abas": _abas(request.user),
+        "linhas": services_contas.listar_membros(request.user),
+        "pode_cadastrar": services_contas.pode_gerir_membros(request.user),
+    }
+    return render(request, "cadastro/contas/membros.html", contexto)
+
+
+def _voltar(request, formulario=None):
+    """Destino interno do atalho da banca (GET ou campo oculto no POST), ou None (C23). [FR-034]"""
+    valor = request.GET.get("voltar")
+    if formulario is not None and formulario.is_bound:
+        valor = formulario.data.get("voltar")
+    return services_contas.destino_interno(valor, request)
+
+
+@perfil_requerido(*MEMBROS)
+def membro_novo(request):
+    """Cadastro de Membro Externo, também pelo atalho da composição da banca (US-05 A1).
+
+    [US-05][RBN-CAD-03.1][RBN-DEF-02.3][FR-032][FR-033][FR-034]
+    """
+    if not services_contas.pode_gerir_membros(request.user):
+        raise PermissionDenied
+    formulario = MembroForm(
+        request.POST if request.method == "POST" else None,
+        initial={"voltar": request.GET.get("voltar", "")},
+    )
+    voltar = _voltar(request, formulario)
+    if request.method == "POST" and formulario.is_valid():
+        try:
+            resultado = services_contas.cadastrar_membro(
+                request.user, dict(formulario.cleaned_data)
+            )
+        except ErroDeCampo as erro:
+            _aplicar_erro(formulario, erro)
+        else:
+            _mostrar_resultado(request, resultado)
+            if voltar:
+                return redirect(services_contas.com_parametro(voltar, "membro", resultado.conta.pk))
+            return redirect("cadastro:contas_membros")
+    contexto = {
+        "form": formulario,
+        "titulo": mensagens.NOVO_MEMBRO_EXTERNO,
+        "cancelar": voltar or reverse("cadastro:contas_membros"),
+    }
+    return render(request, "cadastro/contas/form_membro.html", contexto)
+
+
+@perfil_requerido(*MEMBROS)
+def membro_editar(request, mem_id):
+    """Alteração de Membro Externo (US-05 A2, A3, A6); e-mail só leitura para quem não pode
+    trocá-lo (Q30). [US-05][RBN-CAD-03.2][FR-008][FR-035][Q30]
+    """
+    membro = services_contas.membro_para_editar(request.user, mem_id)
+    inicial = {
+        "nome": membro.mem.usu_nome,
+        "email": membro.mem.usu_email,
+        "titulacao": membro.mem_titulacao,
+        "instituicao": membro.mem_instituicao,
+    }
+    formulario = MembroForm(
+        request.POST if request.method == "POST" else None,
+        initial=inicial,
+        edicao=True,
+        email_so_leitura=not services_contas.pode_trocar_email(request.user, membro.mem),
+    )
+    if request.method == "POST" and formulario.is_valid():
+        try:
+            resultado = services_contas.alterar_membro(
+                request.user, mem_id, dict(formulario.cleaned_data)
+            )
+        except ErroDeCampo as erro:
+            _aplicar_erro(formulario, erro)
+        else:
+            _mostrar_resultado(request, resultado)
+            return redirect("cadastro:contas_membros")
+    contexto = {
+        "form": formulario,
+        "titulo": "Alterar membro externo",
+        "membro": membro,
+        "cancelar": reverse("cadastro:contas_membros"),
+    }
+    return render(request, "cadastro/contas/form_membro.html", contexto)

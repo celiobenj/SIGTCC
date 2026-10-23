@@ -239,3 +239,28 @@ class SecretariaForm(_ComEmailDoGestor):
     def clean_email(self):
         """nome@uea.edu.br, até 100 (FR-012)."""
         return validar_email_institucional(self.cleaned_data["email"])
+
+
+class MembroForm(_ComEmailDoGestor):
+    """Cadastro e alteração de Membro Externo (US-05): Nome Completo, E-mail de qualquer domínio,
+    Titulação e Instituição de Origem; "voltar" leva de volta à banca (atalho, FR-034).
+    [US-05][RBN-CAD-03.1][RBN-CAD-03.2][FR-032][FR-034][FR-035]
+    """
+
+    nome = campo_nome()
+    email = campo_email()
+    titulacao = campo_titulacao()
+    instituicao = campo_instituicao()
+    voltar = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    def clean_nome(self):
+        """Só letras e espaços, até 150 (FR-002)."""
+        return validar_nome_completo(self.cleaned_data["nome"])
+
+    def clean_email(self):
+        """nome@domínio, de qualquer domínio, até 100 (FR-032)."""
+        return validar_email_qualquer(self.cleaned_data["email"])
+
+    def clean_instituicao(self):
+        """Letras, números, espaços e pontuação, até 150 (FR-032)."""
+        return validar_instituicao(self.cleaned_data["instituicao"])

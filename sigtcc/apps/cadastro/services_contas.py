@@ -15,6 +15,7 @@ do e-mail (services.travar_email). Depois de travar, tudo o que decide a regra �
 
 import logging
 from dataclasses import dataclass
+from datetime import timedelta
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.core.exceptions import PermissionDenied
@@ -23,6 +24,7 @@ from django.db.models import Count, Exists, OuterRef, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import Resolver404, resolve
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from sigtcc.apps.cadastro import mensagens, services
@@ -43,7 +45,13 @@ from sigtcc.apps.cadastro.models import (
     Turmas,
     Usuarios,
 )
-from sigtcc.apps.cadastro.permissoes import curso_id_do_usuario, pode_gerir, tem_perfil
+from sigtcc.apps.cadastro.permissoes import (
+    curso_id_do_usuario,
+    pode_gerir,
+    professor_com_turma_ativa,
+    tem_perfil,
+    validade_vencida,
+)
 
 # Erros técnicos da Gestão de Contas, só com o tipo do erro (research C18, m3).
 registro_contas = logging.getLogger("sigtcc.contas")
@@ -657,3 +665,159 @@ def listar_secretarias(usuario, cur_id):
         }
         for secretaria in secretarias
     ]
+
+
+# =============================================================================================
+# Membros Externos (US-05; FR-031 a FR-036, FR-038; research C11, C20, C22)
+# =============================================================================================
+
+PERFIS_MEMBROS = ("orientador", "professor_disciplina", "secretaria", "coordenador")
+VALIDADE_SEM_BANCA = timedelta(days=30)
+
+
+def hoje():
+    """Data de hoje no fuso do servidor (USE_TZ = False), pelo relógio do Django. [US-06]"""
+    return timezone.now().date()
+
+
+def pode_ver_membros(usuario):
+    """Menu e lista de Membros externos: Orientador, Professor da Disciplina (inclusive só com
+    turmas arquivadas), Secretaria e Coordenador (FR-031). [US-05][RBN-CAD-03.1][FR-031][Q10]
+    """
+    return tem_perfil(usuario, *PERFIS_MEMBROS)
+
+
+def pode_gerir_membros(usuario):
+    """Cadastrar e alterar membros: Orientador, Secretaria, Coordenador ou Professor da
+    Disciplina com turma não arquivada (FR-031; Q10, regra Q27 da spec 003).
+    [US-05][RBN-CAD-03.1][RBN-CAD-03.2][FR-031][Q10]
+    """
+    if tem_perfil(usuario, "orientador", "secretaria", "coordenador"):
+        return True
+    return tem_perfil(usuario, "professor_disciplina") and professor_com_turma_ativa(usuario)
+
+
+def pode_trocar_email(usuario, conta):
+    """Troca do e-mail do Membro Externo com conta 'Ativa' ou 'Expirada' (inclusive 'Ativa'
+    vencida): só Secretaria e Coordenador (Q30). Nas demais contas, quem pode alterar.
+    [US-05][RBN-CAD-03.2][FR-008][FR-035][Q30]
+    """
+    if conta.usu_status in (StatusConta.ATIVA, StatusConta.EXPIRADA):
+        return tem_perfil(usuario, "secretaria", "coordenador")
+    return pode_gerir_membros(usuario)
+
+
+def status_exibido(conta):
+    """Status da conta para as telas: 'Ativa' com a validade vencida aparece como 'Expirada'
+    (Edge Case; research C15). [US-06][RBN-CAD-03.3][FR-036]
+    """
+    if conta.usu_status == StatusConta.ATIVA and validade_vencida(conta):
+        return StatusConta.EXPIRADA
+    return conta.usu_status
+
+
+def cadastrar_membro(usuario, dados):
+    """Cadastro de Membro Externo (US-05): conta 'Aguardando Ativação', sem e-mail (Q1), com a
+    validade inicial de 30 dias corridos a partir do cadastro (Q12, FR-038).
+    [US-05][RBN-CAD-03.1][FR-005][FR-032][FR-033][FR-038][Q12]
+    """
+    if not pode_gerir_membros(usuario):
+        raise PermissionDenied
+
+    def gravar():
+        with transaction.atomic():
+            _conferir_email_livre(dados["email"])
+            conta = Usuarios.objects.create_user(
+                dados["email"], dados["nome"], usu_status=StatusConta.AGUARDANDO_ATIVACAO
+            )
+            MembrosExternos.objects.create(
+                mem=conta,
+                mem_titulacao=dados["titulacao"],
+                mem_instituicao=dados["instituicao"],
+                mem_validade_ate=hoje() + VALIDADE_SEM_BANCA,
+            )
+        return conta
+
+    conta = _gravar(gravar)
+    services.registrar_evento(
+        services.EventoAcesso.CONTA_CRIADA, conta, autor=usuario, detalhe="membro_externo"
+    )
+    return Resultado(mensagens.MEMBRO_CADASTRADO, conta)
+
+
+def membro_para_editar(usuario, mem_id):
+    """Membro Externo (MembrosExternos) que o usuário pode alterar; id de outro tipo de conta dá
+    404 (C22); sem permissão, PermissionDenied (M-02). [US-05][RBN-CAD-03.2][FR-035]
+    """
+    membro = get_object_or_404(MembrosExternos.objects.select_related("mem"), pk=mem_id)
+    if not pode_gerir_membros(usuario):
+        raise PermissionDenied
+    return membro
+
+
+def alterar_membro(usuario, mem_id, dados):
+    """Alteração de Membro Externo (US-05 A2, A3, A6): Nome, Titulação e Instituição gravados com
+    update_fields (C20); a alteração de conta 'Expirada' não reabre o acesso (A6). E-mail: fluxo
+    do gestor (FR-008), só Secretaria e Coordenador em conta 'Ativa' ou 'Expirada' (Q30).
+    [US-05][RBN-CAD-03.2][FR-008][FR-035][Q30][research C7][C20]
+    """
+    membro_para_editar(usuario, mem_id)
+    email_novo = _email_mudou(mem_id, dados.get("email"))
+    if email_novo:
+        conta = Usuarios.objects.get(pk=mem_id)
+        if not pode_trocar_email(usuario, conta):
+            raise PermissionDenied
+        _conferir_email_e_senha(usuario, email_novo, dados.get("sua_senha"), mem_id)
+    alterados = []
+
+    def gravar():
+        with transaction.atomic():
+            conta = travar_conta(mem_id)
+            membro = MembrosExternos.objects.select_for_update().get(pk=mem_id)
+            if email_novo:
+                if not pode_trocar_email(usuario, conta):
+                    raise PermissionDenied
+                _conferir_email_livre(email_novo, exceto=conta)
+            antes = {
+                "nome": conta.usu_nome,
+                "titulacao": membro.mem_titulacao,
+                "instituicao": membro.mem_instituicao,
+            }
+            conta.usu_nome = dados["nome"]
+            conta.save(update_fields=["usu_nome"])
+            membro.mem_titulacao = dados["titulacao"]
+            membro.mem_instituicao = dados["instituicao"]
+            membro.save(update_fields=["mem_titulacao", "mem_instituicao"])
+            depois = {
+                "nome": conta.usu_nome,
+                "titulacao": membro.mem_titulacao,
+                "instituicao": membro.mem_instituicao,
+            }
+            alterados.append(_nomes_alterados(antes, depois))
+        return conta
+
+    conta = _gravar(gravar)
+    services.registrar_evento(
+        services.EventoAcesso.CONTA_ALTERADA,
+        conta,
+        autor=usuario,
+        detalhe="membro_externo campos=" + (alterados[0] or "-"),
+    )
+    return _depois_de_alterar(usuario, conta, email_novo)
+
+
+def listar_membros(usuario):
+    """Todos os membros externos, sem filtro de Curso (Q19), com o status exibido (validade
+    vencida = 'Expirada') e a validade. [US-05][US-50][RBN-CAD-03.1][FR-036][Q19]
+    """
+    pode_gerir_todos = pode_gerir_membros(usuario)
+    linhas = []
+    for membro in MembrosExternos.objects.select_related("mem").order_by("mem__usu_nome"):
+        linhas.append(
+            {
+                "membro": membro,
+                "status": status_exibido(membro.mem),
+                "pode_editar": pode_gerir_todos,
+            }
+        )
+    return linhas

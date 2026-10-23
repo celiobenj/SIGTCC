@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% comment %}
+  Cadastro e alteração de Membro Externo (US-05). Pelo atalho da banca, "voltar" vai num campo
+  oculto e "Cancelar" volta à tela de origem (FR-034). "Sua senha" só na alteração, exigida quando
+  o e-mail muda (FR-008).
+  [US-05][RBN-CAD-03.1][RBN-CAD-03.2][RBN-DEF-02.3][FR-007][FR-008][FR-032][FR-034][FR-035]
+{% endcomment %}
+{% block titulo %}{{ titulo }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">{{ titulo }}</h2>
+<div class="cartao mt16">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% for erro in form.non_field_errors %}<div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>{% endfor %}
+    {{ form.voltar }}
+    {% include "includes/campo.html" with campo=form.nome %}
+    {% include "includes/campo.html" with campo=form.email %}
+    {% include "includes/campo.html" with campo=form.titulacao %}
+    {% include "includes/campo.html" with campo=form.instituicao %}
+    {% if form.sua_senha %}{% include "includes/campo.html" with campo=form.sua_senha %}{% endif %}
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{{ cancelar }}">Cancelar</a>
+      <button type="submit" class="btn pri">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
