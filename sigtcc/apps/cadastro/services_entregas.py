@@ -191,6 +191,8 @@ def enviar_entrega(aluno, tma_id, link):
                 titulo=marco.tma_titulo,
                 identificador=turma.tur_identificador,
             ),
+            # A notificação abre o acompanhamento da entrega (US-16).
+            link=reverse("cadastro:entrega_acompanhar", args=[turma.pk, marco.pk]),
         )
     return entrega
 
@@ -270,3 +272,57 @@ def enviar_lembretes_de_prazo(agora=None):
         )
         enviados += 1
     return enviados
+
+
+# =============================================================================================
+# Acompanhamento das entregas pelo Professor da Disciplina (US-16; FR-026, FR-027)
+# =============================================================================================
+
+
+def link_mais_recente(entrega):
+    """Último envio (`Historico_Envios_Entregas`) do aluno nesta entrega, ou None — o link "mais
+    recente" exibido ao Professor (FR-026) e, para a spec 006, o documento enviado à banca no
+    agendamento (contrato `servicos-compartilhados.md`, §3).
+    [US-16][RBN-CAD-09.4][FR-026]
+    """
+    return (
+        HistoricoEnviosEntregas.objects.filter(hen_ent=entrega)
+        .order_by("-hen_data_envio", "-hen_id")
+        .first()
+    )
+
+
+def acompanhamento_entrega(tma_id):
+    """Uma linha por aluno da turma da entrega, só com os alunos atualmente matriculados e com a
+    participação não encerrada (regra das entregas do contrato, §3): o aluno (`aluno`, com nome
+    e matrícula), o status de envio exibido (`status`, com "Não Entregue" calculado depois da
+    Data Limite, FR-020), o envio mais recente (`envio`, link e data/hora, ou None) e o TCC do
+    aluno na turma (`tcc`, usado no tipo Proposta para o "Ver Proposta", em vez do link).
+    Consulta somente leitura, sem checagem de perfil: a view restringe ao Professor da
+    Disciplina da turma (FR-027).
+    [US-16][RBN-CAD-09.4][FR-026][FR-027]
+    """
+    marco = TurmasMarcos.objects.select_related("tma_tur").get(pk=tma_id)
+    turma = marco.tma_tur
+    matriculados = AlunosTurmas.objects.filter(mat_tur=turma).values("mat_alu")
+    tccs_por_aluno = {t.tcc_alu_id: t for t in TCCs.objects.filter(tcc_tur=turma)}
+    registros = (
+        EntregasMarcos.objects.filter(ent_tma=marco, ent_alu__in=matriculados)
+        .select_related("ent_tma", "ent_alu__alu")
+        .order_by("ent_alu__alu__usu_nome", "ent_alu__alu_matricula")
+    )
+    agora = timezone.now()
+    linhas = []
+    for registro in registros:
+        tcc = tccs_por_aluno.get(registro.ent_alu_id)
+        if tcc is not None and services_turmas.participacao_encerrada(tcc):
+            continue
+        linhas.append(
+            {
+                "aluno": registro.ent_alu,
+                "status": status_exibido(registro, agora),
+                "envio": link_mais_recente(registro),
+                "tcc": tcc,
+            }
+        )
+    return linhas

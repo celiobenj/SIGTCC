@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% comment %}
+  Acompanhamento da entrega pelo Professor da Disciplina (passos 4 a 7 e fluxos A a D da US-16):
+  Título, Data Limite, Instruções e a tabela somente leitura, uma linha por aluno, com Aluno
+  (nome e matrícula), Status de envio e Link (mais recente, com data e hora). No tipo Proposta, a
+  coluna Link dá lugar a "Ver Proposta", que mostra a Proposta do aluno somente para leitura
+  (elemento <details>, sem JavaScript); o Resumo só aparece quando a view autoriza (FR-007a).
+  [US-16][RBN-CAD-09.4][FR-007a][FR-026][FR-027]
+{% endcomment %}
+{% block titulo %}{{ marco.tma_titulo }} · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">{{ marco.tma_titulo }}</h2>
+<p class="pg-sub">{{ turma.tur_identificador }} · {{ marco.tma_tipo }} · Data Limite {{ marco.tma_data_limite|date:"d/m/Y H:i" }}{% if arquivada %} · <span class="chip">Arquivada</span>{% endif %}</p>
+{% if marco.tma_instrucao %}<div class="cartao mt16"><p>{{ marco.tma_instrucao }}</p></div>{% endif %}
+<div class="tabela-wrap mt16">
+  <table class="tabela">
+    <thead><tr><th>Aluno</th><th>Status de envio</th><th>{% if eh_proposta %}Proposta{% else %}Link{% endif %}</th></tr></thead>
+    <tbody>
+      {% for linha in linhas %}
+      <tr>
+        <td>{{ linha.aluno.alu.usu_nome }}<br><span class="dica">{{ linha.aluno.alu_matricula }}</span></td>
+        <td><span class="chip">{{ linha.status }}</span></td>
+        <td>
+          {% if eh_proposta %}
+            {% if linha.proposta_salva %}
+            <details>
+              <summary>Ver Proposta</summary>
+              <dl>
+                <dt>Título</dt><dd>{{ linha.tcc.tcc_titulo }}</dd>
+                {% if linha.tcc.tcc_subtitulo %}<dt>Subtítulo</dt><dd>{{ linha.tcc.tcc_subtitulo }}</dd>{% endif %}
+                {% if linha.ver_resumo %}<dt>Resumo</dt><dd>{{ linha.tcc.tcc_resumo }}</dd>{% endif %}
+                <dt>Modalidade</dt><dd>{{ linha.tcc.tcc_modalidade }}</dd>
+                {% if linha.tcc.tcc_link_proposta %}<dt>Link do Documento da Proposta</dt><dd><a href="{{ linha.tcc.tcc_link_proposta }}" target="_blank" rel="noopener noreferrer">{{ linha.tcc.tcc_link_proposta }}</a></dd>{% endif %}
+              </dl>
+            </details>
+            {% endif %}
+          {% elif linha.envio %}
+            <a href="{{ linha.envio.hen_link }}" target="_blank" rel="noopener noreferrer">{{ linha.envio.hen_link }}</a>
+            <br><span class="dica">{{ linha.envio.hen_data_envio|date:"d/m/Y H:i" }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="flex entre mt16">
+  <a class="btn txt" href="{% url 'cadastro:entregas' turma.pk %}">Fechar</a>
+</div>
+{% endblock %}

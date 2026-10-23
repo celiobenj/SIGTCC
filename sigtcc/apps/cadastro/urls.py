@@ -109,6 +109,12 @@ urlpatterns = [
         views_entregas.entrega_cadastrar,
         name="entrega_cadastrar",
     ),
+    # Spec 005: acompanhamento da entrega pelo Professor (contracts/rotas.md). [US-16]
+    path(
+        "turmas/<int:tur_id>/entregas/<int:tma_id>/",
+        views_entregas.entrega_acompanhar,
+        name="entrega_acompanhar",
+    ),
     # Spec 005: envio e substituição do link pelo Aluno (contracts/rotas.md). [US-15]
     path(
         "turmas/<int:tur_id>/minhas-entregas/",

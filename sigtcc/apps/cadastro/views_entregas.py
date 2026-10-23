@@ -49,6 +49,7 @@ def entregas(request, tur_id):
         "entregas": TurmasMarcos.objects.filter(tma_tur=turma).order_by("tma_data_limite"),
         "arquivada": arquivada,
         "pode_cadastrar": not arquivada,
+        "nenhuma_entrega": mensagens.NENHUMA_ENTREGA_CADASTRADA,
     }
     return render(request, "cadastro/tcc/entregas.html", contexto)
 
@@ -76,6 +77,35 @@ def entrega_cadastrar(request, tur_id):
             return redirect("cadastro:entregas", tur_id=tur_id)
     contexto = {"form": formulario, "turma": turma}
     return render(request, "cadastro/tcc/form_entrega.html", contexto)
+
+
+@perfil_requerido("docente")
+def entrega_acompanhar(request, tur_id, tma_id):
+    """Janela de acompanhamento da entrega (passos 4 a 7 e fluxos A a D da US-16): Título, Data
+    Limite, Instruções e a tabela somente leitura, uma linha por aluno, com Status de envio e o
+    link mais recente — ou, no tipo Proposta, "Ver Proposta" (a Proposta do aluno, somente
+    leitura; o Resumo só aparece se `pode_ver_resumo` autorizar, FR-007a). Restrita ao Professor
+    da Disciplina da turma (E2), também com a turma arquivada (fluxo D, só consulta).
+    [US-16][RBN-CAD-09.4][FR-007a][FR-026][FR-027][contracts/rotas.md]
+    """
+    turma = _turma_do_professor_da_disciplina(request.user, tur_id)
+    marco = TurmasMarcos.objects.filter(pk=tma_id, tma_tur=turma).first()
+    if marco is None:
+        raise Http404
+    eh_proposta = marco.tma_tipo == TipoEntrega.PROPOSTA
+    linhas = services_entregas.acompanhamento_entrega(marco.pk)
+    for linha in linhas:
+        tcc = linha["tcc"]
+        linha["ver_resumo"] = tcc is not None and services_tcc.pode_ver_resumo(request.user, tcc)
+        linha["proposta_salva"] = tcc is not None and tcc.tcc_status != StatusTCC.SEM_PROPOSTA
+    contexto = {
+        "turma": turma,
+        "marco": marco,
+        "eh_proposta": eh_proposta,
+        "linhas": linhas,
+        "arquivada": services_turmas.turma_arquivada(turma),
+    }
+    return render(request, "cadastro/tcc/acompanhamento_entrega.html", contexto)
 
 
 # =============================================================================================

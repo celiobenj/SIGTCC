@@ -3,8 +3,9 @@
   Aba Atividades (lista de entregas, nome provisório, Q-44): Título, Tipo e Data Limite de cada
   entrega já cadastrada; o botão "Cadastrar atividade" só aparece com a turma ativa (E4/E5 da
   US-43 original — turma arquivada ou Docente que não é o Professor da Disciplina não veem o
-  botão; a permissão é restrita ao Professor da Disciplina na própria view).
-  [US-43][RBN-CAD-09.1][FR-013][FR-014][FR-017]
+  botão; a permissão é restrita ao Professor da Disciplina na própria view). Cada Título abre o
+  acompanhamento da entrega (passo 4 da US-16); sem entregas, "Nenhuma entrega cadastrada" (E3).
+  [US-43][US-16][RBN-CAD-09.1][RBN-CAD-09.4][FR-013][FR-014][FR-017][FR-027]
 {% endcomment %}
 {% block titulo %}Atividades · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -25,7 +26,7 @@
     <tbody>
       {% for entrega in entregas %}
       <tr>
-        <td>{{ entrega.tma_titulo }}</td>
+        <td><a href="{% url 'cadastro:entrega_acompanhar' turma.pk entrega.pk %}">{{ entrega.tma_titulo }}</a></td>
         <td>{{ entrega.tma_tipo }}</td>
         <td>{{ entrega.tma_data_limite|date:"d/m/Y H:i" }}</td>
       </tr>
@@ -34,6 +35,6 @@
   </table>
 </div>
 {% else %}
-<div class="vazio mt16"><span class="ms">assignment</span>Nenhuma entrega cadastrada.</div>
+<div class="vazio mt16"><span class="ms">assignment</span>{{ nenhuma_entrega }}</div>
 {% endif %}
 {% endblock %}
