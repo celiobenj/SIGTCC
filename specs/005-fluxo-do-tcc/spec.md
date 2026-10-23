@@ -597,6 +597,7 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
 | MF-05 | Notificação a cada aluno da turma ao cadastrar uma entrega | "Nova entrega cadastrada na turma {identificador}: {titulo}, com prazo até {data_limite}." | US-43, passo 7 ("uma notificação no sistema e um e-mail com o Título e a Data Limite", sem texto exato citado); índice Q-48 | A validar |
 | MF-06 | Data Limite anterior à data do cadastro, no formulário de cadastro de entrega | "A Data Limite não pode ser anterior a hoje." | US-43, E2 e Cenário 8 ("destaca a Data Limite", sem texto exato citado); índice Q-48 | A validar |
 | MF-07 | Notificação ao Professor da Disciplina a cada envio ou substituição de link de uma entrega | "{nome} enviou a entrega {titulo} na turma {identificador}." | US-15, passo 6 e fluxo alternativo D (sem texto exato citado); índice Q-49 | A validar |
+| MF-08 | Lembrete de prazo ao aluno que ainda não enviou, 7 dias, 48 horas e 24 horas antes da Data Limite | "Lembrete: a entrega {titulo} da turma {identificador} vence em {data_limite}." | US-15, fluxo alternativo E ("envia notificação no sistema e e-mail", sem texto exato citado); índice Q-50 | A validar |
 
 ## Success Criteria *(mandatory)*
 

@@ -135,9 +135,11 @@ def entrega_enviar(request, tur_id, tma_id):
     [US-15][RBN-CAD-09.2][RBN-CAD-09.3][FR-018 a FR-023][contracts/rotas.md]
     """
     turma, aluno = services_tcc.turma_do_aluno(tur_id, request.user)
-    entrega = EntregasMarcos.objects.select_related("ent_tma").filter(
-        ent_tma_id=tma_id, ent_alu=aluno, ent_tma__tma_tur=turma
-    ).first()
+    entrega = (
+        EntregasMarcos.objects.select_related("ent_tma")
+        .filter(ent_tma_id=tma_id, ent_alu=aluno, ent_tma__tma_tur=turma)
+        .first()
+    )
     if entrega is None:
         raise Http404
     marco = entrega.ent_tma
@@ -145,9 +147,7 @@ def entrega_enviar(request, tur_id, tma_id):
     eh_proposta = marco.tma_tipo == TipoEntrega.PROPOSTA
     pode_enviar = _pode_enviar(entrega, marco, turma, tcc)
 
-    formulario = EnviarLinkForm(
-        request.POST if request.method == "POST" and pode_enviar else None
-    )
+    formulario = EnviarLinkForm(request.POST if request.method == "POST" and pode_enviar else None)
     if request.method == "POST" and pode_enviar and formulario.is_valid():
         services_entregas.enviar_entrega(aluno, tma_id, formulario.cleaned_data["link"])
         messages.success(request, mensagens.ENTREGA_ENVIADA)

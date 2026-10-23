@@ -17,7 +17,10 @@ até a implementação (T021 a T023).
 
 import threading
 from datetime import timedelta
+from io import StringIO
+from urllib.parse import parse_qs, urlparse
 
+from django.core.management import call_command
 from django.db import close_old_connections
 from django.http import Http404
 from django.test import TransactionTestCase
@@ -36,7 +39,12 @@ from sigtcc.apps.cadastro.choices import (
 from sigtcc.apps.cadastro.models import EntregasMarcos, HistoricoEnviosEntregas, Notificacoes
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_docente_ativo
 from sigtcc.apps.cadastro.tests.apoio_tcc import cadastrar_entrega, enviar_link
-from sigtcc.apps.cadastro.tests.apoio_turmas import EC, TesteTurmas, criar_turma_de, matricular_aluno
+from sigtcc.apps.cadastro.tests.apoio_turmas import (
+    EC,
+    TesteTurmas,
+    criar_turma_de,
+    matricular_aluno,
+)
 
 LINK_VALIDO = "https://drive.google.com/documento-1"
 LINK_SUBSTITUTO = "https://drive.google.com/documento-2"
@@ -102,17 +110,11 @@ class EnviarEntregaServiceTest(EnviarEntregaTestBase):
         """Cenário 4 do spec.md: substituição antes da Data Limite mantém o status do primeiro
         envio e notifica o Professor de novo. [US-15][FR-019][FR-021]
         """
-        ontem = timezone.now() - timedelta(days=1)
-        enviar_link(self.registro(), self.aluno, LINK_VALIDO, quando=ontem)
-        registro = self.registro()
-        registro.ent_status = StatusEntrega.ENTREGUE
-        registro.save(update_fields=["ent_status"])
-
+        # Primeiro envio e substituição pelo serviço (cada um notifica o Professor).
+        services_entregas.enviar_entrega(self.aluno, self.entrega.pk, LINK_VALIDO)
         resultado = services_entregas.enviar_entrega(self.aluno, self.entrega.pk, LINK_SUBSTITUTO)
         self.assertEqual(resultado.ent_status, StatusEntrega.ENTREGUE)
-        self.assertEqual(
-            HistoricoEnviosEntregas.objects.filter(hen_ent=resultado).count(), 2
-        )
+        self.assertEqual(HistoricoEnviosEntregas.objects.filter(hen_ent=resultado).count(), 2)
         self.assertEqual(Notificacoes.objects.filter(not_usu=self.professor).count(), 2)
 
     def test_cenario7_link_invalido_nao_salva(self):
@@ -157,7 +159,9 @@ class EnviarEntregaServiceTest(EnviarEntregaTestBase):
 
         [US-15][FR-019]
         """
-        enviar_link(self.registro(), self.aluno, LINK_VALIDO, quando=timezone.now() - timedelta(days=5))
+        enviar_link(
+            self.entrega, self.aluno, LINK_VALIDO, quando=timezone.now() - timedelta(days=5)
+        )
         self.entrega.tma_data_limite = timezone.now() - timedelta(days=1)
         self.entrega.save(update_fields=["tma_data_limite"])
         with self.assertRaises(Http404):
@@ -204,9 +208,7 @@ class PrazoVencidoSemEnvioTest(EnviarEntregaTestBase):
         self.entrega.save(update_fields=["tma_data_limite"])
         registro = self.registro()
         self.assertEqual(registro.ent_status, StatusEntrega.AGUARDANDO_ENVIO)
-        self.assertEqual(
-            services_entregas.status_exibido(registro), StatusEntrega.NAO_ENTREGUE
-        )
+        self.assertEqual(services_entregas.status_exibido(registro), StatusEntrega.NAO_ENTREGUE)
         # O envio continua disponível e, se ocorrer, segue o fluxo alternativo B (Entregue com
         # Atraso), sem reprovar o aluno nem mudar o Status do TCC.
         resultado = services_entregas.enviar_entrega(self.aluno, self.entrega.pk, LINK_VALIDO)
@@ -250,7 +252,7 @@ class LembretesDePrazoTest(EnviarEntregaTestBase):
         agora = timezone.now()
         self.entrega.tma_data_limite = agora + timedelta(hours=24)
         self.entrega.save(update_fields=["tma_data_limite"])
-        enviar_link(self.registro(), self.aluno, LINK_VALIDO, quando=agora)
+        enviar_link(self.entrega, self.aluno, LINK_VALIDO, quando=agora)
         registro = self.registro()
         registro.ent_status = StatusEntrega.ENTREGUE
         registro.save(update_fields=["ent_status"])
@@ -319,9 +321,7 @@ class MinhasEntregasViewTest(EnviarEntregaTestBase):
 
     def test_cenario1_envio_por_post_mostra_a_mensagem_e_o_status(self):
         self.client.force_login(self.aluno.alu)
-        resposta = self.client.post(
-            self.url_entrega(), {"link": LINK_VALIDO}, follow=True
-        )
+        resposta = self.client.post(self.url_entrega(), {"link": LINK_VALIDO}, follow=True)
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, mensagens.ENTREGA_ENVIADA)
         self.assertEqual(self.registro().ent_status, StatusEntrega.ENTREGUE)
@@ -332,6 +332,10 @@ class MinhasEntregasViewTest(EnviarEntregaTestBase):
         [US-15][FR-018]
         """
         proposta = cadastrar_entrega(self.turma, tipo=TipoEntrega.PROPOSTA, titulo="Proposta")
+        # Registro do aluno nessa entrega, como o serviço de cadastro (US-43) criaria.
+        EntregasMarcos.objects.create(
+            ent_tma=proposta, ent_alu=self.aluno, ent_status=StatusEntrega.AGUARDANDO_ENVIO
+        )
         self.client.force_login(self.aluno.alu)
         resposta = self.client.get(self.url_entrega(proposta))
         self.assertEqual(resposta.status_code, 200)
@@ -384,6 +388,111 @@ class MinhasEntregasViewTest(EnviarEntregaTestBase):
         self.assertEqual(
             self.client.get(reverse("cadastro:minhas_entregas", args=[0])).status_code, 404
         )
+
+    def test_cenario2_acesso_pela_notificacao_abre_a_aba_atividades(self):
+        """Cenário 2 da US-15 (fluxo alternativo A): a notificação da nova entrega abre a aba
+        Atividades da turma, com a entrega. [US-15][RBN-CAD-09.6]
+        """
+        services_entregas.cadastrar_entrega(
+            self.professor,
+            self.turma.pk,
+            {
+                "tipo": TipoEntrega.OUTRA,
+                "titulo": "Entrega do Cronograma",
+                "data_limite": timezone.now() + timedelta(days=3),
+            },
+        )
+        notificacao = Notificacoes.objects.get(not_usu=self.aluno.alu)
+        self.client.force_login(self.aluno.alu)
+        resposta = self.client.get(
+            reverse("cadastro:abrir_notificacao", args=[notificacao.pk]), follow=True
+        )
+        self.assertEqual(resposta.redirect_chain[-1][0], self.url_lista())
+        self.assertContains(resposta, "Entrega do Cronograma")
+
+    def test_cenario8_sem_login_vai_para_o_login_e_volta_para_a_aba(self):
+        """Cenário 8 da US-15 (E1): sem sessão, a tela de login, com retorno à aba Atividades.
+
+        [US-15][contracts/rotas.md]
+        """
+        resposta = self.client.get(self.url_lista())
+        self.assertEqual(resposta.status_code, 302)
+        destino = urlparse(resposta["Location"])
+        self.assertEqual(destino.path, reverse("cadastro:entrar"))
+        self.assertEqual(parse_qs(destino.query)["next"], [self.url_lista()])
+
+    def test_cenario10_substituicao_apos_o_prazo_fica_somente_leitura(self):
+        """Cenário 10 da US-15 (E3): enviado no prazo e aberto depois da Data Limite, o Link
+        aparece só para leitura, sem o botão Enviar, e o status permanece Entregue.
+        [US-15][FR-019]
+        """
+        enviar_link(
+            self.entrega, self.aluno, LINK_VALIDO, quando=timezone.now() - timedelta(days=4)
+        )
+        registro = self.registro()
+        registro.ent_status = StatusEntrega.ENTREGUE
+        registro.save(update_fields=["ent_status"])
+        self.entrega.tma_data_limite = timezone.now() - timedelta(days=2)
+        self.entrega.save(update_fields=["tma_data_limite"])
+        self.client.force_login(self.aluno.alu)
+        resposta = self.client.get(self.url_entrega())
+        self.assertContains(resposta, LINK_VALIDO)
+        self.assertContains(resposta, StatusEntrega.ENTREGUE.label)
+        self.assertNotContains(resposta, ">Enviar<")
+        # Pelo endereço direto, o POST também não grava nada (SC-004).
+        self.client.post(self.url_entrega(), {"link": LINK_SUBSTITUTO})
+        self.assertFalse(HistoricoEnviosEntregas.objects.filter(hen_link=LINK_SUBSTITUTO).exists())
+
+    def test_cenario12_aluno_jubilado_sem_o_botao_enviar(self):
+        """Cenário 12 da US-15 (E5): aluno Jubilado abre a entrega, sem o botão Enviar.
+
+        [US-15][RBN-CAD-08.5][FR-023]
+        """
+        tcc = services_turmas.tcc_do_aluno(self.turma, self.aluno)
+        tcc.tcc_status = StatusTCC.JUBILADO
+        tcc.save(update_fields=["tcc_status"])
+        self.client.force_login(self.aluno.alu)
+        resposta = self.client.get(self.url_entrega())
+        self.assertEqual(resposta.status_code, 200)
+        self.assertNotContains(resposta, ">Enviar<")
+
+
+class EnviarLembretesTest(EnviarEntregaTestBase):
+    """Cenário 6 da US-15 (fluxo alternativo E): o lembrete chega ao aluno que não enviou, uma
+    vez por janela, pelo comando `enviar_lembretes_entrega` (T022).
+
+    [US-15][RBN-CAD-09.6][FR-022][research C5]
+    """
+
+    def test_cenario6_lembrete_de_48h_notifica_o_aluno_com_o_link_da_entrega(self):
+        agora = timezone.now()
+        self.entrega.tma_data_limite = agora + timedelta(hours=48)
+        self.entrega.save(update_fields=["tma_data_limite"])
+        self.assertEqual(services_entregas.enviar_lembretes_de_prazo(agora), 1)
+        notificacao = Notificacoes.objects.get(not_usu=self.aluno.alu)
+        self.assertIn("Entrega do Documento", notificacao.not_mensagem)
+        self.assertEqual(notificacao.not_link_tela, self.url_entrega_do_aluno())
+
+    def test_lembrete_nao_se_repete_na_execucao_seguinte_da_mesma_janela(self):
+        agora = timezone.now()
+        self.entrega.tma_data_limite = agora + timedelta(hours=24)
+        self.entrega.save(update_fields=["tma_data_limite"])
+        services_entregas.enviar_lembretes_de_prazo(agora)
+        self.assertEqual(
+            services_entregas.enviar_lembretes_de_prazo(agora + timedelta(minutes=50)), 0
+        )
+        self.assertEqual(Notificacoes.objects.filter(not_usu=self.aluno.alu).count(), 1)
+
+    def test_comando_enviar_lembretes_entrega(self):
+        self.entrega.tma_data_limite = timezone.now() + timedelta(days=7)
+        self.entrega.save(update_fields=["tma_data_limite"])
+        saida = StringIO()
+        call_command("enviar_lembretes_entrega", stdout=saida)
+        self.assertIn("1 lembrete(s)", saida.getvalue())
+        self.assertTrue(Notificacoes.objects.filter(not_usu=self.aluno.alu).exists())
+
+    def url_entrega_do_aluno(self):
+        return reverse("cadastro:entrega_enviar", args=[self.turma.pk, self.entrega.pk])
 
 
 class ConcorrenciaEnviarEntregaTest(TransactionTestCase):

@@ -18,6 +18,7 @@ from functools import reduce
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import Http404
+from django.urls import reverse
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import mensagens, services_turmas
@@ -26,6 +27,7 @@ from sigtcc.apps.cadastro.models import (
     AlunosTurmas,
     EntregasMarcos,
     HistoricoEnviosEntregas,
+    Notificacoes,
     TCCs,
     TurmasMarcos,
 )
@@ -104,6 +106,8 @@ def cadastrar_entrega(professor, tur_id, dados):
                     titulo=entrega.tma_titulo,
                     data_limite=entrega.tma_data_limite.strftime("%d/%m/%Y"),
                 ),
+                # Acesso pela notificação (fluxo alternativo A da US-15): abre a aba Atividades.
+                link=reverse("cadastro:minhas_entregas", args=[turma.pk]),
             )
     return entrega
 
@@ -138,7 +142,9 @@ def enviar_entrega(aluno, tma_id, link):
     """
     with transaction.atomic():
         entrega = (
-            EntregasMarcos.objects.select_for_update().filter(ent_tma_id=tma_id, ent_alu=aluno).first()
+            EntregasMarcos.objects.select_for_update()
+            .filter(ent_tma_id=tma_id, ent_alu=aluno)
+            .first()
         )
         if entrega is None:
             raise Http404
@@ -199,7 +205,10 @@ def status_exibido(entrega, agora=None):
     [US-15][RBN-CAD-09.3][FR-020]
     """
     agora = agora or timezone.now()
-    if entrega.ent_status == StatusEntrega.AGUARDANDO_ENVIO and agora > entrega.ent_tma.tma_data_limite:
+    if (
+        entrega.ent_status == StatusEntrega.AGUARDANDO_ENVIO
+        and agora > entrega.ent_tma.tma_data_limite
+    ):
         return StatusEntrega.NAO_ENTREGUE
     return entrega.ent_status
 
@@ -226,3 +235,38 @@ def entregas_para_lembrar(agora):
         ent_status=StatusEntrega.AGUARDANDO_ENVIO,
         ent_tma__tma_tur__tur_status=StatusTurma.ATIVA,
     ).select_related("ent_tma__tma_tur", "ent_alu__alu")
+
+
+def enviar_lembretes_de_prazo(agora=None):
+    """Notifica cada aluno das `entregas_para_lembrar(agora)` com o lembrete de prazo (MF-08,
+    PROVISÓRIA, Q-50), com o link para a janela da entrega. Chamada pelo comando de gestão
+    `enviar_lembretes_entrega` (rotina agendada a configurar — research C5).
+
+    Como a janela de cada prazo tem margem de ±1h, uma rotina horária encontraria a mesma
+    entrega em duas execuções seguidas; para não repetir o lembrete, não notifica de novo quem já
+    recebeu o mesmo texto nas últimas 2 horas (sem tabela nova: consulta `Notificacoes`).
+    Devolve o número de lembretes enviados.
+    [US-15][RBN-CAD-09.6][FR-022][research C5]
+    """
+    agora = agora or timezone.now()
+    enviados = 0
+    for entrega in entregas_para_lembrar(agora):
+        marco = entrega.ent_tma
+        turma = marco.tma_tur
+        mensagem = mensagens.MF08_LEMBRETE_PRAZO_ENTREGA.format(
+            titulo=marco.tma_titulo,
+            identificador=turma.tur_identificador,
+            data_limite=marco.tma_data_limite.strftime("%d/%m/%Y %H:%M"),
+        )
+        usuario = entrega.ent_alu.alu
+        if Notificacoes.objects.filter(
+            not_usu=usuario, not_mensagem=mensagem, not_data_hora__gte=agora - 2 * _MARGEM_LEMBRETE
+        ).exists():
+            continue
+        notificar(
+            usuario,
+            mensagem,
+            link=reverse("cadastro:entrega_enviar", args=[turma.pk, marco.pk]),
+        )
+        enviados += 1
+    return enviados

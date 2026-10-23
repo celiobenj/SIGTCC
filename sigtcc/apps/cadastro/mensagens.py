@@ -258,3 +258,9 @@ MF06_DATA_LIMITE_ANTERIOR_A_HOJE = "A Data Limite não pode ser anterior a hoje.
 # o Professor da Disciplina no sistema", sem citar o texto exato — mensagem nova, registrada como
 # PROVISÓRIA (Q-49), no mesmo padrão da MF-04/MF-05.
 MF07_NOTIFICACAO_ENVIO_ENTREGA = "{nome} enviou a entrega {titulo} na turma {identificador}."
+# Lembrete de prazo ao aluno que ainda não enviou, 7 dias, 48h e 24h antes da Data Limite (US-15,
+# fluxo alternativo E): a US diz só "envia notificação no sistema e e-mail", sem citar o texto
+# exato — mensagem nova, registrada como PROVISÓRIA (Q-50), no mesmo padrão da MF-05/MF-07.
+MF08_LEMBRETE_PRAZO_ENTREGA = (
+    "Lembrete: a entrega {titulo} da turma {identificador} vence em {data_limite}."
+)
