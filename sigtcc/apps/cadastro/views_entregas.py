@@ -14,8 +14,12 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import mensagens, services_entregas, services_tcc, services_turmas
-from sigtcc.apps.cadastro.choices import StatusEntrega, StatusTCC, TipoEntrega
-from sigtcc.apps.cadastro.forms_entregas import CadastroEntregaForm, EnviarLinkForm
+from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusEntrega, StatusTCC, TipoEntrega
+from sigtcc.apps.cadastro.forms_entregas import (
+    CadastroEntregaForm,
+    DevolverParaAjusteForm,
+    EnviarLinkForm,
+)
 from sigtcc.apps.cadastro.models import EntregasMarcos, TurmasMarcos
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import ALTERAR, CONSULTAR
@@ -102,6 +106,7 @@ def entrega_acompanhar(request, tur_id, tma_id):
         "turma": turma,
         "marco": marco,
         "eh_proposta": eh_proposta,
+        "eh_versao_final": marco.tma_tipo == TipoEntrega.VERSAO_FINAL,
         "linhas": linhas,
         "arquivada": services_turmas.turma_arquivada(turma),
     }
@@ -189,3 +194,66 @@ def entrega_enviar(request, tur_id, tma_id):
         "form": formulario,
     }
     return render(request, "cadastro/tcc/enviar_entrega.html", contexto)
+
+
+# =============================================================================================
+# Homologação ou devolução da Versão Final (US-44; FR-028 a FR-030; contracts/rotas.md)
+# =============================================================================================
+
+
+@perfil_requerido("docente")
+@trata_turma_arquivada
+def aluno_versao_final(request, tur_id, alu_id):
+    """Tela do aluno, seção Versão final (passos 2 a 7, fluxos C e D e exceções da US-44): GET
+    mostra o link enviado, a data e a hora, o status e, quando permitidos, os botões Homologar
+    (`pode_homologar`: E2 e E4) e Devolver para Ajuste com o campo Mensagem (`pode_devolver`:
+    E4); POST homologa ou devolve e mantém o Professor nesta tela, com "Versão Final
+    homologada" ou a MF-02. Restrita ao Professor da Disciplina da turma de TCC 2 (E5: 403 para
+    outro Docente e para a Secretaria; turma de TCC 1 ou sem Versão Final: 404). Turma
+    arquivada: consulta sem botões e, numa ação pelo endereço direto, a MT-25.
+    [US-44][RBN-CAD-09.3][RBN-CAD-09.5][FR-028 a FR-030][contracts/rotas.md]
+    """
+    turma = _turma_do_professor_da_disciplina(request.user, tur_id)
+    aluno = services_turmas.vinculo_na_turma(turma, alu_id)
+    tcc = services_turmas.tcc_do_aluno(turma, aluno)
+    entrega = services_entregas.versao_final_do_aluno(turma, aluno)
+    if turma.tur_descricao != DescricaoTurma.TCC_2 or tcc is None or entrega is None:
+        raise Http404
+    arquivada = services_turmas.turma_arquivada(turma)
+    formulario = DevolverParaAjusteForm()
+
+    if request.method == "POST":
+        acao = request.POST.get("acao")
+        if acao == "homologar":
+            services_entregas.homologar_versao_final(request.user, tur_id, alu_id)
+            messages.success(request, mensagens.VERSAO_FINAL_HOMOLOGADA)
+            return redirect("cadastro:aluno_versao_final", tur_id=tur_id, alu_id=alu_id)
+        if acao == "devolver":
+            formulario = DevolverParaAjusteForm(request.POST)
+            if formulario.is_valid():
+                services_entregas.devolver_versao_final(
+                    request.user, tur_id, alu_id, formulario.cleaned_data["mensagem"]
+                )
+                messages.success(request, mensagens.MF02_VERSAO_FINAL_DEVOLVIDA)
+                return redirect("cadastro:aluno_versao_final", tur_id=tur_id, alu_id=alu_id)
+            # Ação pelo endereço direto em turma arquivada: MT-25 antes de mostrar o erro.
+            services_turmas.exigir_turma_ativa(turma)
+
+    envio = services_entregas.link_mais_recente(entrega)
+    contexto = {
+        "turma": turma,
+        "aluno": aluno,
+        "tcc": tcc,
+        "entrega": entrega,
+        "marco": entrega.ent_tma,
+        "status": services_entregas.status_exibido(entrega),
+        "envio": envio,
+        "arquivada": arquivada,
+        "pode_homologar": not arquivada and services_entregas.pode_homologar(entrega, turma, tcc),
+        "pode_devolver": not arquivada and services_entregas.pode_devolver(entrega),
+        "aguarda_correcoes": services_entregas.pode_devolver(entrega)
+        and services_entregas.exige_correcoes_conferidas(turma, tcc)
+        and entrega.ent_correcoes_conferidas_em is None,
+        "form": formulario,
+    }
+    return render(request, "cadastro/tcc/homologar_versao_final.html", contexto)

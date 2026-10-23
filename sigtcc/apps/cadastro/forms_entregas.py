@@ -14,7 +14,11 @@ from django.utils import timezone
 
 from sigtcc.apps.cadastro import mensagens
 from sigtcc.apps.cadastro.choices import DescricaoTurma, TipoEntrega
-from sigtcc.apps.cadastro.forms_turmas import FormularioSigtcc, normalizar_texto
+from sigtcc.apps.cadastro.forms_turmas import (
+    FormularioSigtcc,
+    normalizar_texto,
+    validar_justificativa,
+)
 
 LIMITE_TITULO_ENTREGA = 100
 LIMITE_INSTRUCAO = 1000
@@ -107,3 +111,22 @@ class EnviarLinkForm(FormularioSigtcc):
         if not valor or not valor.startswith("https://") or len(valor) > LIMITE_LINK_ENTREGA:
             raise ValidationError(mensagens.LINK_HTTPS_500)
         return valor
+
+
+class DevolverParaAjusteForm(FormularioSigtcc):
+    """Devolução da Versão Final para ajuste (fluxo alternativo D da US-44): Mensagem
+    obrigatória, até 500 caracteres. Vazia ou acima do limite, não devolve e destaca o campo
+    (E3) com `JUSTIFICATIVA_500` (spec 004, reaproveitada sem duplicar — T001/T030); por isso o
+    campo é `required=False` no Django e a obrigatoriedade fica em `clean_mensagem`.
+    [US-44][RBN-CAD-09.5][FR-028]
+    """
+
+    mensagem = forms.CharField(
+        label="Mensagem",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 4, "maxlength": 500}),
+    )
+
+    def clean_mensagem(self):
+        """Obrigatória, até 500 caracteres, sem caracteres de controle (E3). [FR-028]"""
+        return validar_justificativa(self.cleaned_data.get("mensagem", ""))

@@ -25,16 +25,19 @@ from sigtcc.apps.cadastro import mensagens, services_tcc, services_turmas
 from sigtcc.apps.cadastro.choices import (
     DescricaoTurma,
     GatilhoStatusTCC,
+    StatusConta,
     StatusEntrega,
     StatusTCC,
     StatusTurma,
     TipoEntrega,
 )
 from sigtcc.apps.cadastro.models import (
+    Alunos,
     AlunosTurmas,
     EntregasMarcos,
     HistoricoEnviosEntregas,
     Notificacoes,
+    Secretarios,
     TCCs,
     TurmasMarcos,
 )
@@ -223,8 +226,13 @@ def enviar_entrega(aluno, tma_id, link):
                 titulo=marco.tma_titulo,
                 identificador=turma.tur_identificador,
             ),
-            # A notificação abre o acompanhamento da entrega (US-16).
-            link=reverse("cadastro:entrega_acompanhar", args=[turma.pk, marco.pk]),
+            # A notificação abre o acompanhamento da entrega (US-16) ou, na Versão Final, a tela
+            # do aluno na seção Versão final (fluxo alternativo C da US-44).
+            link=(
+                reverse("cadastro:aluno_versao_final", args=[turma.pk, aluno.pk])
+                if marco.tma_tipo == TipoEntrega.VERSAO_FINAL
+                else reverse("cadastro:entrega_acompanhar", args=[turma.pk, marco.pk])
+            ),
         )
     return entrega
 
@@ -404,3 +412,140 @@ def acompanhamento_entrega(tma_id):
             }
         )
     return linhas
+
+
+# =============================================================================================
+# Homologação ou devolução da Versão Final pelo Professor da Disciplina (US-44; FR-028 a FR-030)
+# =============================================================================================
+
+# Status de envio que mostram os botões Homologar e Devolver para Ajuste (pré-condição e E4 da
+# US-44): a Versão Final enviada e ainda não avaliada (ou reenviada depois da devolução).
+STATUS_ENVIO_AVALIAVEL = (StatusEntrega.ENTREGUE, StatusEntrega.ENTREGUE_COM_ATRASO)
+
+
+def versao_final_do_aluno(turma, aluno, travar=False):
+    """Registro do aluno na entrega do tipo Versão Final da turma, ou None. Com travar=True,
+    chamar dentro de `transaction.atomic()` (trava a linha de `Entregas_Marcos`).
+    [US-29][US-44][RBN-CAD-09.5]
+    """
+    registros = EntregasMarcos.objects.select_related("ent_tma")
+    if travar:
+        registros = registros.select_for_update(of=("self",))
+    return registros.filter(
+        ent_alu=aluno, ent_tma__tma_tur=turma, ent_tma__tma_tipo=TipoEntrega.VERSAO_FINAL
+    ).first()
+
+
+def exige_correcoes_conferidas(turma, tcc):
+    """Sistemas de Informação com parecer "Aprovado com Correções" (FR-029): o Professor da
+    Disciplina não é o Orientador e a homologação espera o Orientador acionar "Correções
+    Conferidas" (spec 006). "Sistemas de Informação" é a turma de TCC 2 sem orientador
+    automático (`turma_tem_orientador_automatico`, spec 004 — Engenharia de Computação e
+    Licenciatura em Computação têm).
+    [US-44][RBN-CAD-09.5][FR-029]
+    """
+    return (
+        not services_turmas.turma_tem_orientador_automatico(turma)
+        and tcc.tcc_status == StatusTCC.APROVADO_COM_CORRECOES
+    )
+
+
+def pode_devolver(entrega):
+    """Devolver para Ajuste só com a Versão Final enviada e ainda não avaliada (E4; FR-030).
+
+    [US-44][RBN-CAD-09.5][FR-028][FR-030]
+    """
+    return entrega is not None and entrega.ent_status in STATUS_ENVIO_AVALIAVEL
+
+
+def pode_homologar(entrega, turma, tcc):
+    """Homologar exige o envio ainda não avaliado (E4) e, em Sistemas de Informação com parecer
+    "Aprovado com Correções", `ent_correcoes_conferidas_em` preenchido (E2; dicionário 3.4.2).
+    [US-44][RBN-CAD-09.5][FR-028][FR-029][FR-030]
+    """
+    if not pode_devolver(entrega) or tcc is None:
+        return False
+    return not (
+        exige_correcoes_conferidas(turma, tcc) and entrega.ent_correcoes_conferidas_em is None
+    )
+
+
+def _travar_versao_final(professor, tur_id, alu_id):
+    """Trava turma → aluno → TCC → registro da Versão Final, nessa ordem (research C4), e
+    confere a permissão: turma (404) → Professor da Disciplina (PermissionDenied) → turma
+    arquivada (TurmaArquivada) → aluno matriculado (404) → turma de TCC 2 com a Versão Final
+    cadastrada para o aluno (404). Chamar dentro de `transaction.atomic()`.
+    [US-44][FR-028][FR-030][research C4][contracts/rotas.md]
+    """
+    turma = services_turmas.turma_para(professor, tur_id, services_turmas.ALTERAR, travar=True)
+    aluno = services_turmas.vinculo_na_turma(turma, alu_id)
+    Alunos.objects.select_for_update().filter(pk=aluno.pk).first()
+    tcc = TCCs.objects.select_for_update().filter(tcc_alu=aluno, tcc_tur=turma).first()
+    entrega = versao_final_do_aluno(turma, aluno, travar=True)
+    if turma.tur_descricao != DescricaoTurma.TCC_2 or tcc is None or entrega is None:
+        raise Http404
+    return turma, aluno, tcc, entrega
+
+
+def homologar_versao_final(professor, tur_id, alu_id):
+    """Homologa a Versão Final (passos 5 a 7 da US-44): muda o status de envio para "Homologada"
+    com a data e a hora (`ent_data_avaliacao`), o Status do TCC para "Concluído" pelo gatilho
+    "Homologação da Versão Final" (registrando o Professor no histórico, FR-012) e notifica a
+    Secretaria do curso (MF-09, PROVISÓRIA, Q-52). Recusa com `Http404` (botão escondido) se a
+    Versão Final não foi enviada ou já foi avaliada, ou se faltam as "Correções Conferidas" em
+    Sistemas de Informação (E2, E4); `PermissionDenied` para outro Docente (E5) e
+    `TurmaArquivada` com a turma arquivada.
+    [US-44][US-14][RBN-CAD-09.3][RBN-CAD-09.5][FR-028][FR-029][research C2][research C4]
+    """
+    with transaction.atomic():
+        turma, aluno, tcc, entrega = _travar_versao_final(professor, tur_id, alu_id)
+        if not pode_homologar(entrega, turma, tcc):
+            raise Http404
+        entrega.ent_status = StatusEntrega.HOMOLOGADA
+        entrega.ent_data_avaliacao = timezone.now()
+        entrega.save(update_fields=["ent_status", "ent_data_avaliacao"])
+        services_turmas.atualizar_status_tcc(
+            tcc,
+            turma,
+            professor,
+            StatusTCC.CONCLUIDO,
+            GatilhoStatusTCC.HOMOLOGACAO_DA_VERSAO_FINAL,
+        )
+        secretarias = Secretarios.objects.select_related("sec").filter(
+            sec_cur=turma.tur_cur, sec__usu_status=StatusConta.ATIVA
+        )
+        for secretaria in secretarias:
+            notificar(
+                secretaria.sec,
+                mensagens.MF09_NOTIFICACAO_VERSAO_FINAL_HOMOLOGADA.format(
+                    nome=aluno.alu.usu_nome, identificador=turma.tur_identificador
+                ),
+            )
+    return entrega
+
+
+def devolver_versao_final(professor, tur_id, alu_id, mensagem):
+    """Devolve a Versão Final para ajuste (fluxo alternativo D da US-44): muda o status de envio
+    para "Devolvida para Ajuste", grava a Mensagem (`ent_feedback`, já validada pelo formulário:
+    obrigatória, até 500 caracteres) e a data e a hora (`ent_data_avaliacao`) e notifica o Aluno
+    com a mensagem, para reenviar (MF-10, PROVISÓRIA, Q-52; link para a aba Meu TCC). O Status do
+    TCC não muda. Mesmas recusas de `homologar_versao_final`, exceto a das "Correções
+    Conferidas", que só bloqueia a homologação (E2).
+    [US-44][US-29][RBN-CAD-09.3][RBN-CAD-09.5][FR-025][FR-028][research C4]
+    """
+    with transaction.atomic():
+        turma, aluno, _tcc, entrega = _travar_versao_final(professor, tur_id, alu_id)
+        if not pode_devolver(entrega):
+            raise Http404
+        entrega.ent_status = StatusEntrega.DEVOLVIDA_PARA_AJUSTE
+        entrega.ent_feedback = mensagem
+        entrega.ent_data_avaliacao = timezone.now()
+        entrega.save(update_fields=["ent_status", "ent_feedback", "ent_data_avaliacao"])
+        notificar(
+            aluno.alu,
+            mensagens.MF10_NOTIFICACAO_VERSAO_FINAL_DEVOLVIDA.format(
+                identificador=turma.tur_identificador, mensagem=mensagem
+            ),
+            link=reverse("cadastro:meu_tcc", args=[turma.pk]),
+        )
+    return entrega

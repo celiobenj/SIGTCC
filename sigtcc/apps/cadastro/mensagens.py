@@ -266,3 +266,13 @@ MF07_NOTIFICACAO_ENVIO_ENTREGA = "{nome} enviou a entrega {titulo} na turma {ide
 MF08_LEMBRETE_PRAZO_ENTREGA = (
     "Lembrete: a entrega {titulo} da turma {identificador} vence em {data_limite}."
 )
+# Notificação à Secretaria na homologação da Versão Final (US-44, passo 6: "notifica a
+# Secretaria para concluir os trâmites acadêmicos") e ao Aluno na devolução para ajuste (fluxo
+# alternativo D: "notifica o Aluno") — a US não cita o texto exato de nenhuma das duas; mensagens
+# novas, registradas como PROVISÓRIAS (Q-52), no mesmo padrão da MF-05/MF-07.
+MF09_NOTIFICACAO_VERSAO_FINAL_HOMOLOGADA = (
+    "Versão Final de {nome} homologada na turma {identificador}: TCC concluído."
+)
+MF10_NOTIFICACAO_VERSAO_FINAL_DEVOLVIDA = (
+    "Versão Final devolvida para ajuste na turma {identificador}: {mensagem}"
+)

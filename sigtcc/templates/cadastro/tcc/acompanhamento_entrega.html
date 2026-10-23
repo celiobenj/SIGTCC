@@ -4,8 +4,10 @@
   Título, Data Limite, Instruções e a tabela somente leitura, uma linha por aluno, com Aluno
   (nome e matrícula), Status de envio e Link (mais recente, com data e hora). No tipo Proposta, a
   coluna Link dá lugar a "Ver Proposta", que mostra a Proposta do aluno somente para leitura
-  (elemento <details>, sem JavaScript); o Resumo só aparece quando a view autoriza (FR-007a).
-  [US-16][RBN-CAD-09.4][FR-007a][FR-026][FR-027]
+  (elemento <details>, sem JavaScript); o Resumo só aparece quando a view autoriza (FR-007a). No
+  tipo Versão Final, cada linha leva à tela de homologação do aluno (US-44), até a tela do aluno
+  completa (US-41) existir.
+  [US-16][US-44][RBN-CAD-09.4][FR-007a][FR-026][FR-027][FR-028]
 {% endcomment %}
 {% block titulo %}{{ marco.tma_titulo }} · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -37,6 +39,9 @@
           {% elif linha.envio %}
             <a href="{{ linha.envio.hen_link }}" target="_blank" rel="noopener noreferrer">{{ linha.envio.hen_link }}</a>
             <br><span class="dica">{{ linha.envio.hen_data_envio|date:"d/m/Y H:i" }}</span>
+          {% endif %}
+          {% if eh_versao_final %}
+            <br><a href="{% url 'cadastro:aluno_versao_final' turma.pk linha.aluno.pk %}">Abrir Versão final</a>
           {% endif %}
         </td>
       </tr>

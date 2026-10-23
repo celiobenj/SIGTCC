@@ -598,6 +598,8 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
 | MF-06 | Data Limite anterior à data do cadastro, no formulário de cadastro de entrega | "A Data Limite não pode ser anterior a hoje." | US-43, E2 e Cenário 8 ("destaca a Data Limite", sem texto exato citado); índice Q-48 | A validar |
 | MF-07 | Notificação ao Professor da Disciplina a cada envio ou substituição de link de uma entrega | "{nome} enviou a entrega {titulo} na turma {identificador}." | US-15, passo 6 e fluxo alternativo D (sem texto exato citado); índice Q-49 | A validar |
 | MF-08 | Lembrete de prazo ao aluno que ainda não enviou, 7 dias, 48 horas e 24 horas antes da Data Limite | "Lembrete: a entrega {titulo} da turma {identificador} vence em {data_limite}." | US-15, fluxo alternativo E ("envia notificação no sistema e e-mail", sem texto exato citado); índice Q-50 | A validar |
+| MF-09 | Notificação à Secretaria do curso na homologação da Versão Final | "Versão Final de {nome} homologada na turma {identificador}: TCC concluído." | US-44, passo 6 ("notifica a Secretaria", sem texto exato citado); índice Q-52 | A validar |
+| MF-10 | Notificação ao Aluno na devolução da Versão Final para ajuste, com a mensagem do Professor | "Versão Final devolvida para ajuste na turma {identificador}: {mensagem}" | US-44, fluxo alternativo D ("notifica o Aluno", sem texto exato citado); índice Q-52 | A validar |
 
 ## Success Criteria *(mandatory)*
 

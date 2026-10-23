@@ -126,4 +126,10 @@ urlpatterns = [
         views_entregas.entrega_enviar,
         name="entrega_enviar",
     ),
+    # Spec 005: homologação ou devolução da Versão Final (contracts/rotas.md). [US-44]
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/versao-final/",
+        views_entregas.aluno_versao_final,
+        name="aluno_versao_final",
+    ),
 ]
