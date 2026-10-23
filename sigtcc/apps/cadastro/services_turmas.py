@@ -545,17 +545,24 @@ def _validar_transicao(anterior, novo_status, gatilho):
         )
 
 
-def criar_tcc_com_historico(aluno, turma, autor, status_inicial, gatilho, anterior=None):
+def criar_tcc_com_historico(
+    aluno, turma, autor, status_inicial, gatilho, anterior=None, **campos_tcc
+):
     """Único ponto que cria um TCC e grava o primeiro registro do histórico (FR-008, FR-012).
 
-    Usada pelos 2 gatilhos de criação: "Vínculo à turma" (`anterior=None`, matrícula nova) e
-    "Transferência para TCC 2" (`anterior` = status do TCC de origem, ex. `tcc1.tcc_status`, lido
-    por quem chama **antes** de passar para esta função). Pressupõe turma, aluno e — na
-    transferência — o TCC de origem já travados pelo chamador (`select_for_update`, research C4).
+    Usada pelos 2 gatilhos de criação: "Vínculo à turma" (`anterior=None`, matrícula nova, sem
+    `campos_tcc` — o TCC nasce "Sem Proposta", sem título/resumo/modalidade) e "Transferência para
+    TCC 2" (`anterior` = status do TCC de origem, ex. `tcc1.tcc_status`, lido por quem chama
+    **antes** de passar para esta função; `campos_tcc` = `tcc_titulo`, `tcc_subtitulo`,
+    `tcc_resumo`, `tcc_modalidade`, `tcc_link_proposta`, `tcc_ari`, copiados do TCC de origem —
+    **obrigatórios** nesse gatilho porque `status_inicial="Em Andamento"` cai na `CHECK
+    ck_tccs_campos_obrigatorios_com_proposta` do dicionário, que exige esses campos fora de "Sem
+    Proposta"). Pressupõe turma, aluno e — na transferência — o TCC de origem já travados pelo
+    chamador (`select_for_update`, research C4).
     [US-14][RBN-CAD-08.3][RBN-CAD-08.7][FR-008][FR-012][research C2][research C4]
     """
     _validar_transicao(anterior, status_inicial, gatilho)
-    tcc = TCCs.objects.create(tcc_alu=aluno, tcc_tur=turma, tcc_status=status_inicial)
+    tcc = TCCs.objects.create(tcc_alu=aluno, tcc_tur=turma, tcc_status=status_inicial, **campos_tcc)
     _registrar_historico(tcc, turma, autor, anterior, status_inicial, gatilho)
     return tcc
 
@@ -613,33 +620,22 @@ def _copiar_tcc_aprovado(autor, turma, aluno, tcc1):
         Coorientacoes.objects.filter(coo_tcc=tcc1, coo_status=StatusCoorientacao.ATIVA)
     )
     encerrar_orientacoes_ativas(tcc1, agora)
-    # PENDÊNCIA (Q-46, divergência a decidir — ver relatório): research C2 propõe chamar aqui
-    # criar_tcc_com_historico(aluno, turma, autor, StatusTCC.EM_ANDAMENTO,
-    # GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2, anterior=tcc1.tcc_status), mas essa função cria o
-    # TCC só com tcc_status preenchido (TCCs.objects.create(tcc_alu=aluno, tcc_tur=turma,
-    # tcc_status=status_inicial)); com status_inicial="Em Andamento" e nenhum outro campo, o
-    # INSERT viola ck_tccs_campos_obrigatorios_com_proposta (tcc_titulo/tcc_resumo/tcc_modalidade
-    # NOT NULL fora de "Sem Proposta", spec 001) antes de os campos copiados do tcc1 poderem ser
-    # gravados — quebra test_us08_matricula (regressão da spec 004). Mantido o padrão manual
-    # (_registrar_historico direto) até a decisão de Leandra Matos/Célio Benjamim.
-    novo = TCCs.objects.create(
-        tcc_alu=aluno,
-        tcc_tur=turma,
-        tcc_status=StatusTCC.EM_ANDAMENTO,
+    # criar_tcc_com_historico estendida com **campos_tcc (research C2, decisão de Julia Cohen
+    # 2026-10-22) para satisfazer a CHECK ck_tccs_campos_obrigatorios_com_proposta, que exige
+    # título/resumo/modalidade preenchidos fora de "Sem Proposta".
+    novo = criar_tcc_com_historico(
+        aluno,
+        turma,
+        autor,
+        StatusTCC.EM_ANDAMENTO,
+        GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2,
+        anterior=tcc1.tcc_status,
         tcc_titulo=tcc1.tcc_titulo,
         tcc_subtitulo=tcc1.tcc_subtitulo,
         tcc_resumo=tcc1.tcc_resumo,
         tcc_modalidade=tcc1.tcc_modalidade,
         tcc_link_proposta=tcc1.tcc_link_proposta,
         tcc_ari=tcc1.tcc_ari,
-    )
-    _registrar_historico(
-        novo,
-        turma,
-        autor,
-        StatusTCC.APROVADO_PARA_TCC_2,
-        StatusTCC.EM_ANDAMENTO,
-        GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2,
     )
     for palavra in PalavrasChaveTCC.objects.filter(pal_tcc=tcc1):
         PalavrasChaveTCC.objects.create(pal_tcc=novo, pal_palavra=palavra.pal_palavra)

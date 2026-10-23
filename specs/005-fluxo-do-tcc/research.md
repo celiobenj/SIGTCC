@@ -96,16 +96,25 @@ def _validar_transicao(anterior, novo_status, gatilho):
         raise ValueError(f"Transição inválida: {anterior!r} → {novo_status!r} pelo gatilho {gatilho!r}")
 
 
-def criar_tcc_com_historico(aluno, turma, autor, status_inicial, gatilho, anterior=None):
+def criar_tcc_com_historico(aluno, turma, autor, status_inicial, gatilho, anterior=None, **campos_tcc):
     """Único ponto que cria um TCC e grava o primeiro registro do histórico (FR-008, FR-012).
 
-    Usada pelos 2 gatilhos de criação: "Vínculo à turma" (`anterior=None`, matrícula nova) e
-    "Transferência para TCC 2" (`anterior` = status do TCC de origem, ex. `tcc1.tcc_status`, lido
-    por quem chama **antes** de passar para esta função). Pressupõe turma, aluno e — na
-    transferência — o TCC de origem já travados pelo chamador (`select_for_update`, research C4).
+    Usada pelos 2 gatilhos de criação: "Vínculo à turma" (`anterior=None`, matrícula nova, sem
+    `campos_tcc` — o TCC nasce "Sem Proposta", sem título/resumo/modalidade) e "Transferência para
+    TCC 2" (`anterior` = status do TCC de origem, ex. `tcc1.tcc_status`, lido por quem chama
+    **antes** de passar para esta função; `campos_tcc` = `tcc_titulo`, `tcc_subtitulo`,
+    `tcc_resumo`, `tcc_modalidade`, `tcc_link_proposta`, `tcc_ari`, copiados do TCC de origem —
+    **obrigatórios** nesse gatilho porque `status_inicial="Em Andamento"` cai na `CHECK
+    ck_tccs_campos_obrigatorios_com_proposta` do dicionário, que exige esses campos fora de "Sem
+    Proposta"; sem eles, o `INSERT` falha com `IntegrityError` antes mesmo de chegar ao
+    `_registrar_historico`, como a implementação confirmou ao tentar aplicar a primeira versão
+    desta função). Pressupõe turma, aluno e — na transferência — o TCC de origem já travados pelo
+    chamador (`select_for_update`, research C4).
     """
     _validar_transicao(anterior, status_inicial, gatilho)
-    tcc = TCCs.objects.create(tcc_alu=aluno, tcc_tur=turma, tcc_status=status_inicial)
+    tcc = TCCs.objects.create(
+        tcc_alu=aluno, tcc_tur=turma, tcc_status=status_inicial, **campos_tcc
+    )
     _registrar_historico(tcc, turma, autor, anterior, status_inicial, gatilho)
     return tcc
 
@@ -130,7 +139,12 @@ Os 3 pontos já existentes passam a usar as funções públicas em vez do padrã
 `matricular` chama `criar_tcc_com_historico(aluno, turma, professor, StatusTCC.SEM_PROPOSTA,
 GatilhoStatusTCC.VINCULO_A_TURMA)` (sem passar `anterior`, usa o `None` padrão);
 `_copiar_tcc_aprovado` chama `criar_tcc_com_historico(aluno, turma, autor,
-StatusTCC.EM_ANDAMENTO, GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2, anterior=tcc1.tcc_status)`;
+StatusTCC.EM_ANDAMENTO, GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2, anterior=tcc1.tcc_status,
+tcc_titulo=tcc1.tcc_titulo, tcc_subtitulo=tcc1.tcc_subtitulo, tcc_resumo=tcc1.tcc_resumo,
+tcc_modalidade=tcc1.tcc_modalidade, tcc_link_proposta=tcc1.tcc_link_proposta,
+tcc_ari=tcc1.tcc_ari)` — assinatura corrigida durante a implementação (T006), decisão de Julia
+Cohen (2026-10-22): estender a função com `**campos_tcc` em vez de manter `_copiar_tcc_aprovado`
+como exceção fora do FR-012;
 `encerrar_participacao` chama `atualizar_status_tcc(tcc, turma, professor, status,
 GatilhoStatusTCC.ENCERRAMENTO_DA_PARTICIPACAO)`. `services_tcc.py` (gatilho "Proposta salva") e
 `services_entregas.py` (gatilho "Homologação da Versão Final") chamam `atualizar_status_tcc`; a

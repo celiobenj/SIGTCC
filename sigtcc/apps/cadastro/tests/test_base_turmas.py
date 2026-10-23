@@ -20,6 +20,7 @@ from sigtcc.apps.cadastro.choices import (
     TipoEventoTurma,
 )
 from sigtcc.apps.cadastro.models import (
+    AreasInteresse,
     EntregasMarcos,
     HistoricoAlunosTurmas,
     HistoricoStatusTCC,
@@ -241,6 +242,37 @@ class ServicoUnicoDeStatusTest(TesteTurmas):
         self.assertEqual(historico.hst_gatilho, GatilhoStatusTCC.VINCULO_A_TURMA)
         self.assertEqual(historico.hst_usu_id, self.professor.pk)
         self.assertEqual(historico.hst_tur_id, self.turma.pk)
+
+    def test_criar_tcc_com_historico_aceita_anterior_e_campos_extras(self):
+        """Gatilho de criação com linha de origem (Transferência para TCC 2): `anterior` vem de
+        fora do objeto (status do TCC de origem) e `**campos_tcc` grava título/resumo/modalidade
+        já na criação, exigidos pela CHECK ck_tccs_campos_obrigatorios_com_proposta fora de "Sem
+        Proposta" (research C2, decisão de Julia Cohen 2026-10-22).
+        [US-14][RBN-CAD-08.3][RBN-CAD-08.7][FR-008][FR-012][research C2]
+        """
+        area = AreasInteresse.objects.create(ari_nome="Área de interesse copiada")
+        tcc = services_turmas.criar_tcc_com_historico(
+            self.aluno,
+            self.turma,
+            self.professor,
+            StatusTCC.EM_ANDAMENTO,
+            GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2,
+            anterior=StatusTCC.APROVADO_PARA_TCC_2,
+            tcc_titulo="Título copiado",
+            tcc_subtitulo="Subtítulo copiado",
+            tcc_resumo="Resumo copiado",
+            tcc_modalidade=ModalidadeTCC.MONOGRAFIA,
+            tcc_link_proposta="https://exemplo.org/proposta",
+            tcc_ari=area,
+        )
+        self.assertEqual(tcc.tcc_status, StatusTCC.EM_ANDAMENTO)
+        self.assertEqual(tcc.tcc_titulo, "Título copiado")
+        self.assertEqual(tcc.tcc_resumo, "Resumo copiado")
+        self.assertEqual(tcc.tcc_modalidade, ModalidadeTCC.MONOGRAFIA)
+        historico = HistoricoStatusTCC.objects.get(hst_tcc=tcc)
+        self.assertEqual(historico.hst_status_anterior, StatusTCC.APROVADO_PARA_TCC_2)
+        self.assertEqual(historico.hst_status_novo, StatusTCC.EM_ANDAMENTO)
+        self.assertEqual(historico.hst_gatilho, GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2)
 
     def test_criar_tcc_com_historico_transicao_invalida_nao_grava_nada(self):
         """Transição fora da tabela (ex.: gatilho de criação com Status final errado) levanta
