@@ -51,7 +51,7 @@
   provisórias ausentes (MF-01, MF-02, seção "Mensagens a validar com a PO"), dois cenários novos
   de cobertura na User Story 2 (gravação de Status para gatilhos disparados pela spec 006), tag
   `[RBN-CAD-XX]` em cada Functional Requirement, correção da referência ambígua a "spec 006/005"
-  nas Assumptions, e nova pendência Q-45 (nome do link de histórico, US-14) em
+  nas Assumptions, e nova pendência Q-81 (nome do link de histórico, US-14) em
   `docs/questoes-a-rever.md`. Nenhuma tabela, campo ou parâmetro de serviço inventado foi
   encontrado nessa rodada.
 - **Terceira rodada (2026-10-22, `/speckit-clarify`)**: 3 perguntas feitas e respondidas (quota

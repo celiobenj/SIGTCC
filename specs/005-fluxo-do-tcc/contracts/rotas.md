@@ -30,7 +30,7 @@ Regras gerais:
   de novo, inclusive pelo endereço direto (SC-004, mesmo padrão da spec 004).
 - Ações que mudam dados só por POST, com CSRF; sem JavaScript (protótipo é só referência visual).
 - Menu: reaproveita o item "Turmas" já existente (`menu.py`, spec 004); a aba "Meu TCC" e a aba
-  "Atividades" (nome provisório, Q-44) ficam dentro da tela da turma, com visibilidade por perfil
+  "Atividades" (nome provisório, Q-80) ficam dentro da tela da turma, com visibilidade por perfil
   (Aluno vê "Meu TCC"/"Atividades" dele; Professor vê "Alunos"/"Atividades" da turma — a aba
   "Atividades" é compartilhada, mas o conteúdo e as ações mudam por perfil).
 - A "tela de orientandos" (Orientador) e a ação "Correções Conferidas" pertencem à spec 006, ainda

@@ -71,7 +71,7 @@ def cadastrar_entrega(professor, tur_id, dados):
     """Cadastra uma entrega (`Turmas_Marcos`) na turma do Professor da Disciplina (passos 3 a 6
     da US-43) e cria, para cada aluno atualmente matriculado com participação não encerrada, o
     registro de status ("Aguardando Envio", ou "Não Entregue" se a Data Limite já estiver
-    vencida), notificando cada um deles com o Título e a Data Limite (passo 7, MF-05, Q-48).
+    vencida), notificando cada um deles com o Título e a Data Limite (passo 7, MF-05, Q-84).
 
     A turma é travada antes da gravação (`travar_turma_ativa`, levanta `TurmaArquivada` se
     arquivada); a criação da entrega roda num savepoint próprio (`transaction.atomic()`
@@ -184,7 +184,7 @@ def enviar_entrega(aluno, tma_id, link):
     Recusa com `Http404` (sem alterar nada), no mesmo padrão de `services_tcc.salvar_proposta` e
     de `services_turmas.encerrar_participacao` para uma ação cujo botão a view já esconde, se a
     entrega não existir para este aluno ou se `envio_liberado` não permitir. Notifica o Professor
-    da Disciplina a cada envio e a cada substituição (MF-07, Q-49).
+    da Disciplina a cada envio e a cada substituição (MF-07, Q-85).
     [US-15][US-29][RBN-CAD-09.2][RBN-CAD-09.3][RBN-CAD-09.6][FR-018 a FR-021][FR-023 a FR-025]
     [research C7]
     """
@@ -327,7 +327,7 @@ def entregas_para_lembrar(agora):
 
 def enviar_lembretes_de_prazo(agora=None):
     """Notifica cada aluno das `entregas_para_lembrar(agora)` com o lembrete de prazo (MF-08,
-    PROVISÓRIA, Q-50), com o link para a janela da entrega. Chamada pelo comando de gestão
+    PROVISÓRIA, Q-86), com o link para a janela da entrega. Chamada pelo comando de gestão
     `enviar_lembretes_entrega` (rotina agendada a configurar — research C5).
 
     Como a janela de cada prazo tem margem de ±1h, uma rotina horária encontraria a mesma
@@ -491,7 +491,7 @@ def homologar_versao_final(professor, tur_id, alu_id):
     """Homologa a Versão Final (passos 5 a 7 da US-44): muda o status de envio para "Homologada"
     com a data e a hora (`ent_data_avaliacao`), o Status do TCC para "Concluído" pelo gatilho
     "Homologação da Versão Final" (registrando o Professor no histórico, FR-012) e notifica a
-    Secretaria do curso (MF-09, PROVISÓRIA, Q-52). Recusa com `Http404` (botão escondido) se a
+    Secretaria do curso (MF-09, PROVISÓRIA, Q-88). Recusa com `Http404` (botão escondido) se a
     Versão Final não foi enviada ou já foi avaliada, ou se faltam as "Correções Conferidas" em
     Sistemas de Informação (E2, E4); `PermissionDenied` para outro Docente (E5) e
     `TurmaArquivada` com a turma arquivada.
@@ -528,7 +528,7 @@ def devolver_versao_final(professor, tur_id, alu_id, mensagem):
     """Devolve a Versão Final para ajuste (fluxo alternativo D da US-44): muda o status de envio
     para "Devolvida para Ajuste", grava a Mensagem (`ent_feedback`, já validada pelo formulário:
     obrigatória, até 500 caracteres) e a data e a hora (`ent_data_avaliacao`) e notifica o Aluno
-    com a mensagem, para reenviar (MF-10, PROVISÓRIA, Q-52; link para a aba Meu TCC). O Status do
+    com a mensagem, para reenviar (MF-10, PROVISÓRIA, Q-88; link para a aba Meu TCC). O Status do
     TCC não muda. Mesmas recusas de `homologar_versao_final`, exceto a das "Correções
     Conferidas", que só bloqueia a homologação (E2).
     [US-44][US-29][RBN-CAD-09.3][RBN-CAD-09.5][FR-025][FR-028][research C4]

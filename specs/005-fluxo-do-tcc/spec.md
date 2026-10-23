@@ -88,7 +88,7 @@ do fluxo principal e o restante da própria US:
 US-16 e quase toda a US-43), esta spec usa **"aba Atividades"** como nome da aba nos requisitos e
 nas mensagens, e trata "aba Entregas" do passo 1 da US-43 como lapso de digitação a confirmar com a
 Profa. Diana ou com Leandra Matos (responsável pelas US-13 a 16, 29, 43 e 44). **Este item está
-registrado em `docs/questoes-a-rever.md` (Q-44) e não bloqueia o planejamento, mas bloqueia a tela
+registrado em `docs/questoes-a-rever.md` (Q-80) e não bloqueia o planejamento, mas bloqueia a tela
 antes de implementá-la.**
 
 ### Pontos decididos na conferência do analista-requisitos (2026-10-22)
@@ -110,7 +110,7 @@ antes de implementá-la.**
    nome completo do link** (mais descritivo e usado no fluxo principal); "Histórico", no fluxo
    alternativo A, é tratado como referência abreviada ao mesmo link, não como um link diferente.
    Esta decisão depende de confirmação de Leandra Matos ou da Profa. Diana e foi registrada como
-   **Q-45** em `docs/questoes-a-rever.md`.
+   **Q-81** em `docs/questoes-a-rever.md`.
 4. **Cobertura de teste na fronteira com a spec 006**: a US-14 tem gatilhos ("Indicação de Apto
    para Defesa", "Liberação do resultado") disparados por ações de outra spec (006, Célio
    Benjamim), mas a gravação do Status e do histórico para esses gatilhos é responsabilidade do
@@ -123,9 +123,9 @@ antes de implementá-la.**
    sistema "destaque a Data Limite" quando ela for anterior à data do cadastro — nenhum dos dois
    cita o texto exato. **Decisão: incluir.** A implementação (T018/T019) criou as mensagens
    PROVISÓRIAS **MF-05** (notificação da entrega) e **MF-06** (Data Limite anterior a hoje), no
-   mesmo padrão da MF-04, registradas como **Q-48** em `docs/questoes-a-rever.md`. O envio por
+   mesmo padrão da MF-04, registradas como **Q-84** em `docs/questoes-a-rever.md`. O envio por
    e-mail do passo 7 não foi implementado nesta fase (só a notificação no sistema, única forma
-   coberta pelo contrato de `services.notificar` reaproveitado desta spec); ver Q-48.
+   coberta pelo contrato de `services.notificar` reaproveitado desta spec); ver Q-84.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -477,7 +477,7 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
 - **FR-009** [RBN-CAD-08.7]: O sistema MUST registrar, a cada mudança de Status, uma linha no histórico com o
   Status anterior, o novo Status, a data e a hora, o usuário responsável e o gatilho, e MUST
   disponibilizar essa consulta — pelo link "Histórico do Status do TCC" (nome provisório; ver
-  Clarifications, item 3, e índice Q-45) — ao Aluno, ao Orientador (na tela de orientandos) e ao
+  Clarifications, item 3, e índice Q-81) — ao Aluno, ao Orientador (na tela de orientandos) e ao
   Professor da Disciplina (na tela do aluno); um Docente sem vínculo com o TCC MUST NOT visualizar
   esse histórico. A Secretaria do curso (que consulta turmas na spec 004, Q9) também MUST NOT
   visualizar esse histórico (Clarifications, sessão 2026-10-22).
@@ -593,13 +593,13 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
 | MF-01 | Versão final: Data Limite da entrega já vencida, antes do envio | "Data Limite vencida: o envio será registrado como Entregue com Atraso." | US-29, fluxo alternativo B | A validar |
 | MF-02 | Confirmação da devolução da Versão Final para ajuste | "Versão Final devolvida para ajuste." | US-44, fluxo alternativo D | A validar |
 | MF-03 | Palavra-Chave repetida entre as caixas preenchidas | "Palavra-chave repetida." | Clarifications, sessão 2026-10-22; FR-007 | A validar |
-| MF-04 | Notificação ao Orientador a cada mudança de tema (Título, Subtítulo, Resumo, Modalidade ou Link) | "{nome} alterou os dados do TCC na turma {identificador}." | US-13, fluxo alternativo A ("envia uma notificação ao Orientador", sem texto exato citado); índice Q-47 | A validar |
-| MF-05 | Notificação a cada aluno da turma ao cadastrar uma entrega | "Nova entrega cadastrada na turma {identificador}: {titulo}, com prazo até {data_limite}." | US-43, passo 7 ("uma notificação no sistema e um e-mail com o Título e a Data Limite", sem texto exato citado); índice Q-48 | A validar |
-| MF-06 | Data Limite anterior à data do cadastro, no formulário de cadastro de entrega | "A Data Limite não pode ser anterior a hoje." | US-43, E2 e Cenário 8 ("destaca a Data Limite", sem texto exato citado); índice Q-48 | A validar |
-| MF-07 | Notificação ao Professor da Disciplina a cada envio ou substituição de link de uma entrega | "{nome} enviou a entrega {titulo} na turma {identificador}." | US-15, passo 6 e fluxo alternativo D (sem texto exato citado); índice Q-49 | A validar |
-| MF-08 | Lembrete de prazo ao aluno que ainda não enviou, 7 dias, 48 horas e 24 horas antes da Data Limite | "Lembrete: a entrega {titulo} da turma {identificador} vence em {data_limite}." | US-15, fluxo alternativo E ("envia notificação no sistema e e-mail", sem texto exato citado); índice Q-50 | A validar |
-| MF-09 | Notificação à Secretaria do curso na homologação da Versão Final | "Versão Final de {nome} homologada na turma {identificador}: TCC concluído." | US-44, passo 6 ("notifica a Secretaria", sem texto exato citado); índice Q-52 | A validar |
-| MF-10 | Notificação ao Aluno na devolução da Versão Final para ajuste, com a mensagem do Professor | "Versão Final devolvida para ajuste na turma {identificador}: {mensagem}" | US-44, fluxo alternativo D ("notifica o Aluno", sem texto exato citado); índice Q-52 | A validar |
+| MF-04 | Notificação ao Orientador a cada mudança de tema (Título, Subtítulo, Resumo, Modalidade ou Link) | "{nome} alterou os dados do TCC na turma {identificador}." | US-13, fluxo alternativo A ("envia uma notificação ao Orientador", sem texto exato citado); índice Q-83 | A validar |
+| MF-05 | Notificação a cada aluno da turma ao cadastrar uma entrega | "Nova entrega cadastrada na turma {identificador}: {titulo}, com prazo até {data_limite}." | US-43, passo 7 ("uma notificação no sistema e um e-mail com o Título e a Data Limite", sem texto exato citado); índice Q-84 | A validar |
+| MF-06 | Data Limite anterior à data do cadastro, no formulário de cadastro de entrega | "A Data Limite não pode ser anterior a hoje." | US-43, E2 e Cenário 8 ("destaca a Data Limite", sem texto exato citado); índice Q-84 | A validar |
+| MF-07 | Notificação ao Professor da Disciplina a cada envio ou substituição de link de uma entrega | "{nome} enviou a entrega {titulo} na turma {identificador}." | US-15, passo 6 e fluxo alternativo D (sem texto exato citado); índice Q-85 | A validar |
+| MF-08 | Lembrete de prazo ao aluno que ainda não enviou, 7 dias, 48 horas e 24 horas antes da Data Limite | "Lembrete: a entrega {titulo} da turma {identificador} vence em {data_limite}." | US-15, fluxo alternativo E ("envia notificação no sistema e e-mail", sem texto exato citado); índice Q-86 | A validar |
+| MF-09 | Notificação à Secretaria do curso na homologação da Versão Final | "Versão Final de {nome} homologada na turma {identificador}: TCC concluído." | US-44, passo 6 ("notifica a Secretaria", sem texto exato citado); índice Q-88 | A validar |
+| MF-10 | Notificação ao Aluno na devolução da Versão Final para ajuste, com a mensagem do Professor | "Versão Final devolvida para ajuste na turma {identificador}: {mensagem}" | US-44, fluxo alternativo D ("notifica o Aluno", sem texto exato citado); índice Q-88 | A validar |
 
 ## Success Criteria *(mandatory)*
 

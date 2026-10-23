@@ -244,32 +244,32 @@ MF02_VERSAO_FINAL_DEVOLVIDA = "Versão Final devolvida para ajuste."
 MF03_PALAVRA_CHAVE_REPETIDA = "Palavra-chave repetida."
 # Notificação ao Orientador na mudança de tema (US-13, fluxo alternativo A): a US diz só "envia
 # uma notificação ao Orientador", sem citar o texto exato — mensagem nova, registrada como
-# PROVISÓRIA (Q-47) no mesmo padrão de MT21/MT22 (spec 004).
+# PROVISÓRIA (Q-83) no mesmo padrão de MT21/MT22 (spec 004).
 MF04_NOTIFICACAO_MUDANCA_TEMA = "{nome} alterou os dados do TCC na turma {identificador}."
 # Notificação a cada aluno da turma ao cadastrar uma entrega (US-43, passo 7): a US pede "uma
 # notificação no sistema e um e-mail com o Título e a Data Limite", sem citar o texto exato —
-# mensagem nova, registrada como PROVISÓRIA (Q-48), no mesmo padrão da MF-04.
+# mensagem nova, registrada como PROVISÓRIA (Q-84), no mesmo padrão da MF-04.
 MF05_NOTIFICACAO_ENTREGA_CADASTRADA = (
     "Nova entrega cadastrada na turma {identificador}: {titulo}, com prazo até {data_limite}."
 )
 # Data Limite anterior à data do cadastro (US-43, E2, Cenário 8): a US só diz "destaca a Data
-# Limite", sem citar o texto exato — mensagem nova, registrada como PROVISÓRIA (Q-48).
+# Limite", sem citar o texto exato — mensagem nova, registrada como PROVISÓRIA (Q-84).
 MF06_DATA_LIMITE_ANTERIOR_A_HOJE = "A Data Limite não pode ser anterior a hoje."
 # Notificação ao Professor da Disciplina a cada envio ou substituição de link (US-15, passo 6 e
 # fluxo alternativo D): a US diz só "envia... uma notificação no sistema com o envio" e "notifica
 # o Professor da Disciplina no sistema", sem citar o texto exato — mensagem nova, registrada como
-# PROVISÓRIA (Q-49), no mesmo padrão da MF-04/MF-05.
+# PROVISÓRIA (Q-85), no mesmo padrão da MF-04/MF-05.
 MF07_NOTIFICACAO_ENVIO_ENTREGA = "{nome} enviou a entrega {titulo} na turma {identificador}."
 # Lembrete de prazo ao aluno que ainda não enviou, 7 dias, 48h e 24h antes da Data Limite (US-15,
 # fluxo alternativo E): a US diz só "envia notificação no sistema e e-mail", sem citar o texto
-# exato — mensagem nova, registrada como PROVISÓRIA (Q-50), no mesmo padrão da MF-05/MF-07.
+# exato — mensagem nova, registrada como PROVISÓRIA (Q-86), no mesmo padrão da MF-05/MF-07.
 MF08_LEMBRETE_PRAZO_ENTREGA = (
     "Lembrete: a entrega {titulo} da turma {identificador} vence em {data_limite}."
 )
 # Notificação à Secretaria na homologação da Versão Final (US-44, passo 6: "notifica a
 # Secretaria para concluir os trâmites acadêmicos") e ao Aluno na devolução para ajuste (fluxo
 # alternativo D: "notifica o Aluno") — a US não cita o texto exato de nenhuma das duas; mensagens
-# novas, registradas como PROVISÓRIAS (Q-52), no mesmo padrão da MF-05/MF-07.
+# novas, registradas como PROVISÓRIAS (Q-88), no mesmo padrão da MF-05/MF-07.
 MF09_NOTIFICACAO_VERSAO_FINAL_HOMOLOGADA = (
     "Versão Final de {nome} homologada na turma {identificador}: TCC concluído."
 )

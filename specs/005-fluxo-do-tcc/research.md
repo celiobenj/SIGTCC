@@ -154,7 +154,7 @@ status definido nem grava em `tcc_status` fora dessas duas funções, e nenhum o
 `HistoricoStatusTCC` diretamente (FR-012, SC-002).
 
 Por tocar um arquivo já mesclado de outra feature, esta refatoração está registrada como pendência
-de aprovação (Q-46) para Leandra Matos e Célio Benjamim; os testes da spec 004 (US-08 e US-09)
+de aprovação (Q-82) para Leandra Matos e Célio Benjamim; os testes da spec 004 (US-08 e US-09)
 precisam continuar passando sem alteração.
 
 **Alternativas**: duplicar a lógica em `services_tcc.py` — violaria o próprio FR-012 ("Status
