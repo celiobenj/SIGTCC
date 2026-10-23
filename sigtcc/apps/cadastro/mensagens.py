@@ -207,3 +207,36 @@ MT31_PEDIDO_CANCELADO = (
     "O pedido de {tipo} para o TCC de {nome} foi cancelado porque a participação do aluno foi "
     "encerrada."
 )
+
+# =============================================================================================
+# Spec 005: Fluxo do TCC e Entregas (US-13, US-14, US-15, US-16, US-29, US-43, US-44)
+# =============================================================================================
+
+# US-13 [RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2]
+PROPOSTA_SALVA = "Proposta salva"
+ALTERACOES_SALVAS = "Alterações salvas"
+INFORME_PALAVRAS_CHAVE = "Informe de 1 a 5 Palavras-Chave"
+# Confirmado na análise /speckit-analyze: não existe constante equivalente em mensagens.py antes
+# desta spec (research/tasks T001); reaproveitar M14_CAMPO_OBRIGATORIO (campo obrigatório, E2) e
+# JUSTIFICATIVA_500 (mensagem de limite de caracteres análoga) sem duplicar.
+LINK_HTTPS_500 = "O link deve começar com https:// e ter até 500 caracteres"
+
+# US-43 [RBN-CAD-09.1][RBN-CAD-09.6]
+ENTREGA_CADASTRADA = "Entrega cadastrada"
+ENTREGA_TIPO_REPETIDO = "A turma já tem uma entrega deste tipo"
+NENHUMA_ENTREGA_CADASTRADA = "Nenhuma entrega cadastrada"
+
+# US-15 [RBN-CAD-09.2][RBN-CAD-09.3][RBN-CAD-09.6]
+ENTREGA_ENVIADA = "Entrega enviada"
+ENTREGA_CUMPRIDA_PROPOSTA = "Esta entrega é cumprida ao salvar a Proposta"
+
+# US-29 [RBN-CAD-09.2][RBN-CAD-09.3]
+VERSAO_FINAL_ENVIADA = "Versão Final enviada"
+
+# US-44 [RBN-CAD-09.3][RBN-CAD-09.5]
+VERSAO_FINAL_HOMOLOGADA = "Versão Final homologada"
+
+# Mensagens PROVISÓRIAS da spec 005 (tabela "Mensagens a validar com a PO" do spec.md).
+MF01_DATA_LIMITE_VENCIDA = "Data Limite vencida: o envio será registrado como Entregue com Atraso."
+MF02_VERSAO_FINAL_DEVOLVIDA = "Versão Final devolvida para ajuste."
+MF03_PALAVRA_CHAVE_REPETIDA = "Palavra-chave repetida."
