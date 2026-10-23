@@ -45,7 +45,11 @@ class PropostaForm(FormularioSigtcc):
         label="Resumo",
         max_length=LIMITE_RESUMO,
         help_text=f"Até {LIMITE_RESUMO} caracteres",
-        widget=forms.Textarea(attrs={"rows": 6, "maxlength": LIMITE_RESUMO}),
+        # data-contador liga o contador de caracteres restantes (static/js/contador.js; US-13,
+        # passo 2 e E3; FR-001); sem JavaScript, o maxlength continua limitando o campo.
+        widget=forms.Textarea(
+            attrs={"rows": 6, "maxlength": LIMITE_RESUMO, "data-contador": LIMITE_RESUMO}
+        ),
     )
     modalidade = forms.ChoiceField(label="Modalidade", choices=ModalidadeTCC.choices)
     link = forms.CharField(

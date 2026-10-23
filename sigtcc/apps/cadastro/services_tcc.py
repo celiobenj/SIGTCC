@@ -27,6 +27,7 @@ from sigtcc.apps.cadastro.choices import (
     TipoSolicitacao,
 )
 from sigtcc.apps.cadastro.models import (
+    Alunos,
     AlunosTurmas,
     Coorientacoes,
     EntregasMarcos,
@@ -272,17 +273,33 @@ def salvar_alteracoes_tcc(tcc, dados):
     (FR-004, FR-005): grava os campos da Proposta, apaga e recria as `PalavrasChave_TCC` (de 1 a
     5, sem repetir — já conferido pelo formulário; `IntegrityError` numa corrida de duplo clique
     vira MF-03, rede de segurança do research C3) e notifica o Orientador atual, se houver,
-    quando algum campo de tema (Título, Subtítulo, Resumo, Modalidade ou Link) mudou. O TCC é
-    travado antes da leitura (research C4); a gravação das Palavras-Chave usa um savepoint
-    próprio (`transaction.atomic()` aninhado) para a captura de `IntegrityError` não invalidar a
-    transação externa.
-    [US-13][RBN-CAD-08.1][RBN-CAD-08.2][FR-004][FR-005][research C2][research C3][research C4]
+    quando algum campo mudou — Título, Subtítulo, Resumo, Modalidade, Link, Área de Interesse ou
+    Palavras-Chave (US-13, fluxo A; FR-005; MF-04, Q-83).
+
+    Trava turma → aluno → TCC, nessa ordem (research C4), e confere de novo, depois de travar,
+    que a turma não está arquivada (`TurmaArquivada`) e que o TCC continua "Em Andamento"
+    (`Http404` fora dele, como `salvar_proposta`): a tela decide o botão antes, mas a
+    participação pode ser encerrada ou a turma arquivada no meio da requisição (SC-004). A
+    gravação das Palavras-Chave usa um savepoint próprio (`transaction.atomic()` aninhado) para a
+    captura de `IntegrityError` não invalidar a transação externa.
+    [US-13][RBN-CAD-08.1][RBN-CAD-08.2][FR-004][FR-005][FR-006][SC-004][research C2]
+    [research C3][research C4]
     """
     with transaction.atomic():
+        services_turmas.travar_turma_ativa(tcc.tcc_tur_id)
+        Alunos.objects.select_for_update().filter(pk=tcc.tcc_alu_id).first()
         tcc = TCCs.objects.select_for_update().get(pk=tcc.pk)
-        tema_mudou = any(
-            getattr(tcc, campo_model) != (dados.get(campo_form) or None)
-            for campo_form, campo_model in _CAMPOS_TEMA.items()
+        if tcc.tcc_status != StatusTCC.EM_ANDAMENTO:
+            raise Http404
+        area_nova = dados.get("area_interesse")
+        palavras_novas = set(dados.get("palavras_chave", []))
+        tema_mudou = (
+            any(
+                getattr(tcc, campo_model) != (dados.get(campo_form) or None)
+                for campo_form, campo_model in _CAMPOS_TEMA.items()
+            )
+            or tcc.tcc_ari_id != (area_nova.pk if area_nova is not None else None)
+            or set(palavras_chave_do(tcc)) != palavras_novas
         )
         tcc.tcc_titulo = dados.get("titulo") or None
         tcc.tcc_subtitulo = dados.get("subtitulo") or None

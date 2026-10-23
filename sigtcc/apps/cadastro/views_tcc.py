@@ -17,7 +17,7 @@ from sigtcc.apps.cadastro.choices import StatusTCC
 from sigtcc.apps.cadastro.forms_entregas import EnviarLinkForm
 from sigtcc.apps.cadastro.forms_tcc import DadosTCCForm, PropostaForm
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
-from sigtcc.apps.cadastro.services_turmas import CONSULTAR
+from sigtcc.apps.cadastro.services_turmas import CONSULTAR, TurmaArquivada
 
 
 def _turmas_do_aluno(request, arquivadas):
@@ -102,24 +102,32 @@ def meu_tcc(request, tur_id):
 
     if request.method == "POST":
         acao = request.POST.get("acao")
-        if acao == "salvar_proposta" and pode_salvar_proposta:
-            proposta_form = PropostaForm(request.POST)
-            if proposta_form.is_valid():
-                services_tcc.salvar_proposta(aluno, tur_id, proposta_form.cleaned_data)
-                messages.success(request, mensagens.PROPOSTA_SALVA)
-                return redirect("cadastro:meu_tcc", tur_id=tur_id)
-        elif acao == "salvar_alteracoes" and pode_salvar_alteracoes:
-            proposta_form = PropostaForm(request.POST)
-            dados_form = DadosTCCForm(request.POST)
-            if proposta_form.is_valid() and dados_form.is_valid():
-                dados = {**proposta_form.cleaned_data, **dados_form.cleaned_data}
-                try:
-                    services_tcc.salvar_alteracoes_tcc(tcc, dados)
-                except services_tcc.ErroTCC as erro:
-                    messages.error(request, erro.mensagem)
-                else:
-                    messages.success(request, mensagens.ALTERACOES_SALVAS)
+        # A turma pode ser arquivada entre a abertura da tela e o salvamento: os serviços travam
+        # a turma e levantam TurmaArquivada; a tela volta à aba Meu TCC (só consulta) com a MT-25,
+        # sem erro 500 (FR-006; a tela da turma da spec 004, destino de trata_turma_arquivada, é
+        # fechada ao Aluno). [US-13][FR-006][SC-004]
+        try:
+            if acao == "salvar_proposta" and pode_salvar_proposta:
+                proposta_form = PropostaForm(request.POST)
+                if proposta_form.is_valid():
+                    services_tcc.salvar_proposta(aluno, tur_id, proposta_form.cleaned_data)
+                    messages.success(request, mensagens.PROPOSTA_SALVA)
                     return redirect("cadastro:meu_tcc", tur_id=tur_id)
+            elif acao == "salvar_alteracoes" and pode_salvar_alteracoes:
+                proposta_form = PropostaForm(request.POST)
+                dados_form = DadosTCCForm(request.POST)
+                if proposta_form.is_valid() and dados_form.is_valid():
+                    dados = {**proposta_form.cleaned_data, **dados_form.cleaned_data}
+                    try:
+                        services_tcc.salvar_alteracoes_tcc(tcc, dados)
+                    except services_tcc.ErroTCC as erro:
+                        messages.error(request, erro.mensagem)
+                    else:
+                        messages.success(request, mensagens.ALTERACOES_SALVAS)
+                        return redirect("cadastro:meu_tcc", tur_id=tur_id)
+        except TurmaArquivada:
+            messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
+            return redirect("cadastro:meu_tcc", tur_id=tur_id)
 
     contexto = {
         "turma": turma,

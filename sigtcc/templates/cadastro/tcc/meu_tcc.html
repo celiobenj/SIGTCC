@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% comment %}
   Aba Meu TCC: seção Proposta (Título, Subtítulo, Resumo, Modalidade, Link), a etiqueta do Status
   (somente leitura) e, depois da Proposta salva, Área de Interesse e Palavras-Chave. Com o Status
@@ -101,3 +102,4 @@
 {% endwith %}
 {% endif %}
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/contador.js' %}"></script>{% endblock %}

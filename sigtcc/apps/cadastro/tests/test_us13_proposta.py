@@ -295,3 +295,110 @@ class AcessoMeuTCCTest(MeuTCCTestBase):
         self.client.force_login(outro_aluno.alu)
         resposta = self.client.get(self.url())
         self.assertEqual(resposta.status_code, 404)
+
+
+class CorrecoesDaRevisaoUS13Test(MeuTCCTestBase):
+    """Correções da revisão de 2026-10-23 (Phase 12, T042 e T043): aviso ao Orientador também por
+    Área de Interesse e Palavras-Chave (US-13, fluxo A; FR-005), conferência de novo do Status e
+    da turma no serviço (SC-004; research C4), turma arquivada no salvamento sem erro 500 e o
+    contador de caracteres do Resumo (FR-001).
+
+    [US-13][RBN-CAD-08.2][FR-001][FR-005][FR-006][SC-004][Q-83]
+    """
+
+    _dados = SalvarAlteracoesTest._dados
+
+    def setUp(self):
+        super().setUp()
+        # Proposta já salva (Status "Em Andamento"), com Área e Palavra-Chave gravadas, para
+        # mudar um campo de cada vez.
+        tcc = self.tcc()
+        tcc.tcc_titulo = DADOS_PROPOSTA["titulo"]
+        tcc.tcc_resumo = DADOS_PROPOSTA["resumo"]
+        tcc.tcc_modalidade = DADOS_PROPOSTA["modalidade"]
+        tcc.tcc_status = StatusTCC.EM_ANDAMENTO
+        self.area = AreasInteresse.objects.first()
+        tcc.tcc_ari = self.area
+        tcc.save()
+        PalavrasChaveTCC.objects.create(pal_tcc=tcc, pal_palavra="IoT")
+        self.orientador = criar_docente_ativo()
+        Orientacoes.objects.create(
+            ori_tcc=tcc,
+            ori_doc=self.orientador.docentes,
+            ori_origem=OrigemOrientacao.PEDIDO_ACEITO,
+            ori_status=StatusOrientacao.ATIVA,
+            ori_data_inicio=timezone.now(),
+        )
+
+    def salvar(self, **extra):
+        return self.client.post(
+            self.url(), {"acao": "salvar_alteracoes", **self._dados(**extra)}, follow=True
+        )
+
+    def avisos_ao_orientador(self):
+        return Notificacoes.objects.filter(not_usu_id=self.orientador.pk).count()
+
+    def test_mudanca_so_da_area_de_interesse_notifica_o_orientador(self):
+        outra_area = AreasInteresse.objects.exclude(pk=self.area.pk).first()
+        self.salvar(area_interesse=outra_area.pk)
+        self.assertEqual(self.tcc().tcc_ari_id, outra_area.pk)
+        self.assertEqual(self.avisos_ao_orientador(), 1)
+
+    def test_mudanca_so_das_palavras_chave_notifica_o_orientador(self):
+        self.salvar(palavra_chave_2="Segurança")
+        self.assertEqual(self.avisos_ao_orientador(), 1)
+
+    def test_salvar_sem_mudanca_nao_notifica(self):
+        self.salvar()
+        self.assertEqual(self.avisos_ao_orientador(), 0)
+
+    def test_servico_confere_de_novo_o_status_depois_de_travar(self):
+        """SC-004: se o TCC deixou de estar "Em Andamento" (ex.: participação encerrada no meio
+        da requisição), o serviço não grava nada."""
+        from django.http import Http404
+
+        from sigtcc.apps.cadastro import services_tcc
+
+        desatualizado = self.tcc()
+        tcc = self.tcc()
+        tcc.tcc_status = StatusTCC.DESISTENTE
+        tcc.save(update_fields=["tcc_status"])
+        with self.assertRaises(Http404):
+            services_tcc.salvar_alteracoes_tcc(
+                desatualizado, {**DADOS_PROPOSTA, "titulo": "Título indevido", "palavras_chave": []}
+            )
+        self.assertEqual(self.tcc().tcc_titulo, DADOS_PROPOSTA["titulo"])
+
+    def test_servico_recusa_turma_arquivada(self):
+        from sigtcc.apps.cadastro import services_tcc
+        from sigtcc.apps.cadastro.services_turmas import TurmaArquivada
+
+        tcc = self.tcc()
+        self.turma.tur_status = StatusTurma.ARQUIVADA
+        self.turma.save(update_fields=["tur_status"])
+        with self.assertRaises(TurmaArquivada):
+            services_tcc.salvar_alteracoes_tcc(
+                tcc, {**DADOS_PROPOSTA, "titulo": "Título indevido", "palavras_chave": ["IoT"]}
+            )
+        self.assertEqual(self.tcc().tcc_titulo, DADOS_PROPOSTA["titulo"])
+
+    def test_turma_arquivada_no_meio_do_salvamento_mostra_a_mt25_sem_erro(self):
+        """A tela abriu com a turma ativa e ela foi arquivada antes do POST chegar ao serviço."""
+        from unittest import mock
+
+        from sigtcc.apps.cadastro import services_tcc
+        from sigtcc.apps.cadastro.services_turmas import TurmaArquivada
+
+        with mock.patch.object(
+            services_tcc, "salvar_alteracoes_tcc", side_effect=TurmaArquivada(self.turma)
+        ):
+            resposta = self.salvar(titulo="Título indevido")
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.redirect_chain[-1][0], self.url())
+        self.assertContains(resposta, mensagens.MT25_TURMA_ARQUIVADA)
+
+    def test_resumo_tem_o_contador_de_caracteres_restantes(self):
+        """FR-001 (US-13, passo 2 e E3): o Resumo leva o contador, ligado por data-contador."""
+        resposta = self.client.get(self.url())
+        self.assertContains(resposta, "data-contador")
+        self.assertContains(resposta, "js/contador.js")
