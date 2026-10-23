@@ -33,13 +33,13 @@ para `2026000321` e `2026000322` — cada um nasce com o TCC "Sem Proposta" (cen
 
 | # | Ação | Resultado esperado |
 |---|---|---|
-| a | Como `aluno1`, abrir "Turmas" → `ECP07_T01` → aba "Meu TCC" | etiqueta "Sem Proposta"; campos Título, Subtítulo, Resumo, Modalidade, Link e botão "Salvar Proposta" (US-13, passo 2) |
+| a | Como `aluno1`, no menu lateral, abrir "Turmas" (item do Aluno, FR-031) → `ECP07_T01` | a turma abre na aba "Meu TCC", com as abas "Meu TCC" e "Atividades"; só aparecem as turmas de `aluno1`; etiqueta "Sem Proposta"; campos Título, Subtítulo, Resumo, Modalidade, Link e botão "Salvar Proposta" (US-13, passo 2) |
 | b | Preencher Título, Resumo e Modalidade "Monografia" e salvar | "Proposta salva"; etiqueta muda para "Em Andamento"; campos Área de Interesse e Palavras-Chave aparecem (cenário 1 da US-13) |
 | c | Selecionar Área "Segurança da Informação", informar as palavras "LGPD", "LGPD" (repetida) e salvar; depois corrigir para "LGPD" e "criptografia" | 1ª tentativa: "Palavra-chave repetida." (MF-03, sem salvar); 2ª tentativa: "Alterações salvas" (cenário 2 da US-13; Clarifications) |
 | d | Abrir o link "Histórico do Status do TCC" na aba Meu TCC | lista com 1 linha (Sem Proposta → Em Andamento, gatilho "Proposta salva", `aluno1` como responsável) e a trilha com "Em Andamento" destacado (cenários 2 e 11 da US-14) |
-| e | Como `prof`, abrir a turma → aba "Atividades" → "Cadastrar atividade": Título "Entrega do Documento", Tipo "Documento para Defesa", Data Limite para hoje + 5 dias | "Entrega cadastrada"; `aluno1` e `aluno2` notificados; cada um com status "Aguardando Envio" (cenário 1 da US-43) |
+| e | Como `prof`, no menu lateral, abrir "Turmas" → `ECP07_T01` (aba "Alunos") → aba "Atividades" → "Cadastrar atividade": Título "Entrega do Documento", Tipo "Documento para Defesa", Data Limite para hoje + 5 dias | "Entrega cadastrada"; `aluno1` e `aluno2` notificados; cada um com status "Aguardando Envio" (cenário 1 da US-43) |
 | f | Tentar cadastrar outra entrega do tipo "Documento para Defesa" na mesma turma | "A turma já tem uma entrega deste tipo" (cenário 9 da US-43) |
-| g | Como `aluno1`, abrir "Minhas entregas" → a entrega cadastrada, informar um link `https://drive.google.com/...` e enviar | "Entrega enviada"; status "Entregue"; `prof` notificado (cenário 1 da US-15) |
+| g | Como `aluno1`, abrir "Turmas" → `ECP07_T01` → aba "Atividades" → a entrega cadastrada, informar um link `https://drive.google.com/...` e enviar | "Entrega enviada"; status "Entregue"; `prof` notificado (cenário 1 da US-15) |
 | h | Pelo shell (ou alterando a Data Limite para ontem antes do passo e), repetir o envio com `aluno2` depois do prazo | envio aceito com status "Entregue com Atraso" (cenário 3 da US-15) |
 | i | Como `prof`, abrir a entrega cadastrada em "Atividades" | tabela com `aluno1` "Entregue" e o link, `aluno2` "Entregue com Atraso" e o link (cenário 1 da US-16) |
 | j | Pelo shell, levar o TCC de `aluno1` para uma turma de TCC 2 com `tcc_status = 'Aprovado'` e cadastrar a entrega "Versão Final" com Data Limite futura | aba Meu TCC de `aluno1` mostra a seção "Versão final" com "Aguardando Envio" e campo Link (pré-condição da US-29) |

@@ -1,12 +1,13 @@
 """Permissões por perfil nas rotas da feature 005 (contracts/rotas.md; SC-004) — T033.
 
-Todas as 9 rotas da feature, perfil por perfil: sem login (login com `next`); outro Docente
+Todas as 11 rotas da feature (as 9 originais e as 2 listas de turmas do Aluno, FR-031), perfil por
+perfil: sem login (login com `next`); outro Docente
 (403, M-02); Secretaria do curso (403 — Clarifications, sessão 2026-10-22); Coorientador do
 NUCOMP com coorientação aceita (403 no histórico — Clarifications); aluno de outra turma (404,
 sem IDOR); turma arquivada (consulta liberada, ações com a MT-25 ou sem efeito); e nenhum dado
 muda por GET.
 
-[SC-004][Clarifications][contracts/rotas.md][FR-009][FR-017][FR-027][FR-030]
+[SC-004][Clarifications][contracts/rotas.md][FR-009][FR-017][FR-027][FR-030][FR-031]
 """
 
 from datetime import timedelta
@@ -43,6 +44,8 @@ from sigtcc.apps.cadastro.tests.apoio_turmas import (
 
 # Rotas do Aluno (o próprio, pela turma) e do Professor da Disciplina (contracts/rotas.md).
 ROTAS_DO_ALUNO = ("meu_tcc", "historico_status_aluno", "minhas_entregas", "entrega_enviar")
+# Listas do item "Turmas" do Aluno (FR-031, Q-89): sem turma no endereço; cada aluno vê só as dele.
+ROTAS_DE_LISTA_DO_ALUNO = ("minhas_turmas", "minhas_turmas_arquivadas")
 ROTAS_DO_PROFESSOR = (
     "historico_status",
     "entregas",
@@ -85,6 +88,8 @@ class PermissoesTCCTest(TesteTurmas):
             "entrega_cadastrar": [self.turma.pk],
             "entrega_acompanhar": [self.turma.pk, self.versao_final.pk],
             "aluno_versao_final": [self.turma.pk, self.aluno.pk],
+            "minhas_turmas": [],
+            "minhas_turmas_arquivadas": [],
         }[nome]
         return reverse(f"cadastro:{nome}", args=argumentos)
 
@@ -106,7 +111,7 @@ class PermissoesTCCTest(TesteTurmas):
 
     def test_sem_login_vai_para_o_login_com_next(self):
         entrar = reverse("cadastro:entrar")
-        for nome in ROTAS_DO_ALUNO + ROTAS_DO_PROFESSOR:
+        for nome in ROTAS_DO_ALUNO + ROTAS_DE_LISTA_DO_ALUNO + ROTAS_DO_PROFESSOR:
             with self.subTest(rota=nome):
                 resposta = self.client.get(self.url(nome))
                 self.assertEqual(resposta.status_code, 302)
@@ -118,7 +123,7 @@ class PermissoesTCCTest(TesteTurmas):
 
     def test_outro_docente_recebe_403_em_todas_as_rotas(self):
         self.client.force_login(criar_docente_ativo())
-        for nome in ROTAS_DO_ALUNO + ROTAS_DO_PROFESSOR:
+        for nome in ROTAS_DO_ALUNO + ROTAS_DE_LISTA_DO_ALUNO + ROTAS_DO_PROFESSOR:
             with self.subTest(rota=nome):
                 self.assert_negado(nome)
 
@@ -127,7 +132,7 @@ class PermissoesTCCTest(TesteTurmas):
     def test_secretaria_do_curso_recebe_403(self):
         """Clarifications: a Secretaria não vê histórico, entregas nem a Proposta do aluno."""
         self.client.force_login(criar_secretaria(curso=self.turma.tur_cur))
-        for nome in ROTAS_DO_ALUNO + ROTAS_DO_PROFESSOR:
+        for nome in ROTAS_DO_ALUNO + ROTAS_DE_LISTA_DO_ALUNO + ROTAS_DO_PROFESSOR:
             with self.subTest(rota=nome):
                 self.assert_negado(nome)
 
@@ -167,7 +172,7 @@ class PermissoesTCCTest(TesteTurmas):
 
     def test_dono_e_professor_abrem_as_proprias_rotas(self):
         self.client.force_login(self.aluno.alu)
-        for nome in ROTAS_DO_ALUNO:
+        for nome in ROTAS_DO_ALUNO + ROTAS_DE_LISTA_DO_ALUNO:
             with self.subTest(rota=nome):
                 self.assertEqual(self.client.get(self.url(nome)).status_code, 200)
         self.client.force_login(self.professor)
