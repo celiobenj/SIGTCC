@@ -4,7 +4,9 @@
 
 **Created**: 2026-10-22
 
-**Status**: Draft
+**Status**: Aprovada por Maria Luiza Guimarães em 2026-10-22, depois das conferências do analista de
+requisitos e do /speckit-clarify. Pendências abertas que não bloqueiam o plano: Q-52, Q-58, Q-63 e
+Q-47 (no plano).
 
 **Input**: User description: "Use o número 002 para esta spec. Gestão de Contas do SIGTCC: US-03, 04,
 05, 06 e 50. Use as seções dessas US em docs/fonte/Historias_de_Usuario_v3_2.md, com regras (RBN),
@@ -14,8 +16,8 @@ normalizar_email e email_em_uso. A criação de contas não envia link de ativa�
 gestão que cria os Coordenadores de Curso iniciais. Não crie nem troque de branch: use a
 feature/feat-04-gestao-de-contas. Não faça commit."
 
-**Responsável**: Maria Luísa Gomes (US-03 a US-06 no documento de US). A US-50 aparece no documento
-com a responsável "Maria Luiza Nobre", que não é da equipe (correção pedida no índice, Q-61).
+**Responsável pela implementação**: Maria Luiza Guimarães (no documento de US, a US-50 aparece com o
+nome "Maria Luiza Nobre", que é a mesma pessoa). **Autora das US-03 a US-06**: Maria Luísa Gomes.
 
 **Fontes**: `docs/fonte/Historias_de_Usuario_v3_3.md` (US-03, US-04, US-05, US-06 e US-50; o pedido
 cita a v3.2, mas a cópia de referência em `docs/fonte/` é a v3.3); `docs/fonte/Matriz_Requisitos_17_10.md`
@@ -104,7 +106,8 @@ do RAN-CAD-01 (comando dos Coordenadores iniciais). Tabela completa na seção "
   houver vínculo com banca", e não existe coluna com a data de cadastro. Como guardar essa validade
   sem criar coluna? → A: Gravar a data do cadastro + 30 dias em `mem_validade_ate`, que fica
   preenchida desde o cadastro, e atualizar a descrição da coluna no dicionário (pendência da Maria
-  Luiza Guimarães, dona do documento). Nenhuma coluna é criada. O login da spec 003 não muda: ele já
+  Luiza Guimarães, dona do documento). Para a validade de 30 dias, nenhuma coluna é criada (a
+  coluna da última prorrogação é outra decisão, Q36). O login da spec 003 não muda: ele já
   nega o acesso com a validade vencida.
 - Q13 (prazo "a confirmar" na própria US-06, A7 e cenário 17; índice Q-45): o membro é retirado da
   única banca antes da sessão (alteração da banca, RBN-DEF-02.4; a US-06 cita o ID antigo
@@ -135,7 +138,8 @@ do RAN-CAD-01 (comando dos Coordenadores iniciais). Tabela completa na seção "
   troca com a própria senha, e o novo endereço recebe um link de confirmação. O e-mail só muda
   depois que o link é confirmado; até lá, o e-mail antigo continua sendo o login. A regra de
   invalidar os links de ativação e de redefinição gerados antes da troca foi retirada, porque não
-  está em nenhuma fonte. A correção das US fica pedida no índice (Q-61).
+  está em nenhuma fonte; a Q31 a retomou, só na confirmação. A correção das US fica pedida no
+  índice (Q-61).
 - Q18 (índice Q-54): com N = 1, o alerta de inativação ia para o singular ("possui 1 orientando ou
   coorientando com TCC ativo"), mas os cenários 2 e 3 da US-04 esperam o trecho no plural. → A:
   usar sempre o texto da US-04 E1, "possui N orientandos ou coorientandos com TCC ativo", sem
@@ -162,7 +166,7 @@ Correções aplicadas sem decisão nova (primeira e segunda conferências):
   Recomendação: seguir a matriz e entregar a US-50 junto com a US-06.
 - Q23 (documentos de referência): a cópia em `docs/fonte/` é a US v3.3. O CLAUDE.md e os agentes
   foram corrigidos; a constituição aguarda o Célio Benjamim (índice Q-62). A US-50 cita a
-  responsável "Maria Luiza Nobre", que não é da equipe (Q-61).
+  responsável "Maria Luiza Nobre", que é Maria Luiza Guimarães (confirmado em 2026-10-22).
 - Q24 (detalhes da troca de e-mail pelo gestor, consequência da Q17): no formulário do gestor, o
   e-mail repetido mostra "Este e-mail já está cadastrado" (FR-001); a M-05 da spec 003 só aparece na
   confirmação. Se o envio do link falhar, os demais campos continuam gravados, o e-mail não muda e
@@ -193,6 +197,41 @@ Pontos da segunda conferência:
   gestor, o link enviado na primeira continua valendo? → A: sim. O link vale até vencer (24 horas)
   ou até outro link da mesma conta ser confirmado, como na spec 003. O risco fica registrado nos
   Edge Cases, sem coluna nova. Decidido em 2026-10-22.
+
+Decisões da revisão do plano (arquiteto-django), tomadas por Maria Luiza Guimarães em 2026-10-22:
+
+- Q30 (índice Q-72): a troca de e-mail pelo gestor permite tomar a conta de outra pessoa (quem
+  altera troca o e-mail para um endereço seu, confirma o link e usa "Esqueci minha senha"). Como
+  mitigar? → A: restringir. O e-mail de um Membro Externo com a conta 'Ativa' ou 'Expirada' só pode ser trocado
+  pela Secretaria e pelo Coordenador de Curso; para o Orientador e o Professor da Disciplina, o
+  campo E-mail aparece só para leitura nessa conta, e a troca pelo endereço direto é recusada com
+  "Você não tem permissão para esta ação". Na conta 'Aguardando Ativação' (ainda sem senha) e nos
+  demais campos, nada muda (US-05 A2, A3). A conta 'Expirada' entrou na restrição em 2026-10-22, porque também tem senha e pode ser
+  prorrogada (achado S1 do /speckit-analyze). O risco que sobra (Secretaria e Coordenador; contas de
+  Docente e Secretaria) fica aceito e registrado; nenhum aviso é enviado ao e-mail antigo.
+- Q31 (índice Q-73): na confirmação da troca de e-mail, os links de ativação e de redefinição
+  enviados antes ao e-mail antigo continuam valendo? → A: não. A confirmação invalida esses links
+  (como a geração de um link novo já faz na spec 003), para que o e-mail antigo, inclusive um
+  e-mail errado de conta 'Aguardando Ativação', não ative nem recupere a conta. Retoma em parte a
+  regra retirada na Q17, só no momento da confirmação. Muda a função de confirmação da spec 003
+  (ciência da Julia Cohen, Q-71).
+- Q32 (índice Q-74): marcar o papel de Coordenador para um docente com a conta 'Inativa'? → A:
+  recusado com a MC-10 ("Esta ação não está disponível para o Status da Conta atual"), sem gravar.
+- Q33 (índice Q-75): o Membro Externo substituído pelo suplente tem a validade recalculada? → A:
+  não; a substituição mantém a validade. A sessão em que ele foi substituído continua contando para
+  ele no cálculo do FR-037 (como se ainda estivesse na banca dela).
+- Q34 (índice Q-69): enquanto não existir a coluna da data da última prorrogação, a Defesa liga o
+  recálculo da validade em produção? → A: não; só depois da resposta da Q-69. A Q-69 foi
+  respondida (Q36): a Defesa liga o recálculo depois que a proteção estiver implementada.
+- Q35 (índice Q-78): o campo "Sua senha" da troca de e-mail pelo gestor tem limite de
+  tentativas? → A: não; cada erro é registrado no log.
+- Q36 (índice Q-69): o dicionário ganha a coluna da data da última prorrogação manual? → A: sim,
+  aprovada por Maria Luiza Guimarães, autora do dicionário, em 2026-10-22:
+  `MembrosExternos.mem_prorrogado_ate DATE NULL`. A prorrogação (US-50) grava nela a nova
+  validade; o recálculo pela banca (US-06) nunca deixa a validade antes dessa data (Q15). O
+  dicionário (Drive e cópia em `docs/fonte/`) é atualizado no mesmo PR da migração, junto com a
+  nova descrição de `mem_validade_ate` (Q-44). Com a proteção implementada, a Defesa pode ligar o
+  recálculo (Q34).
 
 Pendências de outras pessoas (registradas no índice):
 
@@ -700,7 +739,9 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
 - **E-mail alterado pelo gestor** (US-03 A11, US-05 A3; Clarifications, Q17): como na troca feita
   pela própria pessoa no perfil (spec 003, US-38), o novo e-mail só passa a ser o login depois que
   o link enviado a ele é confirmado. Além disso, quem altera confirma a troca com a própria senha.
-  Vale também para a conta 'Aguardando Ativação' corrigida pelo gestor.
+  Vale também para a conta 'Aguardando Ativação' corrigida pelo gestor. A confirmação invalida os
+  links de ativação e de redefinição enviados antes ao e-mail antigo (Q31). O e-mail do Membro
+  Externo com conta 'Ativa' ou 'Expirada' só é trocado pela Secretaria e pelo Coordenador (Q30).
 - **Duas trocas de e-mail seguidas** (Clarifications, Q28): o link enviado na primeira troca continua
   valendo até vencer (24 horas) ou até outro link da mesma conta ser confirmado. Se o gestor digitar
   um e-mail errado e corrigir, quem receber o primeiro link pode confirmá-lo. Risco aceito: o gestor
@@ -780,10 +821,14 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
   e-mail recebe um link de confirmação, pelo mesmo mecanismo da troca de e-mail da spec 003 (FR-021:
   validade de 24 horas, M-07 e M-09; M-05 só na confirmação, se o e-mail tiver passado a outra conta
   nesse meio-tempo), e o sistema exibe MC-12. Se o envio do link falhar, os demais campos continuam
-  gravados, o e-mail não muda e o sistema exibe a MC-13 (Clarifications, Q24). O e-mail da conta só muda depois que o link
-  é confirmado; até lá, o e-mail antigo continua sendo o login. Depois da confirmação, a conta
-  mantém a mesma senha e o mesmo histórico (Clarifications, Q17 e Q24; dicionário, seção 4, regra
-  3).
+  gravados, o e-mail não muda e o sistema exibe a MC-13 (Clarifications, Q24). O e-mail da conta
+  só muda depois que o link é confirmado; até lá, o e-mail antigo continua sendo o login. Depois da
+  confirmação, a conta mantém a mesma senha e o mesmo histórico, e os links de ativação e de
+  redefinição enviados antes deixam de valer (Clarifications, Q17, Q24 e Q31; dicionário, seção 4,
+  regra 3). A senha errada não tem limite de tentativas e é registrada no log (Q35). O e-mail de
+  Membro Externo com conta 'Ativa' ou 'Expirada' só é trocado pela Secretaria e pelo Coordenador; para os demais
+  perfis, o campo fica só para leitura e a troca pelo endereço direto é recusada com "Você não tem
+  permissão para esta ação" (Q30).
 - **FR-009**: As ações sobre Docente e Secretaria DEVEM ficar restritas ao curso do usuário
   (RBN-CAD-14.1; Clarifications, Q5). O curso do usuário é o Curso Coordenado do Coordenador ou o
   Curso Vinculado da Secretaria. O Curso Coordenado escolhido no cadastro ou na alteração de um
@@ -808,7 +853,8 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
 - **FR-013**: O campo Curso Coordenado DEVE aparecer e ser obrigatório só quando "Coordenador de
   Curso" estiver marcado. Ao desmarcar, o campo some e o valor é descartado; sem o papel, o docente é
   Docente comum (US-03 A1 a A3). Os papéis Professor da Disciplina, Orientador e Coorientador não são
-  marcados aqui: vêm das turmas e das orientações (RBN-CAD-01.1, campo 5).
+  marcados aqui: vêm das turmas e das orientações (RBN-CAD-01.1, campo 5). Marcar o papel para
+  docente com a conta 'Inativa' é recusado com a MC-10, sem gravar (Clarifications, Q32).
 - **FR-014**: Cada curso DEVE ter no máximo um Coordenador, e cada docente coordena no máximo um
   curso. Marcar o papel para um curso que já tem Coordenador: "O curso já possui Coordenador.
   Desmarque o papel no coordenador atual para continuar", sem salvar (US-03 E1). A lista de Curso
@@ -907,7 +953,8 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
 - **FR-035**: Os perfis do FR-031 DEVEM poder alterar Nome Completo, E-mail, Titulação e Instituição
   de Origem, com as validações do cadastro. Sucesso: "Dados atualizados". Alteração inválida não grava
   e mantém os dados anteriores. A alteração de membro 'Expirada' grava os dados e não reabre o
-  acesso (US-05 A6).
+  acesso (US-05 A6). A troca do e-mail de membro com conta 'Ativa' ou 'Expirada' é só da
+  Secretaria e do Coordenador (FR-008; Clarifications, Q30).
 - **FR-036**: A tela Membros externos DEVE listar Nome, E-mail, Instituição de Origem, Status da
   Conta e validade do acesso (DD/MM/AAAA), com "Editar" para os perfis do FR-035 e "Prorrogar"
   conforme o FR-042. O status exibido considera a validade vencida (Edge Cases). A lista não tem
@@ -922,14 +969,15 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
   banca antes da sessão (RBN-DEF-02.4) e não sobrar nenhuma sessão não Cancelada, a validade é a
   data da retirada mais 7 dias corridos (A7; Clarifications, Q13). Se não restar sessão não
   Cancelada e houver cancelamentos e retiradas, vale a data do evento mais recente (último
-  cancelamento ou última retirada), mais 7 dias corridos (Q13; índice Q-45).
+  cancelamento ou última retirada), mais 7 dias corridos (Q13; índice Q-45). A sessão em que o
+  membro foi substituído pelo suplente continua contando para ele (Clarifications, Q33).
 - **FR-038**: O membro sem nenhuma banca DEVE ter validade de 30 dias corridos a partir do cadastro
   (US-05 A5, US-06 A5): no cadastro, a data de validade é gravada como a data do cadastro + 30 dias
-  corridos, sem coluna nova (Clarifications, Q12). O primeiro vínculo a uma banca passa a aplicar o
+  corridos, sem coluna nova para isso (Clarifications, Q12). O primeiro vínculo a uma banca passa a aplicar o
   FR-037.
 - **FR-039**: A validade DEVE ser recalculada a cada vínculo do membro a uma banca, reagendamento,
   cancelamento de sessão e retirada do membro da banca. Pode avançar ou recuar (US-06 A2), mas
-  nunca para antes da data dada pela última prorrogação manual do membro (Clarifications, Q15). Se a nova
+  nunca para antes da data dada pela última prorrogação manual do membro (Clarifications, Q15 e Q36). Se a nova
   validade alcançar hoje ou uma data futura e a conta estiver 'Expirada', ela volta a 'Ativa', com o
   mesmo login e a mesma senha (A1). A conta 'Aguardando Ativação' continua assim. Os eventos de banca
   pertencem à feature de Defesa (US-21, US-23, US-24); esta feature entrega a regra de recálculo
@@ -955,7 +1003,8 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
   conta 'Expirada' (ou 'Ativa' com a validade vencida, ou sem validade) DEVE gravar hoje + 7 dias
   corridos e o Status da Conta 'Ativa'. O sistema mantém o usuário na tela Membros externos, exibe
   "Acesso prorrogado até DD/MM/AAAA" e atualiza a linha. Prorrogações sucessivas somam 7 dias a cada
-  vez.
+  vez. A nova validade também fica registrada como a data da última prorrogação manual (Clarifications,
+  Q36).
 - **FR-044**: Falha ao gravar a prorrogação DEVE exibir "Não foi possível prorrogar o acesso. Tente
   novamente" e manter a validade e o status anteriores.
 
@@ -982,7 +1031,8 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
 
 ### Key Entities *(include if feature involves data)*
 
-Todas já existem (spec 001). Nenhuma é criada.
+Todas já existem (spec 001). Nenhuma é criada; o Membro Externo ganha só a coluna da data da última
+prorrogação manual (Clarifications, Q36).
 
 - **Conta de usuário**: nome, e-mail (login, único), senha (vazia até o primeiro acesso), Status da
   Conta ('Aguardando Ativação', 'Ativa', 'Inativa', 'Expirada') e o momento do último link gerado.
@@ -990,7 +1040,8 @@ Todas já existem (spec 001). Nenhuma é criada.
   Coordenador (abaixo), Professor da Disciplina (turmas), Orientador e Coorientador (orientações).
 - **Coordenador de Curso**: liga um curso a um docente. Um por curso, e um curso por docente.
 - **Secretaria**: conta com Curso Vinculado. Uma não inativa por curso.
-- **Membro Externo**: conta com Titulação, Instituição de Origem e data de validade do acesso.
+- **Membro Externo**: conta com Titulação, Instituição de Origem, data de validade do acesso e data
+  dada pela última prorrogação manual (Q36).
 - **Curso**: os três cursos do NUCOMP, para Curso de Lotação, Curso Coordenado, Curso Vinculado e
   o filtro.
 - **Só lidas, para a verificação de vínculos e a validade**: TCC e o seu Status, orientação,
@@ -1082,7 +1133,7 @@ colchetes na tabela).
 | MC-07 | Motivo de bloqueio (d): turma não arquivada | "é Professor da Disciplina de N turmas não arquivadas" [1 turma não arquivada] | US-04 E4 e cenário 8 | Definida |
 | MC-08 | Docente cadastrado (divergência interna da US-03) | "Docente cadastrado com sucesso" (cenário 1), no lugar de "Docente salvo" (fluxo principal, passo 7) | Clarifications, Q6 | Definida |
 | MC-09 | Prorrogação pelo endereço direto de conta 'Aguardando Ativação' | "Este membro ainda não ativou a conta e não tem validade para prorrogar" | US-50 E3 (só esconde o botão) | Definida |
-| MC-10 | Inativar ou reativar pelo endereço direto com status incompatível | "Esta ação não está disponível para o Status da Conta atual" | US-04 E10 (só esconde o botão) | Definida |
+| MC-10 | Inativar ou reativar pelo endereço direto com status incompatível; marcar o papel de Coordenador para docente 'Inativa' (Q32) | "Esta ação não está disponível para o Status da Conta atual" | US-04 E10 (só esconde o botão); Clarifications, Q32 | Definida |
 | MC-11 | Troca de e-mail pelo gestor com a senha de quem altera errada | "Senha incorreta" | Clarifications, Q17 (sem fonte; alternativa: "Senha atual incorreta", da US-12 E2) | PROVISÓRIA (índice Q-58) |
 | MC-12 | Troca de e-mail pelo gestor salva; link de confirmação enviado ao novo endereço | "Dados atualizados. Enviamos um link de confirmação para o novo e-mail" | Clarifications, Q17; segue "Dados atualizados" (US-03) e a M-06 da spec 003 | PROVISÓRIA (índice Q-58) |
 | MC-13 | Troca de e-mail pelo gestor: demais campos gravados, mas o envio do link falhou | "Dados atualizados, mas não foi possível enviar o link de confirmação. Altere o e-mail novamente em alguns minutos" | Clarifications, Q24; segue "Dados atualizados" (US-03) e a M-17 da spec 003 | PROVISÓRIA (índice Q-58) |
@@ -1132,6 +1183,8 @@ colchetes na tabela).
   confirmar que esse registro é confiável para uma regra de negócio. O log da spec 003 é um arquivo,
   que pode ser girado ou apagado. Se não for confiável, o caminho é pedir à Maria Luiza Guimarães uma
   coluna no dicionário antes de implementar (princípio III da constituição).
+  Resultado do plano (research C13): o log não é confiável; a coluna foi pedida na Q-69 do índice e
+  aprovada em 2026-10-22 (Clarifications, Q36).
 - **Orientador na prorrogação** (FR-042): "banca do orientando" é qualquer sessão não Cancelada de
   TCC com orientação ativa do docente.
 - **Comando dos Coordenadores** (FR-045): os dados (nome, e-mail, titulação de cada Coordenador) são
