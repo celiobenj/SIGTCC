@@ -666,3 +666,20 @@ class RotinaDasEntregasTest(EnviarEntregaTestBase):
         self.assertIn("1 entrega(s) marcada(s) como Não Entregue", saida.getvalue())
         self.assertIn("0 lembrete(s)", saida.getvalue())
         self.assertEqual(self.registro().ent_status, StatusEntrega.NAO_ENTREGUE)
+
+
+class AbaAtividadesVaziaTest(TesteTurmas):
+    """SC-006 (Phase 12, T047): sem entregas, a aba Atividades do Aluno mostra o texto exato da
+    US, "Nenhuma entrega cadastrada", sem o ponto final. [US-15][SC-006]
+    """
+
+    def test_lista_vazia_com_o_texto_exato(self):
+        professor = criar_docente_ativo()
+        turma = criar_turma_de(professor, descricao=DescricaoTurma.TCC_1, curso_nome=EC)
+        aluno = matricular_aluno(
+            turma, status_tcc=StatusTCC.EM_ANDAMENTO, status_conta=StatusConta.ATIVA
+        )
+        self.client.force_login(aluno.alu)
+        resposta = self.client.get(reverse("cadastro:minhas_entregas", args=[turma.pk]))
+        self.assertContains(resposta, mensagens.NENHUMA_ENTREGA_CADASTRADA)
+        self.assertNotContains(resposta, mensagens.NENHUMA_ENTREGA_CADASTRADA + ".")

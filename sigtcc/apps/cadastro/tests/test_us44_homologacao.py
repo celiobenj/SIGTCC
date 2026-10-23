@@ -321,3 +321,30 @@ class VersaoFinalNaoEnviadaViewTest(HomologacaoTestBase):
         self.assertContains(resposta, StatusEntrega.AGUARDANDO_ENVIO.label)
         self.assertNotContains(resposta, 'value="homologar"')
         self.assertNotContains(resposta, "Devolver para Ajuste")
+
+
+class AutorDaHomologacaoEDevolucaoTest(HomologacaoTestBase):
+    """Dicionário 18/10, seção 4, item 5: autor, data e hora da homologação e da devolução da
+    Versão Final, no log de acesso, como a exclusão de turma da spec 004 (Phase 12, T046). A data
+    e a hora vêm do formatador do log; o detalhe não leva a mensagem digitada pelo Professor.
+
+    [US-44][RBN-CAD-09.5][FR-028]
+    """
+
+    def test_homologacao_registra_o_professor_no_log(self):
+        with self.assertLogs("sigtcc.acesso") as log:
+            with self.captureOnCommitCallbacks(execute=True):
+                self.homologar()
+        linha = log.output[0]
+        self.assertIn("VERSAO_FINAL_HOMOLOGADA", linha)
+        self.assertIn(f"conta={self.aluno.pk}", linha)
+        self.assertIn(f"autor={self.professor.pk}", linha)
+
+    def test_devolucao_registra_o_professor_no_log_sem_a_mensagem(self):
+        with self.assertLogs("sigtcc.acesso") as log:
+            with self.captureOnCommitCallbacks(execute=True):
+                self.devolver()
+        linha = log.output[0]
+        self.assertIn("VERSAO_FINAL_DEVOLVIDA", linha)
+        self.assertIn(f"autor={self.professor.pk}", linha)
+        self.assertNotIn(MENSAGEM, linha)

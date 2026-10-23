@@ -11,6 +11,7 @@ Professor da Disciplina (US-43), envio e substituição do link pelo Aluno, com 
 [research C1][research C5][research C6][research C7]
 """
 
+import enum
 import operator
 import threading
 from datetime import timedelta
@@ -43,7 +44,7 @@ from sigtcc.apps.cadastro.models import (
     TCCs,
     TurmasMarcos,
 )
-from sigtcc.apps.cadastro.services import enviar_email, notificar
+from sigtcc.apps.cadastro.services import enviar_email, notificar, registrar_evento
 
 # Margens dos lembretes de prazo (FR-022; research C5): 7 dias, 48h e 24h antes da Data Limite,
 # com tolerância de ±1h entre execuções da rotina agendada.
@@ -62,6 +63,29 @@ class ErroEntrega(Exception):
         super().__init__(mensagem)
         self.mensagem = mensagem
         self.campo = campo
+
+
+class EventoFluxoTCC(enum.Enum):
+    """Eventos desta spec no log de acesso (`services.registrar_evento`, que só usa `.value`):
+    autor, data e hora da homologação e da devolução da Versão Final, sem tabela própria
+    (dicionário 18/10, seção 4, item 5), no mesmo padrão de TURMA_EXCLUIDA da spec 004. Ficam aqui,
+    e não em `services.EventoAcesso`, para não misturar com os eventos de acesso da spec 003.
+    [US-44][RBN-CAD-09.5][FR-028]
+    """
+
+    VERSAO_FINAL_HOMOLOGADA = "VERSAO_FINAL_HOMOLOGADA"
+    VERSAO_FINAL_DEVOLVIDA = "VERSAO_FINAL_DEVOLVIDA"
+
+
+def _registrar_avaliacao(evento, aluno, professor, turma, entrega):
+    """Grava no log, depois do commit, quem homologou ou devolveu a Versão Final; o detalhe só
+    tem identificadores (nunca a mensagem digitada pelo Professor, A13 da spec 003).
+    [US-44][RBN-CAD-09.5][FR-028]
+    """
+    detalhe = f"tur_id={turma.pk} tma_id={entrega.ent_tma_id}"
+    transaction.on_commit(
+        lambda: registrar_evento(evento, aluno.alu, autor=professor, detalhe=detalhe)
+    )
 
 
 def _enviar_email_ao_aluno(usuario, assunto, texto):
@@ -579,6 +603,9 @@ def homologar_versao_final(professor, tur_id, alu_id):
             StatusTCC.CONCLUIDO,
             GatilhoStatusTCC.HOMOLOGACAO_DA_VERSAO_FINAL,
         )
+        _registrar_avaliacao(
+            EventoFluxoTCC.VERSAO_FINAL_HOMOLOGADA, aluno, professor, turma, entrega
+        )
         secretarias = Secretarios.objects.select_related("sec").filter(
             sec_cur=turma.tur_cur, sec__usu_status=StatusConta.ATIVA
         )
@@ -609,6 +636,9 @@ def devolver_versao_final(professor, tur_id, alu_id, mensagem):
         entrega.ent_feedback = mensagem
         entrega.ent_data_avaliacao = timezone.now()
         entrega.save(update_fields=["ent_status", "ent_feedback", "ent_data_avaliacao"])
+        _registrar_avaliacao(
+            EventoFluxoTCC.VERSAO_FINAL_DEVOLVIDA, aluno, professor, turma, entrega
+        )
         notificar(
             aluno.alu,
             mensagens.MF10_NOTIFICACAO_VERSAO_FINAL_DEVOLVIDA.format(

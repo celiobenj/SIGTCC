@@ -137,7 +137,13 @@ def minhas_entregas(request, tur_id):
         {"entrega": entrega, "status": services_entregas.status_exibido(entrega)}
         for entrega in entregas
     ]
-    contexto = {"turma": turma, "linhas": linhas, "arquivada": arquivada}
+    contexto = {
+        "turma": turma,
+        "linhas": linhas,
+        "arquivada": arquivada,
+        # Texto exato da US (SC-006), sem ponto final. [US-15][US-16][SC-006]
+        "nenhuma_entrega": mensagens.NENHUMA_ENTREGA_CADASTRADA,
+    }
     return render(request, "cadastro/tcc/minhas_entregas.html", contexto)
 
 
