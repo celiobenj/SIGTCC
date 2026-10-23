@@ -21,6 +21,7 @@
   </div>
   <span class="chip">{{ tcc.tcc_status }}</span>
 </div>
+{% include "cadastro/tcc/_abas_aluno.html" with ativa="meu_tcc" %}
 <div class="mt16">
   <a class="btn txt" href="{% url 'cadastro:historico_status_aluno' turma.pk %}"><span class="ms">history</span>Histórico do Status do TCC</a>
 </div>

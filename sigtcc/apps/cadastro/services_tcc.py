@@ -22,10 +22,12 @@ from sigtcc.apps.cadastro.choices import (
     StatusEntrega,
     StatusOrientacao,
     StatusTCC,
+    StatusTurma,
     TipoEntrega,
     TipoSolicitacao,
 )
 from sigtcc.apps.cadastro.models import (
+    AlunosTurmas,
     Coorientacoes,
     EntregasMarcos,
     HistoricoStatusTCC,
@@ -181,6 +183,22 @@ def turma_do_aluno(tur_id, usuario):
         raise Http404
     aluno = vinculo_na_turma(turma, usuario.pk)
     return turma, aluno
+
+
+def turmas_do_aluno(usuario, arquivadas=False):
+    """Turmas em que o Aluno autenticado está matriculado (`Alunos_Turmas` dele), ativas ou
+    arquivadas, da mais recente para a mais antiga — a lista do item "Turmas" do Aluno (FR-031).
+    Nunca traz turma de outro aluno nem dá acesso à tela da turma da spec 004 (FR-010 da spec 004):
+    cada turma leva só às rotas do próprio Aluno (`meu_tcc`, `minhas_entregas`).
+    [US-13][US-15][FR-031][Q-89]
+    """
+    status = StatusTurma.ARQUIVADA if arquivadas else StatusTurma.ATIVA
+    matriculas = AlunosTurmas.objects.filter(mat_alu_id=usuario.pk).values("mat_tur_id")
+    return (
+        Turmas.objects.select_related("tur_cur", "tur_doc__doc")
+        .filter(pk__in=matriculas, tur_status=status)
+        .order_by("-tur_ano", "-tur_semestre", "tur_identificador")
+    )
 
 
 def palavras_chave_do(tcc):

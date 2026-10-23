@@ -18,6 +18,7 @@
   <a class="btn pri" href="{% url 'cadastro:entrega_cadastrar' turma.pk %}"><span class="ms">add</span>Cadastrar atividade</a>
   {% endif %}
 </div>
+{% include "cadastro/tcc/_abas_professor.html" with ativa="atividades" mostra_atividades=True %}
 {% if arquivada %}<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Turma arquivada: só para consulta.</span></div>{% endif %}
 {% if entregas %}
 <div class="tabela-wrap mt16">

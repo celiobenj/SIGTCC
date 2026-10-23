@@ -13,6 +13,7 @@
     <p class="pg-sub">{{ turma.tur_identificador }} · {{ turma.tur_descricao }}{% if arquivada %} · <span class="chip">Arquivada</span>{% endif %}</p>
   </div>
 </div>
+{% include "cadastro/tcc/_abas_aluno.html" with ativa="atividades" %}
 {% if arquivada %}
 <div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Esta turma está arquivada e só pode ser consultada.</span></div>
 {% endif %}

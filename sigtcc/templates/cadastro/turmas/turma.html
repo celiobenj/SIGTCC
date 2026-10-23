@@ -2,7 +2,8 @@
 {% comment %}
   Turma: dados, alunos e só as ações permitidas. Turma arquivada: só consulta (cenário 6 da US-07,
   11 da US-08 e 11 da US-09). Links das fases seguintes com {% url ... as %}, que não quebra
-  enquanto a rota não existe.
+  enquanto a rota não existe. Spec 005: barra de abas "Alunos" | "Atividades" (esta só para o
+  Professor da Disciplina), só por inclusão (FR-031, Q-89).
   [US-07][US-08][US-09][FR-008][FR-009][FR-010][Q9]
 {% endcomment %}
 {% block titulo %}{{ turma.tur_identificador }} · SIGTCC{% endblock %}
@@ -23,6 +24,7 @@
   </div>
   {% endif %}
 </div>
+{% include "cadastro/tcc/_abas_professor.html" with ativa="alunos" mostra_atividades=e_professor %}
 {% if arquivada %}<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Turma arquivada: só para consulta.</span></div>{% endif %}
 <div class="cartao">
   <div class="dado"><span>Código da Disciplina</span><b>{{ turma.tur_dis.dis_codigo }}</b></div>

@@ -20,6 +20,37 @@ from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import CONSULTAR
 
 
+def _turmas_do_aluno(request, arquivadas):
+    """Lista do item "Turmas" do Aluno (ativas ou arquivadas), com o link para a outra lista.
+
+    [US-13][FR-031][Q-89]
+    """
+    contexto = {
+        "turmas": services_tcc.turmas_do_aluno(request.user, arquivadas=arquivadas),
+        "arquivadas": arquivadas,
+    }
+    return render(request, "cadastro/tcc/minhas_turmas.html", contexto)
+
+
+@perfil_requerido("aluno")
+def minhas_turmas(request):
+    """Item de menu "Turmas" do Aluno (passo 1 das US-13, 14, 15 e 29): as turmas não arquivadas
+    em que ele está matriculado; cada uma abre a aba "Meu TCC". Não dá acesso à tela da turma da
+    spec 004, que continua só do Professor e da Secretaria (FR-010 da spec 004).
+    [US-13][US-15][FR-031][Q-89][contracts/rotas.md]
+    """
+    return _turmas_do_aluno(request, arquivadas=False)
+
+
+@perfil_requerido("aluno")
+def minhas_turmas_arquivadas(request):
+    """ "Turmas arquivadas" do Aluno (E9 da US-13): só consulta; cada turma abre "Meu TCC" sem os
+    botões de salvar (a própria `meu_tcc` já trata a turma arquivada).
+    [US-13][FR-006][FR-031][Q-89][contracts/rotas.md]
+    """
+    return _turmas_do_aluno(request, arquivadas=True)
+
+
 def _proposta_inicial(tcc):
     """Valores atuais da Proposta para o formulário (GET). [US-13][FR-001]"""
     return {
