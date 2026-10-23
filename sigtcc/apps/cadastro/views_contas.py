@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.urls import NoReverseMatch, reverse
+from django.views.decorators.http import require_POST
 
 from sigtcc.apps.cadastro import mensagens, services_contas
 from sigtcc.apps.cadastro.choices import StatusConta
@@ -447,3 +448,24 @@ def secretaria_inativar(request, sec_id):
         "Inativar secretaria",
         "cadastro:contas_secretarias",
     )
+
+
+# =============================================================================================
+# Prorrogação (US-50; FR-042 a FR-044)
+# =============================================================================================
+
+
+@perfil_requerido(*MEMBROS)
+@require_POST
+def membro_prorrogar(request, mem_id):
+    """Prorroga o acesso do membro por 7 dias corridos e volta à lista (US-50; PRG).
+
+    [US-50][RBN-CAD-03.3][FR-042][FR-043][FR-044]
+    """
+    try:
+        resultado = services_contas.prorrogar(request.user, mem_id)
+    except ErroDeCampo as erro:
+        messages.error(request, erro.mensagem)
+    else:
+        _mostrar_resultado(request, resultado)
+    return redirect("cadastro:contas_membros")

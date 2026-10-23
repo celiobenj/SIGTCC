@@ -822,6 +822,7 @@ def listar_membros(usuario):
     vencida = 'Expirada') e a validade. [US-05][US-50][RBN-CAD-03.1][FR-036][Q19]
     """
     pode_gerir_todos = pode_gerir_membros(usuario)
+    pode_prorrogar_conta = membros_que_pode_prorrogar(usuario)
     linhas = []
     for membro in MembrosExternos.objects.select_related("mem").order_by("mem__usu_nome"):
         linhas.append(
@@ -829,6 +830,7 @@ def listar_membros(usuario):
                 "membro": membro,
                 "status": status_exibido(membro.mem),
                 "pode_editar": pode_gerir_todos,
+                "pode_prorrogar": pode_prorrogar_conta(membro.mem),
             }
         )
     return linhas
@@ -1151,3 +1153,109 @@ def recalcular_validade(usuario, hoje=None):
             detalhe=f"validade={nova.isoformat() if nova else '-'} status={status}",
         )
     return True
+
+
+# =============================================================================================
+# Prorrogação (US-50; FR-042 a FR-044; research C11, C12; Q11, Q36)
+# =============================================================================================
+
+DIAS_DA_PRORROGACAO = timedelta(days=7)
+_PODEM_PRORROGAR = (StatusConta.ATIVA, StatusConta.EXPIRADA)
+
+
+def _bancas_do_orientador(usuario):
+    """Ids dos membros externos em banca de sessão não Cancelada de TCC com orientação 'Ativa'
+    do docente (Q11; Assumptions, "Orientador na prorrogação"). Uma consulta.
+    [US-50][RBN-CAD-03.3][FR-042][Q11][research C11]
+    """
+    return set(
+        BancaDefesa.objects.filter(
+            ban_def__def_tcc__orientacoes__ori_doc_id=usuario.pk,
+            ban_def__def_tcc__orientacoes__ori_status=StatusOrientacao.ATIVA,
+        )
+        .exclude(ban_def__def_status=StatusSessao.CANCELADA)
+        .values_list("ban_usu_id", flat=True)
+    )
+
+
+def _pode_prorrogar_algum(usuario):
+    """Secretaria, Coordenador ou Professor da Disciplina com turma não arquivada prorrogam
+    qualquer membro (US-50 fluxo C; Q10). [US-50][FR-042][Q10][Q11]
+    """
+    if tem_perfil(usuario, "secretaria", "coordenador"):
+        return True
+    return tem_perfil(usuario, "professor_disciplina") and professor_com_turma_ativa(usuario)
+
+
+def _tem_permissao_de_prorrogar(usuario, mem_id):
+    """Permissão sem olhar o status da conta (o status vem depois, m7). [FR-042]"""
+    if _pode_prorrogar_algum(usuario):
+        return True
+    return tem_perfil(usuario, "orientador") and mem_id in _bancas_do_orientador(usuario)
+
+
+def pode_prorrogar(usuario, conta):
+    """O botão "Prorrogar" aparece: permissão (FR-042) e conta 'Ativa' ou 'Expirada'; não aparece
+    para 'Aguardando Ativação' (US-50 E3). [US-50][RBN-CAD-03.3][FR-042][Q11][research C11]
+    """
+    return conta.usu_status in _PODEM_PRORROGAR and _tem_permissao_de_prorrogar(usuario, conta.pk)
+
+
+def membros_que_pode_prorrogar(usuario):
+    """Função para a lista: devolve um teste por conta, com o vínculo do Orientador calculado
+    numa consulta para a página toda (research C11). [US-50][FR-036][FR-042]
+    """
+    if _pode_prorrogar_algum(usuario):
+        return lambda conta: conta.usu_status in _PODEM_PRORROGAR
+    ids = _bancas_do_orientador(usuario) if tem_perfil(usuario, "orientador") else set()
+    return lambda conta: conta.usu_status in _PODEM_PRORROGAR and conta.pk in ids
+
+
+def prorrogar(usuario, mem_id):
+    """Prorroga por 7 dias corridos (US-50): 'Ativa' em dia soma 7 à validade; 'Expirada',
+    vencida ou sem validade grava hoje + 7 e 'Ativa' (FR-043). A nova validade também vai para
+    mem_prorrogado_ate, que o recálculo pela banca respeita (Q36). Permissão antes do status
+    (M-02 antes da MC-09; m7). Falha: "Não foi possível prorrogar o acesso. Tente novamente"
+    (FR-044). [US-50][RBN-CAD-03.3][FR-042][FR-043][FR-044][Q36][research C12]
+    """
+    get_object_or_404(MembrosExternos, pk=mem_id)
+    if not _tem_permissao_de_prorrogar(usuario, mem_id):
+        raise PermissionDenied
+    resultado = {}
+
+    def gravar():
+        with transaction.atomic():
+            conta = travar_conta(mem_id)
+            membro = MembrosExternos.objects.select_for_update().get(pk=mem_id)
+            if conta.usu_status not in _PODEM_PRORROGAR:
+                raise ErroDeCampo(None, mensagens.MC09_SEM_VALIDADE)
+            data_hoje = data_de_hoje()
+            em_dia = (
+                conta.usu_status == StatusConta.ATIVA
+                and membro.mem_validade_ate is not None
+                and membro.mem_validade_ate >= data_hoje
+            )
+            nova = (membro.mem_validade_ate if em_dia else data_hoje) + DIAS_DA_PRORROGACAO
+            membro.mem_validade_ate = nova
+            membro.mem_prorrogado_ate = nova
+            membro.save(update_fields=["mem_validade_ate", "mem_prorrogado_ate"])
+            conta.usu_status = StatusConta.ATIVA
+            conta.save(update_fields=["usu_status"])
+            resultado["nova"] = nova
+        return conta
+
+    try:
+        conta = _gravar(gravar)
+    except ErroDeCampo as erro:
+        if erro.mensagem == mensagens.FALHA_AO_SALVAR:
+            raise ErroDeCampo(None, mensagens.FALHA_AO_PRORROGAR) from None
+        raise
+    services.registrar_evento(
+        services.EventoAcesso.ACESSO_PRORROGADO,
+        conta,
+        autor=usuario,
+        detalhe=f"validade={resultado['nova'].isoformat()}",
+    )
+    return Resultado(
+        mensagens.ACESSO_PRORROGADO_ATE.format(data=resultado["nova"].strftime("%d/%m/%Y")), conta
+    )

@@ -138,4 +138,10 @@ urlpatterns = [
         views_contas.membro_editar,
         name="contas_membro_editar",
     ),
+    # [US-50]
+    path(
+        "cadastros/membros-externos/<int:mem_id>/prorrogar/",
+        views_contas.membro_prorrogar,
+        name="contas_membro_prorrogar",
+    ),
 ]
