@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% comment %}
+  Aba Meu TCC: seção Proposta (Título, Subtítulo, Resumo, Modalidade, Link), a etiqueta do Status
+  (somente leitura) e, depois da Proposta salva, Área de Interesse e Palavras-Chave. Com o Status
+  diferente de "Sem Proposta"/"Em Andamento", com o Aluno Desistente/Reprovado/Jubilado ou com a
+  turma arquivada, os campos aparecem apenas para leitura, sem os botões de salvar (E7 a E9).
+  [US-13][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][RBN-CAD-08.5][FR-001][FR-004][FR-005][FR-006]
+{% endcomment %}
+{% block titulo %}Meu TCC · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <div>
+    <h2 class="pg">Meu TCC</h2>
+    <p class="pg-sub">{{ turma.tur_identificador }} · {{ turma.tur_descricao }}</p>
+  </div>
+  <span class="chip">{{ tcc.tcc_status }}</span>
+</div>
+{% if arquivada %}
+<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Esta turma está arquivada e só pode ser consultada.</span></div>
+{% endif %}
+
+<div class="cartao mt16">
+  <h3>Proposta</h3>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=proposta_form.titulo %}
+    {% include "includes/campo.html" with campo=proposta_form.subtitulo %}
+    {% include "includes/campo.html" with campo=proposta_form.resumo %}
+    {% include "includes/campo.html" with campo=proposta_form.modalidade %}
+    {% include "includes/campo.html" with campo=proposta_form.link %}
+
+    {% if proposta_existe %}
+    <h3 class="mt16">Área de Interesse e Palavras-Chave</h3>
+    {% include "includes/campo.html" with campo=dados_form.area_interesse %}
+    {% include "includes/campo.html" with campo=dados_form.palavra_chave_1 %}
+    {% include "includes/campo.html" with campo=dados_form.palavra_chave_2 %}
+    {% include "includes/campo.html" with campo=dados_form.palavra_chave_3 %}
+    {% include "includes/campo.html" with campo=dados_form.palavra_chave_4 %}
+    {% include "includes/campo.html" with campo=dados_form.palavra_chave_5 %}
+    {% for erro in dados_form.non_field_errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}
+    {% endif %}
+
+    {% if pode_salvar_proposta %}
+    <div class="flex entre mt16">
+      <button type="submit" name="acao" value="salvar_proposta" class="btn pri">Salvar Proposta</button>
+    </div>
+    {% elif pode_salvar_alteracoes %}
+    <div class="flex entre mt16">
+      <button type="submit" name="acao" value="salvar_alteracoes" class="btn pri">Salvar alterações</button>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

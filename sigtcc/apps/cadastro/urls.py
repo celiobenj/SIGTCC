@@ -5,7 +5,7 @@
 
 from django.urls import path
 
-from sigtcc.apps.cadastro import views, views_turmas
+from sigtcc.apps.cadastro import views, views_tcc, views_turmas
 
 app_name = "cadastro"
 
@@ -91,4 +91,6 @@ urlpatterns = [
         views_turmas.excluidos_transferidos,
         name="excluidos_transferidos",
     ),
+    # Spec 005: fluxo do TCC e entregas (contracts/rotas.md). [US-13]
+    path("turmas/<int:tur_id>/meu-tcc/", views_tcc.meu_tcc, name="meu_tcc"),
 ]

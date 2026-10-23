@@ -585,6 +585,7 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
 | MF-01 | Versão final: Data Limite da entrega já vencida, antes do envio | "Data Limite vencida: o envio será registrado como Entregue com Atraso." | US-29, fluxo alternativo B | A validar |
 | MF-02 | Confirmação da devolução da Versão Final para ajuste | "Versão Final devolvida para ajuste." | US-44, fluxo alternativo D | A validar |
 | MF-03 | Palavra-Chave repetida entre as caixas preenchidas | "Palavra-chave repetida." | Clarifications, sessão 2026-10-22; FR-007 | A validar |
+| MF-04 | Notificação ao Orientador a cada mudança de tema (Título, Subtítulo, Resumo, Modalidade ou Link) | "{nome} alterou os dados do TCC na turma {identificador}." | US-13, fluxo alternativo A ("envia uma notificação ao Orientador", sem texto exato citado); índice Q-47 | A validar |
 
 ## Success Criteria *(mandatory)*
 

@@ -240,3 +240,7 @@ VERSAO_FINAL_HOMOLOGADA = "Versão Final homologada"
 MF01_DATA_LIMITE_VENCIDA = "Data Limite vencida: o envio será registrado como Entregue com Atraso."
 MF02_VERSAO_FINAL_DEVOLVIDA = "Versão Final devolvida para ajuste."
 MF03_PALAVRA_CHAVE_REPETIDA = "Palavra-chave repetida."
+# Notificação ao Orientador na mudança de tema (US-13, fluxo alternativo A): a US diz só "envia
+# uma notificação ao Orientador", sem citar o texto exato — mensagem nova, registrada como
+# PROVISÓRIA (Q-47) no mesmo padrão de MT21/MT22 (spec 004).
+MF04_NOTIFICACAO_MUDANCA_TEMA = "{nome} alterou os dados do TCC na turma {identificador}."

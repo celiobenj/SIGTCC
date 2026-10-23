@@ -10,14 +10,58 @@ contrário.
 [research C1][research C3][research C9]
 """
 
-from sigtcc.apps.cadastro.choices import StatusCoorientacao, StatusOrientacao, TipoSolicitacao
+from django.db import IntegrityError, transaction
+from django.http import Http404
+from django.utils import timezone
+
+from sigtcc.apps.cadastro import mensagens, services_turmas
+from sigtcc.apps.cadastro.choices import (
+    GatilhoStatusTCC,
+    StatusCoorientacao,
+    StatusEntrega,
+    StatusOrientacao,
+    StatusTCC,
+    TipoEntrega,
+    TipoSolicitacao,
+)
 from sigtcc.apps.cadastro.models import (
     Coorientacoes,
+    EntregasMarcos,
     HistoricoStatusTCC,
     Orientacoes,
+    PalavrasChaveTCC,
     SolicitacoesOrientacao,
+    TCCs,
+    Turmas,
+    TurmasMarcos,
 )
-from sigtcc.apps.cadastro.services_turmas import STATUS_SOLICITACAO_PENDENTE
+from sigtcc.apps.cadastro.services import notificar
+from sigtcc.apps.cadastro.services_turmas import STATUS_SOLICITACAO_PENDENTE, vinculo_na_turma
+
+# Campos da Proposta (mudança de tema, FR-005) — usados para decidir se o Orientador é notificado
+# e para gravar a Proposta em salvar_proposta/salvar_alteracoes_tcc. [US-13][RBN-CAD-08.2]
+_CAMPOS_TEMA = {
+    "titulo": "tcc_titulo",
+    "subtitulo": "tcc_subtitulo",
+    "resumo": "tcc_resumo",
+    "modalidade": "tcc_modalidade",
+    "link": "tcc_link_proposta",
+}
+
+MAXIMO_PALAVRAS_CHAVE = 5
+
+
+class ErroTCC(Exception):
+    """Recusa de uma ação sobre o TCC com a mensagem exata e, se houver, o campo a destacar.
+
+    [US-13][FR-007][research C3]
+    """
+
+    def __init__(self, mensagem, campo=None):
+        """Guarda a mensagem exata e o campo. [FR-007]"""
+        super().__init__(mensagem)
+        self.mensagem = mensagem
+        self.campo = campo
 
 
 def pode_ver_resumo(usuario, tcc):
@@ -69,3 +113,141 @@ def historico_do_status(tcc):
     [US-14][RBN-CAD-08.7][FR-009][FR-010][research C9]
     """
     return HistoricoStatusTCC.objects.filter(hst_tcc=tcc).order_by("hst_data_hora", "hst_id")
+
+
+# =============================================================================================
+# Proposta e dados do TCC (US-13; FR-001 a FR-007a; research C2, C3, C4)
+# =============================================================================================
+
+
+def turma_do_aluno(tur_id, usuario):
+    """Turma (404) e o próprio Aluno matriculado nela (404, sem IDOR pelo alu_id): as rotas do
+    Aluno desta spec (`meu_tcc`, `minhas_entregas`) não passam por `services_turmas.turma_para`,
+    que só libera para o Professor da Disciplina ou a Secretaria (`contracts/rotas.md`).
+    [US-13][contracts/rotas.md]
+    """
+    turma = Turmas.objects.select_related("tur_cur", "tur_dis").filter(pk=tur_id).first()
+    if turma is None:
+        raise Http404
+    aluno = vinculo_na_turma(turma, usuario.pk)
+    return turma, aluno
+
+
+def palavras_chave_do(tcc):
+    """Palavras-Chave do TCC, em ordem alfabética (consulta simples, sem regra). [US-13][FR-004]"""
+    return list(
+        PalavrasChaveTCC.objects.filter(pal_tcc=tcc)
+        .order_by("pal_palavra")
+        .values_list("pal_palavra", flat=True)
+    )
+
+
+def _cumprir_entrega_proposta(aluno, turma, quando):
+    """Cumpre a entrega do tipo Proposta da turma, se existir, com o status calculado pela data
+    do salvamento: "Entregue" até a Data Limite (23:59), "Entregue com Atraso" depois (FR-003).
+    [US-13][RBN-CAD-07.1][RBN-CAD-09.1][RBN-CAD-09.3][FR-003]
+    """
+    entrega = TurmasMarcos.objects.filter(tma_tur=turma, tma_tipo=TipoEntrega.PROPOSTA).first()
+    if entrega is None:
+        return
+    status = (
+        StatusEntrega.ENTREGUE
+        if quando <= entrega.tma_data_limite
+        else StatusEntrega.ENTREGUE_COM_ATRASO
+    )
+    registro, criado = EntregasMarcos.objects.get_or_create(
+        ent_tma=entrega, ent_alu=aluno, defaults={"ent_status": status}
+    )
+    if not criado:
+        registro.ent_status = status
+        registro.save(update_fields=["ent_status"])
+
+
+def salvar_proposta(aluno, tur_id, dados):
+    """Primeira Proposta do Aluno na turma (FR-002): só quando o TCC estiver "Sem Proposta" (e,
+    pela `UNIQUE (tcc_alu, tcc_tur)`, ainda sem Proposta nela); grava Título, Subtítulo, Resumo,
+    Modalidade e Link, muda o Status para "Em Andamento" (gatilho "Proposta salva") e cumpre a
+    entrega do tipo Proposta, se existir (FR-003). A turma e o TCC são travados antes de ler o
+    Status, na ordem turma → aluno → TCC (research C2, C4).
+    [US-13][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][FR-001]-[FR-003][research C2][research C3]
+    """
+    with transaction.atomic():
+        turma = services_turmas.travar_turma_ativa(tur_id)
+        tcc = TCCs.objects.select_for_update().filter(tcc_alu=aluno, tcc_tur=turma).first()
+        if tcc is None or tcc.tcc_status != StatusTCC.SEM_PROPOSTA:
+            # Botão "Salvar Proposta" só aparece nesse Status (view); acesso direto fora dele
+            # (corrida ou endereço direto) não encontra o que fazer (mesmo padrão de B15/B17).
+            raise Http404
+        tcc.tcc_titulo = dados["titulo"]
+        tcc.tcc_subtitulo = dados.get("subtitulo") or None
+        tcc.tcc_resumo = dados["resumo"]
+        tcc.tcc_modalidade = dados["modalidade"]
+        tcc.tcc_link_proposta = dados.get("link") or None
+        tcc.save(
+            update_fields=[
+                "tcc_titulo",
+                "tcc_subtitulo",
+                "tcc_resumo",
+                "tcc_modalidade",
+                "tcc_link_proposta",
+            ]
+        )
+        services_turmas.atualizar_status_tcc(
+            tcc, turma, aluno.alu, StatusTCC.EM_ANDAMENTO, GatilhoStatusTCC.PROPOSTA_SALVA
+        )
+        _cumprir_entrega_proposta(aluno, turma, timezone.now())
+    return tcc
+
+
+def salvar_alteracoes_tcc(tcc, dados):
+    """Mudança de tema, Área de Interesse e Palavras-Chave, enquanto o TCC estiver "Em Andamento"
+    (FR-004, FR-005): grava os campos da Proposta, apaga e recria as `PalavrasChave_TCC` (de 1 a
+    5, sem repetir — já conferido pelo formulário; `IntegrityError` numa corrida de duplo clique
+    vira MF-03, rede de segurança do research C3) e notifica o Orientador atual, se houver,
+    quando algum campo de tema (Título, Subtítulo, Resumo, Modalidade ou Link) mudou. O TCC é
+    travado antes da leitura (research C4); a gravação das Palavras-Chave usa um savepoint
+    próprio (`transaction.atomic()` aninhado) para a captura de `IntegrityError` não invalidar a
+    transação externa.
+    [US-13][RBN-CAD-08.1][RBN-CAD-08.2][FR-004][FR-005][research C2][research C3][research C4]
+    """
+    with transaction.atomic():
+        tcc = TCCs.objects.select_for_update().get(pk=tcc.pk)
+        tema_mudou = any(
+            getattr(tcc, campo_model) != (dados.get(campo_form) or None)
+            for campo_form, campo_model in _CAMPOS_TEMA.items()
+        )
+        tcc.tcc_titulo = dados.get("titulo") or None
+        tcc.tcc_subtitulo = dados.get("subtitulo") or None
+        tcc.tcc_resumo = dados.get("resumo") or None
+        tcc.tcc_modalidade = dados.get("modalidade") or None
+        tcc.tcc_link_proposta = dados.get("link") or None
+        tcc.tcc_ari = dados.get("area_interesse")
+        tcc.save(
+            update_fields=[
+                "tcc_titulo",
+                "tcc_subtitulo",
+                "tcc_resumo",
+                "tcc_modalidade",
+                "tcc_link_proposta",
+                "tcc_ari",
+            ]
+        )
+        try:
+            with transaction.atomic():
+                PalavrasChaveTCC.objects.filter(pal_tcc=tcc).delete()
+                for palavra in dados.get("palavras_chave", []):
+                    PalavrasChaveTCC.objects.create(pal_tcc=tcc, pal_palavra=palavra)
+        except IntegrityError:
+            raise ErroTCC(mensagens.MF03_PALAVRA_CHAVE_REPETIDA)
+        if tema_mudou:
+            orientador = Orientacoes.objects.filter(
+                ori_tcc=tcc, ori_status=StatusOrientacao.ATIVA
+            ).first()
+            if orientador is not None:
+                notificar(
+                    orientador.ori_doc.doc,
+                    mensagens.MF04_NOTIFICACAO_MUDANCA_TEMA.format(
+                        nome=tcc.tcc_alu.alu.usu_nome, identificador=tcc.tcc_tur.tur_identificador
+                    ),
+                )
+    return tcc
