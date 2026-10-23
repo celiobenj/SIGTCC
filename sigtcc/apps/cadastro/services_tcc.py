@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from sigtcc.apps.cadastro import mensagens, services_turmas
 from sigtcc.apps.cadastro.choices import (
+    DescricaoTurma,
     GatilhoStatusTCC,
     StatusCoorientacao,
     StatusEntrega,
@@ -113,6 +114,55 @@ def historico_do_status(tcc):
     [US-14][RBN-CAD-08.7][FR-009][FR-010][research C9]
     """
     return HistoricoStatusTCC.objects.filter(hst_tcc=tcc).order_by("hst_data_hora", "hst_id")
+
+
+# Sequências fixas da trilha do Status (FR-010), sem os gatilhos de encerramento — esses entram
+# só quando o Status atual for um deles, truncando a sequência no ponto em que ocorreram.
+_TRILHA_TCC_1 = (StatusTCC.EM_ANDAMENTO, StatusTCC.APTO_PARA_DEFESA, StatusTCC.APROVADO_PARA_TCC_2)
+
+
+def trilha_do_status(tcc):
+    """Trilha do Status do TCC, com a etapa atual destacada (FR-010): em TCC 1, Em Andamento →
+    Apto para Defesa → Aprovado para TCC 2; em TCC 2, Em Andamento → Apto para Defesa → (Aprovado
+    ou Aprovado com Correções, conforme o que de fato ocorreu) → Concluído. Com o Status
+    "Reprovado", "Desistente" ou "Jubilado", a trilha termina na etapa em que ocorreu (lida do
+    histórico, FR-009), sem as etapas seguintes do ciclo normal.
+
+    Devolve uma lista de dicionários `{"status": StatusTCC, "atual": bool}`, na ordem de
+    exibição. Usa `tcc.tcc_tur.tur_descricao` para decidir entre a trilha de TCC 1 e a de TCC 2
+    (`DescricaoTurma.TCC_1`/`TCC_2`, spec 004).
+    [US-14][RBN-CAD-08.8][FR-010]
+    """
+    if tcc.tcc_tur.tur_descricao == DescricaoTurma.TCC_2:
+        passou_por_correcoes = (
+            tcc.tcc_status == StatusTCC.APROVADO_COM_CORRECOES
+            or historico_do_status(tcc)
+            .filter(hst_status_novo=StatusTCC.APROVADO_COM_CORRECOES)
+            .exists()
+        )
+        etapa_aprovacao = (
+            StatusTCC.APROVADO_COM_CORRECOES if passou_por_correcoes else StatusTCC.APROVADO
+        )
+        sequencia = [
+            StatusTCC.EM_ANDAMENTO,
+            StatusTCC.APTO_PARA_DEFESA,
+            etapa_aprovacao,
+            StatusTCC.CONCLUIDO,
+        ]
+    else:
+        sequencia = list(_TRILHA_TCC_1)
+
+    status_atual = tcc.tcc_status
+    if status_atual in services_turmas.STATUS_PARTICIPACAO_ENCERRADA:
+        ultima_mudanca = historico_do_status(tcc).last()
+        anterior = ultima_mudanca.hst_status_anterior if ultima_mudanca is not None else None
+        if anterior in sequencia:
+            sequencia = sequencia[: sequencia.index(anterior) + 1]
+        else:
+            sequencia = []
+        sequencia.append(status_atual)
+
+    return [{"status": status, "atual": status == status_atual} for status in sequencia]
 
 
 # =============================================================================================

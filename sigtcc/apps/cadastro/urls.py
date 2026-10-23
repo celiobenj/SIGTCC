@@ -91,6 +91,16 @@ urlpatterns = [
         views_turmas.excluidos_transferidos,
         name="excluidos_transferidos",
     ),
-    # Spec 005: fluxo do TCC e entregas (contracts/rotas.md). [US-13]
+    # Spec 005: fluxo do TCC e entregas (contracts/rotas.md). [US-13][US-14]
     path("turmas/<int:tur_id>/meu-tcc/", views_tcc.meu_tcc, name="meu_tcc"),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/historico/",
+        views_tcc.historico_status_aluno,
+        name="historico_status_aluno",
+    ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/historico/",
+        views_tcc.historico_status,
+        name="historico_status",
+    ),
 ]

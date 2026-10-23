@@ -8,6 +8,7 @@ Orientador e pelo Professor da Disciplina (US-14).
 """
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import redirect, render
 
@@ -15,6 +16,7 @@ from sigtcc.apps.cadastro import mensagens, services_tcc, services_turmas
 from sigtcc.apps.cadastro.choices import StatusTCC
 from sigtcc.apps.cadastro.forms_tcc import DadosTCCForm, PropostaForm
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
+from sigtcc.apps.cadastro.services_turmas import CONSULTAR
 
 
 def _proposta_inicial(tcc):
@@ -97,3 +99,50 @@ def meu_tcc(request, tur_id):
         "arquivada": arquivada,
     }
     return render(request, "cadastro/tcc/meu_tcc.html", contexto)
+
+
+def _contexto_historico(turma, tcc):
+    """Contexto comum às duas views de histórico: lista cronológica e trilha (FR-009, FR-010).
+
+    [US-14][FR-009][FR-010]
+    """
+    return {
+        "turma": turma,
+        "tcc": tcc,
+        "historico": services_tcc.historico_do_status(tcc),
+        "trilha": services_tcc.trilha_do_status(tcc),
+    }
+
+
+@perfil_requerido("aluno")
+def historico_status_aluno(request, tur_id):
+    """Histórico do Status do TCC do próprio Aluno (sem edição manual, FR-008): lista
+    cronológica e trilha com a etapa atual destacada. Restrita ao próprio Aluno da turma
+    (`vinculo_na_turma`, sem IDOR), como `meu_tcc`.
+    [US-14][RBN-CAD-08.3][RBN-CAD-08.7][RBN-CAD-08.8][FR-009][FR-010][contracts/rotas.md]
+    """
+    turma, aluno = services_tcc.turma_do_aluno(tur_id, request.user)
+    tcc = services_turmas.tcc_do_aluno(turma, aluno)
+    if tcc is None:
+        raise Http404
+    contexto = _contexto_historico(turma, tcc)
+    return render(request, "cadastro/tcc/historico_status.html", contexto)
+
+
+@perfil_requerido("docente")
+def historico_status(request, tur_id, alu_id):
+    """Histórico do Status do TCC de um aluno da turma, para o Professor da Disciplina — nunca
+    para a Secretaria do curso nem para o Coorientador (Clarifications; FR-009). `turma_para`
+    com a ação CONSULTAR libera Professor e Secretaria; a checagem explícita abaixo exclui a
+    Secretaria, porque este histórico é mais restrito que a consulta comum da turma.
+    [US-14][RBN-CAD-08.3][RBN-CAD-08.7][RBN-CAD-08.8][FR-009][FR-010][contracts/rotas.md]
+    """
+    turma = services_turmas.turma_para(request.user, tur_id, CONSULTAR)
+    if turma.tur_doc_id != request.user.pk:
+        raise PermissionDenied
+    aluno = services_turmas.vinculo_na_turma(turma, alu_id)
+    tcc = services_turmas.tcc_do_aluno(turma, aluno)
+    if tcc is None:
+        raise Http404
+    contexto = _contexto_historico(turma, tcc)
+    return render(request, "cadastro/tcc/historico_status.html", contexto)

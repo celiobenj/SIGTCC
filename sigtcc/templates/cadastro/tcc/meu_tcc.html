@@ -15,6 +15,9 @@
   </div>
   <span class="chip">{{ tcc.tcc_status }}</span>
 </div>
+<div class="mt16">
+  <a class="btn txt" href="{% url 'cadastro:historico_status_aluno' turma.pk %}"><span class="ms">history</span>Histórico do Status do TCC</a>
+</div>
 {% if arquivada %}
 <div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Esta turma está arquivada e só pode ser consultada.</span></div>
 {% endif %}

@@ -136,6 +136,11 @@ table.tabela { border-collapse: collapse; width: 100%; font-size: 13px; }
 .vazio .ms { font-size: 56px; color: var(--borda); display: block; margin: 0 auto 8px; }
 .paginacao { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 16px; }
 
+/* Trilha do Status do TCC (US-14, FR-010): etapas em sequência, com a atual destacada. */
+.trilha { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.trilha li { padding: 6px 12px; border-radius: 12px; font-size: 13px; background: var(--hover); color: var(--texto2); }
+.trilha li.trilha-atual { background: var(--azul-claro); color: var(--azul); font-weight: 600; }
+
 /* Imagem de assinatura */
 .assin { height: 56px; max-width: 220px; object-fit: contain; background: #fff; border: 1px dashed var(--borda); border-radius: 6px; padding: 4px; }
 
