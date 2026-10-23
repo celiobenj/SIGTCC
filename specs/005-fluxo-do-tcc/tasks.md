@@ -14,7 +14,7 @@ envio de entrega, T021; qualificadores de FR-007a; contagem de cenários do SC-0
 `LINK_HTTPS_500` confirmada como nova em T001).
 
 **Tests**: obrigatórios (constituição, princípio VI): cada cenário Dado/Quando/Então das US-13
-(9), US-14 (11), US-43 (5), US-15 (9), US-16 (6), US-29 (6) e US-44 (5) vira pelo menos um teste,
+(9), US-14 (12), US-43 (5), US-15 (10), US-16 (6), US-29 (6) e US-44 (5) vira pelo menos um teste,
 mais os casos das Clarifications, de permissão (Secretaria e Coorientador excluídos), de mensagens
 exatas e de concorrência (travas da revisão do `arquiteto-django`). Os testes de cada fase vêm
 antes da implementação e devem falhar primeiro.
@@ -292,6 +292,17 @@ Q-90).
 - [X] T045 [US3][US4] E-mail ao aluno na nova entrega (FR-015; assunto MF-11, corpo MF-05) e no lembrete (FR-022; assunto MF-12, corpo MF-08), por `services.enviar_email` depois do commit, só para quem tem e-mail, com a falha só no log (mesmo padrão da spec 003); template `cadastro/emails/aviso_entrega.txt`. Testes em `test_us43_cadastro_entregas.py` e `test_us15_envio_entrega.py`. — Rastreabilidade: [US-43][US-15][RBN-CAD-09.6][FR-015][FR-022][Q-84][Q-86]
 - [X] T046 [US7] Autor, data e hora da homologação e da devolução no log de acesso (dicionário 18/10, seção 4, item 5), com os eventos `VERSAO_FINAL_HOMOLOGADA` e `VERSAO_FINAL_DEVOLVIDA` gravados depois do commit (padrão de `TURMA_EXCLUIDA`, spec 004), sem texto digitado no detalhe. Testes em `test_us44_homologacao.py`. — Rastreabilidade: [US-44][RBN-CAD-09.5][FR-028]
 - [X] T047 Ajustes finais: "Nenhuma entrega cadastrada" sem ponto final na aba Atividades do Aluno (SC-006), constantes novas MF-11 e MF-12 no teste de mensagens, lint e suíte completa. **Feito (2026-10-23)**: lint de `sigtcc/` sem apontamentos; `makemigrations --check` sem mudanças; suíte 647 testes, 644 OK — os 3 restantes são os mesmos de T041 (anteriores e de fora desta feature). — Rastreabilidade: [SC-006][constituição, princípios V e VI]
+
+---
+
+## Phase 13: Achados da validação manual de 2026-10-23 (T035)
+
+**Purpose**: corrigir o que a validação manual (Célio Benjamim, 2026-10-23) mostrou faltando na
+navegação e no campo Link, e o roteiro do passo h (Clarifications, sessão 2026-10-23).
+
+- [ ] T048 [P] [US2] Em `sigtcc/templates/cadastro/turmas/turma.html` (spec 004, só acréscimo): link "Histórico do Status do TCC" (`historico_status`) em cada aluno da lista, só quando `e_professor` (cenário 12 da US2; FR-009, FR-031); teste em `test_navegacao_tcc.py` (Professor vê e abre; Secretaria não vê). — Rastreabilidade: [US-14][RBN-CAD-08.7][FR-009][FR-031]
+- [ ] T049 [P] [US4][US6] Campo Link preenchido com o link mais recente já enviado, quando editável, em `entrega_enviar` e na seção "Versão final" de `meu_tcc` (cenário 10 da US4; FR-019; US-15 e US-29, fluxo D); testes em `test_us15_envio_entrega.py` e `test_us29_versao_final.py`. — Rastreabilidade: [US-15][US-29][RBN-CAD-09.2][FR-019]
+- [ ] T050 Atualizar os passos h e i do `quickstart.md` (pré-condição da Proposta do segundo aluno; histórico pela aba Alunos), registrar o resultado da validação manual no `spec.md` e no `pr-feat-05.md` e rodar lint e suíte completa. — Rastreabilidade: [SC-001][SC-003][quickstart.md]
 
 ---
 

@@ -43,6 +43,12 @@ Regras gerais:
   - Professor (`_abas_professor.html`, em `turma.html` da spec 004 e em `entregas.html`): "Alunos"
     (`turma`) e "Atividades" (`entregas`). A Secretaria do curso, que também abre `turma.html`,
     não vê a aba "Atividades" (a rota `entregas` é só do Professor, FR-027).
+- Histórico do Status pelo Professor (FR-009, FR-031; validação manual de 2026-10-23): até a tela
+  do aluno (US-41) existir, cada aluno da lista da tela da turma (`turma.html`, spec 004) tem, só
+  para o Professor da Disciplina, o link "Histórico do Status do TCC" para `historico_status`. A
+  Secretaria não vê o link (e recebe 403 na rota, Clarifications).
+- Campo Link (`entrega_enviar` e seção "Versão final" de `meu_tcc`): quando editável, vem
+  preenchido com o link mais recente já enviado (FR-019; US-15 e US-29, fluxo D).
 - A "tela de orientandos" (Orientador) e a ação "Correções Conferidas" pertencem à spec 006, ainda
   não implementada; esta spec só expõe os serviços de leitura/escrita que a 006 vai chamar
   (`contracts/servicos-compartilhados.md`).

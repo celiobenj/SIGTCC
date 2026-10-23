@@ -98,6 +98,17 @@
   hora no log de acesso, como a exclusão de turma da spec 004 (dicionário 18/10, seção 4, item 5);
   (5) os lembretes não vão para quem tem a participação encerrada nem para quem já não está
   matriculado na turma (contrato de serviços, §3).
+- Achados da validação manual de 2026-10-23 (Célio Benjamim; T035): (1) o envio depois da Data
+  Limite continua permitido, mas só com o TCC "Em Andamento" (RBN-CAD-09.2: "Documento para Defesa
+  e Outra: disponível enquanto o Status do TCC for Em Andamento"; US-15, pré-condição e E4) — o
+  passo h do `quickstart.md` não mandava o segundo aluno salvar a Proposta antes, e o roteiro foi
+  corrigido, sem mudança de regra; (2) o Professor da Disciplina não tinha como chegar ao histórico
+  do Status de um aluno pela tela: até a tela do aluno (US-41, spec 006) existir, a lista de alunos
+  da tela da turma (spec 004) ganha, só para o Professor, o link "Histórico do Status do TCC" em
+  cada aluno (FR-009, FR-031); a consulta pelo Orientador continua na tela de orientandos da spec
+  006 (contrato de serviços, §2); (3) o campo Link passa a mostrar o link mais recente já enviado,
+  pronto para ser substituído (US-15, fluxo D, e US-29, fluxo D: "substitui o endereço no campo
+  Link"; FR-019).
 
 ### Divergência encontrada na US-43 (v3.3) — ponto a decidir
 
@@ -269,6 +280,10 @@ histórico, sem depender da interface das outras US.
     Status fora da tabela fixa de gatilhos (FR-008), **When** a chamada ocorre, **Then** o serviço
     rejeita a chamada, sem gravar nenhuma linha no histórico — a spec 006 só pode disparar os
     gatilhos previstos no FR-008, nunca escrever o Status diretamente.
+12. **Given** o Professor da Disciplina está na tela da turma (aba "Alunos", spec 004), **When**
+    aciona "Histórico do Status do TCC" na linha de um aluno, **Then** o sistema abre o histórico e
+    a trilha desse aluno; a Secretaria do curso, que também abre essa tela, não vê o link (US-14,
+    fluxo B; FR-009; FR-031; validação manual de 2026-10-23).
 
 ---
 
@@ -348,6 +363,9 @@ leitura.
 9. **Given** o Aluno está numa das abas da sua turma, **When** seleciona a aba "Atividades",
    **Then** o sistema lista as entregas da turma com Título, Data Limite e o status de envio do
    Aluno (US-15, passos 1 e 2; FR-031).
+10. **Given** o Aluno já enviou o link e a Data Limite não venceu, **When** abre a entrega de novo
+    (ou a seção "Versão final"), **Then** o campo Link mostra o link mais recente enviado, pronto
+    para ser substituído (US-15, fluxo D; US-29, fluxo D; FR-019; validação manual de 2026-10-23).
 
 ---
 
@@ -571,7 +589,9 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
 - **FR-019** [RBN-CAD-09.3]: O sistema MUST calcular o status de envio a partir do primeiro envio: "Entregue" até
   23:59 da Data Limite, "Entregue com Atraso" depois; MUST permitir substituir o link até a Data
   Limite (mantendo o status calculado pelo primeiro envio) e MUST tornar o campo somente leitura,
-  sem o botão Enviar, depois da Data Limite, salvo nos casos de devolução para ajuste (US-44).
+  sem o botão Enviar, depois da Data Limite, salvo nos casos de devolução para ajuste (US-44). Com
+  o campo editável, ele MUST vir preenchido com o link mais recente já enviado, para o Aluno
+  substituí-lo (US-15, fluxo D; US-29, fluxo D).
 - **FR-020** [RBN-CAD-09.3]: O sistema MUST marcar a entrega como "Não Entregue" quando a Data Limite vencer sem
   nenhum envio, sem reprovar o aluno nem alterar o Status do TCC, e MUST manter o envio disponível
   mesmo após essa marcação.
@@ -623,6 +643,9 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
   abas "Alunos" e "Atividades", esta só para o Professor da Disciplina da turma (FR-017, FR-027).
   O item "Turmas" do Aluno MUST NOT dar acesso à tela da turma da spec 004 nem à lista de alunos,
   que continuam restritas pelo FR-010 da spec 004 (Clarifications, sessão 2026-10-23; índice Q-89).
+  Até a tela do aluno (US-41) existir, a lista de alunos dessa tela MUST oferecer ao Professor da
+  Disciplina, em cada aluno, o link "Histórico do Status do TCC" (nome provisório, Q-81) para a
+  rota `historico_status` (FR-009), sem mostrá-lo à Secretaria do curso.
 
 ### Key Entities *(reaproveitadas da spec 001; nenhuma nova)*
 
@@ -675,10 +698,10 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
   que todos os alunos da turma foram notificados em menos de 1 minuto.
 - **SC-004**: O status de envio de uma entrega (Entregue, Entregue com Atraso ou Não Entregue) é
   calculado automaticamente, sem decisão manual de nenhum usuário, em 100% dos casos testados.
-- **SC-005**: Todos os 97 cenários de aceite desta spec (89 cenários originais das US-13, 14, 15,
+- **SC-005**: Todos os 99 cenários de aceite desta spec (89 cenários originais das US-13, 14, 15,
   16, 29, 43 e 44 — fluxos principais, alternativos e de exceção — mais os cenários novos
-  acrescentados na conferência do analista-requisitos e no `/speckit-clarify`, e os 4 de navegação
-  da sessão 2026-10-23, contados em `plan.md`, Scale/Scope) têm pelo menos um teste automatizado
+  acrescentados na conferência do analista-requisitos e no `/speckit-clarify`, os 4 de navegação
+  e os 2 da validação manual da sessão 2026-10-23, contados em `plan.md`, Scale/Scope) têm pelo menos um teste automatizado
   correspondente.
 - **SC-006**: 100% das mensagens exibidas ao usuário por esta feature são idênticas, caractere por
   caractere, ao texto entre aspas das US-13, 14, 15, 16, 29, 43 e 44, ou estão marcadas como
@@ -701,3 +724,20 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
   (`turma_tem_orientador_automatico`, `cargas.py`) e são apenas consultadas aqui.
 - Os lembretes de prazo (7 dias, 48h, 24h) dependem de uma rotina agendada (research/plano, a
   detalhar no `/speckit-plan`), fora do escopo de uma view síncrona.
+
+## Validação manual
+
+**Roteiro do `quickstart.md`, 2026-10-23, Célio Benjamim (T035)**, num banco de desenvolvimento
+recriado e preparado para o roteiro (backup do anterior em `logs/`, fora do Git).
+
+| Passos | Resultado | Observação |
+|---|---|---|
+| a a g | OK | Proposta, Palavra-Chave repetida (MF-03), histórico do Aluno, cadastro de entrega, tipo repetido e envio no prazo |
+| h e i | Divergência no roteiro, não na regra | O segundo aluno estava "Sem Proposta", e o envio de "Documento para Defesa" só fica disponível com o TCC "Em Andamento" (RBN-CAD-09.2; US-15, E4). Com a Proposta salva, o envio depois do prazo é aceito como "Entregue com Atraso" (conferido nos dados do roteiro, numa transação desfeita). Passo h corrigido no `quickstart.md`; a tela do Professor estava certa para aquele estado |
+| j a n | OK | Versão Final, homologação (Concluído), devolução (MF-02) e acesso sem login |
+| o e histórico | Lacuna de navegação | O Professor não tinha link para o histórico de um aluno (a tela do aluno, US-41, é da spec 006); acrescentado o link na lista de alunos da turma (FR-031, cenário 12 da US2). A consulta pelo Orientador é da tela de orientandos da spec 006 |
+| UI/UX | OK | |
+| Campo Link | Melhoria pedida | O link enviado não aparecia no campo ao reabrir a entrega; passa a vir preenchido (FR-019; cenário 10 da US4) |
+
+**Reteste pendente**: passos h e i (com a Proposta do segundo aluno e o link de histórico) e o
+campo Link preenchido, depois das correções de T048 e T049.
