@@ -23,4 +23,30 @@ ITENS = [
         "perfis": ("docente", "secretaria"),
         "ordem": 10,
     },
+    # Spec 002: Gestão de Contas (contracts/rotas.md, "Menu lateral"). O item só aparece quando a
+    # rota da sua fase já existe. [US-03][US-04][US-05][US-50][FR-010][FR-031]
+    {
+        "rotulo": "Docentes",
+        "icone": "badge",
+        "rota": "cadastro:contas_docentes",
+        "perfis": ("secretaria", "coordenador"),
+        "ordem": 20,
+        "secao": "Cadastros",
+    },
+    {
+        "rotulo": "Secretarias",
+        "icone": "support_agent",
+        "rota": "cadastro:contas_secretarias",
+        "perfis": ("secretaria", "coordenador"),
+        "ordem": 21,
+        "secao": "Cadastros",
+    },
+    {
+        "rotulo": "Membros externos",
+        "icone": "person_add",
+        "rota": "cadastro:contas_membros",
+        "perfis": ("orientador", "professor_disciplina", "secretaria", "coordenador"),
+        "ordem": 22,
+        "secao": "Cadastros",
+    },
 ]

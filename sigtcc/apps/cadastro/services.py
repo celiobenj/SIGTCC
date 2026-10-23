@@ -25,7 +25,7 @@ from django.core.cache import caches
 from django.core.exceptions import PermissionDenied
 from django.core.files.storage import default_storage
 from django.core.mail import send_mail
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import Resolver404, resolve, reverse
@@ -85,14 +85,41 @@ class EventoAcesso(enum.Enum):
     FALHA_ENVIO_EMAIL = "FALHA_ENVIO_EMAIL"
     # Spec 004 (research B4): exclusão definitiva de turma, sem tabela para o registro.
     TURMA_EXCLUIDA = "TURMA_EXCLUIDA"
+    # Spec 002 (research C18): eventos da Gestão de Contas. [US-03][US-04][US-05][US-06][US-50]
+    CONTA_CRIADA = "CONTA_CRIADA"
+    CONTA_ALTERADA = "CONTA_ALTERADA"
+    CONTA_INATIVADA = "CONTA_INATIVADA"
+    CONTA_REATIVADA = "CONTA_REATIVADA"
+    ACESSO_PRORROGADO = "ACESSO_PRORROGADO"
+    CONTA_EXPIRADA = "CONTA_EXPIRADA"
+    VALIDADE_RECALCULADA = "VALIDADE_RECALCULADA"
+    SENHA_GESTOR_INCORRETA = "SENHA_GESTOR_INCORRETA"
+
+
+class _AutorSistema:
+    """Autor de eventos feitos pelo próprio sistema (comando, expiração, recálculo).
+
+    [FR-047][research C18][I5]
+    """
+
+    pk = "sistema"
+
+    def __repr__(self):
+        """Representação em texto (só para depuração)."""
+        return "AUTOR_SISTEMA"
+
+
+# Valor de autor aceito por registrar_evento: grava autor=sistema (spec 002, contrato §5).
+AUTOR_SISTEMA = _AutorSistema()
 
 
 def registrar_evento(evento, conta, autor=None, detalhe=""):
     """Grava uma linha no log de acesso: evento | conta=<id> | autor=<id ou própria> | detalhe.
 
-    conta e autor são Usuarios ou None. detalhe é montado pelo sistema, nunca com algo digitado
-    pelo usuário; nunca entram senha, token, link ou e-mail completo (A13). A data e a hora vêm
-    do formatador do log. [FR-029][SC-008][SC-009]
+    conta e autor são Usuarios ou None; autor também pode ser AUTOR_SISTEMA (spec 002, C18).
+    detalhe é montado pelo sistema, nunca com algo digitado pelo usuário; nunca entram senha,
+    token, link ou e-mail completo (A13). A data e a hora vêm do formatador do log.
+    [FR-029][SC-008][SC-009][FR-047]
     """
     id_conta = conta.pk if conta is not None else "-"
     if autor is not None:
@@ -117,6 +144,16 @@ def normalizar_email(email):
     if not email:
         return None
     return BaseUserManager.normalize_email(email)
+
+
+def travar_email(email):
+    """Trava consultiva por e-mail normalizado, até o fim da transação (spec 002, research C4).
+
+    Serializa quem confere e grava o mesmo e-mail com caixa diferente; exige transação aberta.
+    [US-03][US-05][FR-001][SC-003][I4]
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_advisory_xact_lock(hashtext(lower(%s)))", [email or ""])
 
 
 def email_em_uso(email, exceto=None):
@@ -932,11 +969,12 @@ def _resumo_do_email(email):
     return salted_hmac("sigtcc.troca_email.atual", (email or "").lower()).hexdigest()[:12]
 
 
-def pedir_troca_email(conta, novo):
+def pedir_troca_email(conta, novo, autor=None):
     """Envia ao novo e-mail o link de confirmação (24 h); o e-mail atual continua valendo.
 
     Levanta EmailEmUso (M-05) ou FalhaEnvioEmail (M-17); deve rodar dentro de
-    transaction.atomic(), para a falha desfazer o salvamento inteiro (A5, m13).
+    transaction.atomic(), para a falha desfazer o salvamento inteiro (A5, m13). autor: quem
+    pediu a troca, quando não é a própria conta (troca pelo gestor, spec 002, FR-008).
     [US-38][RBN-CAD-13.1][FR-021][Q11][Q24][FR-029]
     """
     if email_em_uso(novo, exceto=conta):
@@ -958,7 +996,9 @@ def pedir_troca_email(conta, novo):
         )
     except Exception as erro:
         raise FalhaEnvioEmail from erro
-    registrar_evento(EventoAcesso.TROCA_EMAIL_PEDIDA, conta, detalhe=dominio_do_email(novo))
+    registrar_evento(
+        EventoAcesso.TROCA_EMAIL_PEDIDA, conta, autor=autor, detalhe=dominio_do_email(novo)
+    )
 
 
 def atualizar_perfil(usuario, dados, arquivo=None, tipo_arquivo=None):

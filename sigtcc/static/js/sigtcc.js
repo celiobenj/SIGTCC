@@ -49,9 +49,36 @@
     });
   }
 
+  // Spec 002: mostra o campo Curso Coordenado só com a caixa "Coordenador de Curso" marcada. Só
+  // apresentação: sem JavaScript o campo fica visível e o servidor o ignora sem a caixa (C6).
+  function ligarCursoCoordenado() {
+    document.querySelectorAll("[data-mostra-se-marcado]").forEach(function (bloco) {
+      var caixa = document.getElementById(bloco.getAttribute("data-mostra-se-marcado"));
+      if (!caixa) return;
+      var atualizar = function () {
+        bloco.hidden = !caixa.checked;
+      };
+      caixa.addEventListener("change", atualizar);
+      atualizar();
+    });
+  }
+
+  // Spec 002: desabilita o botão depois do primeiro envio (ex.: Prorrogar), contra clique duplo.
+  function ligarEnvioUnico() {
+    document.querySelectorAll("form[data-envio-unico]").forEach(function (formulario) {
+      formulario.addEventListener("submit", function () {
+        formulario.querySelectorAll("button[type=submit]").forEach(function (botao) {
+          botao.disabled = true;
+        });
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     ativarIcones();
     ligarMenuLateral();
     ligarAvisos();
+    ligarCursoCoordenado();
+    ligarEnvioUnico();
   });
 })();

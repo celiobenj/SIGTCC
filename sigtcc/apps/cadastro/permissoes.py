@@ -30,8 +30,10 @@ from sigtcc.apps.cadastro.choices import (
 from sigtcc.apps.cadastro.models import (
     Coordenadores,
     Coorientacoes,
+    Cursos,
     Docentes,
     Orientacoes,
+    Secretarios,
     Turmas,
 )
 
@@ -242,3 +244,60 @@ def pode_transferir(usuario, turma):
     [US-08][RBN-CAD-05.6][FR-020][Q9]
     """
     return _e_professor_da_turma(usuario, turma) or _e_secretaria_do_curso(usuario, turma)
+
+
+# =============================================================================================
+# Curso do usuário e do registro (spec 002, research C2; RBN-CAD-14.1; spec Q5 e Q26)
+# Só lê models do cadastro: nunca importar o app defesa aqui (research C3).
+# =============================================================================================
+
+
+def curso_id_do_usuario(usuario):
+    """Id do curso que define o alcance das ações do usuário, ou None.
+
+    Coordenador: o Curso Coordenado (Coordenadores.cor_cur), mesmo que lotado em outro curso.
+    Secretaria: o Curso Vinculado (Secretarios.sec_cur). Demais perfis: None.
+    [US-03][US-04][RBN-CAD-14.1][FR-009][Q5][Q26]
+    """
+    if not _autenticado(usuario):
+        return None
+    secretaria = especializacao(usuario, "secretarios")
+    if secretaria is not None:
+        return secretaria.sec_cur_id
+    if tipo_conta(usuario) == "docente":
+        return (
+            Coordenadores.objects.filter(cor_doc_id=usuario.pk)
+            .values_list("cor_cur_id", flat=True)
+            .first()
+        )
+    return None
+
+
+def curso_do_usuario(usuario):
+    """Curso (Cursos) do usuário para o alcance das ações e o filtro padrão, ou None.
+
+    [US-03][US-04][RBN-CAD-14.1][FR-009][FR-018][Q5]
+    """
+    cur_id = curso_id_do_usuario(usuario)
+    return Cursos.objects.filter(pk=cur_id).first() if cur_id is not None else None
+
+
+def curso_id_do_registro(registro):
+    """Id do curso a que o registro pertence: Curso de Lotação do Docente (Q26) ou Curso
+    Vinculado da Secretaria. registro: instância de Docentes ou Secretarios.
+    [US-03][US-04][RBN-CAD-14.1][FR-009][Q26]
+    """
+    if isinstance(registro, Docentes):
+        return registro.doc_cur_id
+    if isinstance(registro, Secretarios):
+        return registro.sec_cur_id
+    raise TypeError("registro deve ser Docentes ou Secretarios")
+
+
+def pode_gerir(usuario, registro):
+    """O registro (Docentes ou Secretarios) é do curso do usuário, pelo valor atual do registro.
+
+    [US-03][US-04][RBN-CAD-14.1][FR-009][Q5][Q26]
+    """
+    cur_id = curso_id_do_usuario(usuario)
+    return cur_id is not None and cur_id == curso_id_do_registro(registro)
