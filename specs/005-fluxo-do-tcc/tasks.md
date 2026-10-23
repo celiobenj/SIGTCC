@@ -41,7 +41,7 @@ testes passando, mostrando o `git status` antes (CLAUDE.md). Formato:
 - Nenhuma tabela, coluna ou migração nova (data-model.md). Nenhum JavaScript do protótipo.
 - Regras em `services_tcc.py`, `services_entregas.py` e nas duas funções novas de
   `services_turmas.py`; views só orquestram; templates sem regra.
-- `tcc_status` **nunca** é lido/gravado fora de `services_turmas.criar_tcc_com_historico` ou
+- `tcc_status` **nunca** é gravado fora de `services_turmas.criar_tcc_com_historico` ou
   `services_turmas.atualizar_status_tcc` (FR-012; research C2) — nenhuma tarefa de implementação
   deve fazer `tcc.tcc_status = ...` fora desses dois pontos.
 - Travas (research C4, C7): `atualizar_status_tcc`/`criar_tcc_com_historico` pressupõem turma →
@@ -277,6 +277,21 @@ Aluno continua com 403 em `/turmas/<tur_id>/` e que a Secretaria não vê a aba 
 - [X] T041 Fechamento da navegação: acrescentar `minhas_turmas` e `minhas_turmas_arquivadas` em `test_permissoes_tcc.py` (sem login, Docente, Secretaria); atualizar os passos a, e e g do `quickstart.md` para usar o menu; rodar `isort`, `black --line-length 100`, `flake8 --max-line-length 100` e a suíte completa. **Feito (2026-10-23)**: lint de `sigtcc/` sem apontamentos; `makemigrations --check` sem mudanças; suíte 628 testes, 625 OK — os 3 restantes são anteriores e de fora desta feature: os 2 testes de mensagens das specs 003/004 que leem `Historias_de_Usuario_v3_2.md` (T034) e `test_base_comum.test_cenario5_link_gerado_fora_das_telas` (spec 003), que passa e falha alternadamente rodando sozinho, por depender do relógio ao gerar dois links seguidos. — Rastreabilidade: [SC-004][FR-031][quickstart.md]
 
 **Checkpoint**: todas as telas da spec abrem pela navegação das US, sem endereço digitado.
+
+---
+
+## Phase 12: Correções da revisão de 2026-10-23 (Clarifications, sessão 2026-10-23)
+
+**Purpose**: alinhar o código ao que a spec, as US e o dicionário de 18/10 já pediam e a revisão
+da branch encontrou faltando (decisões de Célio Benjamim, 2026-10-23; índices Q-83, Q-84, Q-86 e
+Q-90).
+
+- [ ] T042 [US1] Em `services_tcc.salvar_alteracoes_tcc`: notificar o Orientador atual também quando mudar só a Área de Interesse ou as Palavras-Chave (US-13, fluxo A; FR-005; MF-04); travar turma → aluno → TCC (`travar_turma_ativa`, research C4) e conferir de novo, depois de travar, o Status "Em Andamento" (SC-004; `Http404` fora dele); `views_tcc.meu_tcc` trata a turma arquivada no salvamento com a MT-25 e volta à aba Meu TCC (sem erro 500). Testes em `test_us13_proposta.py`. — Rastreabilidade: [US-13][RBN-CAD-08.2][FR-005][FR-006][SC-004][research C4][Q-83]
+- [ ] T043 [US1] Contador de caracteres restantes do Resumo (US-13, passo 2 e E3; FR-001): `sigtcc/static/js/contador.js` próprio (nenhum código do protótipo), ligado por atributo `data-contador` no campo e carregado só em `meu_tcc.html`; sem JavaScript, o limite do campo continua valendo. Teste do atributo e do script na tela. — Rastreabilidade: [US-13][RBN-CAD-07.1][FR-001]
+- [ ] T044 [US4] Em `services_entregas.py`: `marcar_nao_entregues(agora)` grava "Não Entregue" nas entregas "Aguardando Envio" vencidas, em turma não arquivada (FR-020; dicionário 18/10, seção 4, item 7; Q-90), chamada pelo comando `enviar_lembretes_entrega`; `entregas_para_lembrar` exclui aluno com participação encerrada e aluno sem `Alunos_Turmas` atual (contrato de serviços, §3). Testes em `test_us15_envio_entrega.py`. — Rastreabilidade: [US-15][RBN-CAD-09.3][RBN-CAD-09.6][FR-020][FR-022][Q-90]
+- [ ] T045 [US3][US4] E-mail ao aluno na nova entrega (FR-015; assunto MF-11, corpo MF-05) e no lembrete (FR-022; assunto MF-12, corpo MF-08), por `services.enviar_email` depois do commit, só para quem tem e-mail, com a falha só no log (mesmo padrão da spec 003); template `cadastro/emails/aviso_entrega.txt`. Testes em `test_us43_cadastro_entregas.py` e `test_us15_envio_entrega.py`. — Rastreabilidade: [US-43][US-15][RBN-CAD-09.6][FR-015][FR-022][Q-84][Q-86]
+- [ ] T046 [US7] Autor, data e hora da homologação e da devolução no log de acesso (dicionário 18/10, seção 4, item 5), com os eventos `VERSAO_FINAL_HOMOLOGADA` e `VERSAO_FINAL_DEVOLVIDA` gravados depois do commit (padrão de `TURMA_EXCLUIDA`, spec 004), sem texto digitado no detalhe. Testes em `test_us44_homologacao.py`. — Rastreabilidade: [US-44][RBN-CAD-09.5][FR-028]
+- [ ] T047 Ajustes finais: "Nenhuma entrega cadastrada" sem ponto final na aba Atividades do Aluno (SC-006), constantes novas MF-11 e MF-12 no teste de mensagens, lint e suíte completa. — Rastreabilidade: [SC-006][constituição, princípios V e VI]
 
 ---
 

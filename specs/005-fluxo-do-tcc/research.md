@@ -223,6 +223,13 @@ rotina), em turma não arquivada. A chamada da rotina (comando de gestão ou `ex
 do PGCS 3.6, se já existir) fica fora do escopo desta view síncrona — pendência para o Célio
 Benjamim decidir o agendamento (cron, Vercel cron job ou comando manual).
 
+*Complemento (2026-10-23, revisão da implementação; índices Q-86 e Q-90)*: o comando
+`enviar_lembretes_entrega` também grava "Não Entregue" (`marcar_nao_entregues(agora)`) nas
+entregas "Aguardando Envio" com a Data Limite vencida, em turma não arquivada (FR-020; dicionário
+18/10, seção 4, item 7); a tela continua usando `status_exibido` enquanto a rotina não roda. Os
+lembretes vão também por e-mail (FR-022) e não alcançam aluno com a participação encerrada nem
+sem vínculo atual com a turma (contrato de serviços, §3).
+
 **Alternativas**: calcular o lembrete dentro da requisição HTTP de outra ação (ex.: ao abrir a
 turma): descartado porque depende de alguém abrir a tela no momento exato, não é confiável.
 
@@ -267,7 +274,7 @@ Aprovado/Aprovado com Correções/Reprovado).
 `matricular_aluno` (spec 004) e adicionam `salvar_proposta(tcc, ...)`, `cadastrar_entrega(turma,
 ...)` e `enviar_link(entrega, aluno, link, quando=None)` para controlar a data do envio nos testes
 de prazo. `test_mensagens_tcc.py` segue o mesmo padrão de `test_mensagens_turmas.py` (spec 004):
-confere cada constante de `mensagens.py` contra o texto entre aspas das US, e as MF-01 a MF-03
+confere cada constante de `mensagens.py` contra o texto entre aspas das US, e as MF-01 a MF-12
 contra a tabela "Mensagens a validar com a PO" do spec.md.
 
 ## C9. Separação entre consulta do histórico e checagem de perfil (US-14, FR-009)

@@ -87,6 +87,17 @@
   visível apenas ao Professor da Disciplina da turma. Alternativas rejeitadas: abrir a tela da
   turma da spec 004 ao Aluno (mudaria uma spec mesclada e exporia a lista de colegas) e só pôr links
   no Painel (contraria o passo 1 das US e não atende "Turmas arquivadas", E9 da US-13).
+- Correções da revisão de 2026-10-23 (Célio Benjamim), alinhando o código ao que a spec já pede:
+  (1) a mudança de tema notifica o Orientador também quando muda só a Área de Interesse ou as
+  Palavras-Chave (US-13, fluxo A; FR-005), e a MF-04 passa a valer para esses campos (índice
+  Q-83); (2) o status "Não Entregue" é **gravado** em `Entregas_Marcos` pela rotina agendada quando
+  a Data Limite vence sem envio (FR-020; dicionário 18/10, seção 4, item 7; índice Q-90), e a tela
+  continua calculando o mesmo valor enquanto a rotina não roda; (3) o e-mail do FR-015 (nova
+  entrega) e do FR-022 (lembrete) é enviado junto com a notificação, com os assuntos provisórios
+  MF-11 e MF-12 (índice Q-84); (4) homologação e devolução da Versão Final registram autor, data e
+  hora no log de acesso, como a exclusão de turma da spec 004 (dicionário 18/10, seção 4, item 5);
+  (5) os lembretes não vão para quem tem a participação encerrada nem para quem já não está
+  matriculado na turma (contrato de serviços, §3).
 
 ### Divergência encontrada na US-43 (v3.3) — ponto a decidir
 
@@ -109,8 +120,10 @@ do fluxo principal e o restante da própria US:
 US-16 e quase toda a US-43), esta spec usa **"aba Atividades"** como nome da aba nos requisitos e
 nas mensagens, e trata "aba Entregas" do passo 1 da US-43 como lapso de digitação a confirmar com a
 Profa. Diana ou com Leandra Matos (responsável pelas US-13 a 16, 29, 43 e 44). **Este item está
-registrado em `docs/questoes-a-rever.md` (Q-80) e não bloqueia o planejamento, mas bloqueia a tela
-antes de implementá-la.**
+registrado em `docs/questoes-a-rever.md` (Q-80) e não bloqueia o planejamento.** *Atualização
+(2026-10-23): as telas foram implementadas com o rótulo provisório "Atividades", que fica só nos
+includes de abas e nos títulos; se a resposta da Q-80 for "Entregas", a troca é de rótulo, sem
+mudar rotas nem regras.*
 
 ### Pontos decididos na conferência do analista-requisitos (2026-10-22)
 
@@ -580,7 +593,8 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
 ### Functional Requirements — Acompanhamento das entregas (US-16)
 
 - **FR-026** [RBN-CAD-09.4]: O sistema MUST exibir ao Professor da Disciplina da turma uma lista somente leitura,
-  por entrega, com uma linha por aluno da turma contendo nome, matrícula, status de envio e o link
+  por entrega, com uma linha por aluno atualmente matriculado na turma com a participação não
+  encerrada (contrato de serviços, §3) contendo nome, matrícula, status de envio e o link
   mais recente (com data e hora); na entrega do tipo Proposta, a coluna de link MUST ser substituída
   por um acesso à Proposta registrada, somente leitura.
 - **FR-027** [RBN-CAD-09.4]: O sistema MUST restringir essa consulta ao Professor da Disciplina da turma e MUST
@@ -639,13 +653,15 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
 | MF-01 | Versão final: Data Limite da entrega já vencida, antes do envio | "Data Limite vencida: o envio será registrado como Entregue com Atraso." | US-29, fluxo alternativo B | A validar |
 | MF-02 | Confirmação da devolução da Versão Final para ajuste | "Versão Final devolvida para ajuste." | US-44, fluxo alternativo D | A validar |
 | MF-03 | Palavra-Chave repetida entre as caixas preenchidas | "Palavra-chave repetida." | Clarifications, sessão 2026-10-22; FR-007 | A validar |
-| MF-04 | Notificação ao Orientador a cada mudança de tema (Título, Subtítulo, Resumo, Modalidade ou Link) | "{nome} alterou os dados do TCC na turma {identificador}." | US-13, fluxo alternativo A ("envia uma notificação ao Orientador", sem texto exato citado); índice Q-83 | A validar |
+| MF-04 | Notificação ao Orientador a cada mudança de tema (Título, Subtítulo, Resumo, Modalidade, Link, Área de Interesse ou Palavras-Chave — US-13, fluxo A; FR-005) | "{nome} alterou os dados do TCC na turma {identificador}." | US-13, fluxo alternativo A ("envia uma notificação ao Orientador", sem texto exato citado); índice Q-83 | A validar |
 | MF-05 | Notificação a cada aluno da turma ao cadastrar uma entrega | "Nova entrega cadastrada na turma {identificador}: {titulo}, com prazo até {data_limite}." | US-43, passo 7 ("uma notificação no sistema e um e-mail com o Título e a Data Limite", sem texto exato citado); índice Q-84 | A validar |
 | MF-06 | Data Limite anterior à data do cadastro, no formulário de cadastro de entrega | "A Data Limite não pode ser anterior a hoje." | US-43, E2 e Cenário 8 ("destaca a Data Limite", sem texto exato citado); índice Q-84 | A validar |
 | MF-07 | Notificação ao Professor da Disciplina a cada envio ou substituição de link de uma entrega | "{nome} enviou a entrega {titulo} na turma {identificador}." | US-15, passo 6 e fluxo alternativo D (sem texto exato citado); índice Q-85 | A validar |
 | MF-08 | Lembrete de prazo ao aluno que ainda não enviou, 7 dias, 48 horas e 24 horas antes da Data Limite | "Lembrete: a entrega {titulo} da turma {identificador} vence em {data_limite}." | US-15, fluxo alternativo E ("envia notificação no sistema e e-mail", sem texto exato citado); índice Q-86 | A validar |
 | MF-09 | Notificação à Secretaria do curso na homologação da Versão Final | "Versão Final de {nome} homologada na turma {identificador}: TCC concluído." | US-44, passo 6 ("notifica a Secretaria", sem texto exato citado); índice Q-88 | A validar |
 | MF-10 | Notificação ao Aluno na devolução da Versão Final para ajuste, com a mensagem do Professor | "Versão Final devolvida para ajuste na turma {identificador}: {mensagem}" | US-44, fluxo alternativo D ("notifica o Aluno", sem texto exato citado); índice Q-88 | A validar |
+| MF-11 | Assunto do e-mail ao aluno quando o Professor cadastra uma entrega (corpo = MF-05) | "SIGTCC: nova entrega" | US-43, passo 7 ("e um e-mail com o Título e a Data Limite"); FR-015; índice Q-84 | A validar |
+| MF-12 | Assunto do e-mail de lembrete de prazo (corpo = MF-08) | "SIGTCC: lembrete de prazo" | US-15, fluxo alternativo E ("notificação no sistema e e-mail"); FR-022; índice Q-86 | A validar |
 
 ## Success Criteria *(mandatory)*
 
