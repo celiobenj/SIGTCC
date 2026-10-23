@@ -74,11 +74,21 @@
     });
   }
 
+  // Spec 002: o filtro de Curso aplica ao escolher (sem JavaScript, há o botão "Filtrar").
+  function ligarEnvioAoMudar() {
+    document.querySelectorAll("select[data-envia-ao-mudar]").forEach(function (lista) {
+      lista.addEventListener("change", function () {
+        lista.form.submit();
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     ativarIcones();
     ligarMenuLateral();
     ligarAvisos();
     ligarCursoCoordenado();
     ligarEnvioUnico();
+    ligarEnvioAoMudar();
   });
 })();

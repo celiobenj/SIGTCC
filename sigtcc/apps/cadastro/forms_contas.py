@@ -166,3 +166,76 @@ class FormularioContas(forms.Form):
         super().__init__(*args, **kwargs)
         for campo in self.fields.values():
             campo.error_messages["required"] = mensagens.M14_CAMPO_OBRIGATORIO
+
+
+# =============================================================================================
+# Docente e Secretaria (US-03; FR-012, FR-013, FR-016, FR-020, FR-022)
+# =============================================================================================
+
+
+class _ComEmailDoGestor(FormularioContas):
+    """Base dos formulários de alteração: "Sua senha" exigida pelo serviço só com e-mail novo
+    (FR-008). Na criação, o campo não aparece. [US-03][US-05][FR-008][research C7]
+    """
+
+    def __init__(self, *args, edicao=False, email_so_leitura=False, **kwargs):
+        """edicao: inclui "Sua senha"; email_so_leitura: campo E-mail só para leitura (Q30)."""
+        super().__init__(*args, **kwargs)
+        if edicao:
+            self.fields["sua_senha"] = campo_sua_senha()
+        if email_so_leitura:
+            self.fields["email"].disabled = True
+
+
+class DocenteForm(_ComEmailDoGestor):
+    """Cadastro e alteração de Docente (US-03): Nome Completo, E-mail Institucional, Titulação,
+    Curso de Lotação, caixa "Coordenador de Curso" e Curso Coordenado, obrigatório só com a caixa
+    marcada e ignorado sem ela (A1 a A3).
+    [US-03][RBN-CAD-01.1][RBN-CAD-01.2][FR-012][FR-013][FR-016]
+    """
+
+    nome = campo_nome()
+    email = campo_email_institucional()
+    titulacao = campo_titulacao()
+    curso_lotacao = campo_curso("Curso de Lotação")
+    coordenador = forms.BooleanField(label=mensagens.COORDENADOR_DE_CURSO, required=False)
+    curso_coordenado = campo_curso("Curso Coordenado", required=False)
+
+    def clean_nome(self):
+        """Só letras e espaços, até 150 (FR-002)."""
+        return validar_nome_completo(self.cleaned_data["nome"])
+
+    def clean_email(self):
+        """nome@uea.edu.br, até 100 (FR-012)."""
+        return validar_email_institucional(self.cleaned_data["email"])
+
+    def clean(self):
+        """Curso Coordenado obrigatório só com "Coordenador de Curso" marcado; sem a caixa, o
+        valor é descartado (US-03 A2, E5, cenários 4 e 14). [FR-013]
+        """
+        dados = super().clean()
+        if dados.get("coordenador"):
+            if not dados.get("curso_coordenado") and "curso_coordenado" not in self.errors:
+                self.add_error("curso_coordenado", mensagens.M14_CAMPO_OBRIGATORIO)
+        else:
+            dados["curso_coordenado"] = None
+            self.errors.pop("curso_coordenado", None)
+        return dados
+
+
+class SecretariaForm(_ComEmailDoGestor):
+    """Cadastro e alteração da Secretaria (US-03 A4 e A5): Nome Completo, E-mail Institucional e
+    Curso Vinculado. [US-03][RBN-CAD-02.1][RBN-CAD-02.2][FR-020][FR-022]
+    """
+
+    nome = campo_nome()
+    email = campo_email_institucional()
+    curso_vinculado = campo_curso("Curso Vinculado")
+
+    def clean_nome(self):
+        """Só letras e espaços, até 150 (FR-002)."""
+        return validar_nome_completo(self.cleaned_data["nome"])
+
+    def clean_email(self):
+        """nome@uea.edu.br, até 100 (FR-012)."""
+        return validar_email_institucional(self.cleaned_data["email"])

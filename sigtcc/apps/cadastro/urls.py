@@ -1,11 +1,11 @@
-"""Rotas do app cadastro (specs/003-acesso-login/contracts/rotas.md).
+"""Rotas do app cadastro (specs/003-acesso-login/contracts/rotas.md, specs/004 e specs/002).
 
-[US-10][US-11][US-12][US-37][US-38][FR-025]
+[US-10][US-11][US-12][US-37][US-38][FR-025][US-03][US-04][US-05][US-50]
 """
 
 from django.urls import path
 
-from sigtcc.apps.cadastro import views, views_turmas
+from sigtcc.apps.cadastro import views, views_contas, views_turmas
 
 app_name = "cadastro"
 
@@ -90,5 +90,24 @@ urlpatterns = [
         "turmas/<int:tur_id>/excluidos-transferidos/",
         views_turmas.excluidos_transferidos,
         name="excluidos_transferidos",
+    ),
+    # Spec 002: Gestão de Contas (specs/002-gestao-contas/contracts/rotas.md). [US-03]
+    path("cadastros/docentes/", views_contas.docentes, name="contas_docentes"),
+    path("cadastros/docentes/novo/", views_contas.docente_novo, name="contas_docente_novo"),
+    path(
+        "cadastros/docentes/<int:doc_id>/editar/",
+        views_contas.docente_editar,
+        name="contas_docente_editar",
+    ),
+    path("cadastros/secretarias/", views_contas.secretarias, name="contas_secretarias"),
+    path(
+        "cadastros/secretarias/nova/",
+        views_contas.secretaria_nova,
+        name="contas_secretaria_nova",
+    ),
+    path(
+        "cadastros/secretarias/<int:sec_id>/editar/",
+        views_contas.secretaria_editar,
+        name="contas_secretaria_editar",
     ),
 ]
