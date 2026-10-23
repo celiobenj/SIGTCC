@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-22
 
-**Status**: Draft
+**Status**: Approved (Julia Cohen, 2026-10-22)
 
 **Input**: User description: "Fluxo do TCC e Entregas do SIGTCC: US-13, US-14, US-15, US-16, US-29, US-43 e US-44, com o modelo de dados da spec 001 e reutilizando os serviços das specs 003 e 004."
 
@@ -450,11 +450,15 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
   validações MUST permitir salvar dados fora da regra.
 
 - **FR-007a** [RBN-CAD-07.1]: O sistema MUST restringir a visibilidade do Resumo da Proposta ao
-  próprio Aluno, ao Orientador atual (ou ao Docente indicado no pedido de orientação pendente), ao
-  Coorientador do NUCOMP e ao Professor da Disciplina da turma; Título e Modalidade MUST também
-  ficar visíveis à banca, na agenda de defesas e nos relatórios de gestão (RAN-CAD-07, requisito
-  não funcional de Confidencialidade). Completude adicionada na conferência do analista-requisitos
-  (2026-10-22): a matriz já define a regra sem ambiguidade, sem necessidade de decisão.
+  próprio Aluno, ao Orientador **atual** (vínculo `Orientacoes` com `ori_status='Ativa'`, ou ao
+  Docente indicado num pedido de orientação ainda pendente), ao Coorientador do NUCOMP **com
+  coorientação aceita** (`Coorientacoes.coo_status='Ativa'`) e ao Professor da Disciplina da
+  turma; Título e Modalidade MUST também ficar visíveis à banca, na agenda de defesas e nos
+  relatórios de gestão (RAN-CAD-07, requisito não funcional de Confidencialidade). Completude
+  adicionada na conferência do analista-requisitos (2026-10-22): a matriz já define a regra sem
+  ambiguidade, sem necessidade de decisão. Qualificadores "atual"/"com coorientação aceita"
+  explicitados na análise `/speckit-analyze` (achado A2), para o texto do FR bater exatamente com
+  `services_tcc.pode_ver_resumo` (research C3).
 
 ### Functional Requirements — Status, histórico e trilha do TCC (US-14)
 
@@ -594,9 +598,10 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
   que todos os alunos da turma foram notificados em menos de 1 minuto.
 - **SC-004**: O status de envio de uma entrega (Entregue, Entregue com Atraso ou Não Entregue) é
   calculado automaticamente, sem decisão manual de nenhum usuário, em 100% dos casos testados.
-- **SC-005**: Todos os cenários de aceite descritos nas US-13, 14, 15, 16, 29, 43 e 44
-  (aproximadamente 90 cenários, somando fluxos principais, alternativos e de exceção) têm pelo
-  menos um teste automatizado correspondente.
+- **SC-005**: Todos os 93 cenários de aceite desta spec (89 cenários originais das US-13, 14, 15,
+  16, 29, 43 e 44 — fluxos principais, alternativos e de exceção — mais os cenários novos
+  acrescentados na conferência do analista-requisitos e no `/speckit-clarify`, contados em
+  `plan.md`, Scale/Scope) têm pelo menos um teste automatizado correspondente.
 - **SC-006**: 100% das mensagens exibidas ao usuário por esta feature são idênticas, caractere por
   caractere, ao texto entre aspas das US-13, 14, 15, 16, 29, 43 e 44, ou estão marcadas como
   provisórias em `docs/questoes-a-rever.md`.
