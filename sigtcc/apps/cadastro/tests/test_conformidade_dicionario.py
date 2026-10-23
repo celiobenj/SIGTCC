@@ -151,10 +151,14 @@ class EstruturaConformeDicionarioTest(TestCase):
     """Parte 1: tabelas e colunas (spec US1, cenários 1 e 2; FR-001, FR-002, FR-020)."""
 
     def test_dicionario_lido_por_inteiro(self):
-        """Garante que o leitor encontrou as 36 tabelas e as 201 colunas do documento."""
+        """Garante que o leitor encontrou as 36 tabelas e as 202 colunas do documento.
+
+        202 = 201 da versão de 18/10 + MembrosExternos.mem_prorrogado_ate (índice Q-69; spec 002,
+        Q36).
+        """
         dicionario = ler_dicionario()
         self.assertEqual(len(dicionario), 36)
-        self.assertEqual(sum(len(c) for c in dicionario.values()), 201)
+        self.assertEqual(sum(len(c) for c in dicionario.values()), 202)
 
     def test_cenario1_36_tabelas_sem_salas(self):
         """Dado um banco migrado, então existem as 36 tabelas do dicionário e nenhuma de Salas."""

@@ -25,7 +25,7 @@ from django.core.cache import caches
 from django.core.exceptions import PermissionDenied
 from django.core.files.storage import default_storage
 from django.core.mail import send_mail
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.urls import Resolver404, resolve, reverse
@@ -51,7 +51,13 @@ from sigtcc.apps.cadastro.mensagens import (
     NOVO_LINK_ENVIADO,
     PERFIL_ATUALIZADO,
 )
-from sigtcc.apps.cadastro.models import Alunos, EquivalenciaCursos, Notificacoes, Usuarios
+from sigtcc.apps.cadastro.models import (
+    Alunos,
+    EquivalenciaCursos,
+    MembrosExternos,
+    Notificacoes,
+    Usuarios,
+)
 from sigtcc.apps.cadastro.permissoes import (
     pode_resetar_primeiro_acesso,
     tipo_conta,
@@ -85,14 +91,41 @@ class EventoAcesso(enum.Enum):
     FALHA_ENVIO_EMAIL = "FALHA_ENVIO_EMAIL"
     # Spec 004 (research B4): exclusão definitiva de turma, sem tabela para o registro.
     TURMA_EXCLUIDA = "TURMA_EXCLUIDA"
+    # Spec 002 (research C18): eventos da Gestão de Contas. [US-03][US-04][US-05][US-06][US-50]
+    CONTA_CRIADA = "CONTA_CRIADA"
+    CONTA_ALTERADA = "CONTA_ALTERADA"
+    CONTA_INATIVADA = "CONTA_INATIVADA"
+    CONTA_REATIVADA = "CONTA_REATIVADA"
+    ACESSO_PRORROGADO = "ACESSO_PRORROGADO"
+    CONTA_EXPIRADA = "CONTA_EXPIRADA"
+    VALIDADE_RECALCULADA = "VALIDADE_RECALCULADA"
+    SENHA_GESTOR_INCORRETA = "SENHA_GESTOR_INCORRETA"
+
+
+class _AutorSistema:
+    """Autor de eventos feitos pelo próprio sistema (comando, expiração, recálculo).
+
+    [FR-047][research C18][I5]
+    """
+
+    pk = "sistema"
+
+    def __repr__(self):
+        """Representação em texto (só para depuração)."""
+        return "AUTOR_SISTEMA"
+
+
+# Valor de autor aceito por registrar_evento: grava autor=sistema (spec 002, contrato §5).
+AUTOR_SISTEMA = _AutorSistema()
 
 
 def registrar_evento(evento, conta, autor=None, detalhe=""):
     """Grava uma linha no log de acesso: evento | conta=<id> | autor=<id ou própria> | detalhe.
 
-    conta e autor são Usuarios ou None. detalhe é montado pelo sistema, nunca com algo digitado
-    pelo usuário; nunca entram senha, token, link ou e-mail completo (A13). A data e a hora vêm
-    do formatador do log. [FR-029][SC-008][SC-009]
+    conta e autor são Usuarios ou None; autor também pode ser AUTOR_SISTEMA (spec 002, C18).
+    detalhe é montado pelo sistema, nunca com algo digitado pelo usuário; nunca entram senha,
+    token, link ou e-mail completo (A13). A data e a hora vêm do formatador do log.
+    [FR-029][SC-008][SC-009][FR-047]
     """
     id_conta = conta.pk if conta is not None else "-"
     if autor is not None:
@@ -117,6 +150,16 @@ def normalizar_email(email):
     if not email:
         return None
     return BaseUserManager.normalize_email(email)
+
+
+def travar_email(email):
+    """Trava consultiva por e-mail normalizado, até o fim da transação (spec 002, research C4).
+
+    Serializa quem confere e grava o mesmo e-mail com caixa diferente; exige transação aberta.
+    [US-03][US-05][FR-001][SC-003][I4]
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_advisory_xact_lock(hashtext(lower(%s)))", [email or ""])
 
 
 def email_em_uso(email, exceto=None):
@@ -317,8 +360,42 @@ def autenticar(credencial, senha):
     if usuario.usu_status == StatusConta.INATIVA:
         return ResultadoLogin(EstadoLogin.INATIVA, usuario)
     if usuario.usu_status == StatusConta.EXPIRADA or validade_vencida(usuario):
+        if usuario.usu_status == StatusConta.ATIVA:
+            # Spec 002 (FR-040; contrato §4): o login também grava 'Expirada'. Uma falha nessa
+            # gravação não muda o resultado do login.
+            try:
+                expirar_se_vencida(usuario)
+            except Exception as erro:
+                registro_acesso.error("Falha ao expirar a conta: %s", type(erro).__name__)
         return ResultadoLogin(EstadoLogin.EXPIRADA, usuario)
     return ResultadoLogin(EstadoLogin.OK, usuario)
+
+
+def expirar_se_vencida(usuario):
+    """Grava 'Expirada' na conta 'Ativa' de Membro Externo com a validade vencida.
+
+    Trava a conta e relê status e validade (spec 002, research C15): uma prorrogação gravada no
+    mesmo instante não é desfeita. Devolve True se expirou. Usada pelo login e pelo comando
+    expirar_membros_externos.
+    [US-06][RBN-CAD-03.3][FR-040][SC-006][research C15][I2]
+    """
+    with transaction.atomic():
+        conta = _conta(usuario.pk, travar=True)
+        if conta is None or conta.usu_status != StatusConta.ATIVA:
+            return False
+        # A validade é relida depois da trava, numa consulta própria (a junção da trava pode
+        # trazer a versão anterior de MembrosExternos).
+        validade = (
+            MembrosExternos.objects.filter(pk=conta.pk)
+            .values_list("mem_validade_ate", flat=True)
+            .first()
+        )
+        if validade is None or validade >= timezone.now().date():
+            return False
+        conta.usu_status = StatusConta.EXPIRADA
+        conta.save(update_fields=["usu_status"])
+    registrar_evento(EventoAcesso.CONTA_EXPIRADA, conta, autor=AUTOR_SISTEMA)
+    return True
 
 
 # =============================================================================================
@@ -932,11 +1009,12 @@ def _resumo_do_email(email):
     return salted_hmac("sigtcc.troca_email.atual", (email or "").lower()).hexdigest()[:12]
 
 
-def pedir_troca_email(conta, novo):
+def pedir_troca_email(conta, novo, autor=None):
     """Envia ao novo e-mail o link de confirmação (24 h); o e-mail atual continua valendo.
 
     Levanta EmailEmUso (M-05) ou FalhaEnvioEmail (M-17); deve rodar dentro de
-    transaction.atomic(), para a falha desfazer o salvamento inteiro (A5, m13).
+    transaction.atomic(), para a falha desfazer o salvamento inteiro (A5, m13). autor: quem
+    pediu a troca, quando não é a própria conta (troca pelo gestor, spec 002, FR-008).
     [US-38][RBN-CAD-13.1][FR-021][Q11][Q24][FR-029]
     """
     if email_em_uso(novo, exceto=conta):
@@ -958,7 +1036,9 @@ def pedir_troca_email(conta, novo):
         )
     except Exception as erro:
         raise FalhaEnvioEmail from erro
-    registrar_evento(EventoAcesso.TROCA_EMAIL_PEDIDA, conta, detalhe=dominio_do_email(novo))
+    registrar_evento(
+        EventoAcesso.TROCA_EMAIL_PEDIDA, conta, autor=autor, detalhe=dominio_do_email(novo)
+    )
 
 
 def atualizar_perfil(usuario, dados, arquivo=None, tipo_arquivo=None):
@@ -1025,19 +1105,26 @@ def confirmar_troca_email(token):
     """Confirma a troca (POST do botão "Confirmar novo e-mail"), com a conta travada (Q28).
 
     Devolve a mensagem: M-07 (trocado), M-09 (link inválido) ou M-05 (e-mail ocupado).
-    [US-38][RBN-CAD-13.1][FR-021][Q28][FR-029]
+    Spec 002 (Q31; contrato §5): trava consultiva do novo e-mail antes de conferir e gravar, e
+    usu_link_gerado_em = agora na mesma gravação, o que invalida os links de ativação e de
+    redefinição enviados antes ao e-mail antigo.
+    [US-38][RBN-CAD-13.1][FR-021][Q28][FR-029][US-03][US-05][Q31]
     """
     with transaction.atomic():
         resultado = validar_link_troca_email(token, travar=True)
         if resultado.estado == EstadoTroca.INVALIDO:
             return M09_LINK_EMAIL_INVALIDO
-        if resultado.estado == EstadoTroca.EM_USO:
+        travar_email(resultado.novo_email)
+        if resultado.estado == EstadoTroca.EM_USO or email_em_uso(
+            resultado.novo_email, exceto=resultado.usuario
+        ):
             return M05_EMAIL_EM_USO
         conta = resultado.usuario
         conta.usu_email = resultado.novo_email
+        conta.usu_link_gerado_em = timezone.now()
         try:
             with transaction.atomic():
-                conta.save(update_fields=["usu_email"])
+                conta.save(update_fields=["usu_email", "usu_link_gerado_em"])
         except IntegrityError:
             return M05_EMAIL_EM_USO
     registrar_evento(

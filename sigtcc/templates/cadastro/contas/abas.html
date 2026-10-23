@@ -1,0 +1,11 @@
+{% comment %}
+  Abas da Gestão de Contas, como no protótipo de 17/10 (aqui são links, sem JavaScript). Cada aba
+  só aparece se a rota existir e o perfil puder abri-la (a view informa em "abas").
+  Uso: {% include "cadastro/contas/abas.html" with ativa="docentes" %}
+  [US-03][US-05][FR-011][FR-023][FR-031]
+{% endcomment %}
+<nav class="tabs" aria-label="Cadastros">
+  {% for aba in abas %}
+    <a class="tab{% if aba.chave == ativa %} ativo{% endif %}" href="{{ aba.url }}"{% if aba.chave == ativa %} aria-current="page"{% endif %}>{{ aba.rotulo }}</a>
+  {% endfor %}
+</nav>
