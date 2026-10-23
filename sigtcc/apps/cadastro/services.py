@@ -1065,19 +1065,26 @@ def confirmar_troca_email(token):
     """Confirma a troca (POST do botão "Confirmar novo e-mail"), com a conta travada (Q28).
 
     Devolve a mensagem: M-07 (trocado), M-09 (link inválido) ou M-05 (e-mail ocupado).
-    [US-38][RBN-CAD-13.1][FR-021][Q28][FR-029]
+    Spec 002 (Q31; contrato §5): trava consultiva do novo e-mail antes de conferir e gravar, e
+    usu_link_gerado_em = agora na mesma gravação, o que invalida os links de ativação e de
+    redefinição enviados antes ao e-mail antigo.
+    [US-38][RBN-CAD-13.1][FR-021][Q28][FR-029][US-03][US-05][Q31]
     """
     with transaction.atomic():
         resultado = validar_link_troca_email(token, travar=True)
         if resultado.estado == EstadoTroca.INVALIDO:
             return M09_LINK_EMAIL_INVALIDO
-        if resultado.estado == EstadoTroca.EM_USO:
+        travar_email(resultado.novo_email)
+        if resultado.estado == EstadoTroca.EM_USO or email_em_uso(
+            resultado.novo_email, exceto=resultado.usuario
+        ):
             return M05_EMAIL_EM_USO
         conta = resultado.usuario
         conta.usu_email = resultado.novo_email
+        conta.usu_link_gerado_em = timezone.now()
         try:
             with transaction.atomic():
-                conta.save(update_fields=["usu_email"])
+                conta.save(update_fields=["usu_email", "usu_link_gerado_em"])
         except IntegrityError:
             return M05_EMAIL_EM_USO
     registrar_evento(
