@@ -51,7 +51,13 @@ from sigtcc.apps.cadastro.mensagens import (
     NOVO_LINK_ENVIADO,
     PERFIL_ATUALIZADO,
 )
-from sigtcc.apps.cadastro.models import Alunos, EquivalenciaCursos, Notificacoes, Usuarios
+from sigtcc.apps.cadastro.models import (
+    Alunos,
+    EquivalenciaCursos,
+    MembrosExternos,
+    Notificacoes,
+    Usuarios,
+)
 from sigtcc.apps.cadastro.permissoes import (
     pode_resetar_primeiro_acesso,
     tipo_conta,
@@ -354,8 +360,42 @@ def autenticar(credencial, senha):
     if usuario.usu_status == StatusConta.INATIVA:
         return ResultadoLogin(EstadoLogin.INATIVA, usuario)
     if usuario.usu_status == StatusConta.EXPIRADA or validade_vencida(usuario):
+        if usuario.usu_status == StatusConta.ATIVA:
+            # Spec 002 (FR-040; contrato §4): o login também grava 'Expirada'. Uma falha nessa
+            # gravação não muda o resultado do login.
+            try:
+                expirar_se_vencida(usuario)
+            except Exception as erro:
+                registro_acesso.error("Falha ao expirar a conta: %s", type(erro).__name__)
         return ResultadoLogin(EstadoLogin.EXPIRADA, usuario)
     return ResultadoLogin(EstadoLogin.OK, usuario)
+
+
+def expirar_se_vencida(usuario):
+    """Grava 'Expirada' na conta 'Ativa' de Membro Externo com a validade vencida.
+
+    Trava a conta e relê status e validade (spec 002, research C15): uma prorrogação gravada no
+    mesmo instante não é desfeita. Devolve True se expirou. Usada pelo login e pelo comando
+    expirar_membros_externos.
+    [US-06][RBN-CAD-03.3][FR-040][SC-006][research C15][I2]
+    """
+    with transaction.atomic():
+        conta = _conta(usuario.pk, travar=True)
+        if conta is None or conta.usu_status != StatusConta.ATIVA:
+            return False
+        # A validade é relida depois da trava, numa consulta própria (a junção da trava pode
+        # trazer a versão anterior de MembrosExternos).
+        validade = (
+            MembrosExternos.objects.filter(pk=conta.pk)
+            .values_list("mem_validade_ate", flat=True)
+            .first()
+        )
+        if validade is None or validade >= timezone.now().date():
+            return False
+        conta.usu_status = StatusConta.EXPIRADA
+        conta.save(update_fields=["usu_status"])
+    registrar_evento(EventoAcesso.CONTA_EXPIRADA, conta, autor=AUTOR_SISTEMA)
+    return True
 
 
 # =============================================================================================

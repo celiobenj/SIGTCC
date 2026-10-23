@@ -20,7 +20,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.core.exceptions import PermissionDenied
 from django.db import DatabaseError, IntegrityError, transaction
-from django.db.models import Count, Exists, OuterRef, Q, Subquery, Value
+from django.db.models import Count, Exists, Max, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import Resolver404, resolve
@@ -61,8 +61,8 @@ from sigtcc.apps.cadastro.permissoes import (
     tem_perfil,
     validade_vencida,
 )
-from sigtcc.apps.defesa.choices import StatusSessao
-from sigtcc.apps.defesa.models import BancaDefesa
+from sigtcc.apps.defesa.choices import EventoDefesa, StatusSessao
+from sigtcc.apps.defesa.models import BancaDefesa, Defesas, HistoricoDefesas
 
 # Erros técnicos da Gestão de Contas, só com o tipo do erro (research C18, m3).
 registro_contas = logging.getLogger("sigtcc.contas")
@@ -686,7 +686,7 @@ PERFIS_MEMBROS = ("orientador", "professor_disciplina", "secretaria", "coordenad
 VALIDADE_SEM_BANCA = timedelta(days=30)
 
 
-def hoje():
+def data_de_hoje():
     """Data de hoje no fuso do servidor (USE_TZ = False), pelo relógio do Django. [US-06]"""
     return timezone.now().date()
 
@@ -745,7 +745,7 @@ def cadastrar_membro(usuario, dados):
                 mem=conta,
                 mem_titulacao=dados["titulacao"],
                 mem_instituicao=dados["instituicao"],
-                mem_validade_ate=hoje() + VALIDADE_SEM_BANCA,
+                mem_validade_ate=data_de_hoje() + VALIDADE_SEM_BANCA,
             )
         return conta
 
@@ -1054,3 +1054,100 @@ def inativar_secretaria(usuario, sec_id):
     conta = _gravar(gravar)
     registrar[0]()
     return Resultado(mensagens.MC04_SECRETARIA_INATIVADA, conta)
+
+
+# =============================================================================================
+# Validade do Membro Externo (US-06; FR-037 a FR-041; research C13, C14; contrato §2)
+# =============================================================================================
+
+DIAS_APOS_A_DEFESA = timedelta(days=7)
+
+
+def _validade_pelas_bancas(usuario, validade_atual):
+    """Nova validade pela regra da US-06 (data-model §4), sem a proteção da prorrogação.
+
+    1. Sessões não Canceladas com o membro na banca, como membro ou como substituído pelo
+       suplente (Q33): maior data da defesa + 7 dias corridos (fluxo principal, A4, A6).
+    2. Sem nenhuma: evento mais recente entre o cancelamento de sessão em que ele estava e a
+       retirada dele da banca (Historico_Defesas), data + 7 dias corridos (A3, A7; Q13).
+    3. Sem histórico de banca: mantém a validade gravada (cadastro + 30; FR-038).
+    [US-06][RBN-CAD-03.3][RBN-DEF-02.4][FR-037][FR-038][Q13][Q33]
+    """
+    na_banca = Q(bancadefesa__ban_usu=usuario) | Q(bancadefesa__ban_usu_substituido=usuario)
+    sessoes = Defesas.objects.filter(na_banca).distinct()
+    maior = sessoes.exclude(def_status=StatusSessao.CANCELADA).aggregate(maior=Max("def_data"))[
+        "maior"
+    ]
+    if maior is not None:
+        return maior + DIAS_APOS_A_DEFESA
+    cancelamento = HistoricoDefesas.objects.filter(
+        hdf_evento=EventoDefesa.CANCELAMENTO,
+        hdf_def__in=sessoes.filter(def_status=StatusSessao.CANCELADA).values("pk"),
+    ).aggregate(ultimo=Max("hdf_data_hora"))["ultimo"]
+    retirada = HistoricoDefesas.objects.filter(
+        hdf_evento=EventoDefesa.ALTERACAO_DA_BANCA, hdf_membro_removido=usuario
+    ).aggregate(ultimo=Max("hdf_data_hora"))["ultimo"]
+    eventos = [data for data in (cancelamento, retirada) if data is not None]
+    if eventos:
+        return max(eventos).date() + DIAS_APOS_A_DEFESA
+    return validade_atual
+
+
+def _data_protegida(membro):
+    """Data dada pela última prorrogação manual (Q15, Q36): a validade nunca fica antes dela.
+
+    [US-06][US-50][RBN-CAD-03.3][FR-039][Q15][Q36][research C13]
+    """
+    return membro.mem_prorrogado_ate
+
+
+def recalcular_validade(usuario, hoje=None):
+    """Recalcula a validade do Membro Externo depois de um evento de banca (contrato §2).
+
+    A Defesa chama dentro da sua transação, depois de gravar o evento e o Historico_Defesas,
+    uma vez por membro afetado. Outro tipo de conta: True sem fazer nada. Trava a conta com
+    no_key (não conflita com os INSERTs em Banca_Defesa), relê o membro, aplica a regra, a
+    proteção da prorrogação e o status: validade em dia e 'Expirada' → 'Ativa' (A1); validade
+    no passado e 'Ativa' → 'Expirada' (m9); 'Aguardando Ativação' não muda. Falha: mantém a
+    validade anterior, registra só o tipo do erro e devolve False, sem quebrar a transação de
+    quem chamou (savepoint; US-06 E2). Idempotente.
+    [US-06][RBN-CAD-03.3][FR-037][FR-039][FR-041][Q15][Q33][research C14][I1]
+    """
+    if not MembrosExternos.objects.filter(pk=usuario.pk).exists():
+        return True
+    data_hoje = hoje or data_de_hoje()
+    try:
+        with transaction.atomic():
+            conta = (
+                Usuarios.objects.select_for_update(no_key=True, of=("self",))
+                .filter(pk=usuario.pk)
+                .first()
+            )
+            membro = MembrosExternos.objects.select_for_update(no_key=True).get(pk=usuario.pk)
+            antes = (membro.mem_validade_ate, conta.usu_status)
+            nova = _validade_pelas_bancas(conta, membro.mem_validade_ate)
+            protegida = _data_protegida(membro)
+            if protegida is not None and (nova is None or nova < protegida):
+                nova = protegida
+            status = conta.usu_status
+            if nova is not None and status != StatusConta.AGUARDANDO_ATIVACAO:
+                if nova >= data_hoje and status == StatusConta.EXPIRADA:
+                    status = StatusConta.ATIVA
+                elif nova < data_hoje and status == StatusConta.ATIVA:
+                    status = StatusConta.EXPIRADA
+            if (nova, status) != antes:
+                membro.mem_validade_ate = nova
+                membro.save(update_fields=["mem_validade_ate"])
+                conta.usu_status = status
+                conta.save(update_fields=["usu_status"])
+    except Exception as erro:
+        registro_contas.error("Falha ao recalcular a validade: %s", type(erro).__name__)
+        return False
+    if (nova, status) != antes:
+        services.registrar_evento(
+            services.EventoAcesso.VALIDADE_RECALCULADA,
+            conta,
+            autor=services.AUTOR_SISTEMA,
+            detalhe=f"validade={nova.isoformat() if nova else '-'} status={status}",
+        )
+    return True
