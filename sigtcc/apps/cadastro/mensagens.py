@@ -88,7 +88,8 @@ M01_BLOQUEIO = (
     "Acesso bloqueado por 15 minutos após 3 tentativas incorretas. "
     "Tente novamente em {minutos} minutos."
 )
-M02_ACESSO_NEGADO = "Você não tem permissão para acessar esta página."
+# M-02 e M-14 passaram aos textos das US-03, 04, 05 e 50 (spec 003, Q30; spec 002, Q9; índice Q-50).
+M02_ACESSO_NEGADO = "Você não tem permissão para esta ação"
 M03_ORIENTACAO_CONTA_ATIVA = (
     'Use "Esqueci minha senha" ou, se o e-mail estiver errado, procure o Professor da Disciplina.'
 )
@@ -106,7 +107,7 @@ M12_CONFIRMAR_RESET = (
     "deverá refazer o primeiro acesso."
 )
 M13_RESET_CONCLUIDO = "Primeiro acesso resetado. O aluno já pode refazer o primeiro acesso."
-M14_CAMPO_OBRIGATORIO = "Preencha este campo."
+M14_CAMPO_OBRIGATORIO = "Campo obrigatório"
 M15_CONTA_INATIVA = CONTA_INATIVA
 M16_ACESSO_EXPIRADO = ACESSO_EXPIRADO
 M17_FALHA_ENVIO = "Não foi possível enviar o e-mail agora. Tente novamente em alguns minutos."
@@ -206,4 +207,83 @@ MT32_PREVIA_INVALIDA = (
 MT31_PEDIDO_CANCELADO = (
     "O pedido de {tipo} para o TCC de {nome} foi cancelado porque a participação do aluno foi "
     "encerrada."
+)
+
+# =============================================================================================
+# Spec 002: Gestão de Contas (US-03, US-04, US-05, US-06, US-50)
+# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_3.md; MC-01 a MC-13 da tabela
+# "Mensagens a validar com a PO" de specs/002-gestao-contas/spec.md. [SC-002][FR-048]
+# =============================================================================================
+
+# US-03 e US-05: cadastro e alteração [RBN-CAD-01.1][RBN-CAD-01.2][RBN-CAD-02.1][RBN-CAD-02.2]
+# [RBN-CAD-03.1][RBN-CAD-03.2]. MC-08 = DOCENTE_CADASTRADO (cenário 1 da US-03; spec Q6).
+DOCENTE_CADASTRADO = "Docente cadastrado com sucesso"
+SECRETARIA_CADASTRADA = "Secretaria cadastrada com sucesso"
+MEMBRO_CADASTRADO = "Membro externo cadastrado com sucesso"
+DADOS_ATUALIZADOS = "Dados atualizados"
+EMAIL_JA_CADASTRADO = "Este e-mail já está cadastrado"
+EMAIL_INSTITUCIONAL_CONTAS = "Informe um e-mail institucional (@uea.edu.br)"
+EMAIL_VALIDO = "Informe um e-mail válido"
+NOME_INVALIDO = "O nome deve conter apenas letras e até 150 caracteres"
+OPCAO_INVALIDA = "Selecione uma opção válida"
+INSTITUICAO_INVALIDA = "Informe a instituição com até 150 caracteres"
+CURSO_JA_TEM_COORDENADOR = (
+    "O curso já possui Coordenador. Desmarque o papel no coordenador atual para continuar"
+)
+CURSO_JA_TEM_SECRETARIA = "O curso já possui Secretaria vinculada"
+SO_DO_SEU_CURSO_CADASTRO = "Você só pode cadastrar e alterar dados do seu curso"
+SO_DO_SEU_CURSO_ALTERACAO = "Você só pode alterar dados do seu curso"
+NENHUM_REGISTRO = "Nenhum registro"
+FALHA_AO_SALVAR = "Não foi possível salvar. Tente novamente"
+
+# US-04: inativação [RBN-CAD-01.3][RBN-CAD-02.3]. {nome}, {motivos} e {n} são NOME, MOTIVOS e N.
+CONFIRMAR_INATIVAR_DOCENTE = "Deseja inativar o docente {nome}?"
+DOCENTE_INATIVADO = "Docente inativado"
+NAO_E_POSSIVEL_INATIVAR = "Não é possível inativar: o docente {motivos}"
+# Motivo (a), sempre no plural, mesmo com N = 1 (US-04 E1; spec Q18).
+MOTIVO_TCC_ATIVO = "possui {n} orientandos ou coorientandos com TCC ativo"
+MOTIVO_COORDENADOR = "é Coordenador do curso"
+# Fecho do alerta com mais de um motivo (US-04 E6; FR-027).
+FIM_ALERTA_VINCULOS = ". Encerre ou transfira esses vínculos primeiro"
+
+# US-50: prorrogação [RBN-CAD-03.3]. {data} no formato DD/MM/AAAA.
+ACESSO_PRORROGADO_ATE = "Acesso prorrogado até {data}"
+FALHA_AO_PRORROGAR = "Não foi possível prorrogar o acesso. Tente novamente"
+
+# US-06: PROVISÓRIA até a Q-52 (troca da M-16 pela spec 003). Só o teste do cenário 3 da US-06 a
+# usa; com a resposta da Julia, a M-16 recebe este texto e a constante sai (research C16).
+ACESSO_EXPIRADO_US06 = "Seu acesso expirou. Procure a coordenação do curso"
+
+# Rótulos das US-03 a 06 e 50 (critério dos cenários, spec Q21). SALVAR e EDITAR já existem.
+CADASTRAR_DOCENTE = "Cadastrar Docente"
+NOVA_SECRETARIA = "Nova secretaria"
+NOVO_MEMBRO_EXTERNO = "Novo membro externo"
+INATIVAR = "Inativar"
+REATIVAR = "Reativar"
+PRORROGAR = "Prorrogar"
+CANCELAR = "Cancelar"
+COORDENADOR_DE_CURSO = "Coordenador de Curso"
+SUA_SENHA = "Sua senha"
+
+# MC-01 a MC-10: definidas em 2026-10-22 (spec Q14; índice Q-46). [US-04][US-50]
+MC01_CONFIRMAR_REATIVAR = "Deseja reativar o docente {nome}?"
+MC02_DOCENTE_REATIVADO = "Docente reativado"
+MC03_CONFIRMAR_INATIVAR_SECRETARIA = "Deseja inativar a Secretaria {nome}?"
+MC04_SECRETARIA_INATIVADA = "Secretaria inativada"
+# Motivos (b) a (d): plural com {n} e singular com N = 1 (spec Q14).
+MC05_CONVITES = "possui {n} convites de coorientação sem resposta"
+MC05_CONVITE_1 = "possui 1 convite de coorientação sem resposta"
+MC06_BANCAS = "participa de {n} bancas Agendadas, Reagendadas ou Em Andamento"
+MC06_BANCA_1 = "participa de 1 banca Agendada, Reagendada ou Em Andamento"
+MC07_TURMAS = "é Professor da Disciplina de {n} turmas não arquivadas"
+MC07_TURMA_1 = "é Professor da Disciplina de 1 turma não arquivada"
+MC09_SEM_VALIDADE = "Este membro ainda não ativou a conta e não tem validade para prorrogar"
+MC10_STATUS_INCOMPATIVEL = "Esta ação não está disponível para o Status da Conta atual"
+
+# MC-11 a MC-13: PROVISÓRIAS (spec Q17 e Q24; índice Q-58). [US-03][US-05][FR-008]
+MC11_SENHA_INCORRETA = "Senha incorreta"
+MC12_TROCA_EMAIL_ENVIADA = "Dados atualizados. Enviamos um link de confirmação para o novo e-mail"
+MC13_FALHA_ENVIO_TROCA = (
+    "Dados atualizados, mas não foi possível enviar o link de confirmação. Altere o e-mail "
+    "novamente em alguns minutos"
 )
