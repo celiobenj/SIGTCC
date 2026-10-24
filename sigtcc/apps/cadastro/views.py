@@ -10,6 +10,7 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.core.exceptions import PermissionDenied
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
+from django.db.models import Case, IntegerField, Value, When
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -17,6 +18,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from sigtcc.apps.cadastro import mensagens, services
+from sigtcc.apps.cadastro.choices import StatusTurma
 from sigtcc.apps.cadastro.forms import (
     AlterarSenhaForm,
     AtivacaoForm,
@@ -29,7 +31,7 @@ from sigtcc.apps.cadastro.forms import (
     PrimeiroAcessoAlunoForm,
     PrimeiroAcessoEmailForm,
 )
-from sigtcc.apps.cadastro.models import Alunos, Notificacoes
+from sigtcc.apps.cadastro.models import Alunos, Notificacoes, Turmas
 from sigtcc.apps.cadastro.permissoes import (
     papeis,
     perfil_requerido,
@@ -354,16 +356,28 @@ def nova_senha(request):
 
 @perfil_requerido("professor_disciplina")
 def aluno(request, alu_id):
-    """Tela mínima do aluno para o Professor da Disciplina, com o botão de reset quando pode.
-
-    [US-12][RBN-CAD-06.8][FR-015][Q3][Q9][Q27][Q29]
+    """Endereço antigo da tela mínima do aluno (spec 003): a tela foi retirada pela spec 006
+    (Q12; IC-08) e o endereço leva ao painel do aluno na turma mais recente em que quem abre é o
+    Professor da Disciplina (não arquivada primeiro, depois ano, semestre e tur_id decrescentes;
+    research R5, N12); sem essa turma, acesso negado (M-02). O reset fica no painel.
+    [US-12][US-41][RBN-CAD-06.8][RBN-CAD-08.9][FR-015][spec 006 FR-044][Q12][IC-08]
     """
     registro = get_object_or_404(Alunos.objects.select_related("alu"), pk=alu_id)
-    contexto = {
-        "aluno": registro,
-        "pode_resetar": pode_resetar_primeiro_acesso(request.user, registro),
-    }
-    return render(request, "cadastro/aluno.html", contexto)
+    turma = (
+        Turmas.objects.filter(tur_doc_id=request.user.pk, alunosturmas__mat_alu=registro)
+        .annotate(
+            arquivada=Case(
+                When(tur_status=StatusTurma.ARQUIVADA, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("arquivada", "-tur_ano", "-tur_semestre", "-tur_id")
+        .first()
+    )
+    if turma is None:
+        raise PermissionDenied
+    return redirect("cadastro:painel_aluno", tur_id=turma.pk, alu_id=registro.pk)
 
 
 @perfil_requerido("professor_disciplina")

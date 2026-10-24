@@ -5,7 +5,11 @@
   enquanto a rota não existe. Spec 005: barra de abas "Alunos" | "Atividades" (esta só para o
   Professor da Disciplina), só por inclusão, e o link "Histórico do Status do TCC" de cada aluno,
   só para o Professor, até a tela do aluno (US-41) existir (FR-009, FR-031, Q-89).
-  [US-07][US-08][US-09][FR-008][FR-009][FR-010][Q9]
+  Spec 006 (IC-02; FR-017): a lista vira blocos somente leitura, como blocoAluno do protótipo de
+  17/10 (Nome, Matrícula, Curso, Título ou "Sem Proposta", Área, Orientador ou "Sem orientador" e
+  Status). Para o Professor da Disciplina, o bloco abre o painel do aluno, onde ficam as ações;
+  a Secretaria vê os blocos sem o painel, com "Transferir aluno" quando permitido (Q4).
+  [US-07][US-08][US-09][FR-008][FR-009][FR-010][Q9][spec 006 FR-017][US-41]
 {% endcomment %}
 {% block titulo %}{{ turma.tur_identificador }} · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -41,37 +45,18 @@
   </div>
 </div>
 {% if alunos %}
-<div class="tabela-wrap">
-  <table class="tabela">
-    <thead><tr><th>Matrícula</th><th>Nome Completo</th><th>Curso</th><th>Status do TCC</th><th>Ações</th></tr></thead>
-    <tbody>
-      {% for linha in alunos %}
-      {% url 'cadastro:aluno_editar' turma.pk linha.aluno.pk as url_editar %}
-      {% url 'cadastro:aluno_transferir' turma.pk linha.aluno.pk as url_transferir %}
-      {% url 'cadastro:aluno_excluir' turma.pk linha.aluno.pk as url_excluir %}
-      {% url 'cadastro:aluno_encerrar' turma.pk linha.aluno.pk as url_encerrar %}
-      {% url 'cadastro:historico_status' turma.pk linha.aluno.pk as url_historico %}
-      <tr>
-        <td>{{ linha.aluno.alu_matricula }}</td>
-        <td>{% if e_professor %}<a href="{% url 'cadastro:aluno' linha.aluno.pk %}">{{ linha.aluno.alu.usu_nome }}</a>{% else %}{{ linha.aluno.alu.usu_nome }}{% endif %}</td>
-        <td>{{ linha.curso }}</td>
-        <td>{{ linha.status_tcc }}</td>
-        <td class="acoes">
-          {% if pode_alterar %}
-            {% if url_editar %}<a class="btn txt" href="{{ url_editar }}">Editar</a>{% endif %}
-            {% if linha.status_tcc == "Sem Proposta" %}
-              {% if url_excluir %}<a class="btn txt perigo" href="{{ url_excluir }}">Excluir da turma</a>{% endif %}
-            {% elif linha.encerravel %}
-              {% if url_encerrar %}<a class="btn txt" href="{{ url_encerrar }}">Encerrar participação</a>{% endif %}
-            {% endif %}
-          {% endif %}
-          {% if pode_transferir and url_transferir %}<a class="btn txt" href="{{ url_transferir }}">Transferir</a>{% endif %}
-          {% if e_professor and url_historico %}<a class="btn txt" href="{{ url_historico }}">Histórico do Status do TCC</a>{% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="blocos">
+  {% for linha in alunos %}
+  {% url 'cadastro:painel_aluno' turma.pk linha.aluno.pk as url_painel %}
+  {% url 'cadastro:aluno_transferir' turma.pk linha.aluno.pk as url_transferir %}
+  {% if abre_painel %}<a class="bloco" href="{{ url_painel }}">{% else %}<div class="bloco">{% endif %}
+    <span class="bloco-cab"><span class="avatar md">{{ linha.aluno.alu.usu_nome|slice:":1"|upper }}</span><span><b>{{ linha.aluno.alu.usu_nome }}</b><small>{{ linha.aluno.alu_matricula }} · {{ linha.curso }}</small></span></span>
+    <span class="bloco-tit">{% if linha.titulo %}{{ linha.titulo }}{% else %}{{ sem_proposta }}{% endif %}</span>
+    <small class="muted">Área de Interesse: {{ linha.area|default:"—" }}</small>
+    <span class="bloco-rod"><span class="bloco-ori"><span class="ms">supervisor_account</span>{% if linha.orientador %}{{ linha.orientador }}{% else %}{{ sem_orientador }}{% endif %}</span><span class="chip">{{ linha.status_tcc }}</span></span>
+    {% if not abre_painel and pode_transferir and linha.transferivel and url_transferir %}<span class="acoes"><a class="btn" href="{{ url_transferir }}"><span class="ms">swap_horiz</span>Transferir aluno</a></span>{% endif %}
+  {% if abre_painel %}</a>{% else %}</div>{% endif %}
+  {% endfor %}
 </div>
 {% else %}
   <div class="vazio"><span class="ms">person_off</span>Nenhum aluno matriculado.</div>

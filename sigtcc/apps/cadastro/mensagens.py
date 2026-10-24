@@ -374,6 +374,8 @@ MC13_FALHA_ENVIO_TROCA = (
 PEDIDO_ENVIADO = "Pedido enviado a {docente}. Aguardando resposta"
 PROPOSTA_AINDA_NAO_REGISTRADA = "Proposta ainda não registrada"
 SEM_ORIENTADOR = "Sem orientador"
+# US-41: bloco do aluno sem Proposta [RBN-CAD-10.5]
+SEM_PROPOSTA = "Sem Proposta"
 
 # US-18: resposta ao pedido e link [RBN-CAD-10.2][RBN-CAD-10.6]
 PEDIDO_RECUSADO = "Pedido recusado"

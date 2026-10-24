@@ -8,7 +8,7 @@
   [US-17][US-41][US-45][RBN-CAD-10.1][RBN-CAD-10.3][RBN-CAD-10.6][FR-001 a FR-007][FR-028][FR-049]
 {% endcomment %}
 <section id="orientacao">
-  <div class="sec-tit c-azul">Orientação</div>
+  {% if not sem_titulo %}<div class="sec-tit c-azul">Orientação</div>{% endif %}
   {% if o.orientador %}
   <div class="item">
     <span class="avatar md">{{ o.orientador.doc.usu_nome|slice:":1"|upper }}</span>

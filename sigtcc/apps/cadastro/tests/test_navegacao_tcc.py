@@ -176,7 +176,13 @@ class HistoricoPeloProfessorTest(NavegacaoTestBase):
 
     def test_professor_ve_e_abre_o_historico_do_aluno(self):
         self.client.force_login(self.professor)
+        # Spec 006 (IC-02, IC-11): o link do histórico saiu da lista para o painel do aluno, que
+        # o bloco da aba "Alunos" abre.
         resposta = self.client.get(reverse("cadastro:turma", args=[self.turma.pk]))
+        self.assertContains(resposta, _href("painel_aluno", self.turma.pk, self.aluno.pk))
+        resposta = self.client.get(
+            reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
+        )
         self.assertContains(resposta, _href("historico_status", self.turma.pk, self.aluno.pk))
         self.assertContains(resposta, "Histórico do Status do TCC")
         resposta = self.client.get(

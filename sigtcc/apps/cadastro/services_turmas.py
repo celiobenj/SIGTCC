@@ -45,6 +45,7 @@ from sigtcc.apps.cadastro.models import (
     Disciplinas,
     EncontroOrientacao,
     EntregasMarcos,
+    EquivalenciaCursos,
     HistoricoAlunosTurmas,
     HistoricoStatusTCC,
     Orientacoes,
@@ -402,18 +403,33 @@ def _cancelar_pendentes_no_arquivamento(turma):
 def alunos_da_turma(turma):
     """Alunos matriculados, com Matrícula, Nome Completo, Curso e Status do TCC (FR-010).
 
-    [US-07][US-08][FR-010][RBN-CAD-05.7][RBN-CAD-08.3]
+    Spec 006 (IC-02; FR-017; research R14): cada linha traz também Título, Área de Interesse e
+    Orientador ativo, para os blocos da aba "Alunos", sem consulta por linha (cursos, TCCs e
+    orientações carregados de uma vez).
+    [US-07][US-08][FR-010][RBN-CAD-05.7][RBN-CAD-08.3][spec 006 FR-017][IC-02]
     """
     vinculos = (
         AlunosTurmas.objects.filter(mat_tur=turma)
         .select_related("mat_alu__alu")
         .order_by("mat_alu__alu__usu_nome")
     )
-    tccs = {t.tcc_alu_id: t for t in TCCs.objects.filter(tcc_tur=turma)}
+    tccs = {t.tcc_alu_id: t for t in TCCs.objects.select_related("tcc_ari").filter(tcc_tur=turma)}
+    orientadores = {
+        o.ori_tcc_id: o.ori_doc.doc.usu_nome
+        for o in Orientacoes.objects.select_related("ori_doc__doc").filter(
+            ori_tcc__tcc_tur=turma, ori_status=StatusOrientacao.ATIVA
+        )
+    }
+    cursos = {
+        e.eqc_codigo_uea: e.eqc_cur
+        for e in EquivalenciaCursos.objects.select_related("eqc_cur").filter(
+            eqc_codigo_uea__in=[v.mat_alu.alu_codigo_curso for v in vinculos]
+        )
+    }
     linhas = []
     for vinculo in vinculos:
         aluno = vinculo.mat_alu
-        curso = curso_do_codigo(aluno.alu_codigo_curso)
+        curso = cursos.get(aluno.alu_codigo_curso)
         tcc = tccs.get(aluno.pk)
         linhas.append(
             {
@@ -423,6 +439,11 @@ def alunos_da_turma(turma):
                 "status_tcc": tcc.tcc_status if tcc else "",
                 "encerrado": bool(tcc and participacao_encerrada(tcc)),
                 "encerravel": aluno_pode_ser_encerrado(tcc),
+                # Spec 006 (IC-02; FR-017): dados do bloco.
+                "titulo": (tcc.tcc_titulo or "") if tcc else "",
+                "area": tcc.tcc_ari.ari_nome if tcc and tcc.tcc_ari_id else "",
+                "orientador": orientadores.get(tcc.pk, "") if tcc else "",
+                "transferivel": bool(tcc and tcc.tcc_status in STATUS_TCC_TRANSFERIVEL),
             }
         )
     return linhas

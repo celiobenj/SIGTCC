@@ -111,3 +111,50 @@ class NavegacaoDocenteTest(TesteTurmas):
         historico = seguir(self, tela, reverse("cadastro:historico_orientando", args=[self.tcc.pk]))
         voltou = seguir(self, historico, reverse("cadastro:orientacoes"))
         self.assertContains(voltou, "Orientandos")
+
+
+class NavegacaoProfessorTest(TesteTurmas):
+    """Professor: menu "Turmas" → turma → bloco → painel → ação (?volta=painel) → painel;
+    histórico → "Fechar" → painel; "Fechar" do painel → aba "Alunos". [US-41][FR-044][T030]
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.professor = criar_docente_ativo()
+        self.turma = criar_turma_de(self.professor, curso_nome=SI)
+        self.aluno = matricular_aluno(self.turma, status_tcc=StatusTCC.EM_ANDAMENTO)
+        self.client.force_login(self.professor)
+
+    def painel(self):
+        painel = self.client.get(reverse("cadastro:painel"))
+        turmas = seguir(self, painel, reverse("cadastro:turmas"))
+        turma = seguir(self, turmas, reverse("cadastro:turma", args=[self.turma.pk]))
+        return seguir(
+            self, turma, reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
+        )
+
+    def test_do_menu_ao_painel_e_volta(self):
+        painel = self.painel()
+        self.assertContains(painel, "Proposta e TCC")
+        aba = seguir(self, painel, reverse("cadastro:turma", args=[self.turma.pk]))
+        self.assertContains(aba, 'class="bloco"')
+
+    def test_acao_do_painel_cancelar_volta_ao_painel(self):
+        painel = self.painel()
+        encerrar = seguir(
+            self, painel, reverse("cadastro:aluno_encerrar", args=[self.turma.pk, self.aluno.pk])
+        )
+        voltou = seguir(
+            self, encerrar, reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
+        )
+        self.assertContains(voltou, "Proposta e TCC")
+
+    def test_historico_fechar_volta_ao_painel(self):
+        painel = self.painel()
+        historico = seguir(
+            self, painel, reverse("cadastro:historico_status", args=[self.turma.pk, self.aluno.pk])
+        )
+        voltou = seguir(
+            self, historico, reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
+        )
+        self.assertContains(voltou, "Proposta e TCC")

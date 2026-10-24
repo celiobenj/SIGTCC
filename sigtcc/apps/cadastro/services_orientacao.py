@@ -12,6 +12,7 @@ funções que precisam dele (arquivamento e cópia para o TCC 2), para não have
 import enum
 
 from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.http import Http404
@@ -33,9 +34,12 @@ from sigtcc.apps.cadastro.choices import (
 )
 from sigtcc.apps.cadastro.models import (
     Alunos,
+    Artigos,
     Coorientacoes,
     Docentes,
+    EncontroOrientacao,
     EntregasMarcos,
+    HistoricoEnviosEntregas,
     HistoricoStatusTCC,
     Notificacoes,
     Orientacoes,
@@ -43,20 +47,30 @@ from sigtcc.apps.cadastro.models import (
     TCCs,
     TurmasMarcos,
 )
-from sigtcc.apps.cadastro.services import enviar_email_apos_commit, notificar
+from sigtcc.apps.cadastro.permissoes import pode_resetar_primeiro_acesso
+from sigtcc.apps.cadastro.services import curso_do_codigo, enviar_email_apos_commit, notificar
 from sigtcc.apps.cadastro.services_contas import docentes_ativos, travar_e_conferir_ativo
 from sigtcc.apps.cadastro.services_entregas import (
     STATUS_ENVIO_AVALIAVEL,
     exige_correcoes_conferidas,
+    pode_devolver,
+    pode_homologar,
     status_exibido,
     versao_final_do_aluno,
 )
+from sigtcc.apps.cadastro.services_tcc import palavras_chave_do, pode_ver_resumo
 from sigtcc.apps.cadastro.services_turmas import (
+    CONSULTAR,
     STATUS_SESSAO_ATIVA,
     STATUS_SOLICITACAO_PENDENTE,
+    STATUS_TCC_TRANSFERIVEL,
+    aluno_pode_ser_encerrado,
+    aluno_pode_ser_excluido,
     participacao_encerrada,
+    tcc_do_aluno,
     travar_turma_ativa,
     turma_arquivada,
+    turma_para,
     turma_tem_orientador_automatico,
     vinculo_na_turma,
 )
@@ -1111,3 +1125,101 @@ def conferir_correcoes(orientador, tcc_id):
         entrega.ent_correcoes_conferidas_em = timezone.now()
         entrega.save(update_fields=["ent_correcoes_conferidas_em"])
     return tcc
+
+
+# =============================================================================================
+# Painel do aluno (US-41; FR-017 a FR-020, FR-044; research R10, R14)
+# =============================================================================================
+
+
+def entregas_do_painel(turma, aluno):
+    """Seção Entregas do painel: título, tipo, Data Limite, status exibido e link mais recente,
+    com os envios carregados de uma vez (research R14). [US-41][US-16][FR-018]
+    """
+    registros = list(
+        EntregasMarcos.objects.select_related("ent_tma")
+        .filter(ent_alu=aluno, ent_tma__tma_tur=turma)
+        .order_by("ent_tma__tma_data_limite", "ent_tma_id")
+    )
+    ultimos = {}
+    for envio in HistoricoEnviosEntregas.objects.filter(hen_ent__in=registros).order_by(
+        "hen_data_envio", "hen_id"
+    ):
+        ultimos[envio.hen_ent_id] = envio
+    agora = timezone.now()
+    return [
+        {
+            "marco": registro.ent_tma,
+            "status": status_exibido(registro, agora),
+            "envio": ultimos.get(registro.pk),
+        }
+        for registro in registros
+    ]
+
+
+def contexto_painel(professor, tur_id, alu_id):
+    """Painel do aluno (FR-018, FR-019): só o Professor da Disciplina da turma (403 para a
+    Secretaria, outro Docente e o Aluno; FR-020), aluno com vínculo na turma (404; research R10,
+    A2) e as seções e os botões com as regras de cada spec já aplicadas; com a turma arquivada,
+    nenhum botão de ação, inclusive "Resetar primeiro acesso" (FR-019; A7).
+    [US-41][US-08][US-09][US-12][US-44][RBN-CAD-08.9][FR-017 a FR-020][FR-044]
+    """
+    turma = turma_para(professor, tur_id, CONSULTAR)
+    if turma.tur_doc_id != professor.pk:
+        raise PermissionDenied
+    aluno = vinculo_na_turma(turma, alu_id)
+    tcc = tcc_do_aluno(turma, aluno)
+    arquivada = turma_arquivada(turma)
+    ativa = not arquivada
+    if tcc is None:
+        # Vínculo sem TCC (cargas antigas): só o cabeçalho, "Editar" e "Resetar primeiro acesso".
+        return {
+            "turma": turma,
+            "aluno": aluno,
+            "tcc": None,
+            "arquivada": arquivada,
+            "curso": curso_do_codigo(aluno.alu_codigo_curso),
+            "volta": "?volta=painel",
+            "pode_editar": ativa,
+            "pode_resetar": ativa and pode_resetar_primeiro_acesso(professor, aluno),
+        }
+    artigo = None
+    if tcc.tcc_modalidade == ModalidadeTCC.ARTIGO_CIENTIFICO:
+        artigo = Artigos.objects.filter(art=tcc).first()
+    versao = None
+    if turma.tur_descricao == DescricaoTurma.TCC_2:
+        entrega = versao_final_do_aluno(turma, aluno)
+        if entrega is not None:
+            versao = {
+                "entrega": entrega,
+                "status": status_exibido(entrega),
+                "pode_homologar": ativa and pode_homologar(entrega, turma, tcc),
+                "pode_devolver": ativa and pode_devolver(entrega),
+            }
+    defesa = Defesas.objects.filter(def_tcc=tcc).order_by("-def_id").first()
+    volta = "?volta=painel"
+    return {
+        "turma": turma,
+        "aluno": aluno,
+        "tcc": tcc,
+        "arquivada": arquivada,
+        "curso": curso_do_codigo(aluno.alu_codigo_curso),
+        "mostra_resumo": pode_ver_resumo(professor, tcc),
+        "palavras": palavras_chave_do(tcc),
+        "orientacao": contexto_secao_orientacao(tcc, somente_leitura=True),
+        "entregas": entregas_do_painel(turma, aluno),
+        "n_atas": EncontroOrientacao.objects.filter(enc_tcc=tcc).count(),
+        "artigo": artigo,
+        "eh_artigo": tcc.tcc_modalidade == ModalidadeTCC.ARTIGO_CIENTIFICO,
+        "defesa": defesa,
+        "sem_defesa": mensagens.MO23_SEM_DEFESA,
+        "versao": versao,
+        "volta": volta,
+        "pode_editar": ativa,
+        "pode_resetar": ativa and pode_resetar_primeiro_acesso(professor, aluno),
+        "pode_transferir": ativa
+        and turma_tem_orientador_automatico(turma)
+        and tcc.tcc_status in STATUS_TCC_TRANSFERIVEL,
+        "pode_encerrar": ativa and aluno_pode_ser_encerrado(tcc),
+        "pode_excluir": ativa and aluno_pode_ser_excluido(tcc),
+    }

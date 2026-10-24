@@ -19,3 +19,9 @@ def atas_orientando(request, tcc_id):
 def registrar_ata_docente(request, tcc_id):
     """Rota 18. Provisória até a T034 (US4). [US-19][FR-022]"""
     raise Http404
+
+
+@perfil_requerido("docente")
+def atas_painel(request, tur_id, alu_id):
+    """Rota 26. Provisória até a T034 (US4). [US-19][US-41][FR-023]"""
+    raise Http404

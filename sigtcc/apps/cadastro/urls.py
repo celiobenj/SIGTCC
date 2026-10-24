@@ -219,6 +219,11 @@ urlpatterns = [
         views_painel.painel_aluno,
         name="painel_aluno",
     ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/atas/",
+        views_atas.atas_painel,
+        name="atas_painel",
+    ),
     # Spec 006: tela Orientações do docente (contracts/rotas.md §2). [US-18][US-36]
     path("orientacoes/", views_orientacao.orientacoes, name="orientacoes"),
     path(

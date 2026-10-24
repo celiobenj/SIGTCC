@@ -187,7 +187,8 @@ class TransferenciaTest(TesteTurmas):
     def test_secretaria_do_curso_transfere(self):
         self.client.force_login(criar_secretaria(curso=curso(EC)))
         pagina = self.client.get(reverse("cadastro:turma", args=[self.origem.pk]))
-        self.assertContains(pagina, ">Transferir<")
+        # Spec 006 (IC-02, IC-11): o botão fica no bloco do aluno, com o rótulo do protótipo.
+        self.assertContains(pagina, "Transferir aluno</a>")
         self.transferir()
         self.assertTrue(
             AlunosTurmas.objects.filter(mat_tur=self.destino, mat_alu=self.aluno).exists()
