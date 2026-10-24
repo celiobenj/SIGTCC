@@ -239,3 +239,7 @@ a.bloco:hover { border-color: var(--azul-btn); box-shadow: var(--sombra); }
 .item.destaque { background: var(--azul-claro); border-radius: 8px; }
 @media (max-width: 900px) { .painel { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .turma-cab h1 { font-size: 24px; } .fatos { gap: 8px 18px; } }
+/* Tabela larga (tela de orientandos, 9 colunas): rola dentro de .tabela-wrap em vez de quebrar
+   o texto letra a letra (T060). [US-18][FR-014] */
+.tabela.larga { min-width: 1080px; }
+.tabela.larga td { overflow-wrap: normal; }

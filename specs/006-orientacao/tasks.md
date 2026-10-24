@@ -322,9 +322,9 @@ e recusar, conferindo filtro e botões.
 - [X] T055 [P] Criar `sigtcc/apps/cadastro/tests/test_mensagens_orientacao.py` no padrão de `test_mensagens_tcc.py`: cada constante da spec 006 em `mensagens.py` é igual ao texto da US (lido de `docs/fonte/Historias_de_Usuario_v3_3.md`) ou à tabela MO-01 a MO-26 da spec. — Rastreabilidade: [FR-048][SC-003]
 - [X] T056 [P] Completar `sigtcc/apps/cadastro/tests/test_permissoes_orientacao.py`: uma linha por rota 1 a 29 com sem sessão (login), perfil errado (403), sem vínculo (404), troca de cada ID (404), turma arquivada (MT-25 ou 404 conforme `contracts/rotas.md`) e CSRF obrigatório nos POST; nenhum GET grava. — Rastreabilidade: [FR-046][SC-006][contracts/rotas.md]
 - [X] T057 [P] Concorrência em `sigtcc/apps/cadastro/tests/test_permissoes_orientacao.py` (seção "concorrência", `TransactionTestCase`): dois aceites do mesmo pedido; aceite × cancelamento pelo aluno; dois convites ao mesmo docente; dois externos com o mesmo e-mail; Correções Conferidas × reenvio da Versão Final (IC-14); arquivamento × aceite. Nenhum deadlock nem 500. — Rastreabilidade: [FR-047][research R2][N1]
-- [ ] T058 Rodar `lint.bat` (isort, black 100, flake8 100), `python manage.py makemigrations --check` e `python manage.py test sigtcc.apps` (suíte completa). Registrar as contagens. — Rastreabilidade: [constituição V][constituição VIII]
+- [X] T058 Rodar `lint.bat` (isort, black 100, flake8 100), `python manage.py makemigrations --check` e `python manage.py test sigtcc.apps` (suíte completa). Registrar as contagens. — Rastreabilidade: [constituição V][constituição VIII]
 - [X] T059 **Navegação (SC-005)**: em `test_navegacao_orientacao.py`, um teste que percorre a matriz "Navegação por tela" abaixo, partindo do menu de cada perfil e seguindo só links e botões renderizados (sem montar URL à mão, exceto o endereço antigo da rota `aluno`), até cada tela, e volta pelo botão de volta indicado. No mesmo arquivo, um teste por linha da tabela do FR-052 (e de `contracts/rotas.md` §5): dispara a ação que gera a notificação (MO-01 a MO-11, MO-16, MO-18, MO-26) e confere o destinatário e o `not_link_tela` (rota 12 ou 13 por `link_da_solicitacao`, `meu_tcc?secao=orientacao`, `orientacoes` ou `painel_aluno`); confere também que o encerramento e a transferência continuam com a MT-31 e a MT-22 (Q18). — Rastreabilidade: [FR-040 a FR-045][FR-052][SC-005]
-- [ ] T060 **Design (protótipo)**: criar `.claude/launch.json` (configuração `sigtcc`: `runtimeExecutable` `.venv\Scripts\python.exe`, `runtimeArgs` `["manage.py", "runserver", "8000"]`, `port` 8000), subir o servidor por ele, abrir cada tela da matriz "Design por tela" no navegador em 1280 px e em 360 px, lado a lado com a função do protótipo (`docs/fonte/prototipo/prototipo_17_10.html`), e conferir: estrutura e ordem das seções, classes, ícones Material Symbols, rótulos dos botões, cores dos `chip` e dos botões (`pri`, `perigo`, `txt`), fontes Roboto/Figtree. Corrigir divergências nos templates ou em `sigtcc.css` (T004). Registrar o resultado, com capturas, na seção "Conferência visual" no fim deste arquivo. — Rastreabilidade: [plan.md, Target Platform][constituição VII]
+- [X] T060 **Design (protótipo)**: criar `.claude/launch.json` (configuração `sigtcc`: `runtimeExecutable` `.venv\Scripts\python.exe`, `runtimeArgs` `["manage.py", "runserver", "8000"]`, `port` 8000), subir o servidor por ele, abrir cada tela da matriz "Design por tela" no navegador em 1280 px e em 360 px, lado a lado com a função do protótipo (`docs/fonte/prototipo/prototipo_17_10.html`), e conferir: estrutura e ordem das seções, classes, ícones Material Symbols, rótulos dos botões, cores dos `chip` e dos botões (`pri`, `perigo`, `txt`), fontes Roboto/Figtree. Corrigir divergências nos templates ou em `sigtcc.css` (T004). Registrar o resultado, com capturas, na seção "Conferência visual" no fim deste arquivo. — Rastreabilidade: [plan.md, Target Platform][constituição VII]
 - [ ] T061 Executar o roteiro de [quickstart.md](quickstart.md) (23 passos) pela navegação e registrar o resultado neste arquivo. — Rastreabilidade: [SC-001][SC-002][SC-005]
 - [ ] T062 Atualizar `docs/questoes-a-rever.md` com o que a implementação tiver confirmado ou mudado (Q-95 a Q-117), seguindo "Como usar"; rodar o agente `revisor-pgcs` e preparar o texto do PR `[Feat-06] Orientação, Atas e Publicações (US-17, US-18, US-19, US-20, US-36, US-41, US-42, US-45, US-46)` com o template do PGCS 6.3. — Rastreabilidade: [constituição VIII][PGCS 6.3]
 
@@ -435,6 +435,50 @@ Task: "T022 R15 + IC-07 Correções Conferidas"            (depois de T021 no me
 4. + US8 e US9 (publicação e aproveitamento).
 5. Polish: permissões, concorrência, navegação, conferência visual, quickstart, PR.
 
+## Pendências da implementação
+
+Registradas também no índice central (docs/questoes-a-rever.md).
+
+| Pendência | Destino | Índice |
+|---|---|---|
+| Textos de estado vazio vindos do protótipo, sem US nem MO ("Nenhum encontro registrado.", "Nenhuma publicação registrada.", "Nenhuma entrega cadastrada na turma.", "Nenhum artigo Aceito ou Publicado.") | Profa. Diana (PO) | Q-118 |
+| Teste instável já existente da spec 003 (`test_cenario5_link_gerado_fora_das_telas`), que falha isolado no Windows | Julia Cohen | Q-119 |
+
+Ajustes feitos na implementação, sem mudar comportamento:
+- T008: os testes da cópia para o TCC 2 ficaram em `test_us08_matricula.py` (a cópia acontece na
+  matrícula, não na transferência), e não em `test_us08_transferencia.py`.
+- T015: o pedido de orientador não usa um `PedidoOrientacaoForm`; a view lê só o campo `docente`
+  (numérico) e o service confere tudo (lista de docentes 'Ativa', orientador atual, trava da
+  conta). `forms_orientacao.py` tem o `CoorientadorForm` (T042).
+- T057: os testes de concorrência ficaram em `test_concorrencia_orientacao.py`
+  (`TransactionTestCase`), separados de `test_permissoes_orientacao.py` (`TestCase`).
+- T027: o painel também abre para um vínculo sem TCC (cargas antigas da spec 003), só com o
+  cabeçalho, "Editar" e "Resetar primeiro acesso", para o endereço antigo da tela de reset (IC-08)
+  continuar funcionando.
+- T018 e T009: no Windows, a resolução do relógio (~15 ms) faz duas chamadas seguidas no mesmo
+  teste receberem o mesmo instante; os testes negativos do motivo esperam o relógio avançar, o que
+  simula requisições distintas (research R3, A13).
+
 ## Conferência visual
 
-*(preenchida em T060)*
+T060, em 2026-10-24. As 11 telas foram geradas com dados do banco de testes (sem tocar no banco de
+desenvolvimento), servidas por um servidor HTTP local temporário (o `.claude/launch.json` versionado tem a configuração `sigtcc`, do `runserver`) e abertas no
+navegador em 1280 px e em 360 px, comparadas com as funções do protótipo de 17/10:
+
+| Tela | Função do protótipo | 1280 px | 360 px (rolagem horizontal) |
+|---|---|---|---|
+| Meu TCC: seções Orientação, Atas e Publicação | `secaoOrientacaoAluno`, seção de atas, `formPublicacao` | ok | não |
+| Lista de atas (Aluno e Orientador) | `secAtas` | ok | não |
+| Janela da ata | `formAta` | ok | não |
+| Janela do coorientador | `formCoorientador` | ok | não |
+| Orientações | `viewOrientacoes` | ok, depois do ajuste abaixo | não (a tabela rola dentro da caixa) |
+| Publicação do Orientador | `abrirPublicacao` | ok | não |
+| Confirmação do Apto | modal `confirmar` | ok | não |
+| Aba "Alunos" em blocos | `blocoAluno` | ok | não |
+| Painel do aluno | `viewAlunoTurma` | ok (duas colunas) | não (uma coluna) |
+| Aproveitamento de artigos | `viewArtigos` | ok | não |
+
+Ajuste feito: a tabela de orientandos (9 colunas) quebrava Curso, Turma e Título letra a letra;
+ganhou a classe `.tabela.larga` (largura mínima de 1080 px, rolando dentro de `.tabela-wrap`).
+Fontes Roboto e Figtree e ícones Material Symbols carregados (`document.fonts.check`). O roteiro
+manual do quickstart (T061) ainda não foi feito: precisa do servidor com dados reais e login.
