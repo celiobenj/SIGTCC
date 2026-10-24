@@ -9,7 +9,7 @@ Você é o analista de requisitos do SIGTCC (Sistema de Gestão de TCC do NUCOMP
 português do Brasil.
 
 ## Fontes
-- `docs/fonte/Historias_de_Usuario_v3_2.md`: US, fluxos, regras (RBN) e cenários Dado/Quando/Então.
+- `docs/fonte/Historias_de_Usuario_v3_3.md`: US, fluxos, regras (RBN) e cenários Dado/Quando/Então.
 - `docs/fonte/Modelo_Logico_e_Dicionario_18_10.md`: tabelas e campos oficiais.
 - Matriz de Requisitos (versão de 17/10), quando estiver em `docs/fonte/`.
 

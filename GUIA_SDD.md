@@ -82,7 +82,7 @@ Para cada spec, na branch da feature (`git checkout -b feature/feat-XX-nome deve
 
 | Passo | O que digitar no Claude Code | Quem confere |
 |---|---|---|
-| Especificar | `/speckit-specify Turmas e Alunos do SIGTCC: US-07, US-08 e US-09. Use as seções dessas US em docs/fonte/Historias_de_Usuario_v3_2.md, incluindo regras (RBN), fluxos alternativos e cenários de aceite.` | `@agent-analista-requisitos confira a spec 004 contra as US e liste os pontos a decidir` |
+| Especificar | `/speckit-specify Turmas e Alunos do SIGTCC: US-07, US-08 e US-09. Use as seções dessas US em docs/fonte/Historias_de_Usuario_v3_3.md, incluindo regras (RBN), fluxos alternativos e cenários de aceite.` | `@agent-analista-requisitos confira a spec 004 contra as US e liste os pontos a decidir` |
 | Esclarecer | `/speckit-clarify` (responda às perguntas; se for decisão de escopo, consulte a equipe) | você |
 | Planejar | `/speckit-plan Django 5 + PostgreSQL, app sigtcc/apps/cadastro, tabelas Turmas, Alunos_Turmas e Historico_Alunos_Turmas do dicionário de dados, conforme a constituição` | `@agent-arquiteto-django revise o plan da spec 004` |
 | Tarefas | `/speckit-tasks` e depois `/speckit-analyze` | você + arquiteto |

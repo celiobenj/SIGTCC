@@ -1,5 +1,8 @@
 <!--
 Relatório de Impacto da Sincronização (Sync Impact Report)
+- Emenda 2026-10-24: 1.0.0 → 1.0.1 (PATCH). Referência às Histórias de Usuário trocada de v3.2 para
+  v3.3 (seção II e "Restrições de Stack e Escopo"), a versão que está em docs/fonte/; sem efeito
+  semântico (índice Q-62). Aprovação do responsável pela configuração e revisão por pares no PR.
 - Versão: (modelo sem versão) → 1.0.0
 - Motivo: primeira adoção da constituição (ratificação inicial).
 - Princípios definidos (template tinha 5 espaços; a equipe adotou 9):
@@ -42,7 +45,7 @@ spec aprovada não tem critério objetivo de aceite.
 - Toda spec, tarefa, teste e trecho de código (classe, função, template) DEVE indicar as US e os
   RBN que atende, no formato `[US-XX][RBN-CAD-YY.Z]`.
 - As fontes de requisitos são a Matriz de Requisitos (versão de 17/10) e as Histórias de Usuário
-  v3.2.
+  v3.3.
 - Em divergência entre documentos, prevalece a Matriz. Se a divergência mudar o comportamento, a
   decisão DEVE ser tomada após consulta à equipe e registrada na seção "Clarifications" da spec;
   nenhuma pessoa ou agente escolhe sozinho.
@@ -129,7 +132,7 @@ mantido (configuração). (Fonte: PGCS 8.1.)
 
 - Stack: Python 3.12, Django e PostgreSQL; ambiente de desenvolvimento Windows com `venv`.
 - Fora do escopo: módulo de Salas (removido em 17/10).
-- Documentos de referência ficam em `docs/fonte/`: Histórias de Usuário v3.2, Modelo Lógico e
+- Documentos de referência ficam em `docs/fonte/`: Histórias de Usuário v3.3, Modelo Lógico e
   Dicionário de Dados (18/10), DER V2, PGCS e Cronograma (18/10).
 - `.env` e `media/` NÃO DEVEM ser commitados.
 
@@ -160,4 +163,4 @@ mantido (configuração). (Fonte: PGCS 8.1.)
 - Conformidade: toda revisão de PR e a etapa `/speckit-analyze` DEVEM verificar a aderência a
   estes princípios; qualquer exceção DEVE ser justificada por escrito no `plan.md` ou no PR.
 
-**Versão**: 1.0.0 | **Ratificada**: 2026-10-19 | **Última emenda**: 2026-10-19
+**Versão**: 1.0.1 | **Ratificada**: 2026-10-19 | **Última emenda**: 2026-10-24
