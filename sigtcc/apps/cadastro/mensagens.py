@@ -361,3 +361,118 @@ MC13_FALHA_ENVIO_TROCA = (
     "Dados atualizados, mas não foi possível enviar o link de confirmação. Altere o e-mail "
     "novamente em alguns minutos"
 )
+
+# =============================================================================================
+# Spec 006: Orientação, Atas e Publicações (US-17, 18, 19, 20, 36, 41, 42, 45, 46)
+# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_3.md; MO-01 a MO-26 da tabela
+# "Mensagens a validar com a PO" de specs/006-orientacao/spec.md (PROVISÓRIAS, índice Q-95).
+# Reaproveitadas sem duplicar: LINK_HTTPS_500, M14_CAMPO_OBRIGATORIO, MT25_TURMA_ARQUIVADA,
+# M02_ACESSO_NEGADO, MT31_PEDIDO_CANCELADO e MT22_NOTIFICACAO_TRANSFERENCIA. [SC-003][FR-048]
+# =============================================================================================
+
+# US-17: pedido, cancelamento e troca [RBN-CAD-10.1][RBN-CAD-10.6]. {docente} = [nome do docente].
+PEDIDO_ENVIADO = "Pedido enviado a {docente}. Aguardando resposta"
+PROPOSTA_AINDA_NAO_REGISTRADA = "Proposta ainda não registrada"
+SEM_ORIENTADOR = "Sem orientador"
+
+# US-18: resposta ao pedido e link [RBN-CAD-10.2][RBN-CAD-10.6]
+PEDIDO_RECUSADO = "Pedido recusado"
+PEDIDO_NAO_DISPONIVEL = "Este pedido não está disponível para o seu usuário"
+PEDIDO_CANCELADO_PELO_ALUNO = "Este pedido foi cancelado pelo aluno"
+PEDIDO_CANCELADO_AGENDAMENTO = "Este pedido foi cancelado porque a defesa foi agendada"
+
+# US-36: convite de coorientação [RBN-CAD-10.4]
+CONVITE_ACEITO = "Convite aceito"
+CONVITE_RECUSADO = "Convite recusado"
+CONVITE_NAO_DISPONIVEL = "Este convite não está disponível para o seu usuário"
+CONVITE_CANCELADO_PELO_ALUNO = "Este convite foi cancelado pelo aluno"
+
+# US-45: coorientadores [RBN-CAD-10.3]
+EMAIL_JA_COORIENTADOR = "Este e-mail já está registrado como coorientador"
+
+# US-19: atas [RBN-CAD-11.1][RBN-CAD-11.2]
+ATA_REGISTRADA = "Ata registrada"
+DATA_ENCONTRO_FUTURA = "A Data do Encontro não pode ser futura"
+
+# US-42: Apto para Defesa [RBN-CAD-11.5]. {nome} = [nome do aluno].
+CONFIRMAR_APTO = "Confirmar que o TCC de {nome} está apto para defesa?"
+TCC_INDICADO_APTO = "TCC indicado como apto para defesa"
+ENTREGA_DOCUMENTO_NAO_CADASTRADA = (
+    "A entrega do tipo Documento para Defesa precisa ser cadastrada pelo Professor da Disciplina"
+)
+
+# US-46 e US-20: publicação e aproveitamento [RBN-CAD-12.1][RBN-CAD-12.3]
+PUBLICACAO_SALVA = "Publicação salva"
+APROVEITAMENTO_HOMOLOGADO = "Aproveitamento homologado"
+APROVEITAMENTO_RECUSADO = "Aproveitamento recusado"
+
+# MO-01 a MO-26: PROVISÓRIAS (spec 006, "Mensagens a validar com a PO"; índice Q-95).
+# {titulo} é o título do TCC ou PROPOSTA_AINDA_NAO_REGISTRADA.
+MO01_PEDIDO_ORIENTACAO = "{nome} pediu a sua orientação. TCC: {titulo}."
+MO01_ASSUNTO = "SIGTCC: pedido de orientação"
+MO02_PEDIDO_ACEITO = "{docente} aceitou ser o seu orientador."
+MO03_PEDIDO_RECUSADO = "{docente} recusou o seu pedido de orientação."
+MO04_ORIENTACAO_ACEITA = "{docente} passou a orientar {nome} na turma {identificador}."
+MO04_ASSUNTO = "SIGTCC: orientação aceita"
+MO05_TROCA_ORIENTADOR = "{nome} trocou de orientador; a orientação passou a {docente}."
+MO06_TROCA_CANCELADA_ALUNO = (
+    "O seu pedido de troca de orientador foi cancelado porque a defesa foi agendada."
+)
+MO06_TROCA_CANCELADA_DOCENTE = (
+    "O pedido de troca de orientador de {nome} foi cancelado porque a defesa foi agendada."
+)
+MO07_CONVITE_COORIENTACAO = "{nome} convidou você para coorientar o TCC. TCC: {titulo}."
+MO07_ASSUNTO = "SIGTCC: convite de coorientação"
+MO08_COORIENTADOR_REGISTRADO = "{nome} registrou {coorientador} como coorientador do TCC."
+MO08_COORIENTADOR_SUBSTITUIDO = "{nome} substituiu o coorientador {anterior} por {novo}."
+MO08_COORIENTADOR_REMOVIDO = "{nome} removeu {coorientador} da coorientação do TCC."
+MO09_DEIXOU_DE_COORIENTAR = "Você deixou de coorientar o TCC de {nome}."
+MO10_CONVITE_ACEITO_ALUNO = "{docente} aceitou coorientar o seu TCC."
+MO10_CONVITE_ACEITO_ORIENTADOR = "{docente} aceitou coorientar o TCC de {nome}."
+MO11_CONVITE_RECUSADO = "{docente} recusou o convite de coorientação."
+MO12_PEDIDO_CANCELADO_ENCERRAMENTO = (
+    "Este pedido foi cancelado porque a participação do aluno foi encerrada."
+)
+MO12_CONVITE_CANCELADO_ENCERRAMENTO = (
+    "Este convite foi cancelado porque a participação do aluno foi encerrada."
+)
+MO13_CONFIRMAR_CORRECOES = "Confirmar que as correções do TCC de {nome} foram conferidas?"
+MO13_CORRECOES_CONFERIDAS = "Correções conferidas"
+MO13_ETIQUETA = "Correções conferidas em {data_hora}"
+MO14_CONFIRMAR_REMOVER = "Remover {nome} da coorientação?"
+MO15_PEDIDO_ACEITO = "Pedido aceito. O aluno foi incluído na sua tela de orientandos"
+MO16_PEDIDO_TROCA = (
+    "{nome} pediu a troca de orientador para você. TCC: {titulo}. Orientador atual: {orientador}."
+)
+MO16_ASSUNTO = "SIGTCC: pedido de troca de orientação"
+MO17_CONVITE_CANCELADO_ORIENTADOR = (
+    "Este convite foi cancelado porque o docente passou a ser o orientador do trabalho."
+)
+MO18_PEDIDO_CANCELADO_COPIA = "Este pedido foi cancelado porque o TCC passou para a turma de TCC 2."
+MO18_CONVITE_CANCELADO_COPIA = (
+    "Este convite foi cancelado porque o TCC passou para a turma de TCC 2."
+)
+MO18_NOTIFICACAO = "O {tipo} de {nome} foi cancelado porque o TCC passou para a turma de TCC 2."
+MO19_PAUTA = "Informe a pauta com até 2.000 caracteres"
+MO19_METAS = "Informe as metas com até 2.000 caracteres"
+MO19_COMENTARIO = "Informe o comentário com até 1.000 caracteres"
+MO19_VEICULO = "Informe o veículo de publicação com até 150 caracteres"
+MO20_APTO_CONDICOES = "O TCC não atende mais às condições para ser indicado como apto para defesa."
+MO21_RESULTADO_LIBERADO = (
+    "O resultado já foi liberado: a homologação deste artigo não pode mais ser recusada."
+)
+MO22_AGUARDANDO_PUBLICACAO = "Aguardando aceite ou publicação"
+MO23_SEM_DEFESA = "Nenhuma sessão de defesa registrada."
+MO24_SEM_PEDIDOS = "Nenhum pedido de orientação pendente."
+MO24_SEM_CONVITES = "Nenhum convite de coorientação pendente."
+MO24_SEM_ORIENTANDOS = "Nenhum orientando."
+MO25_EXTERNO_REAPROVEITADO = (
+    "Este coorientador já estava cadastrado: foram mantidos o nome e a instituição registrados."
+)
+MO26_PEDIDO_CANCELADO_ARQUIVAMENTO = "Este pedido foi cancelado porque a turma foi arquivada."
+MO26_CONVITE_CANCELADO_ARQUIVAMENTO = "Este convite foi cancelado porque a turma foi arquivada."
+MO26_NOTIFICACAO = "O {tipo} de {nome} foi cancelado porque a turma {identificador} foi arquivada."
+
+# Tipos usados em {tipo} da MO-18 e da MO-26 (texto da própria tabela da spec).
+TIPO_PEDIDO_ORIENTACAO = "pedido de orientação"
+TIPO_CONVITE_COORIENTACAO = "convite de coorientação"
