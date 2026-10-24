@@ -23,6 +23,7 @@ from sigtcc.apps.cadastro import (
 from sigtcc.apps.cadastro.choices import StatusTCC
 from sigtcc.apps.cadastro.forms_entregas import EnviarLinkForm
 from sigtcc.apps.cadastro.forms_tcc import DadosTCCForm, PropostaForm
+from sigtcc.apps.cadastro.models import EncontroOrientacao
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import CONSULTAR, TurmaArquivada
 
@@ -163,6 +164,11 @@ def meu_tcc(request, tur_id):
         "form_versao_final": _form_versao_final(versao_final),
         # Spec 006 (IC-09): seção Orientação (US-17, US-45; FR-001 a FR-007, FR-049).
         "orientacao": services_orientacao.contexto_secao_orientacao(tcc),
+        # Spec 006 (IC-09): seção Atas de orientação (US-19; FR-022).
+        "atas": {
+            "n": EncontroOrientacao.objects.filter(enc_tcc=tcc).count(),
+            "pode_registrar": services_orientacao.pode_alterar_no_tcc(tcc),
+        },
     }
     return render(request, "cadastro/tcc/meu_tcc.html", contexto)
 

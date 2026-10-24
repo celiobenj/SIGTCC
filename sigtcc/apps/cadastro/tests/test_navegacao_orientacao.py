@@ -158,3 +158,55 @@ class NavegacaoProfessorTest(TesteTurmas):
             self, historico, reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
         )
         self.assertContains(voltou, "Proposta e TCC")
+
+
+class NavegacaoAtasTest(TesteTurmas):
+    """Atas pelas três entradas: aba Meu TCC, linha da tela de orientandos e painel; cada
+    janela e lista volta à tela de origem. [US-19][FR-042][FR-043][FR-044][T036]
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.professor = criar_docente_ativo()
+        self.turma = criar_turma_de(self.professor, curso_nome=SI)
+        self.aluno = matricular_aluno(
+            self.turma, status_tcc=StatusTCC.EM_ANDAMENTO, status_conta=StatusConta.ATIVA
+        )
+        self.tcc = tcc_de(self.aluno, self.turma)
+        self.orientador = criar_docente_ativo()
+        vincular_orientador(self.tcc, self.orientador)
+
+    def test_aluno_secao_registrar_e_ver_atas(self):
+        self.client.force_login(self.aluno.alu)
+        meu_tcc = self.client.get(reverse("cadastro:meu_tcc", args=[self.turma.pk]))
+        self.assertContains(meu_tcc, 'id="atas"')
+        janela = seguir(
+            self, meu_tcc, reverse("cadastro:registrar_ata_aluno", args=[self.turma.pk])
+        )
+        self.assertContains(janela, "Registrar ata de orientação")
+        voltou = seguir(self, janela, reverse("cadastro:meu_tcc", args=[self.turma.pk]))
+        self.assertEqual(voltou.status_code, 200)
+        lista = seguir(self, meu_tcc, reverse("cadastro:minhas_atas", args=[self.turma.pk]))
+        seguir(self, lista, reverse("cadastro:meu_tcc", args=[self.turma.pk]))
+
+    def test_orientador_linha_atas_e_voltar(self):
+        self.client.force_login(self.orientador)
+        tela = self.client.get(reverse("cadastro:orientacoes"))
+        lista = seguir(self, tela, reverse("cadastro:atas_orientando", args=[self.tcc.pk]))
+        voltou = seguir(self, lista, reverse("cadastro:orientacoes"))
+        self.assertContains(voltou, "Orientandos")
+        janela = seguir(self, tela, reverse("cadastro:registrar_ata_docente", args=[self.tcc.pk]))
+        seguir(self, janela, reverse("cadastro:orientacoes"))
+
+    def test_professor_painel_ver_atas_e_voltar(self):
+        self.client.force_login(self.professor)
+        painel = self.client.get(
+            reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
+        )
+        lista = seguir(
+            self, painel, reverse("cadastro:atas_painel", args=[self.turma.pk, self.aluno.pk])
+        )
+        voltou = seguir(
+            self, lista, reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
+        )
+        self.assertContains(voltou, "Proposta e TCC")

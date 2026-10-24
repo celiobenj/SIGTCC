@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+{% comment %}
+  Janela "Registrar ata de orientação" (e edição), como formAta do protótipo de 17/10: Data do
+  Encontro, Pauta Discutida e Metas Acordadas (com contador), "Cancelar" e "Salvar". No modo
+  comentar (rota 20), a ata aparece acima e o campo de comentário abaixo dela.
+  [US-19][RBN-CAD-11.1][RBN-CAD-11.2][FR-021][FR-024]
+{% endcomment %}
+{% block titulo %}{{ titulo }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<section class="cartao mt16" style="max-width:720px">
+  <header><span class="ms">{% if comentar %}comment{% else %}history_edu{% endif %}</span><h3>{{ titulo }}</h3></header>
+  <p class="muted">{{ tcc.tcc_alu.alu.usu_nome }} · {{ tcc.tcc_tur.tur_identificador }}</p>
+  {% if comentar %}
+  <div class="ata">
+    <b>{{ ata.enc_data|date:"d/m/Y" }}</b>
+    <div class="dado"><span>Pauta Discutida</span><div style="white-space:pre-wrap">{{ ata.enc_pauta }}</div></div>
+    <div class="dado"><span>Metas Acordadas</span><div style="white-space:pre-wrap">{{ ata.enc_metas }}</div></div>
+  </div>
+  {% endif %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if comentar %}
+    {% include "includes/campo.html" with campo=form.texto %}
+    {% else %}
+    {% include "includes/campo.html" with campo=form.data %}
+    {% include "includes/campo.html" with campo=form.pauta %}
+    {% include "includes/campo.html" with campo=form.metas %}
+    {% endif %}
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{{ url_cancelar }}">Cancelar</a>
+      <button type="submit" class="btn pri">Salvar</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/contador.js' %}"></script>{% endblock %}

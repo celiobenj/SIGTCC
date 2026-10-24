@@ -224,6 +224,18 @@ urlpatterns = [
         views_atas.atas_painel,
         name="atas_painel",
     ),
+    # Spec 006: atas do Aluno (contracts/rotas.md §1, rotas 7 a 9). [US-19]
+    path("turmas/<int:tur_id>/meu-tcc/atas/", views_atas.minhas_atas, name="minhas_atas"),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/atas/nova/",
+        views_atas.registrar_ata_aluno,
+        name="registrar_ata_aluno",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/atas/<int:enc_id>/editar/",
+        views_atas.editar_ata_aluno,
+        name="editar_ata_aluno",
+    ),
     # Spec 006: tela Orientações do docente (contracts/rotas.md §2). [US-18][US-36]
     path("orientacoes/", views_orientacao.orientacoes, name="orientacoes"),
     path(
@@ -250,6 +262,16 @@ urlpatterns = [
         "orientacoes/tcc/<int:tcc_id>/atas/nova/",
         views_atas.registrar_ata_docente,
         name="registrar_ata_docente",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/atas/<int:enc_id>/editar/",
+        views_atas.editar_ata_docente,
+        name="editar_ata_docente",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/atas/<int:enc_id>/comentar/",
+        views_atas.comentar_ata,
+        name="comentar_ata",
     ),
     path(
         "orientacoes/tcc/<int:tcc_id>/publicacao/",
