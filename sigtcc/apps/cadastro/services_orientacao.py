@@ -66,6 +66,7 @@ from sigtcc.apps.cadastro.services_turmas import (
     STATUS_TCC_TRANSFERIVEL,
     aluno_pode_ser_encerrado,
     aluno_pode_ser_excluido,
+    atualizar_status_tcc,
     participacao_encerrada,
     tcc_do_aluno,
     travar_turma_ativa,
@@ -1223,3 +1224,54 @@ def contexto_painel(professor, tur_id, alu_id):
         "pode_encerrar": ativa and aluno_pode_ser_encerrado(tcc),
         "pode_excluir": ativa and aluno_pode_ser_excluido(tcc),
     }
+
+
+# =============================================================================================
+# Apto para Defesa (US-42; FR-026, FR-027; research R16)
+# =============================================================================================
+
+
+def estado_apto_do_tcc(tcc):
+    """Estado do botão "Apto para Defesa" de um TCC, consultando as entregas do aluno.
+
+    [US-42][RBN-CAD-11.5][FR-026]
+    """
+    entregas = list(
+        EntregasMarcos.objects.select_related("ent_tma").filter(
+            ent_alu_id=tcc.tcc_alu_id, ent_tma__tma_tur_id=tcc.tcc_tur_id
+        )
+    )
+    return estado_apto(tcc, entregas, len(palavras_chave_do(tcc)))
+
+
+def indicar_apto(orientador, tcc_id):
+    """ "Apto para Defesa" (FR-027): trava turma → aluno → TCC (research R2), confere de novo as
+    condições (Orientador atual, Status "Em Andamento", "Documento para Defesa" Entregue ou
+    Entregue com Atraso, Área de Interesse e Palavra-Chave) e muda o Status pelo serviço único da
+    spec 005 (gatilho "Indicação de Apto para Defesa"); se as condições não valem mais, recusa
+    com a MO-20, sem mudar o Status.
+    [US-42][RBN-CAD-11.5][RBN-CAD-08.3][FR-026][FR-027][SC-007][research R16]
+    """
+    achado = TCCs.objects.filter(pk=tcc_id).values("tcc_tur_id", "tcc_alu_id").first()
+    if achado is None:
+        raise Http404
+    with transaction.atomic():
+        turma = travar_turma_ativa(achado["tcc_tur_id"])
+        Alunos.objects.select_for_update().filter(pk=achado["tcc_alu_id"]).first()
+        tcc = (
+            TCCs.objects.select_for_update(of=("self",))
+            .select_related("tcc_tur", "tcc_alu__alu")
+            .get(pk=tcc_id)
+        )
+        if tcc.tcc_tur_id != turma.pk or not e_orientador_atual(orientador, tcc):
+            raise Http404
+        if estado_apto_do_tcc(tcc) != "disponivel":
+            raise ErroOrientacao(mensagens.MO20_APTO_CONDICOES)
+        atualizar_status_tcc(
+            tcc,
+            turma,
+            orientador,
+            StatusTCC.APTO_PARA_DEFESA,
+            GatilhoStatusTCC.INDICACAO_DE_APTO,
+        )
+    return tcc

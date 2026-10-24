@@ -210,3 +210,41 @@ class NavegacaoAtasTest(TesteTurmas):
             self, lista, reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
         )
         self.assertContains(voltou, "Proposta e TCC")
+
+
+class NavegacaoAptoTest(TesteTurmas):
+    """Orientações → linha → "Apto para Defesa" → confirmação → "Cancelar" → Orientações.
+
+    [US-42][FR-043][T039]
+    """
+
+    def test_apto_pela_linha_e_cancelar(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from sigtcc.apps.cadastro.choices import StatusEntrega, TipoEntrega
+        from sigtcc.apps.cadastro.models import AreasInteresse, EntregasMarcos, PalavrasChaveTCC
+        from sigtcc.apps.cadastro.tests.apoio_tcc import cadastrar_entrega
+
+        orientador = criar_docente_ativo()
+        turma = criar_turma_de(criar_docente_ativo(), curso_nome=SI)
+        aluno = matricular_aluno(turma, status_tcc=StatusTCC.EM_ANDAMENTO)
+        tcc = tcc_de(aluno, turma)
+        vincular_orientador(tcc, orientador)
+        entrega = cadastrar_entrega(
+            turma,
+            tipo=TipoEntrega.DOCUMENTO_PARA_DEFESA,
+            data_limite=timezone.now() + timedelta(days=2),
+        )
+        EntregasMarcos.objects.create(
+            ent_tma=entrega, ent_alu=aluno, ent_status=StatusEntrega.ENTREGUE
+        )
+        tcc.tcc_ari = AreasInteresse.objects.first()
+        tcc.save()
+        PalavrasChaveTCC.objects.create(pal_tcc=tcc, pal_palavra="Django")
+        self.client.force_login(orientador)
+        tela = self.client.get(reverse("cadastro:orientacoes"))
+        confirmacao = seguir(self, tela, reverse("cadastro:indicar_apto", args=[tcc.pk]))
+        voltou = seguir(self, confirmacao, reverse("cadastro:orientacoes"))
+        self.assertContains(voltou, "Orientandos")

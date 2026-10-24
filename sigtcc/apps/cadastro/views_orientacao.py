@@ -179,8 +179,31 @@ def historico_orientando(request, tcc_id):
 
 @perfil_requerido("docente")
 def indicar_apto(request, tcc_id):
-    """Rota 23. Provisória até a T039 (US5). [US-42][FR-026]"""
-    raise Http404
+    """Rota 23: confirmação "Confirmar que o TCC de [nome do aluno] está apto para defesa?" e
+    indicação; "Cancelar" e "Confirmar" voltam à tela de orientandos. Só o Orientador atual, em
+    turma não arquivada (Coorientador: 404); botão indisponível pelo endereço direto: 404.
+    [US-42][RBN-CAD-11.5][FR-026][FR-027][FR-043]
+    """
+    tcc = services_orientacao.tcc_do_orientador(request.user, tcc_id)
+    if request.method == "POST":
+        try:
+            services_orientacao.indicar_apto(request.user, tcc_id)
+        except TurmaArquivada:
+            messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
+        except services_orientacao.ErroOrientacao as erro:
+            messages.error(request, erro.mensagem)
+        else:
+            messages.success(request, mensagens.TCC_INDICADO_APTO)
+        return redirect("cadastro:orientacoes")
+    if services_orientacao.estado_apto_do_tcc(tcc) != "disponivel":
+        raise Http404
+    contexto = {
+        "titulo": "Apto para Defesa",
+        "texto": mensagens.CONFIRMAR_APTO.format(nome=tcc.tcc_alu.alu.usu_nome),
+        "url_acao": reverse("cadastro:indicar_apto", args=[tcc.pk]),
+        "url_cancelar": reverse("cadastro:orientacoes"),
+    }
+    return render(request, "cadastro/orientacao/confirmar.html", contexto)
 
 
 @perfil_requerido("docente")

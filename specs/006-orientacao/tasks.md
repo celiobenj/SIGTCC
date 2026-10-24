@@ -219,12 +219,12 @@ Palavra-Chave; indicar Apto e conferir Status e histórico.
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T037 [P] [US5] Criar `sigtcc/apps/cadastro/tests/test_us42_apto_defesa.py` com os 8 cenários da US-42. Mais: condição mudada entre o GET e o POST → MO-20 sem mudar o Status; Coorientador recebe 404 na rota 23; turma arquivada → 404; orientador automático (Professor da Disciplina) vê e usa o botão (R10). Deve falhar. — Rastreabilidade: [US-42][RBN-CAD-11.5][RBN-CAD-08.3][FR-026][FR-027][SC-007]
+- [X] T037 [P] [US5] Criar `sigtcc/apps/cadastro/tests/test_us42_apto_defesa.py` com os 8 cenários da US-42. Mais: condição mudada entre o GET e o POST → MO-20 sem mudar o Status; Coorientador recebe 404 na rota 23; turma arquivada → 404; orientador automático (Professor da Disciplina) vê e usa o botão (R10). Deve falhar. — Rastreabilidade: [US-42][RBN-CAD-11.5][RBN-CAD-08.3][FR-026][FR-027][SC-007]
 
 ### Implementation for User Story 5
 
-- [ ] T038 [US5] Em `services_orientacao.py`: `estado_apto(tcc)` (ausente, `sem_entrega_cadastrada`, `indisponivel`, `disponivel`; entrega por `Turmas_Marcos.tma_tipo = DOCUMENTO_PARA_DEFESA`; envio em `STATUS_ENVIO_AVALIAVEL`) e `indicar_apto(orientador, tcc_id)` (travas do R2; reconfere; `atualizar_status_tcc(tcc, turma, orientador, APTO_PARA_DEFESA, INDICACAO_DE_APTO)`). — Rastreabilidade: [US-42][RBN-CAD-11.5][FR-026][FR-027]
-- [ ] T039 [US5] Em `views_orientacao.py`: rota 23 (`indicar_apto`, GET com `orientacao/confirmar.html` e o texto "Confirmar que o TCC de {nome} está apto para defesa?"; POST). Na linha (T024): `btn` "Apto para Defesa" desabilitado com `title` da US-42 E3 quando indisponível e etiqueta `chip` "Apto para Defesa" depois. **Navegação**: Orientações → linha → "Apto para Defesa" → confirmação → "Cancelar"/"Confirmar" → Orientações; teste em `test_navegacao_orientacao.py`. — Rastreabilidade: [US-42][FR-026][FR-027][FR-043][SC-005]
+- [X] T038 [US5] Em `services_orientacao.py`: `estado_apto(tcc)` (ausente, `sem_entrega_cadastrada`, `indisponivel`, `disponivel`; entrega por `Turmas_Marcos.tma_tipo = DOCUMENTO_PARA_DEFESA`; envio em `STATUS_ENVIO_AVALIAVEL`) e `indicar_apto(orientador, tcc_id)` (travas do R2; reconfere; `atualizar_status_tcc(tcc, turma, orientador, APTO_PARA_DEFESA, INDICACAO_DE_APTO)`). — Rastreabilidade: [US-42][RBN-CAD-11.5][FR-026][FR-027]
+- [X] T039 [US5] Em `views_orientacao.py`: rota 23 (`indicar_apto`, GET com `orientacao/confirmar.html` e o texto "Confirmar que o TCC de {nome} está apto para defesa?"; POST). Na linha (T024): `btn` "Apto para Defesa" desabilitado com `title` da US-42 E3 quando indisponível e etiqueta `chip` "Apto para Defesa" depois. **Navegação**: Orientações → linha → "Apto para Defesa" → confirmação → "Cancelar"/"Confirmar" → Orientações; teste em `test_navegacao_orientacao.py`. — Rastreabilidade: [US-42][FR-026][FR-027][FR-043][SC-005]
 
 **Checkpoint**: todas as histórias P1 prontas (MVP completo da orientação).
 
