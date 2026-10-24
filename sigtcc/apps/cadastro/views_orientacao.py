@@ -35,6 +35,7 @@ def enviar_pedido_orientacao(request, tur_id):
     a turma arquivada volta à seção com a MT-25 (research R2, A11).
     [US-17][RBN-CAD-10.1][RBN-CAD-10.6][FR-001 a FR-005][contracts/rotas.md]
     """
+    services_tcc.turma_do_aluno(tur_id, request.user)  # vínculo antes de tudo (404, sem IDOR)
     doc_id = request.POST.get("docente") or ""
     if not doc_id.isdigit():
         messages.error(request, mensagens.M14_CAMPO_OBRIGATORIO)

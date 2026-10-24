@@ -14,7 +14,11 @@ from django.urls import reverse
 from sigtcc.apps.cadastro import services_orientacao
 from sigtcc.apps.cadastro.choices import StatusConta, StatusTCC
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_docente_ativo, criar_secretaria
-from sigtcc.apps.cadastro.tests.apoio_orientacao import criar_pedido, vincular_orientador
+from sigtcc.apps.cadastro.tests.apoio_orientacao import (
+    criar_pedido,
+    vincular_coorientador,
+    vincular_orientador,
+)
 from sigtcc.apps.cadastro.tests.apoio_turmas import (
     SI,
     TesteTurmas,
@@ -342,3 +346,74 @@ class NavegacaoPublicacaoTest(TesteTurmas):
         self.assertLess(texto.index("Cadastros"), texto.index("Gestão"))
         tela = seguir(self, painel, reverse("cadastro:aproveitamento_artigos"))
         self.assertContains(tela, "Aproveitamento de artigos")
+
+
+class DestinoDasNotificacoesTest(TesteTurmas):
+    """FR-052 (e contracts/rotas.md §5): cada notificação leva à tela certa. MO-01, MO-04, MO-06,
+    MO-07, MO-16, MO-18 e MO-26 também são conferidas nos testes das histórias. [FR-052][T059]
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.turma = criar_turma_de(criar_docente_ativo(), curso_nome=SI)
+        self.aluno = matricular_aluno(self.turma, status_tcc=StatusTCC.EM_ANDAMENTO)
+        self.tcc = tcc_de(self.aluno, self.turma)
+        self.secao = f"{reverse('cadastro:meu_tcc', args=[self.turma.pk])}?secao=orientacao"
+        self.orientacoes = reverse("cadastro:orientacoes")
+
+    def destino(self, usuario):
+        from sigtcc.apps.cadastro.models import Notificacoes
+
+        return list(
+            Notificacoes.objects.filter(not_usu=usuario).values_list("not_link_tela", flat=True)
+        )
+
+    def test_mo02_e_mo05_na_troca_aceita(self):
+        anterior = criar_docente_ativo()
+        vincular_orientador(self.tcc, anterior)
+        novo = criar_docente_ativo()
+        from sigtcc.apps.cadastro.choices import TipoSolicitacao
+
+        pedido = criar_pedido(self.tcc, novo, TipoSolicitacao.TROCA_DE_ORIENTACAO)
+        services_orientacao.aceitar_solicitacao(novo, pedido.pk)
+        self.assertEqual(self.destino(self.aluno.alu), [self.secao])
+        self.assertEqual(self.destino(anterior), [self.orientacoes])
+
+    def test_mo03_na_recusa(self):
+        docente = criar_docente_ativo()
+        pedido = criar_pedido(self.tcc, docente)
+        services_orientacao.recusar_solicitacao(docente, pedido.pk)
+        self.assertEqual(self.destino(self.aluno.alu), [self.secao])
+
+    def test_mo10_e_mo11_no_convite(self):
+        from sigtcc.apps.cadastro.tests.apoio_orientacao import criar_convite
+
+        orientador = criar_docente_ativo()
+        vincular_orientador(self.tcc, orientador)
+        aceita, recusa = criar_docente_ativo(), criar_docente_ativo()
+        c1, c2 = criar_convite(self.tcc, aceita), criar_convite(self.tcc, recusa)
+        services_orientacao.aceitar_solicitacao(aceita, c1.pk)
+        services_orientacao.recusar_solicitacao(recusa, c2.pk)
+        self.assertEqual(self.destino(self.aluno.alu), [self.secao, self.secao])
+        self.assertEqual(self.destino(orientador), [self.orientacoes])
+
+    def test_mo08_e_mo09_na_coorientacao(self):
+        orientador = criar_docente_ativo()
+        vincular_orientador(self.tcc, orientador)
+        x = criar_docente_ativo()
+        coo = vincular_coorientador(self.tcc, docente=x)
+        services_orientacao.remover_coorientador(self.aluno.alu, self.turma.pk, coo.pk)
+        self.assertEqual(self.destino(orientador), [self.orientacoes])
+        self.assertEqual(len(self.destino(x)), 1)
+
+    def test_mt31_do_encerramento_nao_muda(self):
+        docente = criar_docente_ativo()
+        criar_pedido(self.tcc, docente)
+        from sigtcc.apps.cadastro import mensagens, services_turmas
+        from sigtcc.apps.cadastro.models import Notificacoes
+
+        services_turmas.encerrar_participacao(
+            self.turma.tur_doc.doc, self.turma.pk, self.aluno.pk, StatusTCC.DESISTENTE, "x"
+        )
+        aviso = Notificacoes.objects.get(not_usu=docente)
+        self.assertTrue(aviso.not_mensagem.startswith(mensagens.MT31_PEDIDO_CANCELADO[:10]))

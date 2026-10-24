@@ -172,3 +172,132 @@ class TccCopiadoTest(TesteTurmas):
         HistoricoStatusTCC.objects.filter(hst_tcc=self.tcc2).delete()
         self.tcc2.delete()
         self.assertFalse(so.tcc_copiado(self.tcc1))
+
+
+class PermissoesRotasTest(TesteTurmas):
+    """T056: as 29 rotas novas (contracts/rotas.md) — sem sessão vai ao login; perfil errado
+    recebe 403; sem vínculo, 404 (o painel, 403, FR-020; os links 12 e 13 mostram o aviso
+    "não disponível"); POST sem CSRF é recusado. [FR-046][SC-006][contracts/rotas.md]
+    """
+
+    def setUp(self):
+        super().setUp()
+        from sigtcc.apps.cadastro.choices import ModalidadeTCC, StatusConta
+        from sigtcc.apps.cadastro.tests.apoio_acesso import criar_coordenador
+        from sigtcc.apps.cadastro.tests.apoio_orientacao import registrar_ata, salvar_artigo
+        from sigtcc.apps.cadastro.tests.apoio_tcc import salvar_proposta
+
+        self.professor = criar_docente_ativo()
+        self.turma = criar_turma_de(self.professor)
+        self.aluno = matricular_aluno(
+            self.turma, status_tcc=StatusTCC.EM_ANDAMENTO, status_conta=StatusConta.ATIVA
+        )
+        self.tcc = tcc_de(self.aluno, self.turma)
+        salvar_proposta(self.tcc, modalidade=ModalidadeTCC.ARTIGO_CIENTIFICO)
+        self.orientador = criar_docente_ativo()
+        vincular_orientador(self.tcc, self.orientador)
+        self.coo = vincular_coorientador(self.tcc, externo=criar_externo())
+        self.convite = criar_convite(self.tcc, criar_docente_ativo())
+        self.pedido = criar_pedido(
+            self.tcc, criar_docente_ativo(), TipoSolicitacao.TROCA_DE_ORIENTACAO
+        )
+        self.ata = registrar_ata(self.tcc)
+        salvar_artigo(self.tcc, status="Aceito")
+        self.coordenador = criar_coordenador()
+        outra = criar_turma_de(criar_docente_ativo())
+        self.estranho_aluno = matricular_aluno(
+            outra, status_tcc=StatusTCC.EM_ANDAMENTO, status_conta=StatusConta.ATIVA
+        ).alu
+        self.estranho_docente = criar_docente_ativo()
+
+    def rotas(self):
+        """(nome, args, métodos, perfil dono)."""
+        t, a, c = self.turma.pk, self.aluno.pk, self.tcc.pk
+        return [
+            ("enviar_pedido_orientacao", [t], "P", "aluno"),
+            ("cancelar_pedido_orientacao", [t], "P", "aluno"),
+            ("registrar_coorientador", [t], "G", "aluno"),
+            ("substituir_coorientador", [t, self.coo.pk], "G", "aluno"),
+            ("remover_coorientador", [t, self.coo.pk], "G", "aluno"),
+            ("remover_convite_coorientacao", [t, self.convite.pk], "G", "aluno"),
+            ("minhas_atas", [t], "G", "aluno"),
+            ("registrar_ata_aluno", [t], "G", "aluno"),
+            ("editar_ata_aluno", [t, self.ata.pk], "G", "aluno"),
+            ("salvar_publicacao_aluno", [t], "P", "aluno"),
+            ("orientacoes", [], "G", "docente"),
+            ("pedido_orientacao", [self.pedido.pk], "G", "link"),
+            ("convite_coorientacao", [self.convite.pk], "G", "link"),
+            ("aceitar_solicitacao", [self.pedido.pk], "P", "docente"),
+            ("recusar_solicitacao", [self.pedido.pk], "P", "docente"),
+            ("ver_proposta", [self.pedido.pk], "G", "docente"),
+            ("atas_orientando", [c], "G", "docente"),
+            ("registrar_ata_docente", [c], "G", "docente"),
+            ("editar_ata_docente", [c, self.ata.pk], "G", "docente"),
+            ("comentar_ata", [c, self.ata.pk], "G", "docente"),
+            ("historico_orientando", [c], "G", "docente"),
+            ("publicacao_orientando", [c], "G", "docente"),
+            ("indicar_apto", [c], "G", "docente"),
+            ("correcoes_conferidas", [c], "G", "docente"),
+            ("painel_aluno", [t, a], "G", "painel"),
+            ("atas_painel", [t, a], "G", "painel"),
+            ("aproveitamento_artigos", [], "G", "coordenador"),
+            ("homologar_artigo", [c], "P", "coordenador"),
+            ("recusar_artigo", [c], "P", "coordenador"),
+        ]
+
+    def pedir(self, cliente, nome, args, metodo):
+        url = reverse(f"cadastro:{nome}", args=args)
+        return cliente.post(url) if metodo == "P" else cliente.get(url)
+
+    def test_29_rotas(self):
+        self.assertEqual(len(self.rotas()), 29)
+
+    def test_sem_sessao_vai_ao_login(self):
+        for nome, args, metodo, _ in self.rotas():
+            with self.subTest(rota=nome):
+                resposta = self.pedir(self.client, nome, args, metodo)
+                self.assertEqual(resposta.status_code, 302)
+                self.assertIn(reverse("cadastro:entrar"), resposta.url)
+
+    def test_perfil_errado_403(self):
+        errado = {
+            "aluno": self.orientador,
+            "docente": self.aluno.alu,
+            "link": self.aluno.alu,
+            "painel": self.aluno.alu,
+            "coordenador": self.orientador,
+        }
+        for nome, args, metodo, dono in self.rotas():
+            with self.subTest(rota=nome):
+                self.client.force_login(errado[dono])
+                self.assertEqual(self.pedir(self.client, nome, args, metodo).status_code, 403)
+
+    def test_sem_vinculo(self):
+        esperado = {"aluno": 404, "docente": 404, "link": 200, "painel": 403}
+        for nome, args, metodo, dono in self.rotas():
+            if dono in ("coordenador",) or nome == "orientacoes":
+                continue
+            with self.subTest(rota=nome):
+                usuario = self.estranho_aluno if dono == "aluno" else self.estranho_docente
+                self.client.force_login(usuario)
+                resposta = self.pedir(self.client, nome, args, metodo)
+                self.assertEqual(resposta.status_code, esperado[dono])
+
+    def test_coordenador_de_outro_curso_404(self):
+        self.client.force_login(self.coordenador)
+        for nome in ("homologar_artigo", "recusar_artigo"):
+            with self.subTest(rota=nome):
+                resposta = self.pedir(self.client, nome, [self.tcc.pk], "P")
+                self.assertEqual(resposta.status_code, 404)
+
+    def test_post_sem_csrf_recusado(self):
+        from django.test import Client
+
+        dono = {"aluno": self.aluno.alu, "docente": self.estranho_docente}
+        cliente = Client(enforce_csrf_checks=True)
+        for nome, args, metodo, perfil in self.rotas():
+            if metodo != "P" or perfil not in dono:
+                continue
+            with self.subTest(rota=nome):
+                cliente.force_login(dono[perfil])
+                self.assertEqual(self.pedir(cliente, nome, args, "P").status_code, 403)
