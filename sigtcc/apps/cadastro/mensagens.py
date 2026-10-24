@@ -1,7 +1,7 @@
 """Textos exibidos ao usuário na feature 003 (Acesso e Login).
 
 Dois grupos:
-- textos das US, copiados caractere por caractere de docs/fonte/Historias_de_Usuario_v3_2.md;
+- textos das US, copiados caractere por caractere de docs/fonte/Historias_de_Usuario_v3_3.md;
 - mensagens PROVISÓRIAS M-01 a M-17, com o ID no nome, copiadas da tabela "Mensagens a validar com
   a PO" de specs/003-acesso-login/spec.md. São provisórias até a validação da PO (índice Q-01;
   spec Q25): quando a PO validar, mude só a constante e a tabela da spec.
