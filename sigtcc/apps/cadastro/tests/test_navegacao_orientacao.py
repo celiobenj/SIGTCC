@@ -274,3 +274,26 @@ class NavegacaoCoorientadoresTest(TesteTurmas):
         )
         voltou = seguir(self, confirmacao, reverse("cadastro:meu_tcc", args=[turma.pk]))
         self.assertContains(voltou, 'id="orientacao"')
+
+
+class NavegacaoConviteTest(TesteTurmas):
+    """Sino e e-mail do convite → rota 13 → tela Orientações com o convite; login com next.
+
+    [US-36][FR-033][FR-040][T046]
+    """
+
+    def test_link_do_convite_e_login(self):
+        from sigtcc.apps.cadastro.tests.apoio_orientacao import criar_convite
+
+        turma = criar_turma_de(criar_docente_ativo(), curso_nome=SI)
+        aluno = matricular_aluno(turma, status_tcc=StatusTCC.EM_ANDAMENTO)
+        docente = criar_docente_ativo()
+        convite = criar_convite(tcc_de(aluno, turma), docente)
+        link = services_orientacao.link_da_solicitacao(convite)
+        resposta = self.client.get(link)
+        self.assertIn(reverse("cadastro:entrar"), resposta.url)
+        self.client.force_login(docente)
+        tela = self.client.get(link)
+        self.assertContains(tela, "Convites de coorientação")
+        voltou = seguir(self, tela, reverse("cadastro:orientacoes"))
+        self.assertContains(voltou, "Orientandos")

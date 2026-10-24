@@ -262,12 +262,12 @@ notificações e linha.
 
 ### Tests for User Story 7 ⚠️
 
-- [ ] T044 [P] [US7] Criar `sigtcc/apps/cadastro/tests/test_us36_convite_coorientacao.py` com os 11 cenários da US-36. Mais: botões "Aceitar"/"Recusar" do e-mail (`?acao=`) só destacam, GET nunca grava (Q14); convite cancelado por cada motivo mostra o texto de convite (MO-12, MO-17, MO-18, MO-26); aceite com a conta do docente 'Inativa' recusado (Q-68); linha do Coorientador só com "Atas" e "Registrar ata" (FR-015). Deve falhar. — Rastreabilidade: [US-36][RBN-CAD-10.4][FR-031 a FR-033][Q14][D7]
+- [X] T044 [P] [US7] Criar `sigtcc/apps/cadastro/tests/test_us36_convite_coorientacao.py` com os 11 cenários da US-36. Mais: botões "Aceitar"/"Recusar" do e-mail (`?acao=`) só destacam, GET nunca grava (Q14); convite cancelado por cada motivo mostra o texto de convite (MO-12, MO-17, MO-18, MO-26); aceite com a conta do docente 'Inativa' recusado (Q-68); linha do Coorientador só com "Atas" e "Registrar ata" (FR-015). Deve falhar. — Rastreabilidade: [US-36][RBN-CAD-10.4][FR-031 a FR-033][Q14][D7]
 
 ### Implementation for User Story 7
 
-- [ ] T045 [US7] Em `services_orientacao.py`: `convites_pendentes(docente)` e, em `aceitar_solicitacao`/`recusar_solicitacao`, o ramo Coorientação (cria `Coorientacoes` 'Ativa' com `coo_doc` em savepoint, MO-10 ao Aluno e ao Orientador; recusa com MO-11). Em `views_orientacao.py`: rota 13 (`convite_coorientacao`, mesma view base da rota 12, com `sol_tipo` Coorientação). Rota em `urls.py`. — Rastreabilidade: [US-36][RBN-CAD-10.4][FR-031 a FR-033]
-- [ ] T046 [US7] **Design + Navegação**: em `orientacoes.html`, a seção "Convites de coorientação" como no protótipo (`item` com avatar, "aluno — título", "turma · Orientador", `acoes` com `btn perigo` "Recusar" e `btn pri` "Aceitar") e o destaque do convite aberto pelo link. Chegadas: menu "Orientações"; sino e e-mail (MO-07, botões "Aceitar"/"Recusar") → rota 13 → mesma tela. Testes em `test_navegacao_orientacao.py`, inclusive login com `next` (US-36 #7). — Rastreabilidade: [US-36][FR-031][FR-033][FR-040][plan.md, Target Platform][SC-005]
+- [X] T045 [US7] Em `services_orientacao.py`: `convites_pendentes(docente)` e, em `aceitar_solicitacao`/`recusar_solicitacao`, o ramo Coorientação (cria `Coorientacoes` 'Ativa' com `coo_doc` em savepoint, MO-10 ao Aluno e ao Orientador; recusa com MO-11). Em `views_orientacao.py`: rota 13 (`convite_coorientacao`, mesma view base da rota 12, com `sol_tipo` Coorientação). Rota em `urls.py`. — Rastreabilidade: [US-36][RBN-CAD-10.4][FR-031 a FR-033]
+- [X] T046 [US7] **Design + Navegação**: em `orientacoes.html`, a seção "Convites de coorientação" como no protótipo (`item` com avatar, "aluno — título", "turma · Orientador", `acoes` com `btn perigo` "Recusar" e `btn pri` "Aceitar") e o destaque do convite aberto pelo link. Chegadas: menu "Orientações"; sino e e-mail (MO-07, botões "Aceitar"/"Recusar") → rota 13 → mesma tela. Testes em `test_navegacao_orientacao.py`, inclusive login com `next` (US-36 #7). — Rastreabilidade: [US-36][FR-031][FR-033][FR-040][plan.md, Target Platform][SC-005]
 
 **Checkpoint**: o ciclo de coorientação está completo (US6 + US7).
 
