@@ -41,7 +41,10 @@ class PublicacaoForm(EnviarLinkForm):
     )
 
     def __init__(self, *args, somente_leitura=False, **kwargs):
-        """Rótulo do Link e, só leitura, campos desabilitados. [FR-034][FR-007]"""
+        """Rótulo do Link e, só leitura, campos desabilitados. [FR-034][FR-007]
+
+        [US-46][RBN-CAD-12.1]
+        """
         super().__init__(*args, **kwargs)
         self.fields["link"].label = "Link ou DOI"
         if somente_leitura:

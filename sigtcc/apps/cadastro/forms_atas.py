@@ -43,7 +43,10 @@ class AtaForm(FormularioSigtcc):
     )
 
     def clean_data(self):
-        """A Data do Encontro não pode ser futura (US-19 E3). [FR-021]"""
+        """A Data do Encontro não pode ser futura (US-19 E3). [FR-021]
+
+        [US-19][RBN-CAD-11.1]
+        """
         data = self.cleaned_data["data"]
         if data > timezone.now().date():
             raise ValidationError(mensagens.DATA_ENCONTRO_FUTURA)

@@ -29,7 +29,10 @@ from sigtcc.apps.cadastro.services_turmas import CONSULTAR, TurmaArquivada
 
 
 def _linhas(atas, url_editar, url_comentar):
-    """Atas com os endereços de "Editar" e "Comentar" de quem abre (None quando não pode)."""
+    """Atas com os endereços de "Editar" e "Comentar" de quem abre (None quando não pode).
+
+    [US-19][RBN-CAD-11.2][FR-023]
+    """
     return [
         {
             "ata": ata,
@@ -42,7 +45,10 @@ def _linhas(atas, url_editar, url_comentar):
 
 
 def _render_lista(request, tcc, url_voltar, url_registrar, url_editar, url_comentar):
-    """Lista de atas (FR-023) com os botões que o papel permite (FR-024, FR-025)."""
+    """Lista de atas (FR-023) com os botões que o papel permite (FR-024, FR-025).
+
+    [US-19][RBN-CAD-11.2][FR-023][FR-024]
+    """
     contexto = services_atas.contexto_lista(request.user, tcc)
     contexto.update(
         {
@@ -62,6 +68,7 @@ def _render_lista(request, tcc, url_voltar, url_registrar, url_editar, url_comen
 def _formulario(request, tcc, url_voltar, salvar, sucesso, ata=None, url_lista=None):
     """Janela da ata (registro ou edição): GET mostra; POST salva e volta; turma arquivada no
     meio volta com a MT-25 (research R2, A11). [FR-021][FR-022][FR-024]
+    [US-19][RBN-CAD-11.1]
     """
     destino_arquivada = url_lista or url_voltar
     if services_turmas.turma_arquivada(tcc.tcc_tur):
@@ -96,7 +103,10 @@ def _formulario(request, tcc, url_voltar, salvar, sucesso, ata=None, url_lista=N
 
 
 def _tcc_do_aluno(request, tur_id):
-    """TCC do próprio Aluno na turma (404 sem vínculo; sem IDOR). [contracts/rotas.md §1]"""
+    """TCC do próprio Aluno na turma (404 sem vínculo; sem IDOR). [contracts/rotas.md §1]
+
+    [US-19][RBN-CAD-11.1]
+    """
     turma, aluno = services_tcc.turma_do_aluno(tur_id, request.user)
     tcc = services_turmas.tcc_do_aluno(turma, aluno)
     if tcc is None:
@@ -178,6 +188,7 @@ def _tcc_do_docente(request, tcc_id):
 def _exige_alteracao(tcc):
     """Participação encerrada ou TCC copiado: 404 (FR-007); turma arquivada segue para a
     MT-25 em `_formulario`. [FR-046]
+    [US-19][RBN-CAD-11.2]
     """
     if not services_turmas.turma_arquivada(tcc.tcc_tur) and not pode_alterar_no_tcc(tcc):
         raise Http404

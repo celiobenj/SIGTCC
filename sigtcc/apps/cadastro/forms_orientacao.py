@@ -38,7 +38,10 @@ class CoorientadorForm(FormularioSigtcc):
     instituicao = forms.CharField(label="Instituição de Origem", required=False, max_length=150)
 
     def __init__(self, *args, docentes=(), **kwargs):
-        """`docentes`: pares (id, rótulo) já filtrados pelo service (D8). [FR-028]"""
+        """`docentes`: pares (id, rótulo) já filtrados pelo service (D8). [FR-028]
+
+        [US-45][RBN-CAD-10.3]
+        """
         super().__init__(*args, **kwargs)
         self.fields["docente"].choices = [("", "Selecione um docente…"), *docentes]
         self.fields["docente"].help_text = "O docente recebe um convite para aceitar ou recusar."

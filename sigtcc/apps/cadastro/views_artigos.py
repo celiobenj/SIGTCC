@@ -115,7 +115,10 @@ def aproveitamento_artigos(request):
 
 
 def _decidir(request, tcc_id, servico, sucesso):
-    """Chama a decisão e volta à tela com o mesmo filtro (validado). [FR-038]"""
+    """Chama a decisão e volta à tela com o mesmo filtro (validado). [FR-038]
+
+    [US-20][RBN-CAD-12.3]
+    """
     _, valor = _curso_escolhido(request)
     try:
         servico(request.user, tcc_id)

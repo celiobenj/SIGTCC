@@ -19,7 +19,10 @@ from sigtcc.apps.cadastro.services_turmas import TurmaArquivada
 
 
 def _volta_secao(tur_id, secao="orientacao"):
-    """Volta à aba Meu TCC já na seção (research R12; contracts/rotas.md §1). [FR-042]"""
+    """Volta à aba Meu TCC já na seção (research R12; contracts/rotas.md §1). [FR-042]
+
+    [US-17][US-45]
+    """
     return redirect(f"{redirect('cadastro:meu_tcc', tur_id=tur_id).url}?secao={secao}")
 
 
@@ -68,7 +71,10 @@ def cancelar_pedido_orientacao(request, tur_id):
 
 
 def _secao_tcc(request, tur_id):
-    """TCC do próprio Aluno na turma, para as telas de coorientação (404 sem vínculo)."""
+    """TCC do próprio Aluno na turma, para as telas de coorientação (404 sem vínculo).
+
+    [US-45][RBN-CAD-10.3]
+    """
     turma, aluno = services_tcc.turma_do_aluno(tur_id, request.user)
     tcc = services_turmas.tcc_do_aluno(turma, aluno)
     if tcc is None:
@@ -142,7 +148,10 @@ def substituir_coorientador(request, tur_id, coo_id):
 
 
 def _confirmar_remocao(request, tur_id, nome, servico):
-    """Confirmação MO-14 (GET) e remoção (POST), voltando à seção Orientação (FR-042)."""
+    """Confirmação MO-14 (GET) e remoção (POST), voltando à seção Orientação (FR-042).
+
+    [US-45][RBN-CAD-10.7][FR-029][FR-030]
+    """
     tcc = _secao_tcc(request, tur_id)
     if request.method == "POST":
         try:
@@ -243,6 +252,7 @@ def convite_coorientacao(request, sol_id):
 def _responder(request, sol_id, servico):
     """Chama o serviço de resposta e volta à tela Orientações com a mensagem; já respondida ou
     cancelada → página do link com o estado atual (FR-012). [FR-010][FR-011][FR-032]
+    [US-18][US-36][RBN-CAD-10.2][RBN-CAD-10.4]
     """
     try:
         texto = servico(request.user, sol_id)

@@ -125,14 +125,20 @@ def coorientadores_ativos(tcc):
 
 
 def e_orientador_atual(usuario, tcc):
-    """O usuário é o Orientador do vínculo ativo (pedido aceito ou automático). [FR-015][Q10]"""
+    """O usuário é o Orientador do vínculo ativo (pedido aceito ou automático). [FR-015][Q10]
+
+    [US-18][US-19]
+    """
     return Orientacoes.objects.filter(
         ori_tcc=tcc, ori_doc_id=usuario.pk, ori_status=StatusOrientacao.ATIVA
     ).exists()
 
 
 def e_coorientador_ativo(usuario, tcc):
-    """O usuário é docente do NUCOMP com coorientação aceita e ativa. [FR-015][FR-025][Q10]"""
+    """O usuário é docente do NUCOMP com coorientação aceita e ativa. [FR-015][FR-025][Q10]
+
+    [US-19][US-36]
+    """
     return Coorientacoes.objects.filter(
         coo_tcc=tcc, coo_doc_id=usuario.pk, coo_status=StatusCoorientacao.ATIVA
     ).exists()
@@ -316,7 +322,10 @@ def texto_do_cancelamento(sol):
 
 
 def _tipo_para_aviso(sol):
-    """{tipo} da MO-18 e da MO-26: "pedido de orientação" ou "convite de coorientação"."""
+    """{tipo} da MO-18 e da MO-26: "pedido de orientação" ou "convite de coorientação".
+
+    [US-18][US-36][RBN-CAD-10.4][FR-051][FR-053]
+    """
     if sol.sol_tipo == TipoSolicitacao.COORIENTACAO:
         return mensagens.TIPO_CONVITE_COORIENTACAO
     return mensagens.TIPO_PEDIDO_ORIENTACAO
@@ -384,7 +393,10 @@ def cancelar_troca_no_agendamento(tcc, agora):
 
 
 def link_secao(tcc, secao):
-    """Link da aba Meu TCC do aluno já na seção (research R12; FR-052). [FR-042][FR-052]"""
+    """Link da aba Meu TCC do aluno já na seção (research R12; FR-052). [FR-042][FR-052]
+
+    [US-17][US-19][US-46]
+    """
     return f"{reverse('cadastro:meu_tcc', args=[tcc.tcc_tur_id])}?secao={secao}"
 
 
@@ -571,7 +583,10 @@ def _travar_tcc_do_aluno(usuario, tur_id):
 
 
 def _titulo_ou_aviso(tcc):
-    """Título do TCC ou "Proposta ainda não registrada" (MO-01, MO-07, MO-16). [FR-003]"""
+    """Título do TCC ou "Proposta ainda não registrada" (MO-01, MO-07, MO-16). [FR-003]
+
+    [US-17][US-36][RBN-CAD-10.1]
+    """
     return tcc.tcc_titulo or mensagens.PROPOSTA_AINDA_NAO_REGISTRADA
 
 
