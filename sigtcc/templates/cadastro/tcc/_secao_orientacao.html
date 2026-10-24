@@ -1,0 +1,64 @@
+{% comment %}
+  Seção Orientação (aba Meu TCC do Aluno e painel do aluno), como secaoOrientacaoAluno e
+  secOrientacao do protótipo de 17/10: orientador, pedido pendente com "Cancelar Pedido", lista
+  "Indicar orientador" ou "Trocar de orientador" com "Enviar pedido", coorientadores e o
+  histórico de orientação. Sem regra aqui: o estado vem pronto de
+  services_orientacao.contexto_secao_orientacao (constituição IV). Uso:
+  {% include "cadastro/tcc/_secao_orientacao.html" with o=orientacao turma=turma %}
+  [US-17][US-41][US-45][RBN-CAD-10.1][RBN-CAD-10.3][RBN-CAD-10.6][FR-001 a FR-007][FR-028][FR-049]
+{% endcomment %}
+<section id="orientacao">
+  <div class="sec-tit c-azul">Orientação</div>
+  {% if o.orientador %}
+  <div class="item">
+    <span class="avatar md">{{ o.orientador.doc.usu_nome|slice:":1"|upper }}</span>
+    <div class="corpo"><b>{{ o.orientador.doc.usu_nome }}</b><small>Orientador{% if o.automatico %} · Professor da Disciplina{% endif %}</small></div>
+  </div>
+  {% else %}
+  <p class="muted">{{ o.sem_orientador }}</p>
+  {% endif %}
+
+  {% if o.pedido %}
+  <div class="alerta info" role="status">
+    <span class="ms">hourglass_top</span>
+    <span class="texto">{{ o.pedido_texto }}<br><small>{{ o.pedido.sol_tipo }} · {{ o.pedido.sol_data_solicitacao|date:"d/m/Y H:i" }}</small></span>
+    {% if o.pode_cancelar %}
+    <form method="post" action="{% url 'cadastro:cancelar_pedido_orientacao' turma.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn">Cancelar Pedido</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if o.mostra_lista %}
+  <form method="post" action="{% url 'cadastro:enviar_pedido_orientacao' turma.pk %}" class="flex flex-wrap" novalidate>
+    {% csrf_token %}
+    <div class="campo" style="flex:1;min-width:240px">
+      <label for="id_docente">{{ o.rotulo_lista }}</label>
+      <select id="id_docente" name="docente"{% if not o.lista_habilitada %} disabled{% endif %} required>
+        <option value="">Selecione um docente…</option>
+        {% for valor, rotulo in o.docentes %}<option value="{{ valor }}">{{ rotulo }}</option>{% endfor %}
+      </select>
+    </div>
+    {% if o.lista_habilitada %}
+    <button type="submit" name="acao" value="enviar" class="btn pri"><span class="ms">send</span>Enviar pedido</button>
+    {% else %}
+    <button type="button" class="btn pri" disabled><span class="ms">send</span>Enviar pedido</button>
+    {% endif %}
+  </form>
+  {% endif %}
+
+  {% include "cadastro/tcc/_coorientadores.html" %}
+
+  {% if o.historico %}
+  <details class="mt16">
+    <summary class="muted" style="cursor:pointer">Histórico de orientação ({{ o.historico|length }})</summary>
+    {% for linha in o.historico %}
+    <div class="item">
+      <div class="corpo"><b>{{ linha.descricao }}</b><small>{{ linha.detalhe }} · {{ linha.inicio|date:"d/m/Y H:i" }}{% if linha.fim %} – {{ linha.fim|date:"d/m/Y H:i" }}{% endif %}</small></div>
+    </div>
+    {% endfor %}
+  </details>
+  {% endif %}
+</section>

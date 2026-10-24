@@ -180,6 +180,34 @@ def dominio_do_email(email):
 # =============================================================================================
 
 
+def enviar_email_apos_commit(usuario, assunto, template, contexto):
+    """E-mail ao usuário depois do commit, só se a conta tiver e-mail; a falha fica só no log
+    (`enviar_email` registra FALHA_ENVIO_EMAIL) e não desfaz a gravação. Com
+    SIGTCC_EMAIL_SINCRONO, envia no próprio on_commit; sem ele, numa thread (padrão da spec 005).
+
+    Extraído de `services_entregas._enviar_email_ao_aluno` para as specs 005 e 006 não terem duas
+    cópias da regra de envio (spec 006, research R11; IC-13).
+    [US-43][US-15][US-17][US-18][US-36][FR-015][FR-022][Q-84][spec 006 R11][IC-13]
+    """
+    destino = usuario.usu_email
+    if not destino:
+        return
+    contexto = {"nome": usuario.usu_nome, **contexto}
+
+    def enviar():
+        """Envia o e-mail; falha só no log. [Q-84]"""
+        try:
+            enviar_email(destino, assunto, template, contexto, conta=usuario)
+        except Exception:
+            # Já registrado no log por enviar_email; a gravação não muda.
+            pass
+
+    if settings.SIGTCC_EMAIL_SINCRONO:
+        transaction.on_commit(enviar)
+    else:
+        transaction.on_commit(lambda: threading.Thread(target=enviar, daemon=True).start())
+
+
 def enviar_email(destino, assunto, template, contexto, conta=None):
     """Envia um e-mail de texto a partir de um template de cadastro/emails/.
 
@@ -1206,18 +1234,20 @@ def montar_mensagem_cortada(modelo, campo_longo, **campos):
     return _cortar(modelo.format(**campos), LIMITE_NOTIFICACAO)
 
 
-def notificar(usuario, mensagem, link=None):
+def notificar(usuario, mensagem, link=None, agora=None):
     """Única forma de criar uma notificação (contrato §4 da spec 004).
 
     Corta a mensagem em 500 caracteres com reticências; grava o link só se for interno e válido
-    (destino_da_notificacao), senão sem link; preenche data e hora e "não lida".
-    [US-38][RBN-CAD-13.2][US-08][US-09][spec 004, B21][I-5]
+    (destino_da_notificacao), senão sem link; preenche data e hora e "não lida". Com `agora`,
+    grava esse instante: a MO-26 do arquivamento usa o instante do cancelamento para deduzir o
+    motivo (spec 006, FR-050; research R3; IC-12).
+    [US-38][RBN-CAD-13.2][US-08][US-09][spec 004, B21][I-5][spec 006 FR-050]
     """
     destino = destino_da_notificacao(link) if link else None
     return Notificacoes.objects.create(
         not_usu=usuario,
         not_mensagem=_cortar(mensagem, LIMITE_NOTIFICACAO),
         not_link_tela=destino,
-        not_data_hora=timezone.now(),
+        not_data_hora=agora or timezone.now(),
         not_lida=False,
     )

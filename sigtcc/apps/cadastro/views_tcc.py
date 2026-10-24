@@ -12,7 +12,13 @@ from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import redirect, render
 
-from sigtcc.apps.cadastro import mensagens, services_entregas, services_tcc, services_turmas
+from sigtcc.apps.cadastro import (
+    mensagens,
+    services_entregas,
+    services_orientacao,
+    services_tcc,
+    services_turmas,
+)
 from sigtcc.apps.cadastro.choices import StatusTCC
 from sigtcc.apps.cadastro.forms_entregas import EnviarLinkForm
 from sigtcc.apps.cadastro.forms_tcc import DadosTCCForm, PropostaForm
@@ -154,6 +160,8 @@ def meu_tcc(request, tur_id):
         "versao_final_atraso": mensagens.MF01_DATA_LIMITE_VENCIDA,
         # Campo Link da Versão Final com o link já enviado (US-29, fluxo D; FR-019).
         "form_versao_final": _form_versao_final(versao_final),
+        # Spec 006 (IC-09): seção Orientação (US-17, US-45; FR-001 a FR-007, FR-049).
+        "orientacao": services_orientacao.contexto_secao_orientacao(tcc),
     }
     return render(request, "cadastro/tcc/meu_tcc.html", contexto)
 

@@ -381,7 +381,22 @@ def arquivar_turma(professor, tur_id):
             raise ErroTurma(motivo)
         turma.tur_status = StatusTurma.ARQUIVADA
         turma.save(update_fields=["tur_status"])
+        _cancelar_pendentes_no_arquivamento(turma)
     return turma
+
+
+def _cancelar_pendentes_no_arquivamento(turma):
+    """Spec 006 (IC-12; FR-053; Q17): trava todos os alunos e depois todos os TCCs da turma (por
+    pk, na ordem turma → aluno → TCC do research R2) e cancela os pedidos e convites pendentes, com
+    a MO-26 a cada docente. O import fica aqui dentro para não haver import circular (N6).
+    [US-07][RBN-CAD-04.5][FR-053][Q17][IC-12]
+    """
+    from sigtcc.apps.cadastro.services_orientacao import cancelar_pendentes_da_turma
+
+    alunos = list(AlunosTurmas.objects.filter(mat_tur=turma).values_list("mat_alu_id", flat=True))
+    list(Alunos.objects.select_for_update().filter(pk__in=alunos).order_by("pk"))
+    list(TCCs.objects.select_for_update().filter(tcc_tur=turma).order_by("pk"))
+    cancelar_pendentes_da_turma(turma, timezone.now())
 
 
 def alunos_da_turma(turma):
@@ -481,15 +496,19 @@ def _aluno_travado(matricula):
     )
 
 
-def _registrar_historico(tcc, turma, autor, anterior, novo, gatilho):
-    """Uma transição do Status do TCC no histórico (RBN-CAD-08.7). [RBN-CAD-08.7][FR-012]"""
+def _registrar_historico(tcc, turma, autor, anterior, novo, gatilho, agora=None):
+    """Uma transição do Status do TCC no histórico (RBN-CAD-08.7). Com `agora`, grava esse mesmo
+    instante: os cancelamentos causados pelo evento usam o mesmo valor, e é essa igualdade que
+    deduz o motivo (spec 006, FR-050; research R3; IC-04).
+    [RBN-CAD-08.7][FR-012][spec 006 FR-050]
+    """
     HistoricoStatusTCC.objects.create(
         hst_tcc=tcc,
         hst_tur=turma,
         hst_status_anterior=anterior,
         hst_status_novo=novo,
         hst_gatilho=gatilho,
-        hst_data_hora=timezone.now(),
+        hst_data_hora=agora or timezone.now(),
         hst_usu=autor,
     )
 
@@ -546,7 +565,7 @@ def _validar_transicao(anterior, novo_status, gatilho):
 
 
 def criar_tcc_com_historico(
-    aluno, turma, autor, status_inicial, gatilho, anterior=None, **campos_tcc
+    aluno, turma, autor, status_inicial, gatilho, anterior=None, agora=None, **campos_tcc
 ):
     """Único ponto que cria um TCC e grava o primeiro registro do histórico (FR-008, FR-012).
 
@@ -558,40 +577,43 @@ def criar_tcc_com_historico(
     **obrigatórios** nesse gatilho porque `status_inicial="Em Andamento"` cai na `CHECK
     ck_tccs_campos_obrigatorios_com_proposta` do dicionário, que exige esses campos fora de "Sem
     Proposta"). Pressupõe turma, aluno e — na transferência — o TCC de origem já travados pelo
-    chamador (`select_for_update`, research C4).
+    chamador (`select_for_update`, research C4). `agora` opcional: o instante do evento (spec 006,
+    FR-050; IC-04).
     [US-14][RBN-CAD-08.3][RBN-CAD-08.7][FR-008][FR-012][research C2][research C4]
     """
     _validar_transicao(anterior, status_inicial, gatilho)
     tcc = TCCs.objects.create(tcc_alu=aluno, tcc_tur=turma, tcc_status=status_inicial, **campos_tcc)
-    _registrar_historico(tcc, turma, autor, anterior, status_inicial, gatilho)
+    _registrar_historico(tcc, turma, autor, anterior, status_inicial, gatilho, agora)
     return tcc
 
 
-def atualizar_status_tcc(tcc, turma, autor, novo_status, gatilho):
+def atualizar_status_tcc(tcc, turma, autor, novo_status, gatilho, agora=None):
     """Único ponto que muda tcc_status de um TCC **já existente** e grava o histórico (FR-008,
     FR-012). Usada pelos 5 gatilhos de transição: "Proposta salva", "Indicação de Apto para
     Defesa", "Liberação do resultado", "Homologação da Versão Final" e "Encerramento da
     participação". Pressupõe que o chamador já travou turma → aluno → TCC (`select_for_update`,
     dentro do mesmo `transaction.atomic()`, research C4) **antes** de chamar esta função — ela não
     trava nada por si. Levanta ValueError se a transição não for válida; nesse caso, nenhuma linha
-    é gravada.
+    é gravada. `agora` opcional: o instante do evento (spec 006, FR-050; IC-04).
     [US-14][RBN-CAD-08.3][RBN-CAD-08.7][FR-008][FR-012][research C2][research C4]
     """
     anterior = tcc.tcc_status
     _validar_transicao(anterior, novo_status, gatilho)
     tcc.tcc_status = novo_status
     tcc.save(update_fields=["tcc_status"])
-    _registrar_historico(tcc, turma, autor, anterior, novo_status, gatilho)
+    _registrar_historico(tcc, turma, autor, anterior, novo_status, gatilho, agora)
 
 
-def _criar_orientacao_automatica(tcc, turma):
-    """Professor da turma como Orientador, origem 'Automático' (RBN-CAD-04.2). [FR-004][B8]"""
+def _criar_orientacao_automatica(tcc, turma, agora=None):
+    """Professor da turma como Orientador, origem 'Automático' (RBN-CAD-04.2). Com `agora`, o
+    início do vínculo é o instante do evento (spec 006, FR-050; IC-04). [FR-004][B8]
+    """
     Orientacoes.objects.create(
         ori_tcc=tcc,
         ori_doc=turma.tur_doc,
         ori_origem=OrigemOrientacao.AUTOMATICO,
         ori_status=StatusOrientacao.ATIVA,
-        ori_data_inicio=timezone.now(),
+        ori_data_inicio=agora or timezone.now(),
     )
 
 
@@ -612,9 +634,14 @@ def encerrar_orientacoes_ativas(tcc, agora=None):
 def _copiar_tcc_aprovado(autor, turma, aluno, tcc1):
     """Aprovado em TCC 1 matriculado em TCC 2: novo TCC carregado com os dados do TCC 1, direto
     'Em Andamento'; o TCC 1 fica como histórico (spec Q6; research B7).
-    [US-08][RBN-CAD-05.5][RBN-CAD-08.6][FR-013][Q6][I-13][m6]
+
+    Spec 006 (IC-04; FR-050, FR-051): trava o TCC 1 (o aluno já vem travado por `matricular`),
+    grava o mesmo `agora` no histórico, nas orientações e nos cancelamentos, e cancela os pedidos
+    e convites pendentes do TCC 1, avisando cada docente com a MO-18.
+    [US-08][RBN-CAD-05.5][RBN-CAD-08.6][FR-013][Q6][I-13][m6][spec 006 FR-050][FR-051]
     """
     agora = timezone.now()
+    tcc1 = TCCs.objects.select_for_update(of=("self",)).get(pk=tcc1.pk)
     orientacoes = list(Orientacoes.objects.filter(ori_tcc=tcc1, ori_status=StatusOrientacao.ATIVA))
     coorientacoes = list(
         Coorientacoes.objects.filter(coo_tcc=tcc1, coo_status=StatusCoorientacao.ATIVA)
@@ -630,6 +657,7 @@ def _copiar_tcc_aprovado(autor, turma, aluno, tcc1):
         StatusTCC.EM_ANDAMENTO,
         GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2,
         anterior=tcc1.tcc_status,
+        agora=agora,
         tcc_titulo=tcc1.tcc_titulo,
         tcc_subtitulo=tcc1.tcc_subtitulo,
         tcc_resumo=tcc1.tcc_resumo,
@@ -653,7 +681,7 @@ def _copiar_tcc_aprovado(autor, turma, aluno, tcc1):
         )
     automatico = turma_tem_orientador_automatico(turma)
     if automatico:
-        _criar_orientacao_automatica(novo, turma)
+        _criar_orientacao_automatica(novo, turma, agora)
     else:
         for orientacao in orientacoes:
             Orientacoes.objects.create(
@@ -673,7 +701,38 @@ def _copiar_tcc_aprovado(autor, turma, aluno, tcc1):
             coo_status=StatusCoorientacao.ATIVA,
             coo_data_inicio=agora,
         )
+    _cancelar_pendentes_do_tcc1(tcc1, aluno, agora)
     return novo
+
+
+def _cancelar_pendentes_do_tcc1(tcc1, aluno, agora):
+    """Spec 006 (FR-051; MO-18): pedidos e convites pendentes do TCC 1 → 'Cancelado' com o
+    instante do gatilho "Transferência para TCC 2"; cada docente é avisado na mesma transação.
+    [US-17][US-45][RBN-CAD-08.6][FR-050][FR-051][Q6][IC-04]
+    """
+    pendentes = list(
+        SolicitacoesOrientacao.objects.select_related("sol_doc__doc").filter(
+            sol_tcc=tcc1,
+            sol_status__in=(
+                StatusSolicitacao.AGUARDANDO_RESPOSTA,
+                StatusSolicitacao.AGUARDANDO_ACEITE,
+            ),
+        )
+    )
+    SolicitacoesOrientacao.objects.filter(pk__in=[s.pk for s in pendentes]).update(
+        sol_status=StatusSolicitacao.CANCELADO, sol_data_resposta=agora
+    )
+    for solicitacao in pendentes:
+        tipo = (
+            mensagens.TIPO_CONVITE_COORIENTACAO
+            if solicitacao.sol_tipo == TipoSolicitacao.COORIENTACAO
+            else mensagens.TIPO_PEDIDO_ORIENTACAO
+        )
+        notificar(
+            solicitacao.sol_doc.doc,
+            mensagens.MO18_NOTIFICACAO.format(tipo=tipo, nome=aluno.alu.usu_nome),
+            link=reverse("cadastro:orientacoes"),
+        )
 
 
 def _recusa_por_tccs(aluno, turma):
@@ -945,7 +1004,9 @@ def transferir(autor, tur_origem_id, alu_id, tur_destino_id, justificativa):
         tcc.save(update_fields=["tcc_tur"])
         AlunosTurmas.objects.filter(mat_alu=aluno, mat_tur=origem).delete()
         AlunosTurmas.objects.create(mat_alu=aluno, mat_tur=destino, mat_data_inscricao=agora)
-        _criar_orientacao_automatica(tcc, destino)
+        # Spec 006 (IC-04; FR-050): o mesmo instante do convite cancelado abaixo, para o link do
+        # convite mostrar a MO-17 ("o docente passou a ser o orientador").
+        _criar_orientacao_automatica(tcc, destino, agora)
         Coorientacoes.objects.filter(
             coo_tcc=tcc, coo_doc_id=destino.tur_doc_id, coo_status=StatusCoorientacao.ATIVA
         ).update(coo_status=StatusCoorientacao.ENCERRADA, coo_data_fim=agora)
@@ -1095,8 +1156,9 @@ def encerrar_participacao(professor, tur_id, alu_id, status, justificativa):
         # não faz parte do Status nem do histórico, gravado à parte, no mesmo UPDATE.
         tcc.tcc_justificativa_encerramento = justificativa
         tcc.save(update_fields=["tcc_justificativa_encerramento"])
+        # Spec 006 (IC-04; FR-050): o mesmo `agora` dos cancelamentos abaixo deduz a MO-12.
         atualizar_status_tcc(
-            tcc, turma, professor, status, GatilhoStatusTCC.ENCERRAMENTO_DA_PARTICIPACAO
+            tcc, turma, professor, status, GatilhoStatusTCC.ENCERRAMENTO_DA_PARTICIPACAO, agora
         )
         encerrar_orientacoes_ativas(tcc, agora)
         pendentes = list(

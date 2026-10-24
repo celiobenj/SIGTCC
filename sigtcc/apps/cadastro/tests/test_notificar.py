@@ -3,6 +3,10 @@
 [US-08][US-09][RBN-CAD-05.7][RBN-CAD-13.2][B-1][I-5]
 """
 
+from datetime import timedelta
+
+from django.utils import timezone
+
 from sigtcc.apps.cadastro import mensagens, services
 from sigtcc.apps.cadastro.models import Alunos, Notificacoes
 from sigtcc.apps.cadastro.tests.apoio_acesso import TesteAcesso, criar_docente_ativo
@@ -70,3 +74,16 @@ class CursoDoCodigoTest(TesteAcesso):
         Alunos.objects.filter(pk=aluno.pk).update(alu_codigo_curso="EST99XXXX")
         aluno.refresh_from_db()
         self.assertEqual(services.curso_do_aluno(aluno), mensagens.CURSO_NAO_RECONHECIDO)
+
+
+class NotificarComInstanteTest(TesteAcesso):
+    """Spec 006 (IC-12; FR-050): notificar(..., agora=X) grava exatamente X, para a MO-26 servir
+    à dedução do motivo TURMA_ARQUIVADA. [US-38][RBN-CAD-13.2][FR-050][FR-053][IC-12]
+    """
+
+    def test_agora_informado_vai_para_not_data_hora(self):
+        usuario = criar_docente_ativo()
+        instante = timezone.now() - timedelta(minutes=3)
+        aviso = services.notificar(usuario, "Aviso", agora=instante)
+        aviso.refresh_from_db()
+        self.assertEqual(aviso.not_data_hora, instante)

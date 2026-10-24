@@ -5,7 +5,14 @@
 
 from django.urls import path
 
-from sigtcc.apps.cadastro import views, views_contas, views_entregas, views_tcc, views_turmas
+from sigtcc.apps.cadastro import (
+    views,
+    views_contas,
+    views_entregas,
+    views_orientacao,
+    views_tcc,
+    views_turmas,
+)
 
 app_name = "cadastro"
 
@@ -191,5 +198,28 @@ urlpatterns = [
         "cadastros/membros-externos/<int:mem_id>/prorrogar/",
         views_contas.membro_prorrogar,
         name="contas_membro_prorrogar",
+    ),
+    # Spec 006: seção Orientação do Aluno (contracts/rotas.md §1). [US-17][US-45]
+    path(
+        "turmas/<int:tur_id>/meu-tcc/orientacao/pedido/",
+        views_orientacao.enviar_pedido_orientacao,
+        name="enviar_pedido_orientacao",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/orientacao/pedido/cancelar/",
+        views_orientacao.cancelar_pedido_orientacao,
+        name="cancelar_pedido_orientacao",
+    ),
+    # Spec 006: tela Orientações do docente (contracts/rotas.md §2). [US-18][US-36]
+    path("orientacoes/", views_orientacao.orientacoes, name="orientacoes"),
+    path(
+        "orientacoes/pedidos/<int:sol_id>/",
+        views_orientacao.pedido_orientacao,
+        name="pedido_orientacao",
+    ),
+    path(
+        "orientacoes/convites/<int:sol_id>/",
+        views_orientacao.convite_coorientacao,
+        name="convite_coorientacao",
     ),
 ]

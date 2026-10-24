@@ -1,0 +1,13 @@
+{% comment %}
+  Coorientadores da seção Orientação (completado na US-45, tasks T043). Sem regra aqui.
+  [US-45][RBN-CAD-10.3][FR-028]
+{% endcomment %}
+{% if o.coorientadores %}
+<h4 style="font-weight:500;margin:16px 0 8px">Coorientadores</h4>
+{% for coo in o.coorientadores %}
+<div class="item">
+  <span class="ic" style="background:{% if coo.coo_doc_id %}var(--azul){% else %}#80868b{% endif %}"><span class="ms">person</span></span>
+  <div class="corpo"><b>{% if coo.coo_doc_id %}{{ coo.coo_doc.doc.usu_nome }}{% else %}{{ coo.coo_cext.cext_nome }}{% endif %}</b><small>{% if coo.coo_doc_id %}Docente do NUCOMP{% else %}Externo ao NUCOMP{% if coo.coo_cext.cext_instituicao %} · {{ coo.coo_cext.cext_instituicao }}{% endif %}{% endif %}</small></div>
+</div>
+{% endfor %}
+{% endif %}
