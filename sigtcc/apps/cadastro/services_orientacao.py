@@ -13,31 +13,44 @@ import enum
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.db.models import Count
 from django.http import Http404
 from django.urls import reverse
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import mensagens
 from sigtcc.apps.cadastro.choices import (
+    DescricaoTurma,
     GatilhoStatusTCC,
+    ModalidadeTCC,
+    OrigemOrientacao,
     StatusCoorientacao,
     StatusOrientacao,
     StatusSolicitacao,
     StatusTCC,
+    TipoEntrega,
     TipoSolicitacao,
 )
 from sigtcc.apps.cadastro.models import (
     Alunos,
     Coorientacoes,
     Docentes,
+    EntregasMarcos,
     HistoricoStatusTCC,
     Notificacoes,
     Orientacoes,
     SolicitacoesOrientacao,
     TCCs,
+    TurmasMarcos,
 )
 from sigtcc.apps.cadastro.services import enviar_email_apos_commit, notificar
 from sigtcc.apps.cadastro.services_contas import docentes_ativos, travar_e_conferir_ativo
+from sigtcc.apps.cadastro.services_entregas import (
+    STATUS_ENVIO_AVALIAVEL,
+    exige_correcoes_conferidas,
+    status_exibido,
+    versao_final_do_aluno,
+)
 from sigtcc.apps.cadastro.services_turmas import (
     STATUS_SESSAO_ATIVA,
     STATUS_SOLICITACAO_PENDENTE,
@@ -623,3 +636,478 @@ def cancelar_pedido(usuario, tur_id):
         pedido.sol_data_resposta = timezone.now()
         pedido.save(update_fields=["sol_status", "sol_data_resposta"])
     return pedido
+
+
+# =============================================================================================
+# Tela Orientações do docente: pedidos, convites e orientandos (US-18, US-36; FR-009 a FR-016,
+# FR-026, FR-031 a FR-033; research R4, R14 a R16)
+# =============================================================================================
+
+
+class SolicitacaoRespondida(Exception):
+    """A solicitação já não está pendente (respondida ou cancelada ao mesmo tempo): a view volta
+    à página do link, que mostra o estado atual (FR-012). [US-18][US-36][FR-012][FR-033]
+    """
+
+    def __init__(self, sol):
+        """Guarda a solicitação, para a view montar o link. [FR-012]"""
+        super().__init__(sol.pk)
+        self.sol = sol
+
+
+def pedidos_pendentes(docente):
+    """Pedidos de Orientação e de Troca 'Aguardando Resposta' feitos ao docente (FR-009), com
+    aluno, título ou aviso, turma, data e hora e orientador atual (só na troca).
+    [US-18][RBN-CAD-10.2][FR-009]
+    """
+    linhas = []
+    for sol in (
+        SolicitacoesOrientacao.objects.select_related("sol_tcc__tcc_alu__alu", "sol_tcc__tcc_tur")
+        .filter(
+            sol_doc_id=docente.pk,
+            sol_tipo__in=TIPOS_PEDIDO,
+            sol_status=StatusSolicitacao.AGUARDANDO_RESPOSTA,
+        )
+        .order_by("sol_data_solicitacao", "sol_id")
+    ):
+        tcc = sol.sol_tcc
+        atual = (
+            orientador_atual(tcc) if sol.sol_tipo == TipoSolicitacao.TROCA_DE_ORIENTACAO else None
+        )
+        linhas.append(
+            {
+                "sol": sol,
+                "aluno": tcc.tcc_alu.alu.usu_nome,
+                "titulo": _titulo_ou_aviso(tcc),
+                "turma": tcc.tcc_tur,
+                "orientador_atual": atual.doc.usu_nome if atual else "",
+                "tem_proposta": tcc.tcc_status != StatusTCC.SEM_PROPOSTA,
+            }
+        )
+    return linhas
+
+
+def convites_pendentes(docente):
+    """Convites de coorientação 'Aguardando Aceite' feitos ao docente (FR-031): aluno, título,
+    turma e Orientador. [US-36][RBN-CAD-10.4][FR-031]
+    """
+    linhas = []
+    for sol in (
+        SolicitacoesOrientacao.objects.select_related("sol_tcc__tcc_alu__alu", "sol_tcc__tcc_tur")
+        .filter(
+            sol_doc_id=docente.pk,
+            sol_tipo=TipoSolicitacao.COORIENTACAO,
+            sol_status=StatusSolicitacao.AGUARDANDO_ACEITE,
+        )
+        .order_by("sol_data_solicitacao", "sol_id")
+    ):
+        tcc = sol.sol_tcc
+        orientador = orientador_atual(tcc)
+        linhas.append(
+            {
+                "sol": sol,
+                "aluno": tcc.tcc_alu.alu.usu_nome,
+                "titulo": _titulo_ou_aviso(tcc),
+                "turma": tcc.tcc_tur,
+                "orientador": orientador.doc.usu_nome if orientador else "",
+            }
+        )
+    return linhas
+
+
+def estado_apto(tcc, entregas, n_palavras, turma_tem_documento=None):
+    """Estado do botão "Apto para Defesa" (FR-026): None (não aparece: Status diferente de "Em
+    Andamento"), "sem_entrega_cadastrada" (indisponível, com o texto da US-42 E3),
+    "indisponivel" ou "disponivel". `entregas` são os registros do aluno na turma (com o
+    marco); `n_palavras` é a quantidade de Palavras-Chave; `turma_tem_documento`, quando
+    informado, evita a consulta por linha (research R14).
+    [US-42][RBN-CAD-11.5][FR-026][research R16]
+    """
+    if tcc.tcc_status != StatusTCC.EM_ANDAMENTO:
+        return None
+    documento = [e for e in entregas if e.ent_tma.tma_tipo == TipoEntrega.DOCUMENTO_PARA_DEFESA]
+    if turma_tem_documento is None:
+        turma_tem_documento = _turma_tem_documento(tcc.tcc_tur_id)
+    if not documento and not turma_tem_documento:
+        return "sem_entrega_cadastrada"
+    entregue = any(e.ent_status in STATUS_ENVIO_AVALIAVEL for e in documento)
+    if entregue and tcc.tcc_ari_id and n_palavras:
+        return "disponivel"
+    return "indisponivel"
+
+
+def _turma_tem_documento(tur_id):
+    """A turma tem a entrega do tipo Documento para Defesa cadastrada. [US-42 E3][FR-026]"""
+    return TurmasMarcos.objects.filter(
+        tma_tur_id=tur_id, tma_tipo=TipoEntrega.DOCUMENTO_PARA_DEFESA
+    ).exists()
+
+
+def estado_correcoes(tcc, entregas):
+    """Estado de "Correções Conferidas" (FR-016): None (não aparece), "disponivel" (botão) ou a
+    data e hora da conferência (etiqueta MO-13). Só em TCC 2 de Sistemas de Informação com
+    "Aprovado com Correções", depois do envio da Versão Final. [US-44 B][RBN-CAD-09.5][FR-016][Q2]
+    """
+    turma = tcc.tcc_tur
+    if turma.tur_descricao != DescricaoTurma.TCC_2 or not exige_correcoes_conferidas(turma, tcc):
+        return None
+    versao = [e for e in entregas if e.ent_tma.tma_tipo == TipoEntrega.VERSAO_FINAL]
+    if not versao:
+        return None
+    entrega = versao[0]
+    if entrega.ent_correcoes_conferidas_em is not None:
+        return entrega.ent_correcoes_conferidas_em
+    if entrega.ent_status in STATUS_ENVIO_AVALIAVEL:
+        return "disponivel"
+    return None
+
+
+def orientandos(docente):
+    """Tela de orientandos (FR-014, FR-015): trabalhos com vínculo ativo do docente como
+    Orientador (pedido ou automático) ou Coorientador; turma arquivada no fim (US-18 G), depois
+    pelo nome do aluno. Sem consulta por linha (research R14): contagens anotadas e entregas
+    carregadas de uma vez. Cada linha traz as decisões dos botões prontas.
+    [US-18][US-36][US-19][US-42][US-46][RBN-CAD-11.4][FR-014][FR-015][FR-016][FR-026][Q10]
+    """
+    como_orientador = set(
+        Orientacoes.objects.filter(
+            ori_doc_id=docente.pk, ori_status=StatusOrientacao.ATIVA
+        ).values_list("ori_tcc_id", flat=True)
+    )
+    como_coorientador = set(
+        Coorientacoes.objects.filter(
+            coo_doc_id=docente.pk, coo_status=StatusCoorientacao.ATIVA
+        ).values_list("coo_tcc_id", flat=True)
+    )
+    tccs = list(
+        TCCs.objects.select_related("tcc_alu__alu", "tcc_tur__tur_cur")
+        .filter(pk__in=como_orientador | como_coorientador)
+        .annotate(
+            n_atas=Count("encontroorientacao", distinct=True),
+            n_palavras=Count("palavraschavetcc__pal_palavra", distinct=True),
+        )
+    )
+    registros = {}
+    for entrega in (
+        EntregasMarcos.objects.select_related("ent_tma")
+        .filter(
+            ent_alu_id__in=[t.tcc_alu_id for t in tccs],
+            ent_tma__tma_tur_id__in=[t.tcc_tur_id for t in tccs],
+        )
+        .order_by("ent_tma__tma_data_limite", "ent_tma_id")
+    ):
+        registros.setdefault((entrega.ent_alu_id, entrega.ent_tma.tma_tur_id), []).append(entrega)
+    com_documento = set(
+        TurmasMarcos.objects.filter(
+            tma_tur_id__in=[t.tcc_tur_id for t in tccs],
+            tma_tipo=TipoEntrega.DOCUMENTO_PARA_DEFESA,
+        ).values_list("tma_tur_id", flat=True)
+    )
+    agora = timezone.now()
+    linhas = []
+    for tcc in tccs:
+        turma = tcc.tcc_tur
+        entregas = registros.get((tcc.tcc_alu_id, turma.pk), [])
+        arquivada = turma_arquivada(turma)
+        orientador = tcc.pk in como_orientador
+        alteravel = not arquivada and pode_alterar_no_tcc(tcc)
+        apto = None
+        if orientador and not arquivada:
+            apto = estado_apto(tcc, entregas, tcc.n_palavras, turma.pk in com_documento)
+        correcoes = estado_correcoes(tcc, entregas) if orientador and not arquivada else None
+        etiqueta = ""
+        if correcoes not in (None, "disponivel"):
+            etiqueta = mensagens.MO13_ETIQUETA.format(
+                data_hora=(
+                    timezone.localtime(correcoes).strftime("%d/%m/%Y %H:%M")
+                    if timezone.is_aware(correcoes)
+                    else correcoes.strftime("%d/%m/%Y %H:%M")
+                )
+            )
+            correcoes = None
+        linhas.append(
+            {
+                "tcc": tcc,
+                "aluno": tcc.tcc_alu.alu.usu_nome,
+                "curso": turma.tur_cur.cur_nome,
+                "turma": turma,
+                "titulo": tcc.tcc_titulo or "",
+                "papel": "Orientador" if orientador else "Coorientador",
+                "orientador": orientador,
+                "arquivada": arquivada,
+                "entregas": [(e.ent_tma.tma_titulo, status_exibido(e, agora)) for e in entregas],
+                "n_atas": tcc.n_atas,
+                "pode_registrar_ata": alteravel,
+                "pode_historico": orientador and not arquivada,
+                "pode_publicacao": orientador
+                and not arquivada
+                and tcc.tcc_modalidade == ModalidadeTCC.ARTIGO_CIENTIFICO,
+                "apto": apto,
+                "apto_etiqueta": orientador and tcc.tcc_status == StatusTCC.APTO_PARA_DEFESA,
+                "correcoes": correcoes,
+                "correcoes_etiqueta": etiqueta,
+            }
+        )
+    linhas.sort(key=lambda linha: (linha["arquivada"], linha["aluno"]))
+    return linhas
+
+
+def contexto_orientacoes(docente):
+    """Contexto da tela Orientações: as três seções e os avisos de seção vazia (MO-24).
+
+    [US-18][US-36][FR-009][FR-014][FR-031][FR-040][Q11]
+    """
+    return {
+        "pedidos": pedidos_pendentes(docente),
+        "convites": convites_pendentes(docente),
+        "orientandos": orientandos(docente),
+        "sem_pedidos": mensagens.MO24_SEM_PEDIDOS,
+        "sem_convites": mensagens.MO24_SEM_CONVITES,
+        "sem_orientandos": mensagens.MO24_SEM_ORIENTANDOS,
+        "texto_sem_entrega": mensagens.ENTREGA_DOCUMENTO_NAO_CADASTRADA,
+    }
+
+
+def estado_da_solicitacao(docente, sol_id, tipos):
+    """Aviso de estado da página do link de pedido (rota 12) ou convite (rota 13), na ordem do
+    research R4: inexistente, de outro tipo ou de outro docente dão a mesma resposta ("não está
+    disponível para o seu usuário"), sem revelar existência nem estado; ao docente indicado,
+    o destaque do pendente, a decisão com data e hora ou o motivo do cancelamento.
+    [US-18][US-36][RBN-CAD-10.1][RBN-CAD-10.4][FR-012][FR-033][research R4]
+    """
+    convite = TipoSolicitacao.COORIENTACAO in tipos
+    sol = (
+        SolicitacoesOrientacao.objects.select_related("sol_tcc__tcc_tur", "sol_tcc__tcc_alu__alu")
+        .filter(pk=sol_id, sol_tipo__in=tipos)
+        .first()
+    )
+    if sol is None or sol.sol_doc_id != docente.pk:
+        texto = mensagens.CONVITE_NAO_DISPONIVEL if convite else mensagens.PEDIDO_NAO_DISPONIVEL
+        return {"aviso": texto, "destaque": None}
+    if sol.sol_status in STATUS_SOLICITACAO_PENDENTE:
+        return {"aviso": "", "destaque": sol.pk}
+    if sol.sol_status == StatusSolicitacao.CANCELADO:
+        return {"aviso": texto_do_cancelamento(sol), "destaque": None}
+    return {"aviso": sol.sol_status, "aviso_data": sol.sol_data_resposta, "destaque": None}
+
+
+def _travar_para_resposta(docente, sol_id):
+    """Trava na ordem do research R2 (turma ativa → aluno → TCC → conta do docente →
+    solicitação) para responder: 404 se a solicitação não é do docente ou se o TCC mudou de
+    turma no meio; TurmaArquivada com a turma arquivada; SolicitacaoRespondida se já não está
+    pendente. [US-18][US-36][FR-010][FR-011][FR-032][research R2][N14]
+    """
+    achada = (
+        SolicitacoesOrientacao.objects.select_related("sol_tcc")
+        .filter(pk=sol_id, sol_doc_id=docente.pk)
+        .first()
+    )
+    if achada is None:
+        raise Http404
+    turma = travar_turma_ativa(achada.sol_tcc.tcc_tur_id)
+    Alunos.objects.select_for_update().filter(pk=achada.sol_tcc.tcc_alu_id).first()
+    tcc = (
+        TCCs.objects.select_for_update(of=("self",))
+        .select_related("tcc_tur__tur_cur", "tcc_tur__tur_doc__doc", "tcc_alu__alu")
+        .get(pk=achada.sol_tcc_id)
+    )
+    if tcc.tcc_tur_id != turma.pk:
+        raise Http404
+    if not travar_e_conferir_ativo(docente):
+        raise Http404
+    sol = SolicitacoesOrientacao.objects.select_for_update().get(pk=achada.pk)
+    if sol.sol_status not in STATUS_SOLICITACAO_PENDENTE:
+        raise SolicitacaoRespondida(sol)
+    if not pode_alterar_no_tcc(tcc):
+        raise Http404
+    return tcc, sol
+
+
+def aceitar_solicitacao(docente, sol_id):
+    """ "Aceitar" um pedido (FR-010) ou convite (FR-032), com autor, data e hora. Devolve a
+    mensagem da tela (MO-15 ou "Convite aceito").
+    - Pedido de Orientação: vínculo 'Ativa' "Pedido Aceito"; MO-02 ao Aluno e MO-04 (sistema e
+      e-mail) ao Professor da Disciplina.
+    - Troca: encerra o vínculo anterior (MO-05 ao orientador anterior), encerra a coorientação de
+      quem aceita e cancela o convite pendente a ele com o mesmo instante (MO-17 pelo link; D13);
+      recusada com sessão de defesa ativa (A20).
+    - Convite: coorientação 'Ativa'; MO-10 ao Aluno e ao Orientador.
+    [US-18][US-36][US-17 D][RBN-CAD-10.2][RBN-CAD-10.4][RBN-CAD-10.6][FR-010][FR-032][FR-050]
+    """
+    with transaction.atomic():
+        tcc, sol = _travar_para_resposta(docente, sol_id)
+        agora = timezone.now()
+        aluno = tcc.tcc_alu.alu
+        if sol.sol_tipo == TipoSolicitacao.COORIENTACAO:
+            return _aceitar_convite(docente, tcc, sol, aluno, agora)
+        anterior = orientador_atual(tcc)
+        if sol.sol_tipo == TipoSolicitacao.TROCA_DE_ORIENTACAO:
+            if anterior is None or anterior.pk == docente.pk or sessao_de_defesa_ativa(tcc):
+                raise Http404
+            Orientacoes.objects.filter(ori_tcc=tcc, ori_status=StatusOrientacao.ATIVA).update(
+                ori_status=StatusOrientacao.ENCERRADA, ori_data_fim=agora
+            )
+            Coorientacoes.objects.filter(
+                coo_tcc=tcc, coo_doc_id=docente.pk, coo_status=StatusCoorientacao.ATIVA
+            ).update(coo_status=StatusCoorientacao.ENCERRADA, coo_data_fim=agora)
+            SolicitacoesOrientacao.objects.filter(
+                sol_tcc=tcc,
+                sol_doc_id=docente.pk,
+                sol_tipo=TipoSolicitacao.COORIENTACAO,
+                sol_status=StatusSolicitacao.AGUARDANDO_ACEITE,
+            ).update(sol_status=StatusSolicitacao.CANCELADO, sol_data_resposta=agora)
+        elif anterior is not None:
+            raise Http404
+        try:
+            with transaction.atomic():
+                Orientacoes.objects.create(
+                    ori_tcc=tcc,
+                    ori_doc_id=docente.pk,
+                    ori_origem=OrigemOrientacao.PEDIDO_ACEITO,
+                    ori_status=StatusOrientacao.ATIVA,
+                    ori_data_inicio=agora,
+                )
+        except IntegrityError:
+            raise SolicitacaoRespondida(sol)
+        sol.sol_status = StatusSolicitacao.ACEITO
+        sol.sol_data_resposta = agora
+        sol.save(update_fields=["sol_status", "sol_data_resposta"])
+        nome_docente = docente.usu_nome
+        notificar(
+            aluno,
+            mensagens.MO02_PEDIDO_ACEITO.format(docente=nome_docente),
+            link=link_secao(tcc, "orientacao"),
+        )
+        if anterior is not None:
+            notificar(
+                anterior.doc,
+                mensagens.MO05_TROCA_ORIENTADOR.format(nome=aluno.usu_nome, docente=nome_docente),
+                link=reverse("cadastro:orientacoes"),
+            )
+        turma = tcc.tcc_tur
+        professor = turma.tur_doc.doc
+        texto = mensagens.MO04_ORIENTACAO_ACEITA.format(
+            docente=nome_docente, nome=aluno.usu_nome, identificador=turma.tur_identificador
+        )
+        link_painel = reverse("cadastro:painel_aluno", args=[turma.pk, aluno.pk])
+        notificar(professor, texto, link=link_painel)
+        enviar_email_apos_commit(
+            professor,
+            mensagens.MO04_ASSUNTO,
+            "cadastro/emails/orientacao_aceita.txt",
+            {"texto": texto, "link": settings.SITE_URL + link_painel},
+        )
+    return mensagens.MO15_PEDIDO_ACEITO
+
+
+def _aceitar_convite(docente, tcc, sol, aluno, agora):
+    """Ramo do convite de coorientação no aceite (FR-032). [US-36][RBN-CAD-10.4][FR-032]"""
+    orientador = orientador_atual(tcc)
+    if orientador is not None and orientador.pk == docente.pk:
+        raise Http404
+    try:
+        with transaction.atomic():
+            Coorientacoes.objects.create(
+                coo_tcc=tcc,
+                coo_doc_id=docente.pk,
+                coo_status=StatusCoorientacao.ATIVA,
+                coo_data_inicio=agora,
+            )
+    except IntegrityError:
+        raise SolicitacaoRespondida(sol)
+    sol.sol_status = StatusSolicitacao.ACEITO
+    sol.sol_data_resposta = agora
+    sol.save(update_fields=["sol_status", "sol_data_resposta"])
+    nome = docente.usu_nome
+    notificar(
+        aluno,
+        mensagens.MO10_CONVITE_ACEITO_ALUNO.format(docente=nome),
+        link=link_secao(tcc, "orientacao"),
+    )
+    if orientador is not None:
+        notificar(
+            orientador.doc,
+            mensagens.MO10_CONVITE_ACEITO_ORIENTADOR.format(docente=nome, nome=aluno.usu_nome),
+            link=reverse("cadastro:orientacoes"),
+        )
+    return mensagens.CONVITE_ACEITO
+
+
+def recusar_solicitacao(docente, sol_id):
+    """ "Recusar" um pedido (FR-011: MO-03 ao Aluno; o orientador atual é mantido na troca) ou
+    convite (FR-032: MO-11 ao Aluno), com autor, data e hora. Devolve a mensagem da tela.
+    [US-18][US-36][RBN-CAD-10.2][RBN-CAD-10.4][FR-011][FR-032]
+    """
+    with transaction.atomic():
+        tcc, sol = _travar_para_resposta(docente, sol_id)
+        sol.sol_status = StatusSolicitacao.RECUSADO
+        sol.sol_data_resposta = timezone.now()
+        sol.save(update_fields=["sol_status", "sol_data_resposta"])
+        convite = sol.sol_tipo == TipoSolicitacao.COORIENTACAO
+        modelo = mensagens.MO11_CONVITE_RECUSADO if convite else mensagens.MO03_PEDIDO_RECUSADO
+        notificar(
+            tcc.tcc_alu.alu,
+            modelo.format(docente=docente.usu_nome),
+            link=link_secao(tcc, "orientacao"),
+        )
+    return mensagens.CONVITE_RECUSADO if convite else mensagens.PEDIDO_RECUSADO
+
+
+def solicitacao_para_proposta(docente, sol_id):
+    """Pedido pendente do docente para a janela "Ver proposta" (FR-013), ou 404.
+
+    [US-18][RBN-CAD-10.2][FR-013]
+    """
+    sol = (
+        SolicitacoesOrientacao.objects.select_related(
+            "sol_tcc__tcc_alu__alu", "sol_tcc__tcc_tur", "sol_tcc__tcc_ari"
+        )
+        .filter(
+            pk=sol_id,
+            sol_doc_id=docente.pk,
+            sol_tipo__in=TIPOS_PEDIDO,
+            sol_status=StatusSolicitacao.AGUARDANDO_RESPOSTA,
+        )
+        .first()
+    )
+    if sol is None or sol.sol_tcc.tcc_status == StatusTCC.SEM_PROPOSTA:
+        raise Http404
+    return sol
+
+
+def tcc_do_orientador(docente, tcc_id):
+    """TCC em que o docente é o Orientador atual, em turma não arquivada (rotas 21 a 24), ou
+    404 (sem revelar o TCC; research R10, A10). [US-18][US-42][US-46][FR-015][FR-043]
+    """
+    tcc = TCCs.objects.select_related("tcc_tur__tur_cur", "tcc_alu__alu").filter(pk=tcc_id).first()
+    if tcc is None or turma_arquivada(tcc.tcc_tur) or not e_orientador_atual(docente, tcc):
+        raise Http404
+    return tcc
+
+
+def conferir_correcoes(orientador, tcc_id):
+    """ "Correções Conferidas" (FR-016; research R15): trava turma → aluno → TCC → Versão Final e
+    só então confere: Orientador atual, TCC 2 de Sistemas de Informação com "Aprovado com
+    Correções", Versão Final Entregue ou Entregue com Atraso e ainda não conferida; grava
+    `ent_correcoes_conferidas_em`, o único campo de Entregas_Marcos que a 006 escreve.
+    [US-18 #16][US-44 B][RBN-CAD-09.5][FR-016][Q2][research R15]
+    """
+    achado = TCCs.objects.filter(pk=tcc_id).values("tcc_tur_id", "tcc_alu_id").first()
+    if achado is None:
+        raise Http404
+    with transaction.atomic():
+        turma = travar_turma_ativa(achado["tcc_tur_id"])
+        aluno = Alunos.objects.select_for_update().filter(pk=achado["tcc_alu_id"]).first()
+        tcc = (
+            TCCs.objects.select_for_update(of=("self",))
+            .select_related("tcc_tur__tur_cur", "tcc_alu__alu")
+            .get(pk=tcc_id)
+        )
+        if tcc.tcc_tur_id != turma.pk or not e_orientador_atual(orientador, tcc):
+            raise Http404
+        entrega = versao_final_do_aluno(turma, aluno, travar=True)
+        if estado_correcoes(tcc, [entrega] if entrega else []) != "disponivel":
+            raise Http404
+        entrega.ent_correcoes_conferidas_em = timezone.now()
+        entrega.save(update_fields=["ent_correcoes_conferidas_em"])
+    return tcc

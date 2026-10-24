@@ -626,7 +626,17 @@ def devolver_versao_final(professor, tur_id, alu_id, mensagem):
         entrega.ent_status = StatusEntrega.DEVOLVIDA_PARA_AJUSTE
         entrega.ent_feedback = mensagem
         entrega.ent_data_avaliacao = timezone.now()
-        entrega.save(update_fields=["ent_status", "ent_feedback", "ent_data_avaliacao"])
+        # Spec 006 (IC-07; Q2): a devolução apaga a conferência; o Orientador confere de novo
+        # depois do reenvio.
+        entrega.ent_correcoes_conferidas_em = None
+        entrega.save(
+            update_fields=[
+                "ent_status",
+                "ent_feedback",
+                "ent_data_avaliacao",
+                "ent_correcoes_conferidas_em",
+            ]
+        )
         _registrar_avaliacao(
             EventoFluxoTCC.VERSAO_FINAL_DEVOLVIDA, aluno, professor, turma, entrega
         )

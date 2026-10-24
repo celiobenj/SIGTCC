@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% comment %}
+  Tela Orientações do docente, como viewOrientacoes do protótipo de 17/10: aviso de estado no
+  topo (link de pedido ou convite, FR-012 e FR-033), "Pedidos de orientação", "Convites de
+  coorientação" e a tela de orientandos. Seções vazias com a MO-24. Sem regra aqui: as linhas e
+  as decisões dos botões vêm prontas de services_orientacao.contexto_orientacoes.
+  [US-18][US-36][US-19][US-42][US-46][RBN-CAD-10.2][RBN-CAD-10.4][RBN-CAD-11.4]
+  [FR-009][FR-012][FR-014][FR-015][FR-016][FR-026][FR-031][FR-033][FR-040][Q11]
+{% endcomment %}
+{% block titulo %}Orientações · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Orientações</h2>
+
+{% if aviso %}
+<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">{{ aviso }}{% if aviso_data %} · {{ aviso_data|date:"d/m/Y H:i" }}{% endif %}</span></div>
+{% endif %}
+
+<div class="sec-tit c-azul">Pedidos de orientação</div>
+{% for p in pedidos %}
+<div class="item{% if destaque == p.sol.pk %} destaque{% endif %}" id="solicitacao-{{ p.sol.pk }}">
+  <span class="avatar md">{{ p.aluno|slice:":1"|upper }}</span>
+  <div class="corpo">
+    <b>{{ p.aluno }} — {{ p.titulo }}</b>
+    <small>{{ p.turma.tur_descricao }} · {{ p.turma.tur_identificador }} · {{ p.sol.sol_data_solicitacao|date:"d/m/Y H:i" }}{% if p.orientador_atual %} · Orientador atual: {{ p.orientador_atual }}{% endif %}</small>
+  </div>
+  <div class="acoes">
+    {% if p.tem_proposta %}<a class="btn txt" href="{% url 'cadastro:ver_proposta' p.sol.pk %}">Ver proposta</a>{% endif %}
+    <form method="post" action="{% url 'cadastro:recusar_solicitacao' p.sol.pk %}">{% csrf_token %}<button type="submit" class="btn perigo"{% if destaque == p.sol.pk and acao == "recusar" %} autofocus{% endif %}>Recusar</button></form>
+    <form method="post" action="{% url 'cadastro:aceitar_solicitacao' p.sol.pk %}">{% csrf_token %}<button type="submit" class="btn pri"{% if destaque == p.sol.pk and acao == "aceitar" %} autofocus{% endif %}>Aceitar</button></form>
+  </div>
+</div>
+{% empty %}
+<p class="muted">{{ sem_pedidos }}</p>
+{% endfor %}
+
+<div class="sec-tit c-azul">Convites de coorientação</div>
+{% for c in convites %}
+<div class="item{% if destaque == c.sol.pk %} destaque{% endif %}" id="solicitacao-{{ c.sol.pk }}">
+  <span class="avatar md">{{ c.aluno|slice:":1"|upper }}</span>
+  <div class="corpo">
+    <b>{{ c.aluno }} — {{ c.titulo }}</b>
+    <small>{{ c.turma.tur_identificador }}{% if c.orientador %} · Orientador: {{ c.orientador }}{% endif %}</small>
+  </div>
+  <div class="acoes">
+    <form method="post" action="{% url 'cadastro:recusar_solicitacao' c.sol.pk %}">{% csrf_token %}<button type="submit" class="btn perigo"{% if destaque == c.sol.pk and acao == "recusar" %} autofocus{% endif %}>Recusar</button></form>
+    <form method="post" action="{% url 'cadastro:aceitar_solicitacao' c.sol.pk %}">{% csrf_token %}<button type="submit" class="btn pri"{% if destaque == c.sol.pk and acao == "aceitar" %} autofocus{% endif %}>Aceitar</button></form>
+  </div>
+</div>
+{% empty %}
+<p class="muted">{{ sem_convites }}</p>
+{% endfor %}
+
+<div class="sec-tit c-azul">Orientandos</div>
+{% if orientandos %}
+<div class="tabela-wrap">
+  <table class="tabela">
+    <thead>
+      <tr>
+        <th>Nome do Aluno</th><th>Curso</th><th>Turma</th><th>Título</th><th>Modalidade</th><th>Papel</th><th>Status do TCC</th><th>Status das entregas</th><th>Atas e ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in orientandos %}
+      <tr>
+        <td>{{ o.aluno }}</td>
+        <td>{{ o.curso }}</td>
+        <td>{{ o.turma.tur_descricao }} · {{ o.turma.tur_identificador }}{% if o.arquivada %}<br><span class="chip">Arquivada</span>{% endif %}</td>
+        <td>{% if o.titulo %}{{ o.titulo }}{% else %}<span class="muted">Sem Proposta</span>{% endif %}</td>
+        <td>{{ o.tcc.tcc_modalidade|default:"—" }}</td>
+        <td>{{ o.papel }}</td>
+        <td><span class="chip">{{ o.tcc.tcc_status }}</span></td>
+        <td><small>{% for titulo, status in o.entregas %}{{ titulo }}: {{ status }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</small></td>
+        <td>
+          <div class="acoes">
+            <a class="btn txt" href="{% url 'cadastro:atas_orientando' o.tcc.pk %}">Atas ({{ o.n_atas }})</a>
+            {% if o.pode_registrar_ata %}<a class="btn txt" href="{% url 'cadastro:registrar_ata_docente' o.tcc.pk %}">Registrar ata</a>{% endif %}
+            {% if o.pode_historico %}<a class="btn txt" href="{% url 'cadastro:historico_orientando' o.tcc.pk %}">Histórico do Status do TCC</a>{% endif %}
+            {% if o.pode_publicacao %}<a class="btn txt" href="{% url 'cadastro:publicacao_orientando' o.tcc.pk %}">Publicação</a>{% endif %}
+            {% if o.apto == "disponivel" %}<a class="btn" href="{% url 'cadastro:indicar_apto' o.tcc.pk %}">Apto para Defesa</a>
+            {% elif o.apto == "indisponivel" %}<button type="button" class="btn" disabled>Apto para Defesa</button>
+            {% elif o.apto == "sem_entrega_cadastrada" %}<button type="button" class="btn" disabled title="{{ texto_sem_entrega }}">Apto para Defesa</button><small class="muted">{{ texto_sem_entrega }}</small>
+            {% endif %}
+            {% if o.apto_etiqueta %}<span class="chip verde">Apto para Defesa</span>{% endif %}
+            {% if o.correcoes == "disponivel" %}<a class="btn pri" href="{% url 'cadastro:correcoes_conferidas' o.tcc.pk %}">Correções Conferidas</a>
+            {% endif %}
+            {% if o.correcoes_etiqueta %}<span class="chip verde">{{ o.correcoes_etiqueta }}</span>{% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="muted">{{ sem_orientandos }}</p>
+{% endif %}
+{% endblock %}

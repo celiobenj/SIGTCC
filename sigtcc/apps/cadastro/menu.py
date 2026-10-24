@@ -32,6 +32,15 @@ ITENS = [
         "perfis": ("docente", "secretaria"),
         "ordem": 10,
     },
+    # Spec 006: tela Orientações (pedidos, convites e orientandos), para todo Docente (Q11),
+    # logo depois de "Turmas", como no protótipo de 17/10. [US-18][US-36][FR-040][IC-01]
+    {
+        "rotulo": "Orientações",
+        "icone": "supervisor_account",
+        "rota": "cadastro:orientacoes",
+        "perfis": ("docente",),
+        "ordem": 12,
+    },
     # Spec 002: Gestão de Contas (contracts/rotas.md, "Menu lateral"). O item só aparece quando a
     # rota da sua fase já existe. [US-03][US-04][US-05][US-50][FR-010][FR-031]
     {

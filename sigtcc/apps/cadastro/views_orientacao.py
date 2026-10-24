@@ -7,10 +7,12 @@ services_orientacao.
 
 from django.contrib import messages
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from sigtcc.apps.cadastro import mensagens, services_orientacao
+from sigtcc.apps.cadastro import mensagens, services_orientacao, services_tcc
+from sigtcc.apps.cadastro.choices import TipoSolicitacao
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada
 
@@ -68,19 +70,137 @@ def cancelar_pedido_orientacao(request, tur_id):
 # =============================================================================================
 
 
+def _tela_orientacoes(request, estado=None):
+    """Tela Orientações com o aviso de estado no topo e o item destacado (research R4).
+
+    [US-18][US-36][FR-009][FR-012][FR-014][FR-031][FR-033]
+    """
+    contexto = services_orientacao.contexto_orientacoes(request.user)
+    contexto.update(estado or {"aviso": "", "destaque": None})
+    acao = request.GET.get("acao")
+    contexto["acao"] = acao if acao in ("aceitar", "recusar") else ""
+    return render(request, "cadastro/orientacao/orientacoes.html", contexto)
+
+
 @perfil_requerido("docente")
 def orientacoes(request):
-    """Tela Orientações (rota 11). Provisória até a T023 (US2). [US-18][FR-040]"""
-    raise Http404
+    """Rota 11: item de menu "Orientações", para todo Docente (Q11); seções vazias com a MO-24.
+
+    [US-18][US-36][RBN-CAD-10.2][RBN-CAD-10.4][RBN-CAD-11.4][FR-009][FR-014][FR-031][FR-040]
+    """
+    return _tela_orientacoes(request)
 
 
 @perfil_requerido("docente")
 def pedido_orientacao(request, sol_id):
-    """Tela Orientações com o pedido (rota 12). Provisória até a T023 (US2). [US-18][FR-012]"""
-    raise Http404
+    """Rota 12: link do pedido (e-mail e sino). A mesma tela, com o pedido destacado ou o aviso
+    de estado; `?acao=` só destaca o botão; o GET nunca grava (research R4; Q14).
+    [US-18][RBN-CAD-10.1][FR-012]
+    """
+    estado = services_orientacao.estado_da_solicitacao(
+        request.user, sol_id, services_orientacao.TIPOS_PEDIDO
+    )
+    return _tela_orientacoes(request, estado)
 
 
 @perfil_requerido("docente")
 def convite_coorientacao(request, sol_id):
-    """Tela Orientações com o convite (rota 13). Provisória até a T045 (US7). [US-36][FR-033]"""
+    """Rota 13: link do convite (e-mail com "Aceitar"/"Recusar" e sino), com as mesmas regras
+    da rota 12; a resposta é dada na tela, nunca pelo e-mail (Q14).
+    [US-36][RBN-CAD-10.4][FR-033][Q14]
+    """
+    estado = services_orientacao.estado_da_solicitacao(
+        request.user, sol_id, (TipoSolicitacao.COORIENTACAO,)
+    )
+    return _tela_orientacoes(request, estado)
+
+
+def _responder(request, sol_id, servico):
+    """Chama o serviço de resposta e volta à tela Orientações com a mensagem; já respondida ou
+    cancelada → página do link com o estado atual (FR-012). [FR-010][FR-011][FR-032]
+    """
+    try:
+        texto = servico(request.user, sol_id)
+    except services_orientacao.SolicitacaoRespondida as erro:
+        return redirect(services_orientacao.link_da_solicitacao(erro.sol))
+    except TurmaArquivada:
+        messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
+    else:
+        messages.success(request, texto)
+    return redirect("cadastro:orientacoes")
+
+
+@require_POST
+@perfil_requerido("docente")
+def aceitar_solicitacao(request, sol_id):
+    """Rota 14: "Aceitar" pedido ou convite (só o docente indicado; senão 404).
+
+    [US-18][US-36][RBN-CAD-10.2][RBN-CAD-10.4][FR-010][FR-032]
+    """
+    return _responder(request, sol_id, services_orientacao.aceitar_solicitacao)
+
+
+@require_POST
+@perfil_requerido("docente")
+def recusar_solicitacao(request, sol_id):
+    """Rota 15: "Recusar" pedido ou convite (só o docente indicado; senão 404).
+
+    [US-18][US-36][RBN-CAD-10.2][RBN-CAD-10.4][FR-011][FR-032]
+    """
+    return _responder(request, sol_id, services_orientacao.recusar_solicitacao)
+
+
+@perfil_requerido("docente")
+def ver_proposta(request, sol_id):
+    """Rota 16: janela "Ver proposta", só leitura, com o Resumo por `pode_ver_resumo` (IC-05);
+    "Fechar" volta à tela Orientações. [US-18][RBN-CAD-10.2][RAN-CAD-07][FR-013]
+    """
+    sol = services_orientacao.solicitacao_para_proposta(request.user, sol_id)
+    tcc = sol.sol_tcc
+    contexto = {
+        "sol": sol,
+        "tcc": tcc,
+        "palavras": services_tcc.palavras_chave_do(tcc),
+        "mostra_resumo": services_tcc.pode_ver_resumo(request.user, tcc),
+    }
+    return render(request, "cadastro/orientacao/ver_proposta.html", contexto)
+
+
+@perfil_requerido("docente")
+def historico_orientando(request, tcc_id):
+    """Rota 21: histórico do Status para o Orientador atual (template da spec 005; IC-06);
+    "Fechar" volta à tela de orientandos. O Coorientador e a turma arquivada dão 404.
+    [US-18 #15][US-14 A][FR-015][FR-043][research R13]
+    """
+    tcc = services_orientacao.tcc_do_orientador(request.user, tcc_id)
+    contexto = services_tcc.contexto_historico(tcc, reverse("cadastro:orientacoes"))
+    return render(request, "cadastro/tcc/historico_status.html", contexto)
+
+
+@perfil_requerido("docente")
+def indicar_apto(request, tcc_id):
+    """Rota 23. Provisória até a T039 (US5). [US-42][FR-026]"""
     raise Http404
+
+
+@perfil_requerido("docente")
+def correcoes_conferidas(request, tcc_id):
+    """Rota 24: confirmação (MO-13) e gravação de "Correções Conferidas"; "Cancelar" e
+    "Confirmar" voltam à tela de orientandos. [US-18 #16][US-44 B][FR-016][Q2]
+    """
+    tcc = services_orientacao.tcc_do_orientador(request.user, tcc_id)
+    if request.method == "POST":
+        try:
+            services_orientacao.conferir_correcoes(request.user, tcc_id)
+        except TurmaArquivada:
+            messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
+        else:
+            messages.success(request, mensagens.MO13_CORRECOES_CONFERIDAS)
+        return redirect("cadastro:orientacoes")
+    contexto = {
+        "titulo": "Correções Conferidas",
+        "texto": mensagens.MO13_CONFIRMAR_CORRECOES.format(nome=tcc.tcc_alu.alu.usu_nome),
+        "url_acao": reverse("cadastro:correcoes_conferidas", args=[tcc.pk]),
+        "url_cancelar": reverse("cadastro:orientacoes"),
+    }
+    return render(request, "cadastro/orientacao/confirmar.html", contexto)

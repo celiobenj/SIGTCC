@@ -7,9 +7,12 @@ from django.urls import path
 
 from sigtcc.apps.cadastro import (
     views,
+    views_artigos,
+    views_atas,
     views_contas,
     views_entregas,
     views_orientacao,
+    views_painel,
     views_tcc,
     views_turmas,
 )
@@ -210,8 +213,59 @@ urlpatterns = [
         views_orientacao.cancelar_pedido_orientacao,
         name="cancelar_pedido_orientacao",
     ),
+    # Spec 006: painel do aluno (contracts/rotas.md §3). [US-41]
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/",
+        views_painel.painel_aluno,
+        name="painel_aluno",
+    ),
     # Spec 006: tela Orientações do docente (contracts/rotas.md §2). [US-18][US-36]
     path("orientacoes/", views_orientacao.orientacoes, name="orientacoes"),
+    path(
+        "orientacoes/solicitacoes/<int:sol_id>/aceitar/",
+        views_orientacao.aceitar_solicitacao,
+        name="aceitar_solicitacao",
+    ),
+    path(
+        "orientacoes/solicitacoes/<int:sol_id>/recusar/",
+        views_orientacao.recusar_solicitacao,
+        name="recusar_solicitacao",
+    ),
+    path(
+        "orientacoes/solicitacoes/<int:sol_id>/proposta/",
+        views_orientacao.ver_proposta,
+        name="ver_proposta",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/atas/",
+        views_atas.atas_orientando,
+        name="atas_orientando",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/atas/nova/",
+        views_atas.registrar_ata_docente,
+        name="registrar_ata_docente",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/publicacao/",
+        views_artigos.publicacao_orientando,
+        name="publicacao_orientando",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/apto/",
+        views_orientacao.indicar_apto,
+        name="indicar_apto",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/historico/",
+        views_orientacao.historico_orientando,
+        name="historico_orientando",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/correcoes-conferidas/",
+        views_orientacao.correcoes_conferidas,
+        name="correcoes_conferidas",
+    ),
     path(
         "orientacoes/pedidos/<int:sol_id>/",
         views_orientacao.pedido_orientacao,
