@@ -248,3 +248,29 @@ class NavegacaoAptoTest(TesteTurmas):
         confirmacao = seguir(self, tela, reverse("cadastro:indicar_apto", args=[tcc.pk]))
         voltou = seguir(self, confirmacao, reverse("cadastro:orientacoes"))
         self.assertContains(voltou, "Orientandos")
+
+
+class NavegacaoCoorientadoresTest(TesteTurmas):
+    """Meu TCC → seção Orientação → "Registrar coorientador" → "Cancelar" → seção; "Remover" →
+    confirmação → "Cancelar" → seção. [US-45][FR-042][T043]
+    """
+
+    def test_janela_e_confirmacao_voltam_a_secao(self):
+        from sigtcc.apps.cadastro.tests.apoio_orientacao import criar_externo, vincular_coorientador
+
+        turma = criar_turma_de(criar_docente_ativo(), curso_nome=SI)
+        aluno = matricular_aluno(
+            turma, status_tcc=StatusTCC.EM_ANDAMENTO, status_conta=StatusConta.ATIVA
+        )
+        tcc = tcc_de(aluno, turma)
+        vincular_orientador(tcc, criar_docente_ativo())
+        coo = vincular_coorientador(tcc, externo=criar_externo())
+        self.client.force_login(aluno.alu)
+        meu_tcc = self.client.get(reverse("cadastro:meu_tcc", args=[turma.pk]))
+        janela = seguir(self, meu_tcc, reverse("cadastro:registrar_coorientador", args=[turma.pk]))
+        seguir(self, janela, reverse("cadastro:meu_tcc", args=[turma.pk]))
+        confirmacao = seguir(
+            self, meu_tcc, reverse("cadastro:remover_coorientador", args=[turma.pk, coo.pk])
+        )
+        voltou = seguir(self, confirmacao, reverse("cadastro:meu_tcc", args=[turma.pk]))
+        self.assertContains(voltou, 'id="orientacao"')

@@ -36,6 +36,7 @@ from sigtcc.apps.cadastro.models import (
     Alunos,
     Artigos,
     Coorientacoes,
+    CoorientadoresExternos,
     Docentes,
     EncontroOrientacao,
     EntregasMarcos,
@@ -48,7 +49,12 @@ from sigtcc.apps.cadastro.models import (
     TurmasMarcos,
 )
 from sigtcc.apps.cadastro.permissoes import pode_resetar_primeiro_acesso
-from sigtcc.apps.cadastro.services import curso_do_codigo, enviar_email_apos_commit, notificar
+from sigtcc.apps.cadastro.services import (
+    curso_do_codigo,
+    enviar_email_apos_commit,
+    notificar,
+    travar_email,
+)
 from sigtcc.apps.cadastro.services_contas import docentes_ativos, travar_e_conferir_ativo
 from sigtcc.apps.cadastro.services_entregas import (
     STATUS_ENVIO_AVALIAVEL,
@@ -539,6 +545,7 @@ def contexto_secao_orientacao(tcc, somente_leitura=False):
             else []
         ),
         "coorientadores": coorientadores_ativos(tcc),
+        "coo": estado_coorientadores(tcc, leitura),
         "historico": historico_de_orientacao(tcc),
         "sem_orientador": mensagens.SEM_ORIENTADOR,
     }
@@ -1275,3 +1282,255 @@ def indicar_apto(orientador, tcc_id):
             GatilhoStatusTCC.INDICACAO_DE_APTO,
         )
     return tcc
+
+
+# =============================================================================================
+# Coorientadores (US-45; FR-028 a FR-030; research R17; D8, Q13, Q15)
+# =============================================================================================
+
+
+def docentes_para_coorientacao(tcc):
+    """Docentes 'Ativa' que não sejam o orientador, coorientadores ativos nem docentes com convite
+    pendente no trabalho (FR-028; D8), por nome. [US-45][RBN-CAD-10.3][FR-028][D8]
+    """
+    excluir = set(
+        Coorientacoes.objects.filter(
+            coo_tcc=tcc, coo_status=StatusCoorientacao.ATIVA, coo_doc__isnull=False
+        ).values_list("coo_doc_id", flat=True)
+    )
+    excluir |= set(
+        SolicitacoesOrientacao.objects.filter(
+            sol_tcc=tcc,
+            sol_tipo=TipoSolicitacao.COORIENTACAO,
+            sol_status=StatusSolicitacao.AGUARDANDO_ACEITE,
+        ).values_list("sol_doc_id", flat=True)
+    )
+    orientador = orientador_atual(tcc)
+    if orientador is not None:
+        excluir.add(orientador.pk)
+    return [
+        d
+        for d in docentes_ativos().select_related("doc", "doc_cur").order_by("doc__usu_nome")
+        if d.pk not in excluir
+    ]
+
+
+def convites_do_tcc(tcc):
+    """Convites de coorientação 'Aguardando Aceite' do TCC (aparecem com "Aguardando Aceite").
+
+    [US-45][RBN-CAD-10.4][FR-028]
+    """
+    return list(
+        SolicitacoesOrientacao.objects.select_related("sol_doc__doc")
+        .filter(
+            sol_tcc=tcc,
+            sol_tipo=TipoSolicitacao.COORIENTACAO,
+            sol_status=StatusSolicitacao.AGUARDANDO_ACEITE,
+        )
+        .order_by("sol_data_solicitacao", "sol_id")
+    )
+
+
+def estado_coorientadores(tcc, somente_leitura=False):
+    """Coorientadores, convites pendentes e os botões da seção (FR-028 a FR-030): "Registrar
+    coorientador" só com orientador; "Substituir" e "Remover" desabilitados com sessão ativa.
+    [US-45][RBN-CAD-10.3][RBN-CAD-10.7][FR-028][FR-029][FR-030]
+    """
+    leitura = somente_leitura or not pode_alterar_no_tcc(tcc)
+    return {
+        "convites": convites_do_tcc(tcc),
+        "pode_registrar": not leitura and orientador_atual(tcc) is not None,
+        "mostra_botoes": not leitura,
+        "botoes_habilitados": not sessao_de_defesa_ativa(tcc),
+    }
+
+
+def _externo_pelo_email(dados):
+    """Coorientador externo pelo e-mail (research R17): trava consultiva, busca sem diferenciar
+    maiúsculas e criação num savepoint; reaproveitado sem alterar Nome e Instituição (Q13).
+    Devolve (externo, reaproveitado). [US-45][RBN-CAD-10.3][FR-028][Q13][Q15][research R17]
+    """
+    email = dados.get("email")
+    if not email:
+        criado = CoorientadoresExternos.objects.create(
+            cext_nome=dados["nome"], cext_email=None, cext_instituicao=dados.get("instituicao")
+        )
+        return criado, False
+    travar_email(email)
+    existente = (
+        CoorientadoresExternos.objects.filter(cext_email__iexact=email).order_by("cext_id").first()
+    )
+    if existente is not None:
+        return existente, True
+    try:
+        with transaction.atomic():
+            criado = CoorientadoresExternos.objects.create(
+                cext_nome=dados["nome"], cext_email=email, cext_instituicao=dados.get("instituicao")
+            )
+    except IntegrityError:
+        existente = (
+            CoorientadoresExternos.objects.filter(cext_email__iexact=email)
+            .order_by("cext_id")
+            .first()
+        )
+        return existente, True
+    return criado, False
+
+
+def _travar_secao_orientacao(usuario, tur_id):
+    """Trava para alterar a coorientação: TCC do próprio aluno, alterável e com orientador.
+
+    [US-45][FR-007][FR-028][research R2]
+    """
+    turma, tcc = _travar_tcc_do_aluno(usuario, tur_id)
+    orientador = orientador_atual(tcc)
+    if not pode_alterar_no_tcc(tcc) or orientador is None:
+        raise Http404
+    return tcc, orientador
+
+
+def registrar_coorientador(usuario, tur_id, dados, coo_id=None):
+    """ "Registrar coorientador" (FR-028) ou "Substituir" (FR-030, com `coo_id`): docente do NUCOMP
+    recebe convite (MO-07, sistema e e-mail após o commit); externo é registrado sem convite e
+    sem acesso. Cada registro avisa o Orientador (MO-08). No Substituir, o vínculo anterior vira
+    'Substituída' (D8) e o coorientador do NUCOMP substituído recebe a MO-09. Devolve o aviso a
+    mostrar (MO-25 no externo reaproveitado) ou "".
+    [US-45][RBN-CAD-10.3][RBN-CAD-10.4][RBN-CAD-10.7][FR-028][FR-030][Q13][D8]
+    """
+    with transaction.atomic():
+        tcc, orientador = _travar_secao_orientacao(usuario, tur_id)
+        anterior = None
+        if coo_id is not None:
+            if sessao_de_defesa_ativa(tcc):
+                raise Http404
+            anterior = (
+                Coorientacoes.objects.select_for_update(of=("self",))
+                .select_related("coo_doc__doc", "coo_cext")
+                .filter(pk=coo_id, coo_tcc=tcc, coo_status=StatusCoorientacao.ATIVA)
+                .first()
+            )
+            if anterior is None:
+                raise Http404
+        agora = timezone.now()
+        nome_aluno = usuario.usu_nome
+        aviso = ""
+        if dados["tipo"] == "docente":
+            docente = next(
+                (d for d in docentes_para_coorientacao(tcc) if d.pk == dados["docente"]), None
+            )
+            if docente is None or not travar_e_conferir_ativo(docente.doc):
+                raise Http404
+            convite = SolicitacoesOrientacao.objects.create(
+                sol_tcc=tcc,
+                sol_doc=docente,
+                sol_tipo=TipoSolicitacao.COORIENTACAO,
+                sol_status=StatusSolicitacao.AGUARDANDO_ACEITE,
+                sol_data_solicitacao=agora,
+            )
+            novo_nome = docente.doc.usu_nome
+            texto = mensagens.MO07_CONVITE_COORIENTACAO.format(
+                nome=nome_aluno, titulo=_titulo_ou_aviso(tcc)
+            )
+            link = link_da_solicitacao(convite)
+            notificar(docente.doc, texto, link=link)
+            enviar_email_apos_commit(
+                docente.doc,
+                mensagens.MO07_ASSUNTO,
+                "cadastro/emails/convite_coorientacao.txt",
+                {
+                    "texto": texto,
+                    "link_aceitar": f"{settings.SITE_URL}{link}?acao=aceitar",
+                    "link_recusar": f"{settings.SITE_URL}{link}?acao=recusar",
+                },
+            )
+        else:
+            externo, reaproveitado = _externo_pelo_email(dados)
+            if Coorientacoes.objects.filter(
+                coo_tcc=tcc, coo_cext=externo, coo_status=StatusCoorientacao.ATIVA
+            ).exists():
+                raise ErroOrientacao(mensagens.EMAIL_JA_COORIENTADOR)
+            Coorientacoes.objects.create(
+                coo_tcc=tcc,
+                coo_cext=externo,
+                coo_status=StatusCoorientacao.ATIVA,
+                coo_data_inicio=agora,
+            )
+            novo_nome = externo.cext_nome
+            if reaproveitado:
+                aviso = mensagens.MO25_EXTERNO_REAPROVEITADO
+        if anterior is not None:
+            anterior.coo_status = StatusCoorientacao.SUBSTITUIDA
+            anterior.coo_data_fim = agora
+            anterior.save(update_fields=["coo_status", "coo_data_fim"])
+            texto_orientador = mensagens.MO08_COORIENTADOR_SUBSTITUIDO.format(
+                nome=nome_aluno, anterior=nome_do_coorientador(anterior), novo=novo_nome
+            )
+            if anterior.coo_doc_id:
+                notificar(
+                    anterior.coo_doc.doc,
+                    mensagens.MO09_DEIXOU_DE_COORIENTAR.format(nome=nome_aluno),
+                )
+        else:
+            texto_orientador = mensagens.MO08_COORIENTADOR_REGISTRADO.format(
+                nome=nome_aluno, coorientador=novo_nome
+            )
+        notificar(orientador.doc, texto_orientador, link=reverse("cadastro:orientacoes"))
+    return aviso
+
+
+def remover_coorientador(usuario, tur_id, coo_id):
+    """ "Remover" coorientador (FR-030): 'Encerrada' com a data de fim (D8); avisa o Orientador
+    (MO-08) e, se docente do NUCOMP, o próprio coorientador (MO-09), que perde o acesso.
+    Desabilitado com sessão de defesa ativa (RBN-CAD-10.7).
+    [US-45][US-36 D][RBN-CAD-10.7][FR-030][D8]
+    """
+    with transaction.atomic():
+        tcc, orientador = _travar_secao_orientacao(usuario, tur_id)
+        if sessao_de_defesa_ativa(tcc):
+            raise Http404
+        coo = (
+            Coorientacoes.objects.select_for_update(of=("self",))
+            .select_related("coo_doc__doc", "coo_cext")
+            .filter(pk=coo_id, coo_tcc=tcc, coo_status=StatusCoorientacao.ATIVA)
+            .first()
+        )
+        if coo is None:
+            raise Http404
+        coo.coo_status = StatusCoorientacao.ENCERRADA
+        coo.coo_data_fim = timezone.now()
+        coo.save(update_fields=["coo_status", "coo_data_fim"])
+        nome_aluno = usuario.usu_nome
+        notificar(
+            orientador.doc,
+            mensagens.MO08_COORIENTADOR_REMOVIDO.format(
+                nome=nome_aluno, coorientador=nome_do_coorientador(coo)
+            ),
+            link=reverse("cadastro:orientacoes"),
+        )
+        if coo.coo_doc_id:
+            notificar(coo.coo_doc.doc, mensagens.MO09_DEIXOU_DE_COORIENTAR.format(nome=nome_aluno))
+    return coo
+
+
+def remover_convite(usuario, tur_id, sol_id):
+    """ "Remover" convite pendente (FR-029): 'Cancelado' (motivo ALUNO), e o docente não pode
+    mais aceitar. [US-45][RBN-CAD-10.4][FR-029][FR-050]
+    """
+    with transaction.atomic():
+        tcc, _ = _travar_secao_orientacao(usuario, tur_id)
+        convite = (
+            SolicitacoesOrientacao.objects.select_for_update()
+            .filter(
+                pk=sol_id,
+                sol_tcc=tcc,
+                sol_tipo=TipoSolicitacao.COORIENTACAO,
+                sol_status=StatusSolicitacao.AGUARDANDO_ACEITE,
+            )
+            .first()
+        )
+        if convite is None:
+            raise Http404
+        convite.sol_status = StatusSolicitacao.CANCELADO
+        convite.sol_data_resposta = timezone.now()
+        convite.save(update_fields=["sol_status", "sol_data_resposta"])
+    return convite

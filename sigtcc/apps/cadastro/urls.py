@@ -224,6 +224,27 @@ urlpatterns = [
         views_atas.atas_painel,
         name="atas_painel",
     ),
+    # Spec 006: coorientadores do Aluno (contracts/rotas.md §1, rotas 3 a 6). [US-45]
+    path(
+        "turmas/<int:tur_id>/meu-tcc/coorientadores/novo/",
+        views_orientacao.registrar_coorientador,
+        name="registrar_coorientador",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/coorientadores/<int:coo_id>/substituir/",
+        views_orientacao.substituir_coorientador,
+        name="substituir_coorientador",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/coorientadores/<int:coo_id>/remover/",
+        views_orientacao.remover_coorientador,
+        name="remover_coorientador",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/convites/<int:sol_id>/remover/",
+        views_orientacao.remover_convite_coorientacao,
+        name="remover_convite_coorientacao",
+    ),
     # Spec 006: atas do Aluno (contracts/rotas.md §1, rotas 7 a 9). [US-19]
     path("turmas/<int:tur_id>/meu-tcc/atas/", views_atas.minhas_atas, name="minhas_atas"),
     path(

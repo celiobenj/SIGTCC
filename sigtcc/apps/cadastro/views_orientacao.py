@@ -11,8 +11,9 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from sigtcc.apps.cadastro import mensagens, services_orientacao, services_tcc
+from sigtcc.apps.cadastro import mensagens, services_orientacao, services_tcc, services_turmas
 from sigtcc.apps.cadastro.choices import TipoSolicitacao
+from sigtcc.apps.cadastro.forms_orientacao import CoorientadorForm
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada
 
@@ -63,6 +64,129 @@ def cancelar_pedido_orientacao(request, tur_id):
     except TurmaArquivada:
         messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
     return _volta_secao(tur_id)
+
+
+def _secao_tcc(request, tur_id):
+    """TCC do próprio Aluno na turma, para as telas de coorientação (404 sem vínculo)."""
+    turma, aluno = services_tcc.turma_do_aluno(tur_id, request.user)
+    tcc = services_turmas.tcc_do_aluno(turma, aluno)
+    if tcc is None:
+        raise Http404
+    return tcc
+
+
+def _janela_coorientador(request, tur_id, coo_id=None):
+    """Janela "Registrar coorientador" (FR-028), também usada no "Substituir" (FR-030; US-45 D);
+    "Cancelar" e "Salvar" voltam à seção Orientação (FR-042).
+    [US-45][RBN-CAD-10.3][RBN-CAD-10.7][FR-028][FR-030][FR-042]
+    """
+    tcc = _secao_tcc(request, tur_id)
+    if services_turmas.turma_arquivada(tcc.tcc_tur):
+        messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
+        return _volta_secao(tur_id)
+    estado = services_orientacao.estado_coorientadores(tcc)
+    if not estado["pode_registrar"] or (coo_id is not None and not estado["botoes_habilitados"]):
+        raise Http404
+    anterior = None
+    if coo_id is not None:
+        anterior = next(
+            (c for c in services_orientacao.coorientadores_ativos(tcc) if c.pk == coo_id), None
+        )
+        if anterior is None:
+            raise Http404
+    docentes = [
+        (d.pk, services_orientacao.rotulo_docente(d))
+        for d in services_orientacao.docentes_para_coorientacao(tcc)
+    ]
+    formulario = CoorientadorForm(
+        request.POST if request.method == "POST" else None, docentes=docentes
+    )
+    if request.method == "POST" and formulario.is_valid():
+        try:
+            aviso = services_orientacao.registrar_coorientador(
+                request.user, tur_id, formulario.cleaned_data, coo_id=coo_id
+            )
+        except TurmaArquivada:
+            messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
+            return _volta_secao(tur_id)
+        except services_orientacao.ErroOrientacao as erro:
+            formulario.add_error("email", erro.mensagem)
+        else:
+            if aviso:
+                messages.info(request, aviso)
+            return _volta_secao(tur_id)
+    contexto = {
+        "tcc": tcc,
+        "form": formulario,
+        "anterior": anterior,
+        "titulo": "Substituir coorientador" if anterior else "Registrar coorientador",
+        "url_cancelar": services_orientacao.link_secao(tcc, "orientacao"),
+    }
+    return render(request, "cadastro/orientacao/form_coorientador.html", contexto)
+
+
+@perfil_requerido("aluno")
+def registrar_coorientador(request, tur_id):
+    """Rota 3: "Registrar coorientador". [US-45][RBN-CAD-10.3][FR-028][contracts/rotas.md]"""
+    return _janela_coorientador(request, tur_id)
+
+
+@perfil_requerido("aluno")
+def substituir_coorientador(request, tur_id, coo_id):
+    """Rota 4: "Substituir" (a coorientação buscada pelo TCC do aluno; research R10).
+
+    [US-45 D][RBN-CAD-10.7][FR-030][contracts/rotas.md]
+    """
+    return _janela_coorientador(request, tur_id, coo_id)
+
+
+def _confirmar_remocao(request, tur_id, nome, servico):
+    """Confirmação MO-14 (GET) e remoção (POST), voltando à seção Orientação (FR-042)."""
+    tcc = _secao_tcc(request, tur_id)
+    if request.method == "POST":
+        try:
+            servico()
+        except TurmaArquivada:
+            messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
+        return _volta_secao(tur_id)
+    contexto = {
+        "titulo": "Remover",
+        "texto": mensagens.MO14_CONFIRMAR_REMOVER.format(nome=nome),
+        "url_acao": request.path,
+        "url_cancelar": services_orientacao.link_secao(tcc, "orientacao"),
+    }
+    return render(request, "cadastro/orientacao/confirmar.html", contexto)
+
+
+@perfil_requerido("aluno")
+def remover_coorientador(request, tur_id, coo_id):
+    """Rota 5: "Remover" coorientador, com confirmação (MO-14). [US-45 E][FR-030]"""
+    tcc = _secao_tcc(request, tur_id)
+    coo = next((c for c in services_orientacao.coorientadores_ativos(tcc) if c.pk == coo_id), None)
+    estado = services_orientacao.estado_coorientadores(tcc)
+    if coo is None or not estado["mostra_botoes"] or not estado["botoes_habilitados"]:
+        raise Http404
+    return _confirmar_remocao(
+        request,
+        tur_id,
+        services_orientacao.nome_do_coorientador(coo),
+        lambda: services_orientacao.remover_coorientador(request.user, tur_id, coo_id),
+    )
+
+
+@perfil_requerido("aluno")
+def remover_convite_coorientacao(request, tur_id, sol_id):
+    """Rota 6: "Remover" convite pendente, com confirmação (MO-14). [US-45 C][FR-029]"""
+    tcc = _secao_tcc(request, tur_id)
+    convite = next((s for s in services_orientacao.convites_do_tcc(tcc) if s.pk == sol_id), None)
+    if convite is None or not services_orientacao.estado_coorientadores(tcc)["mostra_botoes"]:
+        raise Http404
+    return _confirmar_remocao(
+        request,
+        tur_id,
+        convite.sol_doc.doc.usu_nome,
+        lambda: services_orientacao.remover_convite(request.user, tur_id, sol_id),
+    )
 
 
 # =============================================================================================

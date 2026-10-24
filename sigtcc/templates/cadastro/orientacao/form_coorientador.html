@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% comment %}
+  Janela "Registrar coorientador" (e "Substituir"), como formCoorientador do protótipo de 17/10:
+  Tipo, caixa do Docente do NUCOMP (com a dica do convite) e caixa do Externo ao NUCOMP (Nome
+  Completo, E-mail, Instituição de Origem); "Cancelar" e "Salvar" voltam à seção Orientação.
+  Sem JavaScript obrigatório: as duas caixas aparecem e o Tipo decide o que vale (o servidor
+  confere). [US-45][RBN-CAD-10.3][RBN-CAD-10.7][FR-028][FR-030]
+{% endcomment %}
+{% block titulo %}{{ titulo }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<section class="cartao mt16" style="max-width:640px">
+  <header><span class="ms">person_add</span><h3>{{ titulo }}</h3></header>
+  {% if anterior %}<p class="muted">Substitui: {% if anterior.coo_doc_id %}{{ anterior.coo_doc.doc.usu_nome }}{% else %}{{ anterior.coo_cext.cext_nome }}{% endif %}</p>{% endif %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form.tipo %}
+    <fieldset class="cartao">
+      <legend>Docente do NUCOMP</legend>
+      {% include "includes/campo.html" with campo=form.docente %}
+    </fieldset>
+    <fieldset class="cartao">
+      <legend>Externo ao NUCOMP</legend>
+      {% include "includes/campo.html" with campo=form.nome %}
+      {% include "includes/campo.html" with campo=form.email %}
+      {% include "includes/campo.html" with campo=form.instituicao %}
+    </fieldset>
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{{ url_cancelar }}">Cancelar</a>
+      <button type="submit" class="btn pri">Salvar</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
