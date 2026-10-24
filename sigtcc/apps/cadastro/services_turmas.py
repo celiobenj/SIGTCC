@@ -494,6 +494,96 @@ def _registrar_historico(tcc, turma, autor, anterior, novo, gatilho):
     )
 
 
+# =============================================================================================
+# Serviço único de gravação do Status do TCC (spec 005, US-14; FR-008, FR-012; research C2)
+# =============================================================================================
+
+# Gatilho → conjunto de transições (status_atual, novo_status) permitidas (FR-008; data-model.md).
+# status_atual=None só nos gatilhos de criação, quando não há TCC (nem linha de origem) anterior.
+# "Encerramento da participação" usa só EM_ANDAMENTO/APTO_PARA_DEFESA como origem, igual a
+# STATUS_TCC_ENCERRAVEL (aluno "Sem Proposta" é excluído da turma, US-09, não encerrado).
+# [US-14][RBN-CAD-08.3][FR-008][research C2]
+TRANSICOES_VALIDAS = {
+    GatilhoStatusTCC.VINCULO_A_TURMA: {(None, StatusTCC.SEM_PROPOSTA)},
+    GatilhoStatusTCC.PROPOSTA_SALVA: {(StatusTCC.SEM_PROPOSTA, StatusTCC.EM_ANDAMENTO)},
+    GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2: {
+        (StatusTCC.APROVADO_PARA_TCC_2, StatusTCC.EM_ANDAMENTO)
+    },
+    GatilhoStatusTCC.INDICACAO_DE_APTO: {(StatusTCC.EM_ANDAMENTO, StatusTCC.APTO_PARA_DEFESA)},
+    GatilhoStatusTCC.LIBERACAO_DO_RESULTADO: {
+        (StatusTCC.APTO_PARA_DEFESA, StatusTCC.APROVADO_PARA_TCC_2),
+        (StatusTCC.APTO_PARA_DEFESA, StatusTCC.APROVADO),
+        (StatusTCC.APTO_PARA_DEFESA, StatusTCC.APROVADO_COM_CORRECOES),
+        (StatusTCC.APTO_PARA_DEFESA, StatusTCC.REPROVADO),
+    },
+    GatilhoStatusTCC.HOMOLOGACAO_DA_VERSAO_FINAL: {
+        (StatusTCC.APROVADO, StatusTCC.CONCLUIDO),
+        (StatusTCC.APROVADO_COM_CORRECOES, StatusTCC.CONCLUIDO),
+    },
+    GatilhoStatusTCC.ENCERRAMENTO_DA_PARTICIPACAO: {
+        (de, para)
+        # Só EM_ANDAMENTO e APTO_PARA_DEFESA (igual a STATUS_TCC_ENCERRAVEL, definida mais abaixo
+        # neste mesmo arquivo; repetida aqui em vez de referenciada por não poder vir antes desta
+        # definição no módulo — aluno "Sem Proposta" é excluído da turma, US-09, não encerrado).
+        for de in (StatusTCC.EM_ANDAMENTO, StatusTCC.APTO_PARA_DEFESA)
+        for para in STATUS_PARTICIPACAO_ENCERRADA
+    },
+}
+
+
+def _validar_transicao(anterior, novo_status, gatilho):
+    """Levanta ValueError se (anterior → novo_status) não estiver prevista para o gatilho
+    (FR-008) — chamada pelas duas funções públicas abaixo, nunca pulada.
+    [US-14][RBN-CAD-08.3][FR-008][research C2]
+    """
+    if (
+        gatilho not in TRANSICOES_VALIDAS
+        or (anterior, novo_status) not in TRANSICOES_VALIDAS[gatilho]
+    ):
+        raise ValueError(
+            f"Transição inválida: {anterior!r} → {novo_status!r} pelo gatilho {gatilho!r}"
+        )
+
+
+def criar_tcc_com_historico(
+    aluno, turma, autor, status_inicial, gatilho, anterior=None, **campos_tcc
+):
+    """Único ponto que cria um TCC e grava o primeiro registro do histórico (FR-008, FR-012).
+
+    Usada pelos 2 gatilhos de criação: "Vínculo à turma" (`anterior=None`, matrícula nova, sem
+    `campos_tcc` — o TCC nasce "Sem Proposta", sem título/resumo/modalidade) e "Transferência para
+    TCC 2" (`anterior` = status do TCC de origem, ex. `tcc1.tcc_status`, lido por quem chama
+    **antes** de passar para esta função; `campos_tcc` = `tcc_titulo`, `tcc_subtitulo`,
+    `tcc_resumo`, `tcc_modalidade`, `tcc_link_proposta`, `tcc_ari`, copiados do TCC de origem —
+    **obrigatórios** nesse gatilho porque `status_inicial="Em Andamento"` cai na `CHECK
+    ck_tccs_campos_obrigatorios_com_proposta` do dicionário, que exige esses campos fora de "Sem
+    Proposta"). Pressupõe turma, aluno e — na transferência — o TCC de origem já travados pelo
+    chamador (`select_for_update`, research C4).
+    [US-14][RBN-CAD-08.3][RBN-CAD-08.7][FR-008][FR-012][research C2][research C4]
+    """
+    _validar_transicao(anterior, status_inicial, gatilho)
+    tcc = TCCs.objects.create(tcc_alu=aluno, tcc_tur=turma, tcc_status=status_inicial, **campos_tcc)
+    _registrar_historico(tcc, turma, autor, anterior, status_inicial, gatilho)
+    return tcc
+
+
+def atualizar_status_tcc(tcc, turma, autor, novo_status, gatilho):
+    """Único ponto que muda tcc_status de um TCC **já existente** e grava o histórico (FR-008,
+    FR-012). Usada pelos 5 gatilhos de transição: "Proposta salva", "Indicação de Apto para
+    Defesa", "Liberação do resultado", "Homologação da Versão Final" e "Encerramento da
+    participação". Pressupõe que o chamador já travou turma → aluno → TCC (`select_for_update`,
+    dentro do mesmo `transaction.atomic()`, research C4) **antes** de chamar esta função — ela não
+    trava nada por si. Levanta ValueError se a transição não for válida; nesse caso, nenhuma linha
+    é gravada.
+    [US-14][RBN-CAD-08.3][RBN-CAD-08.7][FR-008][FR-012][research C2][research C4]
+    """
+    anterior = tcc.tcc_status
+    _validar_transicao(anterior, novo_status, gatilho)
+    tcc.tcc_status = novo_status
+    tcc.save(update_fields=["tcc_status"])
+    _registrar_historico(tcc, turma, autor, anterior, novo_status, gatilho)
+
+
 def _criar_orientacao_automatica(tcc, turma):
     """Professor da turma como Orientador, origem 'Automático' (RBN-CAD-04.2). [FR-004][B8]"""
     Orientacoes.objects.create(
@@ -530,24 +620,22 @@ def _copiar_tcc_aprovado(autor, turma, aluno, tcc1):
         Coorientacoes.objects.filter(coo_tcc=tcc1, coo_status=StatusCoorientacao.ATIVA)
     )
     encerrar_orientacoes_ativas(tcc1, agora)
-    novo = TCCs.objects.create(
-        tcc_alu=aluno,
-        tcc_tur=turma,
-        tcc_status=StatusTCC.EM_ANDAMENTO,
+    # criar_tcc_com_historico estendida com **campos_tcc (research C2, decisão de Julia Cohen
+    # 2026-10-22) para satisfazer a CHECK ck_tccs_campos_obrigatorios_com_proposta, que exige
+    # título/resumo/modalidade preenchidos fora de "Sem Proposta".
+    novo = criar_tcc_com_historico(
+        aluno,
+        turma,
+        autor,
+        StatusTCC.EM_ANDAMENTO,
+        GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2,
+        anterior=tcc1.tcc_status,
         tcc_titulo=tcc1.tcc_titulo,
         tcc_subtitulo=tcc1.tcc_subtitulo,
         tcc_resumo=tcc1.tcc_resumo,
         tcc_modalidade=tcc1.tcc_modalidade,
         tcc_link_proposta=tcc1.tcc_link_proposta,
         tcc_ari=tcc1.tcc_ari,
-    )
-    _registrar_historico(
-        novo,
-        turma,
-        autor,
-        StatusTCC.APROVADO_PARA_TCC_2,
-        StatusTCC.EM_ANDAMENTO,
-        GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2,
     )
     for palavra in PalavrasChaveTCC.objects.filter(pal_tcc=tcc1):
         PalavrasChaveTCC.objects.create(pal_tcc=novo, pal_palavra=palavra.pal_palavra)
@@ -662,9 +750,10 @@ def matricular(professor, turma, matricula, nome, codigo_curso):
         _copiar_tcc_aprovado(professor, turma, aluno, tcc_para_copiar)
         estado = EstadoMatricula.COPIADO
     else:
-        tcc = TCCs.objects.create(tcc_alu=aluno, tcc_tur=turma, tcc_status=StatusTCC.SEM_PROPOSTA)
-        _registrar_historico(
-            tcc, turma, professor, None, StatusTCC.SEM_PROPOSTA, GatilhoStatusTCC.VINCULO_A_TURMA
+        # Gatilho de criação "Vínculo à turma": sem campos de Proposta, SEM_PROPOSTA não tem o
+        # problema de ck_tccs_campos_obrigatorios_com_proposta (spec 005, FR-012; research C2).
+        tcc = criar_tcc_com_historico(
+            aluno, turma, professor, StatusTCC.SEM_PROPOSTA, GatilhoStatusTCC.VINCULO_A_TURMA
         )
         if turma_tem_orientador_automatico(turma):
             _criar_orientacao_automatica(tcc, turma)
@@ -895,6 +984,12 @@ def transferir(autor, tur_origem_id, alu_id, tur_destino_id, justificativa):
 # Status em que o Professor encerra a participação (research B15). [RBN-CAD-08.4][FR-024]
 STATUS_TCC_ENCERRAVEL = (StatusTCC.EM_ANDAMENTO, StatusTCC.APTO_PARA_DEFESA)
 
+# Confere que TRANSICOES_VALIDAS (spec 005, research C2) usa exatamente estas origens para o
+# gatilho "Encerramento da participação" — as duas tabelas não podem divergir (FR-008).
+assert {de for de, _ in TRANSICOES_VALIDAS[GatilhoStatusTCC.ENCERRAMENTO_DA_PARTICIPACAO]} == set(
+    STATUS_TCC_ENCERRAVEL
+)
+
 # Pedidos e convites ainda sem resposta, cancelados pelo encerramento (spec Q14). [Q14]
 STATUS_SOLICITACAO_PENDENTE = (
     StatusSolicitacao.AGUARDANDO_RESPOSTA,
@@ -995,12 +1090,13 @@ def encerrar_participacao(professor, tur_id, alu_id, status, justificativa):
         if Defesas.objects.filter(def_tcc=tcc, def_status__in=STATUS_SESSAO_ATIVA).exists():
             raise ErroTurma(mensagens.MT30_ENCERRAMENTO_SESSAO)
         agora = timezone.now()
-        anterior = tcc.tcc_status
-        tcc.tcc_status = status
+        # Gatilho de transição "Encerramento da participação" (spec 005, FR-012; research C2):
+        # turma → aluno → TCC já travados acima (select_for_update); tcc_justificativa_encerramento
+        # não faz parte do Status nem do histórico, gravado à parte, no mesmo UPDATE.
         tcc.tcc_justificativa_encerramento = justificativa
-        tcc.save(update_fields=["tcc_status", "tcc_justificativa_encerramento"])
-        _registrar_historico(
-            tcc, turma, professor, anterior, status, GatilhoStatusTCC.ENCERRAMENTO_DA_PARTICIPACAO
+        tcc.save(update_fields=["tcc_justificativa_encerramento"])
+        atualizar_status_tcc(
+            tcc, turma, professor, status, GatilhoStatusTCC.ENCERRAMENTO_DA_PARTICIPACAO
         )
         encerrar_orientacoes_ativas(tcc, agora)
         pendentes = list(

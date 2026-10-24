@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% comment %}
+  Tela do aluno, seção Versão final, para o Professor da Disciplina da turma de TCC 2 (passos 2 a
+  7 e fluxo alternativo D da US-44): link enviado, data e hora do envio, status e, só quando a
+  view permite, os botões Homologar e Devolver para Ajuste (com o campo Mensagem). Sem envio
+  (E4), com a turma arquivada ou depois da avaliação, só a consulta. Em Sistemas de Informação
+  com parecer "Aprovado com Correções", Homologar fica indisponível até o Orientador acionar
+  "Correções Conferidas" (E2, spec 006). Sem regra aqui: as condições vêm de services_entregas.
+  [US-44][RBN-CAD-09.3][RBN-CAD-09.5][FR-028][FR-029][FR-030]
+{% endcomment %}
+{% block titulo %}Versão final · {{ aluno.alu.usu_nome }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">{{ aluno.alu.usu_nome }}</h2>
+<p class="pg-sub">{{ aluno.alu_matricula }} · {{ turma.tur_identificador }} · {{ turma.tur_descricao }} · <span class="chip">{{ tcc.tcc_status }}</span>{% if arquivada %} · <span class="chip">Arquivada</span>{% endif %}</p>
+<div class="cartao mt16">
+  <h3>Versão final</h3>
+  <p>Data Limite: {{ marco.tma_data_limite|date:"d/m/Y H:i" }}</p>
+  <p><span class="chip">{{ status }}</span></p>
+  {% if envio %}
+  <p><a href="{{ envio.hen_link }}" target="_blank" rel="noopener noreferrer">{{ envio.hen_link }}</a><br><span class="dica">Enviado em {{ envio.hen_data_envio|date:"d/m/Y H:i" }}</span></p>
+  {% endif %}
+  {% if entrega.ent_feedback %}<p class="dica">Última mensagem de ajuste: {{ entrega.ent_feedback }}</p>{% endif %}
+
+  {% if pode_homologar %}
+  <form method="post" class="mt16" novalidate>
+    {% csrf_token %}
+    <button type="submit" name="acao" value="homologar" class="btn pri">Homologar</button>
+  </form>
+  {% elif aguarda_correcoes %}
+  <button type="button" class="btn pri mt16" disabled>Homologar</button>
+  {% endif %}
+
+  {% if pode_devolver %}
+  <form method="post" class="mt16" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form.mensagem %}
+    <button type="submit" name="acao" value="devolver" class="btn txt">Devolver para Ajuste</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

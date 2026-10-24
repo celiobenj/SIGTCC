@@ -14,6 +14,15 @@ ITENS = [
         "perfis": ("aluno", "docente", "secretaria", "membro_externo"),
         "ordem": 0,
     },
+    # Spec 005: item "Turmas" do Aluno, com as turmas em que está matriculado; não dá acesso à
+    # tela da turma da spec 004 (FR-010 da spec 004). [US-13][US-15][FR-031][Q-89]
+    {
+        "rotulo": "Turmas",
+        "icone": "groups",
+        "rota": "cadastro:minhas_turmas",
+        "perfis": ("aluno",),
+        "ordem": 10,
+    },
     # Spec 004: turmas do Professor da Disciplina ou do curso da Secretaria (Q9). Enquanto a rota
     # não existir, o processador de contexto esconde o item. [US-07][FR-010][Q9]
     {

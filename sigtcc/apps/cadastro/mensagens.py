@@ -210,6 +210,80 @@ MT31_PEDIDO_CANCELADO = (
 )
 
 # =============================================================================================
+# Spec 005: Fluxo do TCC e Entregas (US-13, US-14, US-15, US-16, US-29, US-43, US-44)
+# =============================================================================================
+
+# US-13 [RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2]
+PROPOSTA_SALVA = "Proposta salva"
+ALTERACOES_SALVAS = "Alterações salvas"
+INFORME_PALAVRAS_CHAVE = "Informe de 1 a 5 Palavras-Chave"
+# Confirmado na análise /speckit-analyze: não existe constante equivalente em mensagens.py antes
+# desta spec (research/tasks T001); reaproveitar M14_CAMPO_OBRIGATORIO (campo obrigatório, E2) e
+# JUSTIFICATIVA_500 (mensagem de limite de caracteres análoga) sem duplicar.
+LINK_HTTPS_500 = "O link deve começar com https:// e ter até 500 caracteres"
+
+# US-43 [RBN-CAD-09.1][RBN-CAD-09.6]
+ENTREGA_CADASTRADA = "Entrega cadastrada"
+ENTREGA_TIPO_REPETIDO = "A turma já tem uma entrega deste tipo"
+NENHUMA_ENTREGA_CADASTRADA = "Nenhuma entrega cadastrada"
+
+# US-15 [RBN-CAD-09.2][RBN-CAD-09.3][RBN-CAD-09.6]
+ENTREGA_ENVIADA = "Entrega enviada"
+ENTREGA_CUMPRIDA_PROPOSTA = "Esta entrega é cumprida ao salvar a Proposta"
+
+# US-29 [RBN-CAD-09.2][RBN-CAD-09.3]
+VERSAO_FINAL_ENVIADA = "Versão Final enviada"
+# US-29, E3/Cenário 9: seção Versão final antes da liberação do resultado (texto exato da US).
+VERSAO_FINAL_DISPONIVEL_APOS_RESULTADO = "Disponível após a liberação do resultado"
+
+# US-44 [RBN-CAD-09.3][RBN-CAD-09.5]
+VERSAO_FINAL_HOMOLOGADA = "Versão Final homologada"
+
+# Mensagens PROVISÓRIAS da spec 005 (tabela "Mensagens a validar com a PO" do spec.md).
+MF01_DATA_LIMITE_VENCIDA = "Data Limite vencida: o envio será registrado como Entregue com Atraso."
+MF02_VERSAO_FINAL_DEVOLVIDA = "Versão Final devolvida para ajuste."
+MF03_PALAVRA_CHAVE_REPETIDA = "Palavra-chave repetida."
+# Notificação ao Orientador na mudança de tema (US-13, fluxo alternativo A): a US diz só "envia
+# uma notificação ao Orientador", sem citar o texto exato — mensagem nova, registrada como
+# PROVISÓRIA (Q-83) no mesmo padrão de MT21/MT22 (spec 004).
+MF04_NOTIFICACAO_MUDANCA_TEMA = "{nome} alterou os dados do TCC na turma {identificador}."
+# Notificação a cada aluno da turma ao cadastrar uma entrega (US-43, passo 7): a US pede "uma
+# notificação no sistema e um e-mail com o Título e a Data Limite", sem citar o texto exato —
+# mensagem nova, registrada como PROVISÓRIA (Q-84), no mesmo padrão da MF-04.
+MF05_NOTIFICACAO_ENTREGA_CADASTRADA = (
+    "Nova entrega cadastrada na turma {identificador}: {titulo}, com prazo até {data_limite}."
+)
+# Data Limite anterior à data do cadastro (US-43, E2, Cenário 8): a US só diz "destaca a Data
+# Limite", sem citar o texto exato — mensagem nova, registrada como PROVISÓRIA (Q-84).
+MF06_DATA_LIMITE_ANTERIOR_A_HOJE = "A Data Limite não pode ser anterior a hoje."
+# Notificação ao Professor da Disciplina a cada envio ou substituição de link (US-15, passo 6 e
+# fluxo alternativo D): a US diz só "envia... uma notificação no sistema com o envio" e "notifica
+# o Professor da Disciplina no sistema", sem citar o texto exato — mensagem nova, registrada como
+# PROVISÓRIA (Q-85), no mesmo padrão da MF-04/MF-05.
+MF07_NOTIFICACAO_ENVIO_ENTREGA = "{nome} enviou a entrega {titulo} na turma {identificador}."
+# Lembrete de prazo ao aluno que ainda não enviou, 7 dias, 48h e 24h antes da Data Limite (US-15,
+# fluxo alternativo E): a US diz só "envia notificação no sistema e e-mail", sem citar o texto
+# exato — mensagem nova, registrada como PROVISÓRIA (Q-86), no mesmo padrão da MF-05/MF-07.
+MF08_LEMBRETE_PRAZO_ENTREGA = (
+    "Lembrete: a entrega {titulo} da turma {identificador} vence em {data_limite}."
+)
+# Notificação à Secretaria na homologação da Versão Final (US-44, passo 6: "notifica a
+# Secretaria para concluir os trâmites acadêmicos") e ao Aluno na devolução para ajuste (fluxo
+# alternativo D: "notifica o Aluno") — a US não cita o texto exato de nenhuma das duas; mensagens
+# novas, registradas como PROVISÓRIAS (Q-88), no mesmo padrão da MF-05/MF-07.
+MF09_NOTIFICACAO_VERSAO_FINAL_HOMOLOGADA = (
+    "Versão Final de {nome} homologada na turma {identificador}: TCC concluído."
+)
+MF10_NOTIFICACAO_VERSAO_FINAL_DEVOLVIDA = (
+    "Versão Final devolvida para ajuste na turma {identificador}: {mensagem}"
+)
+# Assuntos dos e-mails da spec 005 (US-43, passo 7, e US-15, fluxo alternativo E: "e-mail com o
+# Título e a Data Limite"; FR-015, FR-022), sem texto exato nas US — PROVISÓRIOS (Q-84, Q-86). O
+# corpo repete a notificação (MF-05 e MF-08).
+MF11_ASSUNTO_NOVA_ENTREGA = "SIGTCC: nova entrega"
+MF12_ASSUNTO_LEMBRETE_PRAZO = "SIGTCC: lembrete de prazo"
+
+# =============================================================================================
 # Spec 002: Gestão de Contas (US-03, US-04, US-05, US-06, US-50)
 # Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_3.md; MC-01 a MC-13 da tabela
 # "Mensagens a validar com a PO" de specs/002-gestao-contas/spec.md. [SC-002][FR-048]

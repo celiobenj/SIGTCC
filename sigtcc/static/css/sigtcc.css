@@ -136,6 +136,18 @@ table.tabela { border-collapse: collapse; width: 100%; font-size: 13px; }
 .vazio .ms { font-size: 56px; color: var(--borda); display: block; margin: 0 auto 8px; }
 .paginacao { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 16px; }
 
+/* Trilha do Status do TCC (US-14, FR-010): etapas em sequência, com a atual destacada. */
+.trilha { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.trilha li { padding: 6px 12px; border-radius: 12px; font-size: 13px; background: var(--hover); color: var(--texto2); }
+.trilha li.trilha-atual { background: var(--azul-claro); color: var(--azul); font-weight: 600; }
+
+/* Abas da turma (spec 005, FR-031): barra "Seções da turma" do protótipo de 17/10, com links. */
+.seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+.seg a { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--borda); background: #fff; color: var(--texto2); font-weight: 500; text-decoration: none; }
+.seg a .ms { font-size: 18px; }
+.seg a:hover { background: var(--hover); color: var(--texto); }
+.seg a.ativo { background: var(--texto); border-color: var(--texto); color: #fff; }
+
 /* Imagem de assinatura */
 .assin { height: 56px; max-width: 220px; object-fit: contain; background: #fff; border: 1px dashed var(--borda); border-radius: 6px; padding: 4px; }
 

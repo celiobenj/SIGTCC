@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% comment %}
+  Item de menu "Turmas" do Aluno (passo 1 das US-13, 14, 15 e 29) e "Turmas arquivadas" (E9 da
+  US-13, só consulta): as turmas em que o Aluno está matriculado, com a mesma base visual da lista
+  de turmas da spec 004. Cada turma abre a aba "Meu TCC" do próprio Aluno — nunca a tela da turma
+  da spec 004, que continua só do Professor e da Secretaria (FR-010 da spec 004).
+  [US-13][US-15][FR-031][Q-89]
+{% endcomment %}
+{% block titulo %}{% if arquivadas %}Turmas arquivadas{% else %}Turmas{% endif %} · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <h2 class="pg">{% if arquivadas %}Turmas arquivadas{% else %}Turmas{% endif %}</h2>
+  <div class="flex flex-wrap">
+    {% if arquivadas %}
+    <a class="btn txt" href="{% url 'cadastro:minhas_turmas' %}"><span class="ms">groups</span>Turmas</a>
+    {% else %}
+    <a class="btn txt" href="{% url 'cadastro:minhas_turmas_arquivadas' %}"><span class="ms">inventory_2</span>Turmas arquivadas</a>
+    {% endif %}
+  </div>
+</div>
+{% if arquivadas %}<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Turma arquivada: só para consulta.</span></div>{% endif %}
+<div class="mt16">
+{% if turmas %}
+  <div class="tabela-wrap">
+    <table class="tabela">
+      <thead><tr><th>Identificador</th><th>Descrição</th><th>Curso</th><th>Período</th><th>Professor da Disciplina</th><th>Dia e horário</th><th>Local</th></tr></thead>
+      <tbody>
+        {% for turma in turmas %}
+          <tr>
+            <td><a href="{% url 'cadastro:meu_tcc' turma.pk %}">{{ turma.tur_identificador }}</a></td>
+            <td>{{ turma.tur_descricao }}</td>
+            <td>{{ turma.tur_cur.cur_nome }}</td>
+            <td>{{ turma.tur_ano }}/{{ turma.tur_semestre }}</td>
+            <td>{{ turma.tur_doc.doc.usu_nome }}</td>
+            <td>{{ turma.tur_dia_da_semana }}, {{ turma.tur_hora_inicio|time:"H:i" }}–{{ turma.tur_hora_termino|time:"H:i" }}</td>
+            <td>{{ turma.tur_local }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="vazio"><span class="ms">groups</span>Nenhuma turma.</div>
+{% endif %}
+</div>
+{% endblock %}

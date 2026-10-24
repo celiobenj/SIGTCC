@@ -5,7 +5,7 @@
 
 from django.urls import path
 
-from sigtcc.apps.cadastro import views, views_contas, views_turmas
+from sigtcc.apps.cadastro import views, views_contas, views_entregas, views_tcc, views_turmas
 
 app_name = "cadastro"
 
@@ -90,6 +90,54 @@ urlpatterns = [
         "turmas/<int:tur_id>/excluidos-transferidos/",
         views_turmas.excluidos_transferidos,
         name="excluidos_transferidos",
+    ),
+    # Spec 005: fluxo do TCC e entregas (contracts/rotas.md). [US-13][US-14]
+    # Spec 005: item "Turmas" do Aluno (contracts/rotas.md; FR-031, Q-89). [US-13][US-15]
+    path("minhas-turmas/", views_tcc.minhas_turmas, name="minhas_turmas"),
+    path(
+        "minhas-turmas/arquivadas/",
+        views_tcc.minhas_turmas_arquivadas,
+        name="minhas_turmas_arquivadas",
+    ),
+    path("turmas/<int:tur_id>/meu-tcc/", views_tcc.meu_tcc, name="meu_tcc"),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/historico/",
+        views_tcc.historico_status_aluno,
+        name="historico_status_aluno",
+    ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/historico/",
+        views_tcc.historico_status,
+        name="historico_status",
+    ),
+    path("turmas/<int:tur_id>/entregas/", views_entregas.entregas, name="entregas"),
+    path(
+        "turmas/<int:tur_id>/entregas/nova/",
+        views_entregas.entrega_cadastrar,
+        name="entrega_cadastrar",
+    ),
+    # Spec 005: acompanhamento da entrega pelo Professor (contracts/rotas.md). [US-16]
+    path(
+        "turmas/<int:tur_id>/entregas/<int:tma_id>/",
+        views_entregas.entrega_acompanhar,
+        name="entrega_acompanhar",
+    ),
+    # Spec 005: envio e substituição do link pelo Aluno (contracts/rotas.md). [US-15]
+    path(
+        "turmas/<int:tur_id>/minhas-entregas/",
+        views_entregas.minhas_entregas,
+        name="minhas_entregas",
+    ),
+    path(
+        "turmas/<int:tur_id>/minhas-entregas/<int:tma_id>/",
+        views_entregas.entrega_enviar,
+        name="entrega_enviar",
+    ),
+    # Spec 005: homologação ou devolução da Versão Final (contracts/rotas.md). [US-44]
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/versao-final/",
+        views_entregas.aluno_versao_final,
+        name="aluno_versao_final",
     ),
     # Spec 002: Gestão de Contas (specs/002-gestao-contas/contracts/rotas.md). [US-03]
     path("cadastros/docentes/", views_contas.docentes, name="contas_docentes"),

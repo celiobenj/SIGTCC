@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% comment %}
+  Janela da entrega do Aluno (passos 3 a 7 e fluxo D da US-15 original): Título, Data Limite,
+  Instruções, status de envio e, quando permitido, o campo Link e o botão Enviar. Na entrega do
+  tipo Proposta, sem campo de link (fluxo F): mostra só o aviso de que ela é cumprida ao salvar a
+  Proposta (US-13). Fora do prazo, com participação encerrada, turma arquivada ou TCC fora de "Em
+  Andamento", o campo Link fica somente leitura, sem o botão Enviar (E3 a E6). Na Versão Final
+  (US-29), mostra a mensagem da devolução para ajuste (fluxo E) e o aviso MF-01 quando o envio
+  será registrado com atraso (fluxo B).
+  [US-15][US-29][RBN-CAD-09.2][RBN-CAD-09.3][FR-018 a FR-025]
+{% endcomment %}
+{% block titulo %}{{ marco.tma_titulo }} · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">{{ marco.tma_titulo }}</h2>
+<p class="pg-sub">{{ turma.tur_identificador }} · {{ turma.tur_descricao }} · Data Limite {{ marco.tma_data_limite|date:"d/m/Y H:i" }}</p>
+<div class="cartao mt16">
+  {% if marco.tma_instrucao %}<p>{{ marco.tma_instrucao }}</p>{% endif %}
+  <p><span class="chip">{{ status }}</span></p>
+  {% if feedback %}<div class="alerta info" role="status"><span class="ms">feedback</span><span class="texto">{{ feedback }}</span></div>{% endif %}
+  {% if aviso_atraso %}<div class="alerta info" role="status"><span class="ms">schedule</span><span class="texto">{{ aviso_atraso_texto }}</span></div>{% endif %}
+
+  {% if eh_proposta %}
+  <div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Esta entrega é cumprida ao salvar a Proposta</span></div>
+  <div class="flex entre mt16">
+    <a class="btn txt" href="{% url 'cadastro:minhas_entregas' turma.pk %}">Cancelar</a>
+  </div>
+  {% elif pode_enviar %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form.link %}
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{% url 'cadastro:minhas_entregas' turma.pk %}">Cancelar</a>
+      <button type="submit" class="btn pri">Enviar</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="campo">
+    <label>Link</label>
+    <input type="text" value="{{ ultimo_link }}" disabled>
+  </div>
+  <div class="flex entre mt16">
+    <a class="btn txt" href="{% url 'cadastro:minhas_entregas' turma.pk %}">Voltar</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
