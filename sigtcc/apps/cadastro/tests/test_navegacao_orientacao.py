@@ -297,3 +297,48 @@ class NavegacaoConviteTest(TesteTurmas):
         self.assertContains(tela, "Convites de coorientação")
         voltou = seguir(self, tela, reverse("cadastro:orientacoes"))
         self.assertContains(voltou, "Orientandos")
+
+
+class NavegacaoPublicacaoTest(TesteTurmas):
+    """Publicação: aba Meu TCC (`?secao=publicacao`) e Orientações → linha → "Publicação" →
+    "Voltar"; Coordenador: menu "Gestão" → "Aproveitamento de artigos". [US-46][US-20][FR-041]
+    [T050][T054]
+    """
+
+    def setUp(self):
+        super().setUp()
+        from sigtcc.apps.cadastro.choices import ModalidadeTCC
+        from sigtcc.apps.cadastro.tests.apoio_tcc import salvar_proposta
+
+        self.turma = criar_turma_de(criar_docente_ativo(), curso_nome=SI)
+        self.aluno = matricular_aluno(
+            self.turma, status_tcc=StatusTCC.EM_ANDAMENTO, status_conta=StatusConta.ATIVA
+        )
+        self.tcc = tcc_de(self.aluno, self.turma)
+        salvar_proposta(self.tcc, modalidade=ModalidadeTCC.ARTIGO_CIENTIFICO)
+        self.orientador = criar_docente_ativo()
+        vincular_orientador(self.tcc, self.orientador)
+
+    def test_aluno_secao_publicacao(self):
+        self.client.force_login(self.aluno.alu)
+        meu_tcc = self.client.get(reverse("cadastro:meu_tcc", args=[self.turma.pk]))
+        self.assertContains(meu_tcc, 'id="publicacao"')
+        self.assertContains(meu_tcc, "Salvar publicação")
+
+    def test_orientador_linha_publicacao_e_voltar(self):
+        self.client.force_login(self.orientador)
+        tela = self.client.get(reverse("cadastro:orientacoes"))
+        pub = seguir(self, tela, reverse("cadastro:publicacao_orientando", args=[self.tcc.pk]))
+        voltou = seguir(self, pub, reverse("cadastro:orientacoes"))
+        self.assertContains(voltou, "Orientandos")
+
+    def test_coordenador_menu_gestao(self):
+        from sigtcc.apps.cadastro.tests.apoio_acesso import criar_coordenador
+
+        self.client.force_login(criar_coordenador())
+        painel = self.client.get(reverse("cadastro:painel"))
+        texto = painel.content.decode()
+        self.assertIn("Gestão", texto)
+        self.assertLess(texto.index("Cadastros"), texto.index("Gestão"))
+        tela = seguir(self, painel, reverse("cadastro:aproveitamento_artigos"))
+        self.assertContains(tela, "Aproveitamento de artigos")

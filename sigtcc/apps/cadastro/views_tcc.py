@@ -15,12 +15,14 @@ from django.urls import reverse
 
 from sigtcc.apps.cadastro import (
     mensagens,
+    services_artigos,
     services_entregas,
     services_orientacao,
     services_tcc,
     services_turmas,
 )
 from sigtcc.apps.cadastro.choices import StatusTCC
+from sigtcc.apps.cadastro.forms_artigos import PublicacaoForm
 from sigtcc.apps.cadastro.forms_entregas import EnviarLinkForm
 from sigtcc.apps.cadastro.forms_tcc import DadosTCCForm, PropostaForm
 from sigtcc.apps.cadastro.models import EncontroOrientacao
@@ -146,6 +148,7 @@ def meu_tcc(request, tur_id):
             return redirect("cadastro:meu_tcc", tur_id=tur_id)
 
     versao_final = services_entregas.secao_versao_final(aluno, turma, tcc)
+    publicacao = services_artigos.contexto_publicacao(tcc)
     contexto = {
         "turma": turma,
         "tcc": tcc,
@@ -164,6 +167,9 @@ def meu_tcc(request, tur_id):
         "form_versao_final": _form_versao_final(versao_final),
         # Spec 006 (IC-09): seção Orientação (US-17, US-45; FR-001 a FR-007, FR-049).
         "orientacao": services_orientacao.contexto_secao_orientacao(tcc),
+        # Spec 006 (IC-09): seção Publicação do artigo (US-46; FR-034), só em Artigo Científico.
+        "publicacao": publicacao,
+        "form_publicacao": (PublicacaoForm(initial=publicacao["inicial"]) if publicacao else None),
         # Spec 006 (IC-09): seção Atas de orientação (US-19; FR-022).
         "atas": {
             "n": EncontroOrientacao.objects.filter(enc_tcc=tcc).count(),

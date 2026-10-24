@@ -67,6 +67,7 @@
 
 {% include "cadastro/tcc/_secao_orientacao.html" with o=orientacao %}
 {% include "cadastro/tcc/_secao_atas.html" %}
+{% if publicacao %}{% url 'cadastro:salvar_publicacao_aluno' turma.pk as url_publicacao %}{% include "cadastro/tcc/_secao_publicacao.html" with pub=publicacao url_acao=url_publicacao %}{% endif %}
 
 {% if versao_final %}
 {% with vf=versao_final %}

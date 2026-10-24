@@ -257,6 +257,20 @@ urlpatterns = [
         views_atas.editar_ata_aluno,
         name="editar_ata_aluno",
     ),
+    # Spec 006: publicação do Aluno (contracts/rotas.md §1, rota 10). [US-46]
+    path(
+        "turmas/<int:tur_id>/meu-tcc/publicacao/",
+        views_artigos.salvar_publicacao_aluno,
+        name="salvar_publicacao_aluno",
+    ),
+    # Spec 006: aproveitamento de artigos do Coordenador (contracts/rotas.md §4). [US-20]
+    path("artigos/", views_artigos.aproveitamento_artigos, name="aproveitamento_artigos"),
+    path(
+        "artigos/<int:tcc_id>/homologar/",
+        views_artigos.homologar_artigo,
+        name="homologar_artigo",
+    ),
+    path("artigos/<int:tcc_id>/recusar/", views_artigos.recusar_artigo, name="recusar_artigo"),
     # Spec 006: tela Orientações do docente (contracts/rotas.md §2). [US-18][US-36]
     path("orientacoes/", views_orientacao.orientacoes, name="orientacoes"),
     path(

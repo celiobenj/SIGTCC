@@ -41,6 +41,17 @@ ITENS = [
         "perfis": ("docente",),
         "ordem": 12,
     },
+    # Spec 006: tela do Coordenador de Curso na seção nova "Gestão", como no protótipo de 17/10
+    # (a seção aparece depois de "Cadastros", pela ordem do processador; research R19).
+    # [US-20][FR-041][IC-01]
+    {
+        "rotulo": "Aproveitamento de artigos",
+        "icone": "article",
+        "rota": "cadastro:aproveitamento_artigos",
+        "perfis": ("coordenador",),
+        "ordem": 30,
+        "secao": "Gestão",
+    },
     # Spec 002: Gestão de Contas (contracts/rotas.md, "Menu lateral"). O item só aparece quando a
     # rota da sua fase já existe. [US-03][US-04][US-05][US-50][FR-010][FR-031]
     {
