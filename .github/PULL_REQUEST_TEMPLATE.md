@@ -10,7 +10,7 @@
 
 ### 3. Checklist Técnico da Equipe (Definition of Done)
 
-- [ ] O código foi verificado e aprovado localmente pelo script `lint.bat` (Flake8, Black e isort).
+- [ ] O código foi verificado e aprovado localmente com `pre-commit run --all-files` (Flake8, Black e isort).
 - [ ] Não há variáveis, imports ou trechos de código não utilizados.
 - [ ] As migrações do PostgreSQL foram criadas, aplicadas e testadas com sucesso, quando aplicável.
 - [ ] O arquivo `.env` e arquivos da pasta `media/` **não** foram adicionados ao Git.

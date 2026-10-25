@@ -1,0 +1,24 @@
+# Ferramentas de desenvolvimento do SIGTCC (PGCS 3.3 e 3.7), só no ambiente local.
+# Instalação: pip install -r requirements.txt -r requirements-dev.txt e, uma vez, pre-commit install.
+# black, isort e flake8 nas mesmas versões do .pre-commit-config.yaml.
+# Item de configuração: mudanças passam pela revisão do Célio Benjamim.
+black==26.10.1
+cfgv==3.5.0
+click==8.5.0
+distlib==0.4.4
+filelock==4.2.4
+flake8==7.4.1
+identify==2.6.20
+isort==9.0.2
+mccabe==0.7.0
+mypy_extensions==1.1.0
+nodeenv==1.11.0
+packaging==26.3
+pathspec==1.1.1
+platformdirs==4.13.5
+pre_commit==4.7.0
+pycodestyle==2.15.0
+pyflakes==4.0.3
+pytokens==0.4.1
+PyYAML==6.0.3
+virtualenv==21.14.13

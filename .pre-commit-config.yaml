@@ -1,0 +1,18 @@
+# Verificação automática de qualidade do SIGTCC (PGCS 3.3): isort, black e flake8, nas versões
+# do requirements-dev.txt, lendo as regras de pyproject.toml e .flake8. Só a pasta sigtcc/, como
+# o antigo lint.bat. Ativação: pre-commit install. Verificação completa: pre-commit run --all-files.
+# Item de configuração: mudanças passam pela revisão do Célio Benjamim.
+files: ^sigtcc/
+repos:
+  - repo: https://github.com/pycqa/isort
+    rev: 9.0.2
+    hooks:
+      - id: isort
+  - repo: https://github.com/psf/black
+    rev: 26.10.1
+    hooks:
+      - id: black
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.4.1
+    hooks:
+      - id: flake8
