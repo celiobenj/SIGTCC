@@ -11,6 +11,7 @@ specs/003-acesso-login/research.md (A1, A2, A5, A6, A13, A19).
 import os
 from pathlib import Path
 
+import dj_database_url
 from dotenv import load_dotenv
 
 # Raiz do repositório (onde ficam manage.py, .env e docs/).
@@ -21,6 +22,16 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.environ["SECRET_KEY"]
 DEBUG = os.getenv("DEBUG", "False") == "True"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
+
+# Ambiente de validação no Render (docs/deploy-render.md): o Render informa o endereço público
+# em RENDER_EXTERNAL_HOSTNAME; ele entra nos hosts aceitos e nas origens confiáveis do CSRF.
+RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
+if RENDER_HOST:
+    ALLOWED_HOSTS.append(RENDER_HOST)
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOST}")
 
 # Sem django.contrib.admin: o modelo Usuarios não tem is_staff nem permissões (research D1).
 INSTALLED_APPS = [
@@ -36,6 +47,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Arquivos estáticos servidos pelo próprio Django com DEBUG = False (deploy).
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -66,17 +79,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "sigtcc.wsgi.application"
 
-# PostgreSQL 16 (constituição, princípio IV).
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "sigtcc"),
-        "USER": os.getenv("DB_USER", ""),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+# PostgreSQL 16 (constituição, princípio IV). No deploy, o banco vem de DATABASE_URL; sem ela,
+# valem as variáveis DB_* do ambiente local.
+if os.getenv("DATABASE_URL"):
+    DATABASES = {"default": dj_database_url.config()}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME", "sigtcc"),
+            "USER": os.getenv("DB_USER", ""),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            "HOST": os.getenv("DB_HOST", "localhost"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+        }
     }
-}
 
 # Usuarios do dicionário de dados como modelo de usuário (research D1).
 AUTH_USER_MODEL = "cadastro.Usuarios"
@@ -102,6 +119,9 @@ SESSION_COOKIE_SAMESITE = "Lax"
 COOKIES_SEGUROS = os.getenv("COOKIES_SEGUROS", "False") == "True"
 SESSION_COOKIE_SECURE = COOKIES_SEGUROS
 CSRF_COOKIE_SECURE = COOKIES_SEGUROS
+if COOKIES_SEGUROS:
+    # Atrás do proxy HTTPS do Render: a conexão é segura quando o proxy diz que é.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Não afrouxar (A3, A11): o token dos links não vaza pelo Referer, e o navegador não adivinha
 # o tipo dos arquivos enviados.
@@ -118,7 +138,8 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "nao-responda@uea.edu.br")
 # Endereço base dos links enviados por e-mail.
-SITE_URL = os.getenv("SITE_URL", "http://localhost:8000").rstrip("/")
+SITE_URL_PADRAO = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:8000")
+SITE_URL = os.getenv("SITE_URL", SITE_URL_PADRAO).rstrip("/")
 # True só nos testes: o e-mail de "Esqueci minha senha" sai na própria requisição (A5).
 SIGTCC_EMAIL_SINCRONO = False
 
@@ -130,6 +151,8 @@ USE_TZ = False
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "sigtcc" / "static"]
+# Destino do collectstatic no deploy; fica fora do Git.
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Assinaturas e PDFs gerados; pasta fora do Git (PGCS 3.4).
 MEDIA_URL = "media/"
@@ -159,26 +182,29 @@ CACHES = {
     },
 }
 
-# Log de eventos de acesso, em arquivo, sem tabela (FR-029; spec Q21; research A13).
+# Log de eventos de acesso, em arquivo, sem tabela (FR-029; spec Q21; research A13). Em produção
+# (LOG_STDOUT=True, no render.yaml), vai para a saída padrão e aparece em Logs do Render, porque o
+# disco do serviço é apagado a cada reinício (PGCS 3.5 e 9.6).
 # [US-11][RBN-CAD-06.6][US-12][US-38][FR-029]
-LOG_DIR = _pasta("LOG_DIR", "logs")
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_STDOUT = os.getenv("LOG_STDOUT", "False") == "True"
+if LOG_STDOUT:
+    HANDLER_ACESSO = {"class": "logging.StreamHandler", "formatter": "acesso"}
+else:
+    LOG_DIR = _pasta("LOG_DIR", "logs")
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    HANDLER_ACESSO = {
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": str(LOG_DIR / "acesso.log"),
+        "maxBytes": 5 * 1024 * 1024,
+        "backupCount": 5,
+        "delay": True,
+        "encoding": "utf-8",
+        "formatter": "acesso",
+    }
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {"acesso": {"format": "%(asctime)s | %(message)s"}},
-    "handlers": {
-        "arquivo_acesso": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": str(LOG_DIR / "acesso.log"),
-            "maxBytes": 5 * 1024 * 1024,
-            "backupCount": 5,
-            "delay": True,
-            "encoding": "utf-8",
-            "formatter": "acesso",
-        }
-    },
-    "loggers": {
-        "sigtcc.acesso": {"handlers": ["arquivo_acesso"], "level": "INFO", "propagate": False}
-    },
+    "handlers": {"log_acesso": HANDLER_ACESSO},
+    "loggers": {"sigtcc.acesso": {"handlers": ["log_acesso"], "level": "INFO", "propagate": False}},
 }

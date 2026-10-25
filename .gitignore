@@ -13,3 +13,8 @@ sigtcc/media/
 # Log de eventos de acesso e cache do bloqueio de login (feature 003, research A2 e A13)
 /logs/
 /cache_acesso/
+# Saída do collectstatic (deploy)
+/staticfiles/
+# Cópias de segurança do banco de produção (PGCS 8.2): ficam no Drive, nunca no Git
+*.dump
+*.sql

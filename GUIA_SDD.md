@@ -108,8 +108,6 @@ mesmos agentes.
 
 ## 8. Cuidados
 
-- O `lint.bat` do PGCS aponta para `apps/sigtcc/`; pela árvore do próprio PGCS o caminho é `sigtcc/`.
-  Avisar o Célio.
 - O PGCS diz que Matriz/EAP ficam no Drive, mas o SDD precisa delas acessíveis ao Claude. As cópias em
   `docs/fonte/` são de referência; atualizem quando o documento do Drive mudar.
 - Sempre revise o diff antes de aceitar; o Claude Code pede permissão para editar e rodar comandos.

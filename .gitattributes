@@ -1,0 +1,6 @@
+# Quebra de linha LF no repositório para Windows e macOS (PGCS 3.3).
+* text=auto eol=lf
+*.bat text eol=crlf
+*.xlsx binary
+*.png binary
+*.jpg binary

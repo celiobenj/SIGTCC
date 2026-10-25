@@ -1,5 +1,8 @@
 <!--
 Relatório de Impacto da Sincronização (Sync Impact Report)
+- Emenda 2026-10-25: 1.0.1 → 1.0.2 (PATCH). O lint.bat foi substituído pelo pre-commit (PGCS 3.3):
+  princípio V e passo 6 do fluxo citam `pre-commit run --all-files`; sem efeito semântico nas
+  regras de qualidade (mesmas ferramentas e opções).
 - Emenda 2026-10-24: 1.0.0 → 1.0.1 (PATCH). Referência às Histórias de Usuário trocada de v3.2 para
   v3.3 (seção II e "Restrições de Stack e Escopo"), a versão que está em docs/fonte/; sem efeito
   semântico (índice Q-62). Aprovação do responsável pela configuração e revisão por pares no PR.
@@ -81,7 +84,7 @@ alinhada ao PGCS. (Fonte: PGCS 2.1 a 2.3.)
 ### V. Qualidade de Código
 
 - O código DEVE seguir PEP 8, verificado com `isort`, `black --line-length 100` e
-  `flake8 --max-line-length 100`, executados via `lint.bat`.
+  `flake8 --max-line-length 100`, executados pelo pre-commit (`pre-commit run --all-files`).
 - Todo código DEVE ter comentários em português do Brasil.
 
 **Justificativa:** padrão uniforme reduz conflitos de merge e facilita a revisão por pares.
@@ -146,7 +149,7 @@ mantido (configuração). (Fonte: PGCS 8.1.)
    spec × plan × tasks confirmada antes de codar.
 4. Aprovação da pessoa responsável pela feature antes de `/speckit-implement`.
 5. `/speckit-implement` e `/speckit-converge`: implementação com testes de aceite.
-6. Antes do PR: `lint.bat` sem erros, testes passando, migrações incluídas, rastreabilidade
+6. Antes do PR: `pre-commit run --all-files` sem erros, testes passando, migrações incluídas, rastreabilidade
    US/RBN presente e checklist do PGCS 6.3 preenchido.
 
 ## Governança
@@ -163,4 +166,4 @@ mantido (configuração). (Fonte: PGCS 8.1.)
 - Conformidade: toda revisão de PR e a etapa `/speckit-analyze` DEVEM verificar a aderência a
   estes princípios; qualquer exceção DEVE ser justificada por escrito no `plan.md` ou no PR.
 
-**Versão**: 1.0.1 | **Ratificada**: 2026-10-19 | **Última emenda**: 2026-10-24
+**Versão**: 1.0.2 | **Ratificada**: 2026-10-19 | **Última emenda**: 2026-10-25
