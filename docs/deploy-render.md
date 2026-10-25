@@ -60,10 +60,10 @@ cobrado enquanto tudo estiver no plano **Free**.
 
 Se o build falhar, a causa aparece em **Logs**. Veja "Problemas comuns" no final.
 
-## Passo 4. Criar as contas de acesso
+## Passo 4. Carregar os dados de demonstração
 
 O banco nasce vazio, só com cursos e áreas. O plano gratuito não tem terminal no servidor, então
-as contas são criadas **do seu computador, apontando para o banco do Render**.
+os comandos rodam **no seu computador, apontando para o banco do Render**.
 
 1. No Render, abra o banco **sigtcc-db**. Em **Connections**, copie a **External Database URL**.
    Ela contém a senha do banco: não cole em arquivo do repositório nem em chat.
@@ -73,45 +73,58 @@ as contas são criadas **do seu computador, apontando para o banco do Render**.
    $env:DATABASE_URL = "cole-aqui-a-External-Database-URL"
    ```
 
-3. Crie uma conta por perfil, com e-mails fictícios e senhas de 8 a 64 caracteres, com letra e
-   número. Exemplo (troque as senhas):
+3. Rode a carga, escolhendo a senha de todas as contas (8 a 64 caracteres, com letra e número):
 
    ```powershell
-   .venv\Scripts\python.exe manage.py criar_conta_teste --perfil coordenador --status ativa --email coordenador.demo@uea.edu.br --senha TroqueAqui1
-   .venv\Scripts\python.exe manage.py criar_conta_teste --perfil secretaria --status ativa --email secretaria.demo@uea.edu.br --senha TroqueAqui1
-   .venv\Scripts\python.exe manage.py criar_conta_teste --perfil docente --status ativa --email professor.demo@uea.edu.br --senha TroqueAqui1 --turma ECP_DEMO
-   .venv\Scripts\python.exe manage.py criar_conta_teste --perfil docente --status ativa --email orientador.demo@uea.edu.br --senha TroqueAqui1
-   .venv\Scripts\python.exe manage.py criar_conta_teste --perfil aluno --status ativa --matricula 2026000001 --email aluno.demo@uea.edu.br --senha TroqueAqui1 --turma ECP_DEMO
-   .venv\Scripts\python.exe manage.py criar_conta_teste --perfil membro_externo --status ativa --email externo.demo@uea.edu.br --senha TroqueAqui1 --validade 2027-12-31
+   .venv\Scripts\python.exe manage.py popular_demo --senha EscolhaUmaSenha1 --confirmar
    ```
 
-   - O docente com `--turma ECP_DEMO` vira o Professor da Disciplina de uma turma de TCC 1 de teste.
-   - O aluno é matriculado nessa turma.
-   - O comando roda no seu computador com o `DEBUG=True` do seu `.env`, mas grava no banco do
-     Render, porque o `DATABASE_URL` tem prioridade sobre as variáveis `DB_*`.
-
+   - O comando mostra o banco em que vai mexer (`Banco: <nome> em <host>`; o host do Render
+     termina em `render.com`) e pede para digitar o nome desse banco. Ao confirmar, **apaga
+     todos os dados** (contas, turmas, TCCs, notificações e sessões), mantendo só cursos,
+     códigos de curso e áreas de interesse.
+   - Depois monta os cenários pelos mesmos serviços das telas, numa única transação. Se algo
+     falhar, nada é alterado.
+   - No fim, lista as contas de cada perfil e os alunos com a situação de cada um. Pode rodar de
+     novo sempre que quiser voltar ao estado inicial (leva cerca de 1 minuto pela internet).
 4. Feche essa janela do PowerShell ou rode `Remove-Item Env:DATABASE_URL`. **Enquanto a variável
    existir, todo comando `manage.py` daquela janela mexe no banco do Render.**
-5. Entregue à professora o link e os logins por um canal privado (e-mail ou mensagem), nunca pelo
-   repositório.
+5. Entregue à professora o link, a senha e a lista de contas por um canal privado.
 
-Outra forma de criar contas é pelas telas. Entre como Coordenador e cadastre docentes, secretaria
-e alunos. O link de primeiro acesso é enviado por e-mail; sem o Passo 5, ele aparece na aba
-**Logs** do serviço (procure `Subject:` e o endereço `https://...`).
+### O que a carga monta
+
+Os e-mails são fictícios (`demo.nome@uea.edu.br`). Os alunos entram com o e-mail ou a matrícula.
+
+| Turma | Situação | O que dá para ver |
+|---|---|---|
+| ECP-TCC1-2026.1 | Arquivada | Aprovados para TCC 2, um Reprovado e um Desistente; só consulta |
+| ECP-TCC2-2026.1 | Arquivada | Dois Concluídos, com a Versão Final homologada |
+| ECP-TCC1-2026.2 | Ativa | Sem Proposta (com e sem pedido de orientação), pedido pendente, pedido recusado, troca de orientador pendente, coorientador do NUCOMP (aceito e convite pendente), coorientador externo, atas com comentários, entregas no prazo, com atraso e não entregues, "Apto para Defesa" disponível e já indicado, Proposta incompleta, artigo aguardando aproveitamento, Jubilado, aluno excluído e 2 contas aguardando o primeiro acesso |
+| ECP-TCC2-2026.2-A | Ativa, orientador automático | Alunos vindos do TCC 1, Apto para Defesa, Aprovado com Versão Final para homologar, Concluído, Versão Final devolvida para ajuste e um aluno transferido |
+| ECP-TCC2-2026.2-B | Ativa | Destino da transferência e alunos novos |
+| SI-TCC1-2026.2 | Ativa | Orientações, Apto, pedido pendente, coorientador externo e artigo homologado |
+| SI-TCC2-2026.2 | Ativa | Aprovado com Correções com e sem "Correções Conferidas", Reprovado e artigo recusado |
+| LIC-TCC1-2026.2 | Ativa | Turma pequena de outro curso, para o filtro por curso |
+
+Também cria os 3 Coordenadores, as Secretarias (uma inativa), docentes ativos, um inativo e um
+aguardando ativação, e membros externos ativo, expirado e aguardando ativação. As notificações
+geradas pelos próprios serviços aparecem no sino de cada conta.
+
+O resultado da defesa ainda não tem tela (Épico 2). Os Status "Aprovado para TCC 2", "Aprovado",
+"Aprovado com Correções" e "Reprovado" são simulados pelo mesmo serviço do Status, com o gatilho
+"Liberação do resultado".
 
 ## Passo 5 (opcional). Envio real de e-mail
 
 Sem este passo, o sistema funciona e os e-mails (primeiro acesso, "Esqueci minha senha",
-notificações) só aparecem em **Logs**. Para enviar de verdade:
-
-- O plano gratuito do Render bloqueia as portas SMTP comuns (25, 465 e 587), então o Gmail não
-  funciona lá.
-- O **Brevo** (gratuito, 300 e-mails por dia) aceita a porta **2525**.
+notificações) só aparecem em **Logs**. Para enviar de verdade pelo **Brevo** (gratuito, 300
+e-mails por dia):
 
 1. Crie a conta em <https://www.brevo.com>.
 2. Em **Senders, Domains & Dedicated IPs** > **Senders**, cadastre e confirme o e-mail remetente
    (pode ser o seu Gmail).
-3. Em **SMTP & API** > **SMTP**, gere uma **SMTP key**. Anote o login que aparece na mesma tela.
+3. Em **SMTP & API** > **SMTP**, gere uma **SMTP key**. Anote o login que aparece na mesma tela
+   (algo como `xxxx@smtp-brevo.com`).
 4. No Render, abra o serviço **sigtcc** > **Environment** e cadastre:
 
    | Chave | Valor |
@@ -126,8 +139,28 @@ notificações) só aparecem em **Logs**. Para enviar de verdade:
 
 5. Clique em **Save, rebuild, and deploy**.
 
-Para os e-mails chegarem, as contas precisam ter e-mails reais. Os `.demo@uea.edu.br` do Passo 4
-não recebem nada.
+**Use a porta 2525, mesmo que o Brevo mostre 587.** O plano gratuito do Render bloqueia as portas
+SMTP 25, 465 e 587, e o Brevo aceita as mesmas credenciais na 2525. Com a 587, o envio fica
+esperando e falha depois do `EMAIL_TIMEOUT` (10 segundos), e a tela não mostra erro.
+
+### Como testar o envio
+
+O jeito mais simples usa um e-mail seu, de qualquer domínio:
+
+1. Entre no sistema como **Coordenador** (por exemplo `demo.ricardo.prado@uea.edu.br`).
+2. Em **Gestão de Contas** > **Membros externos**, cadastre um membro com o **seu e-mail
+   pessoal**.
+3. O sistema envia o link de primeiro acesso. Confira:
+   - a caixa de entrada e o spam do seu e-mail;
+   - no Brevo, **Transactional** > **Logs** (ou **Statistics**): o envio aparece como
+     *Delivered*;
+   - no Render, aba **Logs**: se aparecer `FALHA_ENVIO_EMAIL`, o envio falhou. O texto ao lado
+     traz o tipo do erro: `TimeoutError` indica porta bloqueada (use a 2525);
+     `SMTPAuthenticationError` indica login ou SMTP key errados.
+4. Se quiser, siga o link e conclua o primeiro acesso: isso testa o fluxo inteiro.
+
+Os e-mails `demo.…@uea.edu.br` da carga não existem; os envios para eles voltam e aparecem como
+*Bounced* no Brevo, o que é esperado.
 
 ## Limitações do plano gratuito
 
@@ -159,5 +192,5 @@ não recebem nada.
 | `Bad Request (400)` ao abrir o link | Em **Environment**, crie `ALLOWED_HOSTS` com o domínio, sem `https://`. |
 | Erro 403 (CSRF) ao entrar | Crie `CSRF_TRUSTED_ORIGINS` com `https://<o-seu-domínio>` e confira se `COOKIES_SEGUROS` é `True`. |
 | Página sem estilo | Confira em **Logs** se o `collectstatic` rodou no build. |
-| `criar_conta_teste` grava no banco local | O `$env:DATABASE_URL` não foi definido naquela janela do PowerShell. |
+| `popular_demo` diz que o banco é local | O `$env:DATABASE_URL` não foi definido naquela janela do PowerShell. O comando recusa banco local (`localhost`) sem a opção `--local`, então nada foi alterado. |
 | Algo deu errado e quer recomeçar | Apague o Blueprint, o serviço e o banco no Render e repita o Passo 3. |
