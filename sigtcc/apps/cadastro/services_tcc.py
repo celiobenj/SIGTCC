@@ -89,12 +89,13 @@ def pode_ver_resumo(usuario, tcc):
         ori_tcc=tcc, ori_status=StatusOrientacao.ATIVA, ori_doc_id=usuario.pk
     ).exists():
         return True
-    # Só o pedido de Orientação (TipoSolicitacao.ORIENTACAO); a Coorientação tem regra própria,
-    # abaixo, com coo_status='Ativa' (Coorientador do NUCOMP sem coorientação aceita não vê).
+    # Pedido de Orientação ou de Troca de Orientação pendente (spec 006, IC-05: a troca também
+    # libera, FR-013); a Coorientação tem regra própria, abaixo, com coo_status='Ativa'
+    # (Coorientador do NUCOMP sem coorientação aceita não vê).
     if SolicitacoesOrientacao.objects.filter(
         sol_tcc=tcc,
         sol_doc_id=usuario.pk,
-        sol_tipo=TipoSolicitacao.ORIENTACAO,
+        sol_tipo__in=(TipoSolicitacao.ORIENTACAO, TipoSolicitacao.TROCA_DE_ORIENTACAO),
         sol_status__in=STATUS_SOLICITACAO_PENDENTE,
     ).exists():
         return True
@@ -105,6 +106,21 @@ def pode_ver_resumo(usuario, tcc):
     if tcc.tcc_tur.tur_doc_id == usuario.pk:
         return True
     return False
+
+
+def contexto_historico(tcc, url_voltar):
+    """Contexto da tela de histórico do Status (FR-009, FR-010 da spec 005): lista cronológica,
+    trilha e o endereço do botão "Fechar". Pública para as três rotas que a usam (Aluno,
+    Professor e Orientador; spec 006, IC-06; research R13). Monta `turma = tcc.tcc_tur`.
+    [US-14][FR-009][FR-010][spec 006 FR-043][IC-06]
+    """
+    return {
+        "turma": tcc.tcc_tur,
+        "tcc": tcc,
+        "historico": historico_do_status(tcc),
+        "trilha": trilha_do_status(tcc),
+        "url_voltar": url_voltar,
+    }
 
 
 def historico_do_status(tcc):

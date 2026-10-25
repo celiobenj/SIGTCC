@@ -11,11 +11,21 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
-from sigtcc.apps.cadastro import mensagens, services_entregas, services_tcc, services_turmas
+from sigtcc.apps.cadastro import (
+    mensagens,
+    services_artigos,
+    services_entregas,
+    services_orientacao,
+    services_tcc,
+    services_turmas,
+)
 from sigtcc.apps.cadastro.choices import StatusTCC
+from sigtcc.apps.cadastro.forms_artigos import PublicacaoForm
 from sigtcc.apps.cadastro.forms_entregas import EnviarLinkForm
 from sigtcc.apps.cadastro.forms_tcc import DadosTCCForm, PropostaForm
+from sigtcc.apps.cadastro.models import EncontroOrientacao
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import CONSULTAR, TurmaArquivada
 
@@ -138,6 +148,7 @@ def meu_tcc(request, tur_id):
             return redirect("cadastro:meu_tcc", tur_id=tur_id)
 
     versao_final = services_entregas.secao_versao_final(aluno, turma, tcc)
+    publicacao = services_artigos.contexto_publicacao(tcc)
     contexto = {
         "turma": turma,
         "tcc": tcc,
@@ -154,21 +165,18 @@ def meu_tcc(request, tur_id):
         "versao_final_atraso": mensagens.MF01_DATA_LIMITE_VENCIDA,
         # Campo Link da Versão Final com o link já enviado (US-29, fluxo D; FR-019).
         "form_versao_final": _form_versao_final(versao_final),
+        # Spec 006 (IC-09): seção Orientação (US-17, US-45; FR-001 a FR-007, FR-049).
+        "orientacao": services_orientacao.contexto_secao_orientacao(tcc),
+        # Spec 006 (IC-09): seção Publicação do artigo (US-46; FR-034), só em Artigo Científico.
+        "publicacao": publicacao,
+        "form_publicacao": (PublicacaoForm(initial=publicacao["inicial"]) if publicacao else None),
+        # Spec 006 (IC-09): seção Atas de orientação (US-19; FR-022).
+        "atas": {
+            "n": EncontroOrientacao.objects.filter(enc_tcc=tcc).count(),
+            "pode_registrar": services_orientacao.pode_alterar_no_tcc(tcc),
+        },
     }
     return render(request, "cadastro/tcc/meu_tcc.html", contexto)
-
-
-def _contexto_historico(turma, tcc):
-    """Contexto comum às duas views de histórico: lista cronológica e trilha (FR-009, FR-010).
-
-    [US-14][FR-009][FR-010]
-    """
-    return {
-        "turma": turma,
-        "tcc": tcc,
-        "historico": services_tcc.historico_do_status(tcc),
-        "trilha": services_tcc.trilha_do_status(tcc),
-    }
 
 
 @perfil_requerido("aluno")
@@ -182,7 +190,8 @@ def historico_status_aluno(request, tur_id):
     tcc = services_turmas.tcc_do_aluno(turma, aluno)
     if tcc is None:
         raise Http404
-    contexto = _contexto_historico(turma, tcc)
+    # "Fechar" volta à aba Meu TCC (spec 006, IC-06). [FR-043]
+    contexto = services_tcc.contexto_historico(tcc, reverse("cadastro:meu_tcc", args=[turma.pk]))
     return render(request, "cadastro/tcc/historico_status.html", contexto)
 
 
@@ -201,5 +210,8 @@ def historico_status(request, tur_id, alu_id):
     tcc = services_turmas.tcc_do_aluno(turma, aluno)
     if tcc is None:
         raise Http404
-    contexto = _contexto_historico(turma, tcc)
+    # "Fechar" volta ao painel do aluno (spec 006, IC-06; FR-044). [FR-043][FR-044]
+    contexto = services_tcc.contexto_historico(
+        tcc, reverse("cadastro:painel_aluno", args=[turma.pk, aluno.pk])
+    )
     return render(request, "cadastro/tcc/historico_status.html", contexto)

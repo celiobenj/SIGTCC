@@ -6,11 +6,15 @@
   (E4), com a turma arquivada ou depois da avaliação, só a consulta. Em Sistemas de Informação
   com parecer "Aprovado com Correções", Homologar fica indisponível até o Orientador acionar
   "Correções Conferidas" (E2, spec 006). Sem regra aqui: as condições vêm de services_entregas.
-  [US-44][RBN-CAD-09.3][RBN-CAD-09.5][FR-028][FR-029][FR-030]
+  Spec 006 (IC-07): aberta pelo painel do aluno (?volta=painel), o botão "Voltar" leva ao painel.
+  [US-44][RBN-CAD-09.3][RBN-CAD-09.5][FR-028][FR-029][FR-030][spec 006 FR-044]
 {% endcomment %}
 {% block titulo %}Versão final · {{ aluno.alu.usu_nome }} · SIGTCC{% endblock %}
 {% block conteudo %}
-<h2 class="pg">{{ aluno.alu.usu_nome }}</h2>
+<div class="flex entre flex-wrap">
+  <h2 class="pg">{{ aluno.alu.usu_nome }}</h2>
+  {% if url_painel %}<a class="btn" href="{{ url_painel }}"><span class="ms">arrow_back</span>Voltar</a>{% endif %}
+</div>
 <p class="pg-sub">{{ aluno.alu_matricula }} · {{ turma.tur_identificador }} · {{ turma.tur_descricao }} · <span class="chip">{{ tcc.tcc_status }}</span>{% if arquivada %} · <span class="chip">Arquivada</span>{% endif %}</p>
 <div class="cartao mt16">
   <h3>Versão final</h3>

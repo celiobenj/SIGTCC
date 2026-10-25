@@ -271,8 +271,13 @@ duas turmas em ordem de `tur_id` e depois o TCC (B17):
 MT-24, a justificativa num campo oculto, "Confirmar" e "Cancelar". `excluir_aluno(professor, tur_id,
 alu_id, justificativa)` com a turma e o TCC travados e o aluno pelo `vinculo_na_turma`:
 - TCC 'Sem Proposta' (senão "O aluno já tem Proposta. Use Encerrar participação");
-- se o TCC tiver solicitação de orientação, encontro, coorientação, palavra-chave, publicação ou
-  defesa, a exclusão é recusada com a mesma mensagem (o trabalho já foi movimentado);
+- se o TCC tiver encontro (ata), orientação por pedido aceito, coorientação, palavra-chave,
+  publicação ou defesa, a exclusão é recusada com a mesma mensagem (o trabalho já foi
+  movimentado). Pedido de orientação ou convite de coorientação **não** impede (leitura da
+  RBN-CAD-05.4 revista em 2026-10-24: o que decide é o Status "Sem Proposta"; spec, Clarifications
+  Q20; índice Q-120). Na exclusão, os pendentes são cancelados com a MT-33 ao docente, cada
+  solicitação vai para o log de acesso (`EventoExclusao.SOLICITACAO_REMOVIDA`: tipo, docente,
+  status e datas; RNF de Não Repúdio do RAN-CAD-10) e todas são apagadas antes do TCC;
 - apaga, nesta ordem: `Historico_Status_TCC` do TCC, orientação automática do TCC, o TCC, os
   registros de entrega do aluno nas entregas da turma **sem envio** (os com envio ficam como
   histórico, Q17; a exclusão não é recusada por eles), o `Alunos_Turmas`;

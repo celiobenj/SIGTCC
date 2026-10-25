@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% comment %}
+  Confirmação genérica da feature 006 (Apto para Defesa, Correções Conferidas, Remover
+  coorientador ou convite), no padrão do modal "confirmar" do protótipo de 17/10: título,
+  texto, "Cancelar" (volta à tela de origem) e "Confirmar" (POST com CSRF). Sem regra aqui.
+  [US-42][US-18][US-45][FR-016][FR-027][FR-029][FR-030]
+{% endcomment %}
+{% block titulo %}{{ titulo }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<section class="cartao mt16" style="max-width:560px">
+  <header><span class="ms">help</span><h3>{{ titulo }}</h3></header>
+  <p>{{ texto }}</p>
+  <form method="post" action="{{ url_acao }}" class="flex entre mt16">
+    {% csrf_token %}
+    <a class="btn txt" href="{{ url_cancelar }}">Cancelar</a>
+    <button type="submit" class="btn pri">Confirmar</button>
+  </form>
+</section>
+{% endblock %}

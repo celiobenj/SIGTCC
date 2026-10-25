@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from sigtcc.apps.cadastro import importacao, mensagens, services_turmas
@@ -39,9 +40,10 @@ from sigtcc.apps.cadastro.services_turmas import (
 
 
 def trata_turma_arquivada(view):
-    """Ação em turma arquivada (inclusive pelo endereço direto): MT-25 e volta para a turma.
+    """Ação em turma arquivada (inclusive pelo endereço direto): MT-25 e volta para a turma, ou
+    para o painel do aluno com `?volta=painel` (spec 006, IC-03; research R5, A33).
 
-    [US-07][RBN-CAD-04.5][FR-008]
+    [US-07][RBN-CAD-04.5][FR-008][spec 006 FR-044]
     """
 
     @wraps(view)
@@ -51,9 +53,34 @@ def trata_turma_arquivada(view):
             return view(request, tur_id, *args, **kwargs)
         except TurmaArquivada:
             messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
-            return redirect("cadastro:turma", tur_id=tur_id)
+            return _voltar(request, tur_id, kwargs.get("alu_id"))
 
     return envolta
+
+
+def _volta_painel(request):
+    """`?volta=painel`: o único valor reconhecido; qualquer outro é ignorado (research R5).
+
+    [US-41 C][FR-044][IC-03]
+    """
+    return request.GET.get("volta") == "painel"
+
+
+def _voltar(request, tur_id, alu_id=None):
+    """Redireciona ao painel do aluno (com `?volta=painel` e o aluno da própria rota) ou à
+    turma; a URL é montada no servidor, nunca com texto do usuário (research R5).
+    [US-41 C][FR-044][IC-03]
+    """
+    if alu_id is not None and _volta_painel(request):
+        return redirect("cadastro:painel_aluno", tur_id=tur_id, alu_id=alu_id)
+    return redirect("cadastro:turma", tur_id=tur_id)
+
+
+def _url_cancelar(request, turma, aluno):
+    """Destino do "Cancelar" das telas de ação: painel ou turma (IC-03). [FR-044]"""
+    if _volta_painel(request):
+        return reverse("cadastro:painel_aluno", args=[turma.pk, aluno.pk])
+    return reverse("cadastro:turma", args=[turma.pk])
 
 
 def _turma_do_professor(usuario, tur_id):
@@ -131,6 +158,10 @@ def turma(request, tur_id):
             and services_turmas.turma_tem_orientador_automatico(registro)
         ),
         "e_professor": pode_alterar_turma(request.user, registro),
+        # Spec 006 (IC-02; FR-017): a Secretaria vê os blocos sem abrir o painel.
+        "abre_painel": registro.tur_doc_id == request.user.pk,
+        "sem_proposta": mensagens.SEM_PROPOSTA,
+        "sem_orientador": mensagens.SEM_ORIENTADOR,
     }
     return render(request, "cadastro/turmas/turma.html", contexto)
 
@@ -306,12 +337,13 @@ def aluno_editar(request, tur_id, alu_id):
         dados = formulario.cleaned_data
         services_turmas.editar_aluno(request.user, tur_id, alu_id, dados["nome"], dados["curso"])
         messages.success(request, mensagens.MT14_ALUNO_ATUALIZADO)
-        return redirect("cadastro:turma", tur_id=tur_id)
+        return _voltar(request, tur_id, alu_id)
     contexto = {
         "turma": registro,
         "aluno": aluno,
         "form": formulario,
         "codigos": _codigos_de_curso(),
+        "url_cancelar": _url_cancelar(request, registro, aluno),
     }
     return render(request, "cadastro/turmas/editar_aluno.html", contexto)
 
@@ -421,7 +453,7 @@ def aluno_transferir(request, tur_id, alu_id):
     destinos = services_turmas.turmas_destino_possiveis(registro, aluno)
     if not destinos.exists():
         messages.error(request, mensagens.MT19_SEM_DESTINO)
-        return redirect("cadastro:turma", tur_id=tur_id)
+        return _voltar(request, tur_id, alu_id)
     formulario = TransferenciaForm(
         request.POST if request.method == "POST" else None, destinos=destinos
     )
@@ -443,7 +475,13 @@ def aluno_transferir(request, tur_id, alu_id):
                 return redirect("cadastro:turma", tur_id=tur_id)
         elif "destino" in formulario.errors:
             erro = mensagens.MT19_SEM_DESTINO
-    contexto = {"turma": registro, "aluno": aluno, "form": formulario, "erro": erro}
+    contexto = {
+        "turma": registro,
+        "aluno": aluno,
+        "form": formulario,
+        "erro": erro,
+        "url_cancelar": _url_cancelar(request, registro, aluno),
+    }
     return render(request, "cadastro/turmas/transferir.html", contexto)
 
 
@@ -464,7 +502,7 @@ def aluno_excluir(request, tur_id, alu_id):
     tcc = services_turmas.tcc_do_aluno(registro, aluno)
     if not services_turmas.aluno_pode_ser_excluido(tcc):
         messages.error(request, mensagens.ALUNO_TEM_PROPOSTA)
-        return redirect("cadastro:turma", tur_id=tur_id)
+        return _voltar(request, tur_id, alu_id)
     formulario = ExclusaoAlunoForm(request.POST if request.method == "POST" else None)
     confirmacao_final = False
     if request.method == "POST" and formulario.is_valid():
@@ -485,6 +523,7 @@ def aluno_excluir(request, tur_id, alu_id):
         "form": formulario,
         "confirmacao_final": confirmacao_final,
         "pergunta": mensagens.MT24_CONFIRMAR_EXCLUSAO_ALUNO.format(nome=aluno.alu.usu_nome),
+        "url_cancelar": _url_cancelar(request, registro, aluno),
     }
     return render(request, "cadastro/turmas/excluir_aluno.html", contexto)
 
@@ -515,8 +554,14 @@ def aluno_encerrar(request, tur_id, alu_id):
             messages.success(
                 request, mensagens.MT23_PARTICIPACAO_ENCERRADA.format(status=dados["status"])
             )
-            return redirect("cadastro:turma", tur_id=tur_id)
-    contexto = {"turma": registro, "aluno": aluno, "form": formulario, "erro": erro}
+            return _voltar(request, tur_id, alu_id)
+    contexto = {
+        "turma": registro,
+        "aluno": aluno,
+        "form": formulario,
+        "erro": erro,
+        "url_cancelar": _url_cancelar(request, registro, aluno),
+    }
     return render(request, "cadastro/turmas/encerrar.html", contexto)
 
 

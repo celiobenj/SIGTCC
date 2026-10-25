@@ -5,7 +5,17 @@
 
 from django.urls import path
 
-from sigtcc.apps.cadastro import views, views_contas, views_entregas, views_tcc, views_turmas
+from sigtcc.apps.cadastro import (
+    views,
+    views_artigos,
+    views_atas,
+    views_contas,
+    views_entregas,
+    views_orientacao,
+    views_painel,
+    views_tcc,
+    views_turmas,
+)
 
 app_name = "cadastro"
 
@@ -191,5 +201,141 @@ urlpatterns = [
         "cadastros/membros-externos/<int:mem_id>/prorrogar/",
         views_contas.membro_prorrogar,
         name="contas_membro_prorrogar",
+    ),
+    # Spec 006: seção Orientação do Aluno (contracts/rotas.md §1). [US-17][US-45]
+    path(
+        "turmas/<int:tur_id>/meu-tcc/orientacao/pedido/",
+        views_orientacao.enviar_pedido_orientacao,
+        name="enviar_pedido_orientacao",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/orientacao/pedido/cancelar/",
+        views_orientacao.cancelar_pedido_orientacao,
+        name="cancelar_pedido_orientacao",
+    ),
+    # Spec 006: painel do aluno (contracts/rotas.md §3). [US-41]
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/",
+        views_painel.painel_aluno,
+        name="painel_aluno",
+    ),
+    path(
+        "turmas/<int:tur_id>/alunos/<int:alu_id>/atas/",
+        views_atas.atas_painel,
+        name="atas_painel",
+    ),
+    # Spec 006: coorientadores do Aluno (contracts/rotas.md §1, rotas 3 a 6). [US-45]
+    path(
+        "turmas/<int:tur_id>/meu-tcc/coorientadores/novo/",
+        views_orientacao.registrar_coorientador,
+        name="registrar_coorientador",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/coorientadores/<int:coo_id>/substituir/",
+        views_orientacao.substituir_coorientador,
+        name="substituir_coorientador",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/coorientadores/<int:coo_id>/remover/",
+        views_orientacao.remover_coorientador,
+        name="remover_coorientador",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/convites/<int:sol_id>/remover/",
+        views_orientacao.remover_convite_coorientacao,
+        name="remover_convite_coorientacao",
+    ),
+    # Spec 006: atas do Aluno (contracts/rotas.md §1, rotas 7 a 9). [US-19]
+    path("turmas/<int:tur_id>/meu-tcc/atas/", views_atas.minhas_atas, name="minhas_atas"),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/atas/nova/",
+        views_atas.registrar_ata_aluno,
+        name="registrar_ata_aluno",
+    ),
+    path(
+        "turmas/<int:tur_id>/meu-tcc/atas/<int:enc_id>/editar/",
+        views_atas.editar_ata_aluno,
+        name="editar_ata_aluno",
+    ),
+    # Spec 006: publicação do Aluno (contracts/rotas.md §1, rota 10). [US-46]
+    path(
+        "turmas/<int:tur_id>/meu-tcc/publicacao/",
+        views_artigos.salvar_publicacao_aluno,
+        name="salvar_publicacao_aluno",
+    ),
+    # Spec 006: aproveitamento de artigos do Coordenador (contracts/rotas.md §4). [US-20]
+    path("artigos/", views_artigos.aproveitamento_artigos, name="aproveitamento_artigos"),
+    path(
+        "artigos/<int:tcc_id>/homologar/",
+        views_artigos.homologar_artigo,
+        name="homologar_artigo",
+    ),
+    path("artigos/<int:tcc_id>/recusar/", views_artigos.recusar_artigo, name="recusar_artigo"),
+    # Spec 006: tela Orientações do docente (contracts/rotas.md §2). [US-18][US-36]
+    path("orientacoes/", views_orientacao.orientacoes, name="orientacoes"),
+    path(
+        "orientacoes/solicitacoes/<int:sol_id>/aceitar/",
+        views_orientacao.aceitar_solicitacao,
+        name="aceitar_solicitacao",
+    ),
+    path(
+        "orientacoes/solicitacoes/<int:sol_id>/recusar/",
+        views_orientacao.recusar_solicitacao,
+        name="recusar_solicitacao",
+    ),
+    path(
+        "orientacoes/solicitacoes/<int:sol_id>/proposta/",
+        views_orientacao.ver_proposta,
+        name="ver_proposta",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/atas/",
+        views_atas.atas_orientando,
+        name="atas_orientando",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/atas/nova/",
+        views_atas.registrar_ata_docente,
+        name="registrar_ata_docente",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/atas/<int:enc_id>/editar/",
+        views_atas.editar_ata_docente,
+        name="editar_ata_docente",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/atas/<int:enc_id>/comentar/",
+        views_atas.comentar_ata,
+        name="comentar_ata",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/publicacao/",
+        views_artigos.publicacao_orientando,
+        name="publicacao_orientando",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/apto/",
+        views_orientacao.indicar_apto,
+        name="indicar_apto",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/historico/",
+        views_orientacao.historico_orientando,
+        name="historico_orientando",
+    ),
+    path(
+        "orientacoes/tcc/<int:tcc_id>/correcoes-conferidas/",
+        views_orientacao.correcoes_conferidas,
+        name="correcoes_conferidas",
+    ),
+    path(
+        "orientacoes/pedidos/<int:sol_id>/",
+        views_orientacao.pedido_orientacao,
+        name="pedido_orientacao",
+    ),
+    path(
+        "orientacoes/convites/<int:sol_id>/",
+        views_orientacao.convite_coorientacao,
+        name="convite_coorientacao",
     ),
 ]

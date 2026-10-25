@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% comment %}
+  Lista de atas de orientação, como secAtas do protótipo de 17/10: cada ata com a Data do
+  Encontro, Pauta Discutida, Metas Acordadas e os comentários (autor, data e hora); "Editar" e
+  "Comentar" só quando o papel permite (o Aluno não comenta; o Professor da Disciplina só
+  consulta); no TCC 2, as atas do TCC 1 abaixo, só para consulta. "Voltar" leva à tela de origem.
+  Sem regra aqui: os endereços vêm prontos da view (vazios quando a ação não é permitida).
+  [US-19][RBN-CAD-11.2][FR-023][FR-024][FR-025][Q6][D14]
+{% endcomment %}
+{% block titulo %}Atas de orientação · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <div>
+    <h2 class="pg">Atas de orientação</h2>
+    <p class="pg-sub">{{ tcc.tcc_alu.alu.usu_nome }} · {{ tcc.tcc_tur.tur_identificador }}</p>
+  </div>
+  <div class="flex flex-wrap">
+    {% if url_registrar %}<a class="btn" href="{{ url_registrar }}"><span class="ms">add</span>Registrar ata</a>{% endif %}
+    <a class="btn txt" href="{{ url_voltar }}"><span class="ms">arrow_back</span>Voltar</a>
+  </div>
+</div>
+
+<section class="cartao mt16">
+  <header><span class="ms">history_edu</span><h3>Atas de orientação</h3><span class="cont">{{ linhas|length }} encontro(s)</span></header>
+  {% for linha in linhas %}
+  <div class="ata">
+    <div class="flex entre"><b>{{ linha.ata.enc_data|date:"d/m/Y" }}</b></div>
+    <div class="dado"><span>Pauta Discutida</span><div style="white-space:pre-wrap">{{ linha.ata.enc_pauta }}</div></div>
+    <div class="dado"><span>Metas Acordadas</span><div style="white-space:pre-wrap">{{ linha.ata.enc_metas }}</div></div>
+    {% for c in linha.comentarios %}
+    <div class="alerta info" style="margin:6px 0 0"><span class="ms">comment</span><span class="texto">{{ c.com_texto }}<br><small>{{ c.com_usu.usu_nome }} · {{ c.com_data_hora|date:"d/m/Y H:i" }}</small></span></div>
+    {% endfor %}
+    {% if linha.url_editar or linha.url_comentar %}
+    <div class="flex mt16">
+      {% if linha.url_editar %}<a class="btn txt" href="{{ linha.url_editar }}">Editar</a>{% endif %}
+      {% if linha.url_comentar %}<a class="btn txt" href="{{ linha.url_comentar }}">Comentar</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <p class="muted">Nenhum encontro registrado.</p>
+  {% endfor %}
+</section>
+
+{% if origem %}
+<section class="cartao mt16">
+  <header><span class="ms">history_edu</span><h3>Atas do TCC 1 · {{ origem.tcc_tur.tur_identificador }}</h3><span class="cont">{{ linhas_origem|length }} encontro(s)</span></header>
+  {% for linha in linhas_origem %}
+  <div class="ata">
+    <b>{{ linha.ata.enc_data|date:"d/m/Y" }}</b>
+    <div class="dado"><span>Pauta Discutida</span><div style="white-space:pre-wrap">{{ linha.ata.enc_pauta }}</div></div>
+    <div class="dado"><span>Metas Acordadas</span><div style="white-space:pre-wrap">{{ linha.ata.enc_metas }}</div></div>
+    {% for c in linha.comentarios %}
+    <div class="alerta info" style="margin:6px 0 0"><span class="ms">comment</span><span class="texto">{{ c.com_texto }}<br><small>{{ c.com_usu.usu_nome }} · {{ c.com_data_hora|date:"d/m/Y H:i" }}</small></span></div>
+    {% endfor %}
+  </div>
+  {% empty %}
+  <p class="muted">Nenhum encontro registrado.</p>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

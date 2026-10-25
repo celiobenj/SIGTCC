@@ -10,7 +10,8 @@ arquivos. Mais os casos das Clarifications (Q6, Q7, Q16 a Q18) e da revisão.
 from unittest import mock
 
 from django.core import mail
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
@@ -23,8 +24,10 @@ from sigtcc.apps.cadastro.choices import (
     StatusCoorientacao,
     StatusEntrega,
     StatusOrientacao,
+    StatusSolicitacao,
     StatusTCC,
     StatusTurma,
+    TipoSolicitacao,
 )
 from sigtcc.apps.cadastro.models import (
     Alunos,
@@ -33,6 +36,7 @@ from sigtcc.apps.cadastro.models import (
     Coorientacoes,
     EntregasMarcos,
     HistoricoStatusTCC,
+    Notificacoes,
     Orientacoes,
     PalavrasChaveTCC,
     TCCs,
@@ -47,6 +51,7 @@ from sigtcc.apps.cadastro.tests.apoio_turmas import (
     criar_aluno_novo,
     criar_entrega,
     criar_envio,
+    criar_solicitacao,
     criar_turma_de,
     entrega_do_aluno,
     matricular_aluno,
@@ -406,3 +411,81 @@ class MatriculaTest(TesteTurmas):
         criar_aluno_novo(matricula="2026000777")
         with self.assertRaises(IntegrityError):
             criar_aluno_novo(matricula="2026000777")
+
+
+class CopiaTcc2Spec006Test(TesteTurmas):
+    """Spec 006 (IC-04; FR-050, FR-051; Q6, Q7): a cópia para o TCC 2 trava o TCC 1, cancela os
+    pedidos e convites pendentes dele com o mesmo instante do gatilho "Transferência para TCC 2"
+    e avisa cada docente com a MO-18. [US-08][RBN-CAD-08.6][FR-050][FR-051][Q6][Q7][IC-04]
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.professor = criar_docente_ativo()
+        self.client.force_login(self.professor)
+        turma1 = criar_turma_de(criar_docente_ativo(), curso_nome=SI, status=StatusTurma.ARQUIVADA)
+        self.aluno = matricular_aluno(
+            turma1, matricula="2026000123", status_tcc=StatusTCC.APROVADO_PARA_TCC_2
+        )
+        self.tcc1 = tcc_de(self.aluno, turma1)
+        self.docente_pedido = criar_docente_ativo()
+        self.docente_convite = criar_docente_ativo()
+        self.pedido = criar_solicitacao(self.tcc1, self.docente_pedido)
+        self.convite = criar_solicitacao(
+            self.tcc1, self.docente_convite, tipo=TipoSolicitacao.COORIENTACAO
+        )
+        self.turma2 = criar_turma_de(self.professor, descricao=DescricaoTurma.TCC_2, curso_nome=SI)
+
+    def matricular(self):
+        url = reverse("cadastro:matricular", args=[self.turma2.pk])
+        dados = {"matricula": "2026000123", "nome": "Ana Maria Souza", "curso": "EST08MCPD"}
+        return self.client.post(url, dados, follow=True)
+
+    def test_pendentes_do_tcc1_cancelados_com_o_instante_do_gatilho(self):
+        self.matricular()
+        novo = tcc_de(self.aluno, self.turma2)
+        gatilho = HistoricoStatusTCC.objects.get(
+            hst_tcc=novo, hst_gatilho=GatilhoStatusTCC.TRANSFERENCIA_PARA_TCC_2
+        )
+        for solicitacao in (self.pedido, self.convite):
+            solicitacao.refresh_from_db()
+            self.assertEqual(solicitacao.sol_status, StatusSolicitacao.CANCELADO)
+            self.assertEqual(solicitacao.sol_data_resposta, gatilho.hst_data_hora)
+
+    def test_cada_docente_recebe_a_mo18_com_link_orientacoes(self):
+        self.matricular()
+        for docente, tipo in (
+            (self.docente_pedido, mensagens.TIPO_PEDIDO_ORIENTACAO),
+            (self.docente_convite, mensagens.TIPO_CONVITE_COORIENTACAO),
+        ):
+            aviso = Notificacoes.objects.get(not_usu=docente)
+            self.assertEqual(
+                aviso.not_mensagem,
+                mensagens.MO18_NOTIFICACAO.format(tipo=tipo, nome=self.aluno.alu.usu_nome),
+            )
+            self.assertEqual(aviso.not_link_tela, reverse("cadastro:orientacoes"))
+
+    def test_tcc1_e_travado_na_copia(self):
+        with CaptureQueriesContext(connection) as consultas:
+            self.matricular()
+        travas = [
+            c["sql"]
+            for c in consultas.captured_queries
+            if "FOR UPDATE" in c["sql"] and '"TCCs"' in c["sql"]
+        ]
+        self.assertTrue(travas)
+
+    def test_orientacao_copiada_tem_o_instante_do_gatilho(self):
+        Orientacoes.objects.create(
+            ori_tcc=self.tcc1,
+            ori_doc=self.docente_pedido.docentes,
+            ori_origem=OrigemOrientacao.PEDIDO_ACEITO,
+            ori_status=StatusOrientacao.ATIVA,
+            ori_data_inicio=timezone.now(),
+        )
+        self.pedido.delete()
+        self.matricular()
+        novo = tcc_de(self.aluno, self.turma2)
+        gatilho = HistoricoStatusTCC.objects.get(hst_tcc=novo)
+        ativa = Orientacoes.objects.get(ori_tcc=novo, ori_status=StatusOrientacao.ATIVA)
+        self.assertEqual(ativa.ori_data_inicio, gatilho.hst_data_hora)

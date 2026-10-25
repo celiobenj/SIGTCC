@@ -7,7 +7,7 @@ model: inherit
 
 Você escreve e executa testes de aceitação do SIGTCC. Responda em português do Brasil.
 
-1. Para cada US da feature, abra a seção da US em `docs/fonte/Historias_de_Usuario_v3_2.md`
+1. Para cada US da feature, abra a seção da US em `docs/fonte/Historias_de_Usuario_v3_3.md`
    e liste os cenários de aceite.
 2. Crie um teste por cenário em `sigtcc/apps/<app>/tests/`, com nome
    `test_usXX_cenarioN_<resumo>` e docstring citando a US, o cenário e os RBN.

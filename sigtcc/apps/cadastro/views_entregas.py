@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import mensagens, services_entregas, services_tcc, services_turmas
@@ -238,7 +239,7 @@ def aluno_versao_final(request, tur_id, alu_id):
         if acao == "homologar":
             services_entregas.homologar_versao_final(request.user, tur_id, alu_id)
             messages.success(request, mensagens.VERSAO_FINAL_HOMOLOGADA)
-            return redirect("cadastro:aluno_versao_final", tur_id=tur_id, alu_id=alu_id)
+            return _voltar_versao_final(request, tur_id, alu_id)
         if acao == "devolver":
             formulario = DevolverParaAjusteForm(request.POST)
             if formulario.is_valid():
@@ -246,7 +247,7 @@ def aluno_versao_final(request, tur_id, alu_id):
                     request.user, tur_id, alu_id, formulario.cleaned_data["mensagem"]
                 )
                 messages.success(request, mensagens.MF02_VERSAO_FINAL_DEVOLVIDA)
-                return redirect("cadastro:aluno_versao_final", tur_id=tur_id, alu_id=alu_id)
+                return _voltar_versao_final(request, tur_id, alu_id)
             # Ação pelo endereço direto em turma arquivada: MT-25 antes de mostrar o erro.
             services_turmas.exigir_turma_ativa(turma)
 
@@ -266,5 +267,20 @@ def aluno_versao_final(request, tur_id, alu_id):
         and services_entregas.exige_correcoes_conferidas(turma, tcc)
         and entrega.ent_correcoes_conferidas_em is None,
         "form": formulario,
+        # Spec 006 (IC-07; FR-044): aberta pelo painel, "Voltar" ao painel.
+        "url_painel": (
+            reverse("cadastro:painel_aluno", args=[tur_id, alu_id])
+            if request.GET.get("volta") == "painel"
+            else ""
+        ),
     }
     return render(request, "cadastro/tcc/homologar_versao_final.html", contexto)
+
+
+def _voltar_versao_final(request, tur_id, alu_id):
+    """Depois de Homologar ou Devolver: ao painel do aluno com `?volta=painel` (spec 006, IC-07;
+    research R5), senão à própria tela, como antes. [US-44][FR-044][IC-07]
+    """
+    if request.GET.get("volta") == "painel":
+        return redirect("cadastro:painel_aluno", tur_id=tur_id, alu_id=alu_id)
+    return redirect("cadastro:aluno_versao_final", tur_id=tur_id, alu_id=alu_id)

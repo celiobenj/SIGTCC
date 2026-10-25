@@ -162,6 +162,16 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
   ou 'Expirada', a tela do aluno abre sem o botão e a ação é recusada (acesso não permitido, M-02);
   reativar a conta continua sendo da US-04 (spec 002).
 
+### Session 2026-10-22 (registrada em 2026-10-24)
+
+- Q30 (respondida em 2026-10-22 na spec 002, Clarifications Q9; Q-50 do índice; registrada nesta
+  spec por Célio Benjamim em 2026-10-24): unificar os textos de acesso negado e de campo
+  obrigatório? As US-03, 04, 05 e 50 (e outras) usam "Você não tem permissão para esta ação" e
+  "Campo obrigatório", diferentes das provisórias M-02 e M-14 desta spec. → A: usar no sistema todo
+  os textos das US, sem alterar as US: M-02 = "Você não tem permissão para esta ação" e M-14 =
+  "Campo obrigatório" (tabela "Mensagens a validar com a PO"; constantes já trocadas em
+  `mensagens.py` pela spec 002).
+
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários abaixo reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
@@ -700,7 +710,7 @@ mas não bloqueiam as tarefas nem a implementação (Q25). Depois da resposta, c
 | ID | Situação em que aparece | Texto proposto (PROVISÓRIO) | Origem | Situação |
 |---|---|---|---|---|
 | M-01 | Login bloqueado após 3 senhas incorretas seguidas; N é o tempo restante em minutos | "Acesso bloqueado por 15 minutos após 3 tentativas incorretas. Tente novamente em N minutos." | US-11 E2 e cenário 5; RBN-CAD-06.6 ("mensagem informando o bloqueio e o tempo restante") | A validar |
-| M-02 | Usuário autenticado abre uma página que o seu perfil não pode acessar | "Você não tem permissão para acessar esta página." | FR-025 (verificação de perfil); RNF de Confidencialidade do RAN-CAD-01 e do RAN-CAD-02 | A validar |
+| M-02 | Usuário autenticado abre uma página que o seu perfil não pode acessar | "Você não tem permissão para esta ação" | FR-025 (verificação de perfil); RNF de Confidencialidade do RAN-CAD-01 e do RAN-CAD-02; texto das US-03, 04, 05 e 50 (Clarifications Q30) | Decidido (Q30; Q-50) |
 | M-03 | Complemento de "Esta conta já está ativa" no primeiro acesso | "Use \"Esqueci minha senha\" ou, se o e-mail estiver errado, procure o Professor da Disciplina." | US-10 E2 e cenário 7 ("orienta a usar…") | A validar |
 | M-04 | Imagem de assinatura que não é PNG ou JPG, ou maior que 2 MB | "Envie uma imagem PNG ou JPG com até 2 MB." | US-38 E2, cenários 3 e 11; RBN-CAD-13.1 | A validar |
 | M-05 | E-mail informado no perfil já usado por outra conta | "Este e-mail já está vinculado a outra conta." | US-38 E2; RBN-CAD-13.1 | A validar |
@@ -712,7 +722,7 @@ mas não bloqueiam as tarefas nem a implementação (Q25). Depois da resposta, c
 | M-11 | E-mail institucional do Aluno fora de @uea.edu.br em "Meu perfil" | "Informe o seu e-mail institucional da UEA (@uea.edu.br)" (reaproveita o texto da US-10) | US-38 E2 e cenário 6 | A validar |
 | M-12 | Confirmação do "Resetar primeiro acesso" (pergunta antes de executar) | "Resetar o primeiro acesso de NOME? O e-mail e a senha vinculados serão apagados e o aluno deverá refazer o primeiro acesso." | US-12 A2 e cenário 5; RBN-CAD-06.8 | A validar |
 | M-13 | Reset do primeiro acesso concluído | "Primeiro acesso resetado. O aluno já pode refazer o primeiro acesso." | US-12 A2 | A validar |
-| M-14 | Campo obrigatório vazio nos formulários desta feature (exceto o login, que já tem texto) | "Preencha este campo." | US-10, US-12 e US-38 (não tratam o caso) | A validar |
+| M-14 | Campo obrigatório vazio nos formulários desta feature (exceto o login, que já tem texto) | "Campo obrigatório" | US-10, US-12 e US-38 (não tratam o caso); texto das demais US (Clarifications Q30) | Decidido (Q30; Q-50) |
 | M-15 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Inativa' (Q6, Q26) | "Conta inativa" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E5 | A validar |
 | M-16 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Expirada' ou de Membro Externo com a validade vencida (Q4, Q6, Q26) | "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E3 | A validar |
 | M-17 | Falha no envio do e-mail no primeiro acesso, no reenvio do link ou na troca de e-mail (Q13) | "Não foi possível enviar o e-mail agora. Tente novamente em alguns minutos." | Nenhuma fonte trata o caso | A validar |

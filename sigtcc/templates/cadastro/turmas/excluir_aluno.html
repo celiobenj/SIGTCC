@@ -16,7 +16,7 @@
     <input type="hidden" name="justificativa" value="{{ form.cleaned_data.justificativa }}">
     <input type="hidden" name="confirmacao_final" value="1">
     <div class="flex entre mt16">
-      <a class="btn txt" href="{% url 'cadastro:turma' turma.pk %}">Cancelar</a>
+      <a class="btn txt" href="{{ url_cancelar }}">Cancelar</a>
       <button type="submit" class="btn pri perigo">Confirmar</button>
     </div>
   </form>
@@ -26,7 +26,7 @@
     {% csrf_token %}
     {% include "includes/campo.html" with campo=form.justificativa %}
     <div class="flex entre mt16">
-      <a class="btn txt" href="{% url 'cadastro:turma' turma.pk %}">Cancelar</a>
+      <a class="btn txt" href="{{ url_cancelar }}">Cancelar</a>
       <button type="submit" class="btn pri perigo">Confirmar</button>
     </div>
   </form>

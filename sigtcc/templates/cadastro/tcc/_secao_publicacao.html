@@ -1,0 +1,27 @@
+{% comment %}
+  Seção "Publicação do artigo" (só Artigo Científico), como formPublicacao e secPublicacaoPainel
+  do protótipo de 17/10: etiqueta de aproveitamento, Veículo, Link ou DOI, Estrato Qualis/CAPES e
+  Status de Submissão e "Salvar publicação"; só leitura quando não pode salvar (FR-007). Uso:
+  {% include "cadastro/tcc/_secao_publicacao.html" with pub=publicacao url_acao=... %}
+  [US-46][RBN-CAD-12.1][RBN-CAD-12.3][FR-034][FR-035][D10]
+{% endcomment %}
+<section id="publicacao">
+  {% if not sem_titulo %}<div class="sec-tit c-azul">Publicação do artigo <span class="chip azul">{{ pub.etiqueta }}</span></div>{% endif %}
+  {% if pub.pode_salvar %}
+  <form method="post" action="{{ url_acao }}" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form_publicacao.veiculo %}
+    {% include "includes/campo.html" with campo=form_publicacao.link %}
+    {% include "includes/campo.html" with campo=form_publicacao.qualis %}
+    {% include "includes/campo.html" with campo=form_publicacao.status %}
+    <div class="flex entre mt16"><span></span><button type="submit" class="btn pri">Salvar publicação</button></div>
+  </form>
+  {% elif pub.artigo %}
+  <div class="dado"><span>Veículo de Publicação</span><div>{{ pub.artigo.art_veiculo_publicacao|default:"—" }}</div></div>
+  <div class="dado"><span>Link ou DOI</span><div><a href="{{ pub.artigo.art_link_doi }}" target="_blank" rel="noopener noreferrer">{{ pub.artigo.art_link_doi }}</a></div></div>
+  <div class="dado"><span>Estrato Qualis/CAPES</span><div>{{ pub.artigo.art_qualis_capes|default:"—" }}</div></div>
+  <div class="dado"><span>Status de Submissão</span><div>{{ pub.artigo.art_status_submissao|default:"—" }}</div></div>
+  {% else %}
+  <p class="muted">Nenhuma publicação registrada.</p>
+  {% endif %}
+</section>

@@ -13,7 +13,7 @@ servicos-compartilhados.md` e `specs/004-turmas-alunos/contracts/servicos-compar
 |---|---|
 | `TCCs` (modelo) | leitura direta pela 006: `tcc_titulo`, `tcc_subtitulo`, `tcc_modalidade`, `tcc_link_proposta`, `tcc_ari`, palavras-chave (`PalavrasChave_TCC`) |
 | `services_tcc.pode_ver_resumo(usuario, tcc) -> bool` (FR-007a) | **única forma permitida** de decidir se `tcc_resumo` pode ser exibido a `usuario`: verdadeiro só para o próprio Aluno, o Orientador atual (`Orientacoes.ori_status='Ativa'`), um Docente com `Solicitacoes_Orientacao` pendente para esse TCC, o Coorientador do NUCOMP com `Coorientacoes.coo_status='Ativa'`, ou o Professor da Disciplina da turma do TCC. Título e Modalidade não têm essa restrição (visíveis também à banca, na agenda de defesas e nos relatórios). A spec 006 (telas de banca, agenda, atas) e o Épico 3 (relatórios) **devem chamar esta função** antes de exibir `tcc_resumo` em qualquer tela ou exportação nova — nunca reimplementar a regra (research C3; achado de revisão do `arquiteto-django`, importante #4). |
-| `services_tcc.tcc_e_do_curso_com_orientador_automatico(tcc)` | reexporta `services_turmas.turma_tem_orientador_automatico(tcc.tcc_tur)`, para a 006 decidir se o Professor da Disciplina já é o Orientador (RBN-CAD-04.2) |
+| `services_turmas.turma_tem_orientador_automatico(tcc.tcc_tur)` | para a 006 decidir se o Professor da Disciplina já é o Orientador (RBN-CAD-04.2). *Correção de 2026-10-24 (revisão do plano 006): esta linha citava `services_tcc.tcc_e_do_curso_com_orientador_automatico`, que nunca foi criada; a 006 chama a função da spec 004 diretamente.* |
 
 Esta spec **não** cria nem edita a Proposta por nenhum outro fluxo que o do Aluno (US-13); a 006
 só lê.

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% comment %}
+  Tela "Aproveitamento de artigos" do Coordenador de Curso, como viewArtigos do protótipo de
+  17/10: título, texto sobre a nota mínima, filtro Curso (3 cursos e Todos) e a tabela com Aluno,
+  Orientador, Título do TCC, Veículo, Estrato Qualis/CAPES, o link "abrir" e o aproveitamento,
+  com "Homologar" e "Recusar" só nos artigos do curso coordenado ("Recusar" indisponível no
+  artigo Homologado depois da liberação). Sem regra aqui: as decisões vêm de
+  services_artigos.artigos_para_analise.
+  [US-20][RBN-CAD-12.2][RBN-CAD-12.3][RBN-CAD-14.1][FR-037][FR-038]
+{% endcomment %}
+{% block titulo %}Aproveitamento de artigos · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Aproveitamento de artigos</h2>
+<p class="pg-sub">Artigos com Status de Submissão Aceito ou Publicado. Homologação em Qualis A ou B garante nota final mínima 6,0 em TCC 1 e em TCC 2; a apresentação perante a banca continua obrigatória.</p>
+<form method="get" class="filtros">
+  <div class="campo">
+    <label for="id_curso">Curso</label>
+    <select id="id_curso" name="curso">
+      {% for c in cursos %}<option value="{{ c.pk }}"{% if curso == c.pk|stringformat:"s" %} selected{% endif %}>{{ c.cur_nome }}</option>{% endfor %}
+      <option value="todos"{% if curso == "todos" %} selected{% endif %}>Todos</option>
+    </select>
+  </div>
+  <button type="submit" class="btn">Filtrar</button>
+</form>
+{% if linhas %}
+<div class="tabela-wrap">
+  <table class="tabela">
+    <thead><tr><th>Aluno</th><th>Orientador</th><th>Título do TCC</th><th>Veículo de Publicação</th><th>Estrato Qualis/CAPES</th><th>Link ou DOI</th><th>Aproveitamento</th><th></th></tr></thead>
+    <tbody>
+      {% for l in linhas %}
+      <tr>
+        <td>{{ l.aluno }}</td>
+        <td>{{ l.orientador|default:"—" }}</td>
+        <td>{{ l.tcc.tcc_titulo }}</td>
+        <td>{{ l.artigo.art_veiculo_publicacao|default:"—" }}</td>
+        <td>{{ l.artigo.art_qualis_capes|default:"—" }}</td>
+        <td><a href="{{ l.artigo.art_link_doi }}" target="_blank" rel="noopener noreferrer">abrir</a></td>
+        <td><span class="chip">{{ l.artigo.art_homologacao|default:"—" }}</span></td>
+        <td>
+          <div class="acoes">
+            {% if l.pode_homologar %}<form method="post" action="{% url 'cadastro:homologar_artigo' l.tcc.pk %}?curso={{ curso }}">{% csrf_token %}<button type="submit" class="btn pri">Homologar</button></form>{% endif %}
+            {% if l.pode_recusar %}<form method="post" action="{% url 'cadastro:recusar_artigo' l.tcc.pk %}?curso={{ curso }}">{% csrf_token %}<button type="submit" class="btn perigo">Recusar</button></form>
+            {% elif l.recusa_bloqueada %}<button type="button" class="btn perigo" disabled>Recusar</button>{% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="vazio"><span class="ms">article</span>Nenhum artigo Aceito ou Publicado.</div>
+{% endif %}
+{% endblock %}

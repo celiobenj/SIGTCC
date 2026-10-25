@@ -289,7 +289,8 @@ class ResetPrimeiroAcessoTest(TesteAcesso):
 
     def test_cenario5_reset_do_primeiro_acesso(self):
         """Dado e-mail errado, quando o Professor reseta e confirma, então a conta volta."""
-        resposta = self.client.get(url_aluno(self.aluno))
+        # Spec 006 (IC-08, IC-11): o endereço antigo leva ao painel do aluno, onde está o botão.
+        resposta = self.client.get(url_aluno(self.aluno), follow=True)
         self.assertContains(resposta, mensagens.RESETAR_PRIMEIRO_ACESSO)
         self.assertContains(resposta, "2026000001")
         resposta = self.client.get(url_reset(self.aluno))
@@ -317,9 +318,11 @@ class ResetPrimeiroAcessoTest(TesteAcesso):
     def test_cenario7_aluno_de_outra_turma(self):
         """Dado aluno de outra turma, quando o Professor abre o perfil, então sem o botão."""
         outro = criar_aluno_com_turma(status=StatusConta.ATIVA, senha=SENHA)
+        # Spec 006 (IC-08, IC-11): sem turma em que seja o Professor, o endereço antigo nega o
+        # acesso (M-02) e não há botão de reset.
         resposta = self.client.get(url_aluno(outro))
-        self.assertEqual(resposta.status_code, 200)
-        self.assertNotContains(resposta, mensagens.RESETAR_PRIMEIRO_ACESSO)
+        self.assertContains(resposta, mensagens.M02_ACESSO_NEGADO, status_code=403)
+        self.assertNotContains(resposta, mensagens.RESETAR_PRIMEIRO_ACESSO, status_code=403)
         self.assertEqual(self.client.post(url_reset(outro)).status_code, 403)
 
     def test_q9_professor_de_turma_arquivada_ve_tela_sem_botao(self):
@@ -328,7 +331,8 @@ class ResetPrimeiroAcessoTest(TesteAcesso):
         turma = criar_turma(tur_doc=arquivado.docentes, tur_status=StatusTurma.ARQUIVADA)
         aluno = criar_aluno_com_turma(turma=turma)
         self.client.force_login(arquivado)
-        resposta = self.client.get(url_aluno(aluno))
+        # Spec 006 (IC-08, IC-11): o painel da turma arquivada abre só para consulta.
+        resposta = self.client.get(url_aluno(aluno), follow=True)
         self.assertEqual(resposta.status_code, 200)
         self.assertNotContains(resposta, mensagens.RESETAR_PRIMEIRO_ACESSO)
 
@@ -348,7 +352,7 @@ class ResetPrimeiroAcessoTest(TesteAcesso):
         for status in (StatusConta.INATIVA, StatusConta.EXPIRADA):
             with self.subTest(status=status):
                 Usuarios.objects.filter(pk=self.aluno.pk).update(usu_status=status)
-                resposta = self.client.get(url_aluno(self.aluno))
+                resposta = self.client.get(url_aluno(self.aluno), follow=True)
                 self.assertNotContains(resposta, mensagens.RESETAR_PRIMEIRO_ACESSO)
                 self.assertEqual(self.client.post(url_reset(self.aluno)).status_code, 403)
                 self.assertEqual(self.conta().usu_status, status)

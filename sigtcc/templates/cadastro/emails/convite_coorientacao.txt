@@ -1,0 +1,11 @@
+{% comment %}E-mail do convite de coorientação (MO-07, PROVISÓRIA). Os botões "Aceitar" e "Recusar" são links que só abrem a tela Orientações com o convite destacado; a resposta é dada na tela, depois do login, nunca pelo e-mail (Q14). [US-45][US-36][RBN-CAD-10.4][FR-033][Q14][R11]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
+
+{{ texto }}
+
+Aceitar: {{ link_aceitar }}
+Recusar: {{ link_recusar }}
+
+Os links abrem a tela Orientações do SIGTCC, onde a resposta é registrada.
+
+SIGTCC · Núcleo de Computação · EST/UEA
+{% endautoescape %}

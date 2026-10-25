@@ -187,3 +187,59 @@ table.tabela { border-collapse: collapse; width: 100%; font-size: 13px; }
 .tab.ativo { color: var(--azul); border-bottom-color: var(--azul); }
 .chip.amarelo { background: var(--amarelo-claro); color: #b06000; }
 .chip.vermelho { background: var(--vermelho-claro); color: var(--vermelho); }
+
+/* ===================== Spec 006: Orientação, Atas e Publicações =====================
+   Regras do protótipo de 17/10 (docs/fonte/prototipo/prototipo_17_10.html) que ainda não
+   existiam, copiadas das linhas indicadas e adaptadas aos nomes da base da spec 003
+   (.caixa → .cartao, .tb → .tabela). Nenhuma regra existente alterada.
+   [US-17][US-18][US-19][US-41][US-46][US-20][FR-017][FR-018][IC-10][Q-112] (tasks T004) */
+/* Avatar médio (linha 65) */
+.avatar.md { width: 40px; height: 40px; font-size: 16px; }
+/* Títulos de seção com contador (122-124) */
+.sec-tit { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid currentColor; padding-bottom: 10px; margin: 28px 0 8px; font-family: var(--fonte-tit); font-size: 28px; font-weight: 500; }
+.sec-tit.c-azul { color: var(--azul); }
+.sec-tit span.cont { font-size: 14px; font-family: var(--fonte); font-weight: 500; }
+/* Grupo de botões de uma linha (133) */
+.acoes { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+/* Filtros acima de tabelas (268-269) */
+.filtros { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+.filtros .campo { margin: 0; min-width: 150px; }
+/* Cabeçalho do painel do aluno e fatos (314-320) */
+.turma-cab { border: 1px solid var(--borda); border-radius: 12px; padding: 20px 22px 16px; margin-bottom: 16px; background: color-mix(in srgb, var(--cor, var(--azul)) 6%, #fff); }
+.turma-tit { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.turma-disc { font-size: 13px; color: var(--texto2); font-weight: 500; }
+.turma-cab h1 { margin: 2px 0 0; font-family: var(--fonte-tit); font-weight: 600; font-size: 30px; letter-spacing: .2px; color: var(--cor, var(--azul)); line-height: 1.15; word-break: break-word; }
+.fatos { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 14px 0 12px; }
+.fato span { display: block; font-size: 11px; color: var(--texto2); letter-spacing: .3px; }
+.fato b { font-weight: 500; font-size: 14px; }
+/* Blocos de alunos da aba "Alunos" (371-380) */
+.blocos { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.bloco { display: flex; flex-direction: column; gap: 10px; text-align: left; border: 1px solid var(--borda); border-radius: 10px; background: #fff; padding: 14px; min-height: 150px; color: var(--texto); text-decoration: none; }
+a.bloco { cursor: pointer; }
+a.bloco:hover { border-color: var(--azul-btn); box-shadow: var(--sombra); }
+.bloco-cab { display: flex; gap: 10px; align-items: center; }
+.bloco-cab b { display: block; font-weight: 500; font-size: 14px; line-height: 1.25; }
+.bloco-cab small { color: var(--texto2); font-size: 12px; }
+.bloco-tit { font-size: 13px; color: var(--texto); flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.bloco-rod { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bloco-ori { font-size: 12px; color: var(--texto2); display: flex; align-items: center; gap: 4px; }
+.bloco-ori .ms { font-size: 16px; }
+/* Painel do aluno em duas colunas (381-382) e cabeçalho do cartão com ícone e contador (384-387) */
+.painel { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.painel-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.painel-col .cartao { margin-bottom: 0; }
+.cartao > header .ms { color: var(--texto2); font-size: 20px; }
+.cartao > header .cont { font-size: 12px; color: var(--texto2); }
+/* Ata de orientação (391) */
+.ata { border: 1px solid var(--hover); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+/* Ícone redondo de item (protótipo: .item .ic) */
+.item .ic { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #fff; flex: none; }
+.chip.roxo { background: #f3e8fd; color: var(--roxo); }
+/* Destaque do pedido ou convite aberto pelo link (FR-012) */
+.item.destaque { background: var(--azul-claro); border-radius: 8px; }
+@media (max-width: 900px) { .painel { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .turma-cab h1 { font-size: 24px; } .fatos { gap: 8px 18px; } }
+/* Tabela larga (tela de orientandos, 9 colunas): rola dentro de .tabela-wrap em vez de quebrar
+   o texto letra a letra (T060). [US-18][FR-014] */
+.tabela.larga { min-width: 1080px; }
+.tabela.larga td { overflow-wrap: normal; }

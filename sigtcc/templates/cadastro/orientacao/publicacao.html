@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% comment %}
+  "Publicação do artigo" do orientando, tela própria do Orientador (FR-035), como abrirPublicacao
+  do protótipo de 17/10: o mesmo include da aba Meu TCC e "Voltar" para a tela de orientandos.
+  [US-46 A][RBN-CAD-12.1][FR-035][FR-043]
+{% endcomment %}
+{% block titulo %}Publicação do artigo · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <div>
+    <h2 class="pg">Publicação do artigo</h2>
+    <p class="pg-sub">{{ tcc.tcc_alu.alu.usu_nome }} · {{ tcc.tcc_titulo }}</p>
+  </div>
+  <a class="btn txt" href="{% url 'cadastro:orientacoes' %}"><span class="ms">arrow_back</span>Voltar</a>
+</div>
+<section class="cartao mt16">
+  <header><span class="ms">article</span><h3>Publicação do artigo</h3><span class="chip azul">{{ pub.etiqueta }}</span></header>
+  {% include "cadastro/tcc/_secao_publicacao.html" with pub=pub sem_titulo=True %}
+</section>
+{% endblock %}

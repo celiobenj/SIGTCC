@@ -13,11 +13,9 @@ Professor da Disciplina (US-43), envio e substituição do link pelo Aluno, com 
 
 import enum
 import operator
-import threading
 from datetime import timedelta
 from functools import reduce
 
-from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.models import Exists, OuterRef, Q
 from django.http import Http404
@@ -42,9 +40,10 @@ from sigtcc.apps.cadastro.models import (
     Notificacoes,
     Secretarios,
     TCCs,
+    Turmas,
     TurmasMarcos,
 )
-from sigtcc.apps.cadastro.services import enviar_email, notificar, registrar_evento
+from sigtcc.apps.cadastro.services import enviar_email_apos_commit, notificar, registrar_evento
 
 # Margens dos lembretes de prazo (FR-022; research C5): 7 dias, 48h e 24h antes da Data Limite,
 # com tolerância de ±1h entre execuções da rotina agendada.
@@ -92,27 +91,12 @@ def _enviar_email_ao_aluno(usuario, assunto, texto):
     """E-mail ao aluno com o mesmo texto da notificação (FR-015, FR-022), depois do commit, só
     se a conta tiver e-mail. Mesmo padrão da spec 003 (`services.pedir_redefinicao`): a falha fica
     só no log (`services.enviar_email` registra FALHA_ENVIO_EMAIL) e não desfaz a gravação.
-    [US-43][US-15][RBN-CAD-09.6][FR-015][FR-022][Q-84]
+    A regra de envio está em `services.enviar_email_apos_commit` (spec 006, IC-13).
+    [US-43][US-15][RBN-CAD-09.6][FR-015][FR-022][Q-84][IC-13]
     """
-    destino = usuario.usu_email
-    if not destino:
-        return
-    contexto = {"nome": usuario.usu_nome, "texto": texto}
-
-    def enviar():
-        """Envia o aviso; falha só no log. [FR-015][FR-022]"""
-        try:
-            enviar_email(
-                destino, assunto, "cadastro/emails/aviso_entrega.txt", contexto, conta=usuario
-            )
-        except Exception:
-            # Já registrado no log por enviar_email; a gravação não muda.
-            pass
-
-    if settings.SIGTCC_EMAIL_SINCRONO:
-        transaction.on_commit(enviar)
-    else:
-        transaction.on_commit(lambda: threading.Thread(target=enviar, daemon=True).start())
+    enviar_email_apos_commit(
+        usuario, assunto, "cadastro/emails/aviso_entrega.txt", {"texto": texto}
+    )
 
 
 # =============================================================================================
@@ -241,20 +225,27 @@ def enviar_entrega(aluno, tma_id, link):
     de `services_turmas.encerrar_participacao` para uma ação cujo botão a view já esconde, se a
     entrega não existir para este aluno ou se `envio_liberado` não permitir. Notifica o Professor
     da Disciplina a cada envio e a cada substituição (MF-07, Q-85).
+    Spec 006 (IC-14; research R2, N1): trava na ordem turma → aluno → TCC → entrega, a mesma das
+    demais gravações, para não entrar em deadlock com "Correções Conferidas" (spec 006) nem com
+    Homologar e Devolver para Ajuste (US-44). A entrega é achada sem trava só para saber a turma e
+    relida travada no fim; a turma é travada sem exigir que esteja ativa, porque a turma
+    arquivada continua recusada por `envio_liberado` (404), como antes.
     [US-15][US-29][RBN-CAD-09.2][RBN-CAD-09.3][RBN-CAD-09.6][FR-018 a FR-021][FR-023 a FR-025]
-    [research C7]
+    [research C7][spec 006 R2][IC-14]
     """
     with transaction.atomic():
-        entrega = (
-            EntregasMarcos.objects.select_for_update()
+        achada = (
+            EntregasMarcos.objects.select_related("ent_tma")
             .filter(ent_tma_id=tma_id, ent_alu=aluno)
             .first()
         )
-        if entrega is None:
+        if achada is None:
             raise Http404
-        marco = entrega.ent_tma
-        turma = marco.tma_tur
+        turma = Turmas.objects.select_for_update().get(pk=achada.ent_tma.tma_tur_id)
+        Alunos.objects.select_for_update().filter(pk=aluno.pk).first()
         tcc = TCCs.objects.select_for_update().filter(tcc_alu=aluno, tcc_tur=turma).first()
+        entrega = EntregasMarcos.objects.select_for_update().get(pk=achada.pk)
+        marco = achada.ent_tma
         agora = timezone.now()
         if not envio_liberado(entrega, tcc, agora):
             raise Http404
@@ -635,7 +626,17 @@ def devolver_versao_final(professor, tur_id, alu_id, mensagem):
         entrega.ent_status = StatusEntrega.DEVOLVIDA_PARA_AJUSTE
         entrega.ent_feedback = mensagem
         entrega.ent_data_avaliacao = timezone.now()
-        entrega.save(update_fields=["ent_status", "ent_feedback", "ent_data_avaliacao"])
+        # Spec 006 (IC-07; Q2): a devolução apaga a conferência; o Orientador confere de novo
+        # depois do reenvio.
+        entrega.ent_correcoes_conferidas_em = None
+        entrega.save(
+            update_fields=[
+                "ent_status",
+                "ent_feedback",
+                "ent_data_avaliacao",
+                "ent_correcoes_conferidas_em",
+            ]
+        )
         _registrar_avaliacao(
             EventoFluxoTCC.VERSAO_FINAL_DEVOLVIDA, aluno, professor, turma, entrega
         )

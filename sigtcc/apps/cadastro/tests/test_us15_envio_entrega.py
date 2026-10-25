@@ -18,12 +18,14 @@ até a implementação (T021 a T023).
 import threading
 from datetime import timedelta
 from io import StringIO
+from unittest import mock
 from urllib.parse import parse_qs, urlparse
 
 from django.core.management import call_command
-from django.db import close_old_connections
+from django.db import close_old_connections, connection
 from django.http import Http404
 from django.test import TransactionTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
@@ -707,3 +709,42 @@ class CampoLinkPreenchidoTest(EnviarEntregaTestBase):
             reverse("cadastro:entrega_enviar", args=[self.turma.pk, self.entrega.pk])
         )
         self.assertNotContains(resposta, 'value="https://')
+
+
+class OrdemDeTravasSpec006Test(EnviarEntregaTestBase):
+    """Spec 006 (IC-14; research R2, N1): `enviar_entrega` trava turma → aluno → TCC → entrega,
+    sem mudar as regras de envio. [US-15][US-29][research R2][IC-14]
+    """
+
+    def test_ordem_turma_aluno_tcc_entrega(self):
+        with CaptureQueriesContext(connection) as consultas:
+            services_entregas.enviar_entrega(self.aluno, self.entrega.pk, LINK_VALIDO)
+        travas = [c["sql"] for c in consultas.captured_queries if "FOR UPDATE" in c["sql"]]
+        tabelas = []
+        for sql in travas:
+            for tabela in ('"Turmas"', '"Alunos"', '"TCCs"', '"Entregas_Marcos"'):
+                if f"FROM {tabela}" in sql and tabela not in tabelas:
+                    tabelas.append(tabela)
+        self.assertEqual(tabelas, ['"Turmas"', '"Alunos"', '"TCCs"', '"Entregas_Marcos"'])
+
+    def test_turma_arquivada_entre_o_get_e_o_post_responde_404(self):
+        """N1/P1: a view liberou o envio (turma ainda ativa) e a turma foi arquivada antes da
+        trava: o serviço trava a turma sem exigir que esteja ativa e recusa por envio_liberado
+        com 404, nunca erro 500 (TurmaArquivada não é levantada)."""
+        self.client.force_login(self.aluno.alu)
+        url = reverse("cadastro:entrega_enviar", args=[self.turma.pk, self.entrega.pk])
+        self.turma.tur_status = StatusTurma.ARQUIVADA
+        self.turma.save(update_fields=["tur_status"])
+        real = services_entregas.envio_liberado
+        chamadas = []
+
+        def liberado(*args, **kwargs):
+            chamadas.append(1)
+            return True if len(chamadas) == 1 else real(*args, **kwargs)
+
+        with mock.patch.object(services_entregas, "envio_liberado", side_effect=liberado):
+            resposta = self.client.post(url, {"link": LINK_VALIDO})
+        self.assertEqual(resposta.status_code, 404)
+        self.assertFalse(
+            HistoricoEnviosEntregas.objects.filter(hen_ent__ent_alu=self.aluno).exists()
+        )
