@@ -1,8 +1,7 @@
 """Confere, caractere por caractere, os textos da Gestão de Contas (SC-002; FR-048).
 
-Textos das US: contra a cópia congelada docs/fonte/anteriores/Historias_de_Usuario_v3_3.md, até
-a revisão da spec 002 pela v3.4, que reescreveu as US-03 a US-06 (Q-121). MC-01 a MC-13: contra a
-tabela "Mensagens a validar com a PO" de specs/002-gestao-contas/spec.md.
+Textos das US: contra docs/fonte/Historias_de_Usuario_v3_4.md (hotfix v0.2.1, Q-121). MC-01 a
+MC-13: contra a tabela "Mensagens a validar com a PO" de specs/002-gestao-contas/spec.md.
 
 [US-03][US-04][US-05][US-06][US-50][SC-002][FR-048]
 """
@@ -15,8 +14,7 @@ from django.test import SimpleTestCase
 
 from sigtcc.apps.cadastro import mensagens as m
 
-# Q-121: a v3.4 reescreveu as US-03 a US-06; a spec 002 segue a v3.3 até ser revisada.
-US = Path(settings.BASE_DIR) / "docs" / "fonte" / "anteriores" / "Historias_de_Usuario_v3_3.md"
+US = Path(settings.BASE_DIR) / "docs" / "fonte" / "Historias_de_Usuario_v3_4.md"
 SPEC = Path(settings.BASE_DIR) / "specs" / "002-gestao-contas" / "spec.md"
 
 # Textos fixos das US (os com campo variável são conferidos pelas partes fixas, abaixo).
@@ -44,8 +42,9 @@ TEXTOS_DAS_US = [
     m.M02_ACESSO_NEGADO,
     m.M14_CAMPO_OBRIGATORIO,
     m.CADASTRAR_DOCENTE,
-    m.NOVA_SECRETARIA,
-    m.NOVO_MEMBRO_EXTERNO,
+    m.CADASTRAR_SECRETARIA,
+    m.CADASTRAR_MEMBRO_EXTERNO,
+    m.ALTERAR,
 ]
 
 # Constantes com campo variável: (constante, como a US escreve o exemplo).

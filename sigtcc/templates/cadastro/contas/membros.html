@@ -10,24 +10,24 @@
 {% include "cadastro/contas/abas.html" with ativa="membros" %}
 <div class="flex entre flex-wrap">
   <h2 class="pg">Membros externos</h2>
-  {% if pode_cadastrar %}<a class="btn pri" href="{% url 'cadastro:contas_membro_novo' %}"><span class="ms">person_add</span>Novo membro externo</a>{% endif %}
+  {% if pode_cadastrar %}<a class="btn pri" href="{% url 'cadastro:contas_membro_novo' %}"><span class="ms">person_add</span>Cadastrar membro externo</a>{% endif %}
 </div>
 {% if linhas %}
   <div class="tabela-wrap mt16">
     <table class="tabela">
-      <thead><tr><th>Nome</th><th>E-mail</th><th>Instituição de Origem</th><th>Status da Conta</th><th>Validade do acesso</th><th></th></tr></thead>
+      <thead><tr><th>Nome Completo</th><th>E-mail</th><th>Titulação</th><th>Instituição de Origem</th><th>Acesso</th><th></th></tr></thead>
       <tbody>
         {% for linha in linhas %}
           {% with membro=linha.membro %}
           <tr>
             <td>{{ membro.mem.usu_nome }}</td>
             <td>{{ membro.mem.usu_email }}</td>
+            <td>{{ membro.mem_titulacao }}</td>
             <td>{{ membro.mem_instituicao }}</td>
-            <td><span class="chip{% if linha.status == 'Ativa' %} verde{% elif linha.status == 'Expirada' %} vermelho{% else %} amarelo{% endif %}">{{ linha.status }}</span></td>
-            <td>{{ membro.mem_validade_ate|date:"d/m/Y"|default:"—" }}</td>
+            <td><span class="chip{% if linha.status == 'Ativa' %} verde{% elif linha.status == 'Expirada' %} vermelho{% else %} amarelo{% endif %}">{{ linha.status }}</span>{% if membro.mem_validade_ate %} <small>até {{ membro.mem_validade_ate|date:"d/m/Y" }}</small>{% endif %}</td>
             <td>
               <div class="flex">
-                {% if linha.pode_editar %}<a class="btn txt" href="{% url 'cadastro:contas_membro_editar' membro.pk %}">Editar</a>{% endif %}
+                {% if linha.pode_editar %}<a class="btn txt" href="{% url 'cadastro:contas_membro_editar' membro.pk %}">Alterar</a>{% endif %}
                 {% if linha.pode_prorrogar %}
                   <form method="post" action="{% url 'cadastro:contas_membro_prorrogar' membro.pk %}" data-envio-unico>
                     {% csrf_token %}<button type="submit" class="btn txt">Prorrogar</button>

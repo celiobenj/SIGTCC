@@ -44,7 +44,7 @@ Este plano rege os artefatos técnicos versionados no repositório oficial do pr
 
 * Diagramas de arquitetura e de sequência (docs/arquitetura/ e docs/diagramas/);
 
-**Fronteira com a Gestão Documental:** Os artefatos de planejamento gerencial (Termo de Abertura, Matriz de Requisitos, EAP, Plano de Integração, Modelo Lógico e Histórias de Usuário) são mantidos no Google Drive institucional e no quadro Trello do projeto, que permanecem como fonte oficial. O diretório docs/fonte/ do repositório guarda cópias desses artefatos, convertidas em Markdown, apenas como referência para o desenvolvimento; em caso de divergência, prevalece a versão do Google Drive. Versões anteriores de um documento ficam em docs/fonte/anteriores/ apenas enquanto algum teste depender delas (é o caso das Histórias de Usuário v3.3, até a revisão da spec 002; índice Q-121).
+**Fronteira com a Gestão Documental:** Os artefatos de planejamento gerencial (Termo de Abertura, Matriz de Requisitos, EAP, Plano de Integração, Modelo Lógico e Histórias de Usuário) são mantidos no Google Drive institucional e no quadro Trello do projeto, que permanecem como fonte oficial. O diretório docs/fonte/ do repositório guarda cópias desses artefatos, convertidas em Markdown, apenas como referência para o desenvolvimento; em caso de divergência, prevalece a versão do Google Drive.
 
 ## **1.2 Itens de Configuração (Configuration Items \- CIs)**
 
@@ -62,7 +62,7 @@ Este plano rege os artefatos técnicos versionados no repositório oficial do pr
 | **CI-10** | Configuração de Implantação | Blueprint do Render (serviço web, banco, build, início e variáveis não secretas) e configurações lidas do ambiente. | render.yaml e sigtcc/settings.py |
 | **CI-11** | Rotinas por Data | Comandos de expiração de Membros Externos e de lembretes de prazo; agendamento automático planejado (seção 9.4). | sigtcc/apps/cadastro/management/commands/ |
 | **CI-12** | Diagramas de Arquitetura | Diagramas C4 de componentes e de implantação e diagrama de pacotes (seção 2.4). | docs/arquitetura/\*.drawio |
-| **CI-13** | Diagramas de Sequência | Diagramas de sequência dos casos de uso (24/10), uma página por caso de uso. | docs/diagramas/Diagramas\_Sequencia\_24\_10.drawio |
+| **CI-13** | Diagramas de Sequência | Diagramas de sequência dos casos de uso em PlantUML (v2), um por caso de uso, e a rastreabilidade dos participantes até o código. | docs/diagramas/Diagramas\_Sequencia\_PlantUML\_v2.md e Rastreabilidade\_Diagramas\_Codigo.md |
 | **CI-14** | Especificações das Features | Especificação, pesquisa técnica, plano, tarefas, roteiro de validação e texto do Pull Request de cada feature, e o índice de questões abertas. | specs/ e docs/questoes-a-rever.md |
 | **CI-15** | Governança do Fluxo SDD | Constituição do projeto, regras do assistente de codificação e agentes do fluxo de especificação. | .specify/memory/constitution.md, CLAUDE.md, GUIA\_SDD.md e .claude/agents/ |
 | **CI-16** | Guia de Implantação e Carga de Demonstração | Passo a passo da implantação no Render e comando que limpa e popula o ambiente com dados fictícios. | docs/deploy-render.md e .../management/commands/popular\_demo.py |
@@ -103,9 +103,8 @@ SIGTCC/
 ├── .specify/                   \# Constituição, modelos e scripts do Spec Kit  
 ├── docs/  
 │   ├── arquitetura/            \# Diagramas de componentes, implantação e pacotes  
-│   ├── diagramas/              \# Diagramas de sequência (draw.io)  
+│   ├── diagramas/              \# Diagramas de sequência (PlantUML) e rastreabilidade  
 │   ├── fonte/                  \# Cópias de referência dos documentos do Drive  
-│   │   ├── anteriores/         \# Versões anteriores ainda usadas por testes  
 │   │   └── prototipo/          \# Protótipo de 17/10 (referência visual)  
 │   ├── deploy-render.md        \# Implantação no Render e carga de demonstração  
 │   └── questoes-a-rever.md     \# Índice de questões abertas  

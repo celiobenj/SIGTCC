@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% comment %}
-  Aba Atividades do Aluno (nome provisório, Q-80; passos 1 e 2 da US-15 original): lista das
+  Aba Entregas do Aluno (US v3.4, Q-80; passos 1 e 2 da US-15 original): lista das
   entregas da turma com Título, Data Limite e o status de envio do Aluno. O status "Não Entregue"
   aparece calculado na exibição, sem gravar nada (FR-020), enquanto o envio continua disponível.
   [US-15][RBN-CAD-09.2][RBN-CAD-09.3][FR-018 a FR-020]
 {% endcomment %}
-{% block titulo %}Atividades · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block titulo %}Entregas · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
 {% block conteudo %}
 <div class="flex entre flex-wrap">
   <div>
-    <h2 class="pg">Atividades</h2>
+    <h2 class="pg">Entregas</h2>
     <p class="pg-sub">{{ turma.tur_identificador }} · {{ turma.tur_descricao }}{% if arquivada %} · <span class="chip">Arquivada</span>{% endif %}</p>
   </div>
 </div>

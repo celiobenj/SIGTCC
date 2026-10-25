@@ -147,6 +147,14 @@ como a Q-82.
   registro de aceite ou recusa exigido pelo RNF de Não Repúdio do RAN-CAD-10. "Encerrar
   participação" continua só para TCC "Em Andamento" ou "Apto para Defesa".
 
+### Session 2026-10-25 (hotfix v0.2.1: nomes iguais às US v3.4 e aos diagramas)
+
+- Decisão de Célio Benjamim (hotfix v0.2.1): os nomes de telas, abas, botões e seções da interface passam a ser exatamente os das Histórias de Usuário v3.4 e dos diagramas de sequência PlantUML v2 (`docs/diagramas/`). Só rótulos mudaram; o comportamento é o mesmo. Quando a v3.4 se contradiz, vale a US dona da ação.
+- Q: Que mensagem vê o Docente que não é o Professor da Disciplina ao abrir a turma? → A: "Você não tem permissão para acessar esta página." (US-07 E8, constante `SEM_PERMISSAO_PAGINA`), no lugar da M-02. As demais telas da turma continuam com a M-02.
+- Q: Quais rótulos mudam na tela do aluno? → A: "Editar" (US-08 C), "Transferir" (US-08 D e MT-26: "Use Transferir.") e "Excluir da turma" (US-09, que prevalece sobre "Excluir aluno" da US-41). A tela de confirmação continua "Excluir aluno da turma".
+- O diagrama de sequência da matrícula é o 35 MatricularAluno, e o da exclusão, encerramento e transferência é o 36 RetirarAlunoDaTurma (`docs/diagramas/Diagramas_Sequencia_PlantUML_v2.md`).
+
+
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
@@ -652,8 +660,8 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
   com os três códigos completos, no formato do exemplo do dicionário (`EST08MCPD`); o dicionário não
   muda.
 - **Diagrama de sequência "Matrícula por CSV"** (US-08): salvo em
-  `docs/diagramas/US-08_matricula_por_csv.puml` (substituído em 25/10/2026 pela página
-  MatricularAluno de `docs/diagramas/Diagramas_Sequencia_24_10.drawio`) e conferido com FR-012 a FR-018. O diagrama não
+  `docs/diagramas/US-08_matricula_por_csv.puml` (substituído em 25/10/2026 pela diagrama 35
+  MatricularAluno de `docs/diagramas/Diagramas_Sequencia_PlantUML_v2.md`) e conferido com FR-012 a FR-018. O diagrama não
   mostra a orientação automática em TCC 2 de EC e LC (FR-004), que vem da matriz (RBN-CAD-04.2) e
   continua valendo; nem os alunos já cadastrados com outro Status do TCC (por exemplo 'Em
   Andamento' em outra turma), caso para o `/speckit-clarify`.

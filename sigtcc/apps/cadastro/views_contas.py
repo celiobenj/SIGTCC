@@ -205,7 +205,7 @@ def secretaria_nova(request):
         else:
             _mostrar_resultado(request, resultado)
             return redirect("cadastro:contas_secretarias")
-    contexto = {"form": formulario, "titulo": mensagens.NOVA_SECRETARIA}
+    contexto = {"form": formulario, "titulo": mensagens.CADASTRAR_SECRETARIA}
     return render(request, "cadastro/contas/form_secretaria.html", contexto)
 
 
@@ -297,7 +297,7 @@ def membro_novo(request):
             return redirect("cadastro:contas_membros")
     contexto = {
         "form": formulario,
-        "titulo": mensagens.NOVO_MEMBRO_EXTERNO,
+        "titulo": mensagens.CADASTRAR_MEMBRO_EXTERNO,
         "cancelar": voltar or reverse("cadastro:contas_membros"),
     }
     return render(request, "cadastro/contas/form_membro.html", contexto)

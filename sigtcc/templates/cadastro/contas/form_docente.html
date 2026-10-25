@@ -23,7 +23,7 @@
     {% if form.sua_senha %}{% include "includes/campo.html" with campo=form.sua_senha %}{% endif %}
     <div class="flex entre mt16">
       <a class="btn txt" href="{% url 'cadastro:contas_docentes' %}">Cancelar</a>
-      <button type="submit" class="btn pri">Salvar</button>
+      <button type="submit" class="btn pri">{% if docente %}Salvar{% else %}Cadastrar{% endif %}</button>
     </div>
   </form>
 </div>

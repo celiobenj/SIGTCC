@@ -53,7 +53,7 @@
   a tela da turma (`/turmas/<tur_id>/`) continuam só do Professor da Disciplina e da Secretaria do
   curso. Esta spec não abre essa tela ao Aluno: dá ao Aluno uma entrada própria (item "Turmas" do
   Aluno, com as turmas em que está matriculado) e só **acrescenta** à tela da turma da spec 004 a
-  barra de abas "Alunos" e "Atividades" do Professor (FR-031; Clarifications, sessão 2026-10-23;
+  barra de abas "Alunos" e "Entregas" do Professor (FR-031; Clarifications, sessão 2026-10-23;
   índice Q-89).
 
 ## Clarifications
@@ -172,6 +172,12 @@ mudar rotas nem regras.*
    e-mail do passo 7 não foi implementado nesta fase (só a notificação no sistema, única forma
    coberta pelo contrato de `services.notificar` reaproveitado desta spec); ver Q-84.
 
+### Session 2026-10-25 (hotfix v0.2.1: nomes iguais às US v3.4 e aos diagramas)
+
+- Decisão de Célio Benjamim (hotfix v0.2.1): os nomes de telas, abas, botões e seções da interface passam a ser exatamente os das Histórias de Usuário v3.4 e dos diagramas de sequência PlantUML v2 (`docs/diagramas/`). Só rótulos mudaram; o comportamento é o mesmo. Quando a v3.4 se contradiz, vale a US dona da ação.
+- Q: Qual é o nome da aba das entregas? → A: "Entregas" (US-15, US-16 e US-43 da v3.4 e tela `TelaEntregas` dos diagramas 09, 10 e 11). O nome provisório "Atividades" sai; o botão e a janela "Cadastrar atividade" continuam, como na v3.4 (índice Q-80, respondida).
+
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Aluno registra a Proposta e os dados do TCC (Priority: P1)
@@ -217,7 +223,7 @@ a Proposta pelo formulário, e verificar que o Status muda para "Em Andamento" e
    repetidas e exibe "Palavra-chave repetida." (MF-03; Clarifications, sessão 2026-10-22).
 8. **Given** o Aluno está autenticado e matriculado numa turma não arquivada, **When** aciona o
    item de menu "Turmas" e seleciona a turma, **Then** o sistema abre a turma na aba "Meu TCC",
-   com as abas "Meu TCC" e "Atividades"; a lista mostra só as turmas em que o Aluno está
+   com as abas "Meu TCC" e "Entregas"; a lista mostra só as turmas em que o Aluno está
    matriculado, e a tela da turma do Professor (lista de alunos, spec 004) continua inacessível a
    ele (US-13, passos 1 e 2; FR-031; Clarifications, sessão 2026-10-23).
 9. **Given** a turma do Aluno foi arquivada, **When** ele abre "Turmas arquivadas", **Then** a turma
@@ -303,7 +309,7 @@ notificação, e que a turma não aceita duas entregas do mesmo tipo (exceto "Ou
 
 **Acceptance Scenarios**:
 
-1. **Given** o Professor da Disciplina está autenticado na aba Atividades da turma, **When**
+1. **Given** o Professor da Disciplina está autenticado na aba Entregas da turma, **When**
    aciona "Cadastrar atividade", informa Título, o Tipo "Documento para Defesa" e a Data Limite e
    confirma, **Then** a entrega aparece na lista com o status "Aguardando Envio" para cada aluno,
    o sistema exibe "Entrega cadastrada" e cada aluno recebe notificação no sistema e por e-mail.
@@ -360,7 +366,7 @@ leitura.
    não está "Em Andamento", ou o Aluno está Desistente/Reprovado/Jubilado, ou a turma está
    arquivada, **When** ele abre a entrega, **Then** o campo Link aparece apenas para leitura, sem o
    botão Enviar.
-9. **Given** o Aluno está numa das abas da sua turma, **When** seleciona a aba "Atividades",
+9. **Given** o Aluno está numa das abas da sua turma, **When** seleciona a aba "Entregas",
    **Then** o sistema lista as entregas da turma com Título, Data Limite e o status de envio do
    Aluno (US-15, passos 1 e 2; FR-031).
 10. **Given** o Aluno já enviou o link e a Data Limite não venceu, **When** abre a entrega de novo
@@ -396,8 +402,8 @@ e o link de quem enviou.
 5. **Given** um Docente não é o Professor da Disciplina da turma, **When** tenta abrir o
    acompanhamento, **Then** o sistema não exibe a lista.
 6. **Given** o Professor da Disciplina abriu a turma pelo item "Turmas" (tela da turma, aba
-   "Alunos", spec 004), **When** seleciona a aba "Atividades", **Then** o sistema abre a lista de
-   entregas da turma; a Secretaria do curso, que também abre essa tela, não vê a aba "Atividades"
+   "Alunos", spec 004), **When** seleciona a aba "Entregas", **Then** o sistema abre a lista de
+   entregas da turma; a Secretaria do curso, que também abre essa tela, não vê a aba "Entregas"
    (US-16, passos 1 e 2; US-43, passo 1; FR-027; FR-031).
 
 ---
@@ -639,8 +645,8 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
 - **FR-031** [US-13, US-15, US-16, US-43; RAN-CAD-08, RAN-CAD-09]: O sistema MUST oferecer ao Aluno um item de menu "Turmas"
   com as turmas não arquivadas em que ele está matriculado e o acesso a "Turmas arquivadas"
   (somente consulta); a turma escolhida MUST abrir na aba "Meu TCC", com as abas "Meu TCC" e
-  "Atividades" (nome provisório, Q-80). Na tela da turma da spec 004, o sistema MUST exibir as
-  abas "Alunos" e "Atividades", esta só para o Professor da Disciplina da turma (FR-017, FR-027).
+  "Entregas" (nome provisório, Q-80). Na tela da turma da spec 004, o sistema MUST exibir as
+  abas "Alunos" e "Entregas", esta só para o Professor da Disciplina da turma (FR-017, FR-027).
   O item "Turmas" do Aluno MUST NOT dar acesso à tela da turma da spec 004 nem à lista de alunos,
   que continuam restritas pelo FR-010 da spec 004 (Clarifications, sessão 2026-10-23; índice Q-89).
   Até a tela do aluno (US-41) existir, a lista de alunos dessa tela MUST oferecer ao Professor da
@@ -709,7 +715,7 @@ Owner (Profa. Diana), mesmo sendo texto exato da fonte.
 
 ## Assumptions
 
-- O nome exato da aba de entregas ("Atividades" ou "Entregas") segue provisoriamente "Atividades"
+- O nome exato da aba de entregas ("Entregas" ou "Entregas") segue provisoriamente "Entregas"
   por maioria de ocorrências na v3.3 (ver seção Clarifications); a confirmação final depende da
   Profa. Diana ou de Leandra Matos e será registrada em `docs/questoes-a-rever.md`.
 - O serviço que grava o Status do TCC e o histórico (FR-012) é definido nesta spec e exposto como

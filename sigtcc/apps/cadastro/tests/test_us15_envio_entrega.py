@@ -397,7 +397,7 @@ class MinhasEntregasViewTest(EnviarEntregaTestBase):
 
     def test_cenario2_acesso_pela_notificacao_abre_a_aba_atividades(self):
         """Cenário 2 da US-15 (fluxo alternativo A): a notificação da nova entrega abre a aba
-        Atividades da turma, com a entrega. [US-15][RBN-CAD-09.6]
+        Entregas da turma, com a entrega. [US-15][RBN-CAD-09.6]
         """
         services_entregas.cadastrar_entrega(
             self.professor,
@@ -417,7 +417,7 @@ class MinhasEntregasViewTest(EnviarEntregaTestBase):
         self.assertContains(resposta, "Entrega do Cronograma")
 
     def test_cenario8_sem_login_vai_para_o_login_e_volta_para_a_aba(self):
-        """Cenário 8 da US-15 (E1): sem sessão, a tela de login, com retorno à aba Atividades.
+        """Cenário 8 da US-15 (E1): sem sessão, a tela de login, com retorno à aba Entregas.
 
         [US-15][contracts/rotas.md]
         """
@@ -671,7 +671,7 @@ class RotinaDasEntregasTest(EnviarEntregaTestBase):
 
 
 class AbaAtividadesVaziaTest(TesteTurmas):
-    """SC-006 (Phase 12, T047): sem entregas, a aba Atividades do Aluno mostra o texto exato da
+    """SC-006 (Phase 12, T047): sem entregas, a aba Entregas do Aluno mostra o texto exato da
     US, "Nenhuma entrega cadastrada", sem o ponto final. [US-15][SC-006]
     """
 
