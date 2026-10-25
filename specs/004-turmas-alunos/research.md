@@ -5,8 +5,8 @@
 Formato: Decisão / Justificativa / Alternativas. As decisões partem do modelo da spec 001 (nenhuma
 tabela ou coluna nova, FR-028), dos serviços compartilhados da spec 003
 (`specs/003-acesso-login/contracts/servicos-compartilhados.md`), das Clarifications Q1 a Q17 da spec
-004 e do diagrama `docs/diagramas/US-08_matricula_por_csv.puml` (hoje página MatricularAluno de
-`docs/diagramas/Diagramas_Sequencia_24_10.drawio`). Os IDs B1, B2… são desta feature.
+004 e do diagrama `docs/diagramas/US-08_matricula_por_csv.puml` (hoje diagrama 35 MatricularAluno de
+`docs/diagramas/Diagramas_Sequencia_PlantUML_v2.md`). Os IDs B1, B2… são desta feature.
 
 **Revisão de 2026-10-21**: o `arquiteto-django` revisou o plano (3 bloqueantes, 13 importantes, 20
 menores). Todos foram aplicados; as decisões de comportamento viraram as Clarifications Q13 a Q17 da

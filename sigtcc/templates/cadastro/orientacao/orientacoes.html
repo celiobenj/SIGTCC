@@ -56,7 +56,7 @@
   <table class="tabela larga">
     <thead>
       <tr>
-        <th>Nome do Aluno</th><th>Curso</th><th>Turma</th><th>Título</th><th>Modalidade</th><th>Papel</th><th>Status do TCC</th><th>Status das entregas</th><th>Atas e ações</th>
+        <th>Nome do Aluno</th><th>Curso</th><th>Turma</th><th>Título</th><th>Modalidade</th><th>Papel</th><th>Status do TCC</th><th>Status de envio das entregas</th><th>Atas e ações</th>
       </tr>
     </thead>
     <tbody>
@@ -74,7 +74,7 @@
           <div class="acoes">
             <a class="btn txt" href="{% url 'cadastro:atas_orientando' o.tcc.pk %}">Atas ({{ o.n_atas }})</a>
             {% if o.pode_registrar_ata %}<a class="btn txt" href="{% url 'cadastro:registrar_ata_docente' o.tcc.pk %}">Registrar ata</a>{% endif %}
-            {% if o.pode_historico %}<a class="btn txt" href="{% url 'cadastro:historico_orientando' o.tcc.pk %}">Histórico do Status do TCC</a>{% endif %}
+            {% if o.pode_historico %}<a class="btn txt" href="{% url 'cadastro:historico_orientando' o.tcc.pk %}">Histórico</a>{% endif %}
             {% if o.pode_publicacao %}<a class="btn txt" href="{% url 'cadastro:publicacao_orientando' o.tcc.pk %}">Publicação</a>{% endif %}
             {% if o.apto == "disponivel" %}<a class="btn" href="{% url 'cadastro:indicar_apto' o.tcc.pk %}">Apto para Defesa</a>
             {% elif o.apto == "indisponivel" %}<button type="button" class="btn" disabled>Apto para Defesa</button>

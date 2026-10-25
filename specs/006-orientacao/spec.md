@@ -47,7 +47,7 @@
   (US-41). O FR-010 da spec 004 (só Professor da Disciplina e Secretaria do curso abrem a turma)
   continua valendo. **Muda nesta spec**: (1) a aba "Alunos" vira blocos somente leitura
   (RBN-CAD-10.5) e as ações do Professor da Disciplina sobre o aluno, inclusive "Editar", passam para
-  o painel (Clarifications Q1 e Q5); "Transferir aluno" continua no bloco só para a Secretaria do
+  o painel (Clarifications Q1 e Q5); "Transferir" continua no bloco só para a Secretaria do
   curso (RBN-CAD-05.6, US-08 D; Q4); (2) as telas de Editar e Encerrar participação abertas pelo
   painel voltam ao painel; Excluir e Transferir, depois de confirmados, voltam à aba "Alunos",
   porque o aluno sai da turma (FR-044); (3) a cópia para TCC 2 (`_copiar_tcc_aprovado`) passa a
@@ -288,6 +288,13 @@ desta spec até a validação; a D3, a D4, a D7 e a D9 foram decididas por Céli
 - **D14 (ata sem autor)**: sem coluna nova, pela mesma orientação da Q7; na mesma Data do Encontro,
   a mais recente é a última registrada (índice Q-102).
 
+### Session 2026-10-25 (hotfix v0.2.1: nomes iguais às US v3.4 e aos diagramas)
+
+- Decisão de Célio Benjamim (hotfix v0.2.1): os nomes de telas, abas, botões e seções da interface passam a ser exatamente os das Histórias de Usuário v3.4 e dos diagramas de sequência PlantUML v2 (`docs/diagramas/`). Só rótulos mudaram; o comportamento é o mesmo. Quando a v3.4 se contradiz, vale a US dona da ação.
+- Q: Qual é o nome do link do histórico na tela de orientandos? → A: "Histórico" (US-18, fluxo G, e US-14, fluxo A; índice Q-81, respondida). Na aba Meu TCC e na tela do aluno, o link continua "Histórico do Status do TCC" (US-14).
+- Q: Quais rótulos mudam na tela do aluno e na tela de orientandos? → A: seções "Atas" e "Publicação" na tela do aluno (US-41); botões "Editar", "Transferir" e "Excluir da turma" (spec 004); coluna "Status de envio das entregas" na tela de orientandos (US-18 G).
+
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Aluno indica, cancela ou troca o orientador [US-17] (Priority: P1)
@@ -438,7 +445,7 @@ Professor (US-19 F).
 Pontos de contato acrescentados na revisão (Clarifications Q4; FR-044):
 
 8. **Given** a Secretaria do curso numa turma com orientador automático, **When** abre a turma,
-   **Then** vê os blocos só para consulta, sem abrir o painel, e o botão "Transferir aluno" no bloco
+   **Then** vê os blocos só para consulta, sem abrir o painel, e o botão "Transferir" no bloco
    do aluno que pode ser transferido.
 9. **Given** o Professor no painel de um aluno, **When** aciona "Encerrar participação" e confirma
    ou cancela, **Then** volta ao painel do aluno.
@@ -821,7 +828,7 @@ Pontos de contato acrescentados na revisão (Clarifications Q16, que substitui a
   Curso, Título (ou "Sem Proposta"), Área de Interesse, Orientador (ou "Sem orientador") e Status do
   TCC; para o Professor da Disciplina, o bloco MUST abrir o painel do aluno, e as ações sobre o aluno
   MUST ficar só no painel (FR-019). A Secretaria do curso MUST ver os blocos só para consulta, sem
-  abrir o painel, com o botão "Transferir aluno" no bloco quando a transferência for permitida
+  abrir o painel, com o botão "Transferir" no bloco quando a transferência for permitida
   (RBN-CAD-05.6; US-08 D; US-07 E8). As ações da turma ("Matricular alunos", "Excluídos ou
   transferidos", editar, arquivar e excluir a turma) não mudam.
 - **FR-018** [RBN-CAD-08.9; US-44 passo 3; Clarifications D2, D12]: O painel do aluno MUST reunir,
@@ -831,7 +838,7 @@ Pontos de contato acrescentados na revisão (Clarifications Q16, que substitui a
   Final, e o botão "Fechar", que volta à aba "Alunos".
 - **FR-019** [RBN-CAD-08.9; RBN-CAD-05.3; US-41 passo 4; Clarifications Q1, Q5, D12]: O painel MUST
   oferecer ao Professor da Disciplina de turma não arquivada os botões de ação da US-41: "Excluir
-  aluno" e "Encerrar participação" (US-09), "Transferir aluno" (US-08), "Resetar primeiro acesso"
+  aluno" e "Encerrar participação" (US-09), "Transferir" (US-08), "Resetar primeiro acesso"
   (US-12, spec 003, só quando `pode_resetar_primeiro_acesso`) e, na seção Versão Final, "Homologar" e
   "Devolver para Ajuste" (US-44, spec 005); e também "Editar" os dados do aluno (US-08 C; Q5) e o
   link "Histórico do Status do TCC" (US-14 B; spec 005), cada um só quando a regra da sua spec
@@ -979,7 +986,7 @@ Pontos de contato acrescentados na revisão (Clarifications Q16, que substitui a
   desta spec e as telas de ação das specs 003 a 005 MUST abrir a partir do painel; "Editar",
   "Encerrar participação", "Resetar primeiro acesso", "Homologar", "Devolver para Ajuste", o
   histórico do Status e a lista de atas MUST voltar ao painel ao terminar, cancelar ou fechar;
-  "Excluir aluno" e "Transferir aluno", depois de confirmados, MUST voltar à aba "Alunos" (o aluno
+  "Excluir da turma" e "Transferir", depois de confirmados, MUST voltar à aba "Alunos" (o aluno
   sai da turma) e, cancelados, ao painel; "Fechar" MUST voltar à aba "Alunos". A tela mínima de
   reset da spec 003 MUST ser retirada, e o seu endereço MUST abrir o painel do aluno na turma mais
   recente do aluno em que quem abre é o Professor da Disciplina; sem essa turma, acesso negado

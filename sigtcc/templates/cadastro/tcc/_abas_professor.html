@@ -1,6 +1,6 @@
 {% comment %}
   Abas da tela da turma (barra "Seções da turma" do protótipo de 17/10, aqui com links, sem
-  JavaScript): "Alunos" (tela da turma da spec 004) e "Atividades" (nome provisório, Q-80), esta
+  JavaScript): "Alunos" (tela da turma da spec 004) e "Entregas" (US v3.4; Q-80), esta
   só quando `mostra_atividades` (Professor da Disciplina da turma; a Secretaria do curso não vê,
   FR-027). Uso em turma.html (spec 004): with ativa="alunos" mostra_atividades=e_professor; em
   entregas.html: with ativa="atividades" mostra_atividades=True.
@@ -11,6 +11,6 @@
 <nav class="seg mt16" aria-label="Seções da turma">
   <a class="{% if ativa == 'alunos' %}ativo{% endif %}" href="{{ url_alunos }}"{% if ativa == 'alunos' %} aria-current="page"{% endif %}><span class="ms">group</span>Alunos</a>
   {% if mostra_atividades %}
-  <a class="{% if ativa == 'atividades' %}ativo{% endif %}" href="{{ url_atividades }}"{% if ativa == 'atividades' %} aria-current="page"{% endif %}><span class="ms">assignment</span>Atividades</a>
+  <a class="{% if ativa == 'atividades' %}ativo{% endif %}" href="{{ url_atividades }}"{% if ativa == 'atividades' %} aria-current="page"{% endif %}><span class="ms">assignment</span>Entregas</a>
   {% endif %}
 </nav>

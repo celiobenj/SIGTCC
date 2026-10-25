@@ -28,7 +28,7 @@ Ficam em `docs/fonte/` (cópias de referência dos documentos do Drive):
 | Arquivo | Uso |
 |---|---|
 | `Matriz_Requisitos_17_10.md` | Matriz de Requisitos de 17/10 (convertida de `Matriz_Requisitos_SIGTCC_17_10.xlsx`). Abas `Requisitos_*`: RAN, regras (RBN) e requisitos não funcionais (ISO/IEC 25010). `Glossario_Status`: valores de status. `mudanças_17_10`: conversão dos IDs antigos para os novos. |
-| `Historias_de_Usuario_v3_4.md` | US com fluxos, regras (RBN), critérios de aceite (Dado/Quando/Então). Base do `spec.md`. A v3.3 fica em `anteriores/` só para os testes da spec 002 (Q-121). |
+| `Historias_de_Usuario_v3_4.md` | US com fluxos, regras (RBN), critérios de aceite (Dado/Quando/Então). Base do `spec.md`. |
 | `Modelo_Logico_e_Dicionario_18_10.md` | 36 tabelas com nomes, tipos e restrições. Base dos `models.py`. **Não invente tabelas ou campos.** |
 | `DER_SIGTCC_V2.drawio` | DER conceitual (versão 2). |
 | `PGCS_Plano_de_Configuracao.md` | Estrutura de pastas, branches, commits, PR, qualidade. |
@@ -36,8 +36,10 @@ Ficam em `docs/fonte/` (cópias de referência dos documentos do Drive):
 | `prototipo/prototipo_17_10.html` | Protótipo de 17/10, homologado como referência visual das telas: layout, paleta, fontes Roboto/Figtree e ícones Material Symbols. **Use só o visual**: a lógica em JavaScript é simulação e não deve ser reaproveitada como regra de negócio (as regras vêm da matriz e das US). |
 
 Diagramas (fora de `docs/fonte/`):
-- `docs/diagramas/Diagramas_Sequencia_24_10.drawio`: diagramas de sequência de 24/10, uma página por
-  caso de uso (ex.: `MatricularAluno`, `CadastrarConta`, `ExecutarTarefasAgendadas`).
+- `docs/diagramas/Diagramas_Sequencia_PlantUML_v2.md`: os 36 diagramas de sequência em PlantUML (v2),
+  um por caso de uso (ex.: `MatricularAluno`, `CadastrarConta`, `ExecutarTarefasAgendadas`). Os nomes
+  de telas, abas, botões e mensagens da interface seguem as US v3.4 e esses diagramas; a
+  correspondência participante → código está em `docs/diagramas/Rastreabilidade_Diagramas_Codigo.md`.
 - `docs/arquitetura/`: diagramas de componentes (`Componentes_SIGTCC.drawio`), implantação
   (`Implantacao_SIGTCC.drawio`) e pacotes (`Pacotes_SIGTCC.drawio`).
 

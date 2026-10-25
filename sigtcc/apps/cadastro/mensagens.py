@@ -192,6 +192,8 @@ MT21_NOTIFICACAO_EXCLUSAO = "Você foi excluído da turma {identificador}. Motiv
 MT22_NOTIFICACAO_TRANSFERENCIA = "{nome} foi transferido da turma {origem} para a turma {destino}."
 MT23_PARTICIPACAO_ENCERRADA = "Participação encerrada como {status}."
 MT24_CONFIRMAR_EXCLUSAO_ALUNO = "Excluir {nome} da turma? O aluno perderá o acesso a ela."
+# US-07 E8 (v3.4): docente que não é o Professor da Disciplina abre a turma. [US-07][RBN-CAD-04.1]
+SEM_PERMISSAO_PAGINA = "Você não tem permissão para acessar esta página."
 MT25_TURMA_ARQUIVADA = "Esta turma está arquivada e só pode ser consultada."
 MT26_TCC_EM_CURSO = "O aluno já tem TCC em andamento na turma {identificador}. Use Transferir."
 MT27_TCC_CONCLUIDO = "O TCC deste aluno já foi aprovado ou concluído."
@@ -291,7 +293,7 @@ MF12_ASSUNTO_LEMBRETE_PRAZO = "SIGTCC: lembrete de prazo"
 
 # =============================================================================================
 # Spec 002: Gestão de Contas (US-03, US-04, US-05, US-06, US-50)
-# Textos das US copiados da v3.3 (docs/fonte/anteriores/; a v3.4 reescreveu estas US, Q-121);
+# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_4.md (hotfix v0.2.1, Q-121);
 # MC-01 a MC-13 da tabela "Mensagens a validar com a PO" de specs/002-gestao-contas/spec.md.
 # [SC-002][FR-048]
 # =============================================================================================
@@ -336,9 +338,10 @@ FALHA_AO_PRORROGAR = "Não foi possível prorrogar o acesso. Tente novamente"
 ACESSO_EXPIRADO_US06 = "Seu acesso expirou. Procure a coordenação do curso"
 
 # Rótulos das US-03 a 06 e 50 (critério dos cenários, spec Q21). SALVAR e EDITAR já existem.
-CADASTRAR_DOCENTE = "Cadastrar Docente"
-NOVA_SECRETARIA = "Nova secretaria"
-NOVO_MEMBRO_EXTERNO = "Novo membro externo"
+CADASTRAR_DOCENTE = "Cadastrar docente"
+CADASTRAR_SECRETARIA = "Cadastrar secretaria"
+CADASTRAR_MEMBRO_EXTERNO = "Cadastrar membro externo"
+ALTERAR = "Alterar"
 INATIVAR = "Inativar"
 REATIVAR = "Reativar"
 PRORROGAR = "Prorrogar"

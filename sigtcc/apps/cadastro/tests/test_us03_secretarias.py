@@ -81,7 +81,7 @@ class CadastroSecretariaTest(TesteContas):
     def test_cenario_21_secretaria_nao_ve_nova_secretaria(self):
         self.client.force_login(secretaria_de(SI))
         resposta = self.client.get(LISTA)
-        self.assertNotContains(resposta, mensagens.NOVA_SECRETARIA)
+        self.assertNotContains(resposta, mensagens.CADASTRAR_SECRETARIA)
         resposta = self.client.get(NOVA)
         self.assertContains(resposta, mensagens.M02_ACESSO_NEGADO, status_code=403)
 

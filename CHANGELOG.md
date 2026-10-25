@@ -6,6 +6,34 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 
 Nada ainda.
 
+## [v0.2.1] - 25/10/2026 - Hotfix: nomes iguais às US v3.4 e aos diagramas
+
+Correção de rótulos da interface para coincidirem exatamente com as Histórias de Usuário v3.4 e
+com os diagramas de sequência PlantUML v2. O comportamento não muda.
+
+### Alterado
+
+- Aba **Entregas** no lugar de "Atividades", para o Aluno e o Professor da Disciplina (US-15,
+  US-16, US-43; Q-80). "Cadastrar atividade" continua.
+- Gestão de Contas (US-03, US-05; Q-121): "Cadastrar docente", "Cadastrar secretaria",
+  "Cadastrar membro externo", "Alterar" nas listas, botão "Cadastrar" no cadastro de docente,
+  coluna "E-mail Institucional" em Docentes e colunas Nome Completo, E-mail, Titulação,
+  Instituição de Origem e Acesso em Membros externos.
+- Tela de orientandos (US-18): link "Histórico" (Q-81) e coluna "Status de envio das entregas".
+- Tela do aluno (US-41, US-08, US-09): seções "Atas" e "Publicação"; botões "Editar",
+  "Transferir" e "Excluir da turma".
+- Docente que não é o Professor da Disciplina ao abrir a turma vê "Você não tem permissão para
+  acessar esta página." (US-07 E8).
+- Diagramas de sequência: o `.drawio` de 24/10 deu lugar aos 36 diagramas PlantUML v2, com a
+  tabela de rastreabilidade participante → código em `docs/diagramas/`.
+- Testes de mensagens da spec 002 voltam a conferir com a v3.4; a cópia da v3.3 em
+  `docs/fonte/anteriores/` foi removida.
+
+### Corrigido
+
+- Roteiro de validação: a opção "Todos" do filtro de curso continua prevista na v3.4 (US-39,
+  fluxo alternativo A).
+
 ## [v0.2.0] - 25/10/2026 - Marco TP2
 
 Baseline 2: Módulo de Cadastro e Manutenção completo (30 US do Épico 1), sistema publicado no

@@ -1,4 +1,4 @@
-"""Views da aba Atividades do app cadastro (spec 005).
+"""Views da aba Entregas do app cadastro (spec 005; US v3.4, Q-80).
 
 Views finas (orquestram `services_entregas`, sem regra de negócio): cadastro de entregas e
 acompanhamento pelo Professor da Disciplina (US-43, US-16); envio e substituição de link pelo
@@ -42,7 +42,7 @@ def _turma_do_professor_da_disciplina(usuario, tur_id):
 
 @perfil_requerido("docente")
 def entregas(request, tur_id):
-    """Aba Atividades (lista): entregas já cadastradas e o botão "Cadastrar atividade", visível
+    """Aba Entregas (lista): entregas já cadastradas e o botão "Cadastrar atividade", visível
     só com a turma ativa (E4/E5 da US-43 original; Cenário 5 do `spec.md`).
 
     [US-43][FR-013][FR-014][FR-017][contracts/rotas.md]
@@ -121,7 +121,7 @@ def entrega_acompanhar(request, tur_id, tma_id):
 
 @perfil_requerido("aluno")
 def minhas_entregas(request, tur_id):
-    """Aba Atividades (passos 1 a 2 da US-15 original): lista das entregas da turma do próprio
+    """Aba Entregas (passos 1 a 2 da US-15 original): lista das entregas da turma do próprio
     Aluno, com Título, Data Limite e o status de envio (FR-020: "Não Entregue" calculado na
     exibição quando a Data Limite já passou sem envio, sem gravar nada). Restrita ao próprio
     Aluno da turma (`turma_do_aluno`, sem IDOR).
@@ -156,7 +156,7 @@ def entrega_enviar(request, tur_id, tma_id):
     o serviço confere de novo antes de gravar (`services_entregas.envio_liberado`, SC-004). Na
     entrega do tipo Proposta, sem campo de link (fluxo F: `ENTREGA_CUMPRIDA_PROPOSTA`). Na Versão
     Final, o envio volta à aba Meu TCC com "Versão Final enviada" (passo 7 da US-29); nas
-    demais, à aba Atividades com "Entrega enviada". Restrita ao próprio Aluno da turma, dono da
+    demais, à aba Entregas com "Entrega enviada". Restrita ao próprio Aluno da turma, dono da
     entrega (sem IDOR).
     [US-15][US-29][RBN-CAD-09.2][RBN-CAD-09.3][FR-018 a FR-025][contracts/rotas.md]
     """

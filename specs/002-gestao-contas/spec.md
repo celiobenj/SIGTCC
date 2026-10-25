@@ -242,6 +242,14 @@ Pendências de outras pessoas (registradas no índice):
   recálculo da validade nos eventos de banca, atalho da US-23, listas de escolha só com docentes
   'Ativa' e rotina diária de expiração. Os textos MC-11 a MC-13 aguardam a PO (Q-58).
 
+### Session 2026-10-25 (hotfix v0.2.1: nomes iguais às US v3.4 e aos diagramas)
+
+- Decisão de Célio Benjamim (hotfix v0.2.1): os nomes de telas, abas, botões e seções da interface passam a ser exatamente os das Histórias de Usuário v3.4 e dos diagramas de sequência PlantUML v2 (`docs/diagramas/`). Só rótulos mudaram; o comportamento é o mesmo. Quando a v3.4 se contradiz, vale a US dona da ação.
+- Q: Quais rótulos mudam na Gestão de Contas? → A: Docentes: "Cadastrar docente", "Alterar" na linha, botão "Cadastrar" no formulário de cadastro (na alteração, "Salvar") e coluna "E-mail Institucional" (US-03 e D). Secretarias: "Cadastrar secretaria" e "Alterar" (US-03 H e J). Membros externos: "Cadastrar membro externo" e "Alterar" (US-05).
+- Q: Quais colunas tem a tela Membros externos? → A: as da US-05, dona da lista: Nome Completo, E-mail, Titulação, Instituição de Origem e Acesso (Status da Conta e validade, ex.: "Ativa até 30/06/2027"). A US-50 cita outras colunas, mas só descreve a lista.
+- Os testes de mensagens da spec 002 voltam a conferir com a v3.4, e a cópia da v3.3 em `docs/fonte/anteriores/` foi removida (índice Q-121, respondida).
+
+
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
@@ -338,7 +346,7 @@ listagem com o filtro de Curso.
     Secretaria para o curso, **Então** o sistema cria a nova conta e o curso volta a ter uma
     Secretaria ativa.
 21. **Dado que** a Secretaria está autenticada, **Quando** acessa o menu Cadastros, **Então** o sistema
-    não exibe a opção "Nova secretaria" e bloqueia o acesso direto à tela.
+    não exibe a opção "Cadastrar secretaria" e bloqueia o acesso direto à tela.
 22. **Dado que** um Aluno, um Docente comum ou um Membro Externo está autenticado, **Quando** tenta
     abrir a tela de cadastro de docente pela URL, **Então** o sistema nega o acesso e exibe "Você não
     tem permissão para esta ação".
@@ -383,10 +391,10 @@ listagem com o filtro de Curso.
     altera o Curso Vinculado de outra Secretaria para esse curso, **Então** o sistema exibe "O curso já
     possui Secretaria vinculada" e não grava.
 39. **Dado que** o usuário filtrou os docentes de outro curso pelo filtro, **Quando** tenta editar um
-    desses docentes, **Então** o sistema não exibe o botão "Editar" e, no acesso direto, exibe "Você só
+    desses docentes, **Então** o sistema não exibe o botão "Alterar" e, no acesso direto, exibe "Você só
     pode cadastrar e alterar dados do seu curso".
 40. **Dado que** a Secretaria está autenticada, **Quando** abre a lista de Secretarias, **Então** o
-    sistema não exibe "Editar" e bloqueia o acesso direto à ação.
+    sistema não exibe "Alterar" e bloqueia o acesso direto à ação.
 
 ---
 
@@ -876,7 +884,7 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
   do usuário), com as opções Engenharia de Computação, Sistemas de Informação, Licenciatura em
   Computação e Todos (RBN-CAD-14.1). O filtro muda só a exibição e vale só para a tela aberta. Sem
   docentes no filtro: "Nenhum registro".
-- **FR-019**: Na listagem, "Editar", "Inativar" e "Reativar" DEVEM aparecer só nas linhas de docentes
+- **FR-019**: Na listagem, "Alterar", "Inativar" e "Reativar" DEVEM aparecer só nas linhas de docentes
   do curso do usuário: "Inativar" só para 'Ativa', "Reativar" só para 'Inativa' (US-04 E10).
 
 **Secretaria [US-03][US-04][RBN-CAD-02.1 a 02.3]**
@@ -890,7 +898,7 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
 - **FR-022**: O Coordenador DEVE poder alterar Nome Completo, E-mail Institucional e Curso Vinculado
   da Secretaria do seu curso, com as validações do cadastro. Sucesso: "Dados atualizados".
 - **FR-023**: A lista de Secretarias DEVE mostrar Nome, E-mail Institucional, Curso Vinculado e
-  Status da Conta, com o filtro de Curso do FR-018. O Coordenador vê "Nova secretaria", "Editar" e
+  Status da Conta, com o filtro de Curso do FR-018. O Coordenador vê "Cadastrar secretaria", "Alterar" e
   "Inativar" (este só para 'Ativa'). A Secretaria vê a lista sem nenhuma dessas ações (US-03 E9,
   US-04 E9).
 - **FR-024**: O Coordenador DEVE poder inativar a Secretaria 'Ativa' do seu curso, com confirmação
@@ -956,7 +964,7 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
   acesso (US-05 A6). A troca do e-mail de membro com conta 'Ativa' ou 'Expirada' é só da
   Secretaria e do Coordenador (FR-008; Clarifications, Q30).
 - **FR-036**: A tela Membros externos DEVE listar Nome, E-mail, Instituição de Origem, Status da
-  Conta e validade do acesso (DD/MM/AAAA), com "Editar" para os perfis do FR-035 e "Prorrogar"
+  Conta e validade do acesso (DD/MM/AAAA), com "Alterar" para os perfis do FR-035 e "Prorrogar"
   conforme o FR-042. O status exibido considera a validade vencida (Edge Cases). A lista não tem
   filtro de Curso, porque o Membro Externo não tem curso (Clarifications, Q19).
 
@@ -1148,8 +1156,8 @@ colchetes na tabela).
   índice (Q-62).
 - **Nomes dos botões**: as US-03 e US-05 usam nomes diferentes para o mesmo botão. Como na Q6, vale
   o texto dos cenários de aceite: "Salvar" para gravar o formulário (o fluxo principal da US-03 diz
-  "Cadastrar"), "Nova secretaria" (US-03 E9 e cenário 21; o A4 diz "Cadastrar secretaria"),
-  "Cadastrar Docente" e "Novo membro externo" (fluxos principais das US-03 e US-05, sem divergência
+  "Cadastrar"), "Cadastrar secretaria" (US-03 E9 e cenário 21; o A4 diz "Cadastrar secretaria"),
+  "Cadastrar docente" e "Cadastrar membro externo" (fluxos principais das US-03 e US-05, sem divergência
   nos cenários). A correção das US está no índice (Q-61).
 - **Precedência**: matriz de 17/10 > US. As divergências tratadas estão em Clarifications (Q3 a Q8,
   Q11 a Q13, Q16 a Q19). A responsável decidiu se afastar da matriz em quatro pontos: Q4 e Q5
