@@ -120,3 +120,17 @@ Dados mínimos, criados pela interface ou pelas fábricas de `tests/apoio_orient
   conferência de permissão do passo 14.
 - Mensagens iguais às US ou às MO da spec (SC-003).
 - `lint.bat` sem erros e suíte completa passando antes do PR.
+
+## 10. Execução registrada (T061)
+
+Roteiro executado por Célio Benjamim em 24/10/2026, passos 1 a 23, pela navegação.
+
+| Passo(s) | Resultado |
+|---|---|
+| 1 a 6, 8 a 12, 15 a 17, 19, 20, 22 e 23 | Conforme o esperado. |
+| 7 | Defeito: a janela "Registrar coorientador" mostrava as duas caixas (Docente e Externo). Corrigido: só a caixa do Tipo escolhido fica visível (`static/js/alternar_tipo.js`); sem JavaScript as duas aparecem e o servidor decide (commit `dca41d1`). |
+| 13 | Defeito: aluno "Sem Proposta" com pedido de orientação não podia ser excluído nem encerrado. Corrigido pela decisão de Célio Benjamim (Q-120; spec 004, Clarifications Q20; IC-15): o pedido não impede a exclusão (commit `9cf47f5`). |
+| 14 e 21 | Sem defeito: o resultado diferente vinha da pré-condição que faltava no roteiro (o aluno precisa ter salvo a Proposta). Pré-condições acrescentadas (commit `9a51f52`). |
+| 18 | Conferido sem defeito. |
+
+Conferência visual em 360, 768 e 1280 px sem problema; console do navegador sem erros.

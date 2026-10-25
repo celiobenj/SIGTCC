@@ -35,7 +35,7 @@ Implementa o ciclo de orientação do TCC no app `cadastro`, sem tabela nem colu
   na seção (`?secao=`).
 - **Arquivar a turma:** cancela os pedidos e convites pendentes e avisa cada docente (MO-26).
 
-**Itens de configuração em código de specs já mescladas (IC-01 a IC-14, aprovados; Q-103 a Q-116):**
+**Itens de configuração em código de specs já mescladas (IC-01 a IC-14, aprovados, Q-103 a Q-116; IC-15, Q-120):**
 
 | IC | Arquivo(s) (spec de origem) | Mudança |
 |---|---|---|
@@ -53,12 +53,14 @@ Implementa o ciclo de orientação do TCC no app `cadastro`, sem tabela nem colu
 | IC-12 | `services_turmas.arquivar_turma` (004), `services.notificar` (003) | Arquivar cancela os pendentes da turma (MO-26); `notificar(agora=None)` |
 | IC-13 | `services.py` (003), `services_entregas._enviar_email_ao_aluno` (005) | + `enviar_email_apos_commit`, compartilhado; comportamento da 005 inalterado |
 | IC-14 | `services_entregas.enviar_entrega` (005) | Ordem de trava turma → aluno → TCC → entrega (evita deadlock) |
+| IC-15 | `services_turmas._trabalho_movimentado` e `excluir_aluno`, `mensagens.py` (004) | Pedido de orientação ou convite de coorientação não impede mais a exclusão do aluno "Sem Proposta"; os pendentes são cancelados com aviso ao docente (MT-33) e cada solicitação vai para o log de acesso antes de ser apagada com o TCC (decisão de Célio Benjamim depois do teste manual; spec 004, FR-023 e Clarifications Q20; Q-120) |
 
 **Documentos fora da spec 006 alterados neste PR:**
 - Constituição 1.0.0 → 1.0.1 (PATCH: referência às US v3.2 → v3.3; sem efeito semântico; Q-62). **Requer aprovação neste PR.**
 - `CLAUDE.md`, `GUIA_SDD.md` e os agentes `analista-requisitos` e `testador-aceite` passam a citar `Historias_de_Usuario_v3_3.md`; `test_mensagens.py` e `test_mensagens_turmas.py` passam a conferir contra a v3.3.
 - `specs/003-acesso-login/spec.md`: M-02 e M-14 alinhadas aos textos das US (Q-50; Clarifications Q30).
 - `specs/005-fluxo-do-tcc/contracts/servicos-compartilhados.md`: correção do nome de uma função citada.
+- `specs/004-turmas-alunos/spec.md` e `research.md`: FR-023, Clarifications Q20, MT-33 e leitura da RBN-CAD-05.4 no B14 (Q-120; IC-15). **Toca código já mesclado da spec 004.**
 - `.claude/launch.json`: configuração `sigtcc` (`runserver` na porta 8000) para a pré-visualização da ferramenta de desenvolvimento, pedida na T060; sem segredo nem caminho pessoal.
 
 ### 2. Rastreabilidade com o Projeto
@@ -74,7 +76,7 @@ Implementa o ciclo de orientação do TCC no app `cadastro`, sem tabela nem colu
 - [x] `makemigrations --check --dry-run`: "No changes detected" (a spec 006 não cria tabela nem coluna).
 - [x] Os arquivos `.env`, `.env.local` e os diretórios `sigtcc/media/` e `staticfiles/` NÃO foram adicionados ao Git.
 - [x] A interface segue a paleta e os padrões do protótipo de 17/10: as 11 telas foram conferidas em 1280 px e em 360 px (sem rolagem horizontal), registro em `tasks.md`, "Conferência visual".
-- [ ] Não há erros acusados no console do navegador com o sistema rodando (pendente na T061).
+- [x] Não há erros acusados no console do navegador com o sistema rodando (T061, 24/10/2026; conferência visual em 360, 768 e 1280 px sem problema).
 
 **Testes automatizados:** suíte completa com 1107 testes, todos passando (1 falha esperada já
 marcada como `expectedFailure`). Fora da spec 006, `test_base_comum.BaseComumTest.test_cenario5_link_gerado_fora_das_telas`
@@ -83,18 +85,26 @@ as mudanças da 006; passou na suíte completa. Registrado na Q-119.
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
-O roteiro manual do `quickstart.md` (23 passos) **ainda não foi executado (T061 aberta)**. Os
-cenários de aceite das US estão cobertos por testes automatizados (um ou mais por cenário
+Roteiro manual do `quickstart.md` (passos 1 a 23) executado por Célio Benjamim em 24/10/2026,
+registro na seção 10 do `quickstart.md` (T061):
+
+- Passos 7 e 13: defeitos encontrados e corrigidos neste PR (só a caixa do Tipo visível na janela
+  do coorientador, `dca41d1`; exclusão do aluno "Sem Proposta" com pedido, `9cf47f5`, Q-120).
+- Passos 14 e 21: explicados pelas pré-condições que faltavam no roteiro, já acrescentadas (`9a51f52`).
+- Passo 18: conferido sem defeito.
+- Conferência visual em 360, 768 e 1280 px sem problema; console do navegador sem erros.
+
+Os cenários de aceite também estão cobertos por testes automatizados (um ou mais por cenário
 Dado/Quando/Então), e `test_navegacao_orientacao.py` percorre cada tela a partir do menu.
 
-- [ ] Cenário 1: Aluno pede orientador; o docente aceita em "Orientações" e o aluno é notificado (US-17, US-18)
-- [ ] Cenário 2: Pedido de troca de orientador e resposta do docente (US-17, US-18)
-- [ ] Cenário 3: Registro, convite, aceite, substituição e remoção de coorientador (US-45, US-36)
-- [ ] Cenário 4: Registro, edição e comentário de ata; consulta pelo Professor da Disciplina (US-19)
-- [ ] Cenário 5: Apto para Defesa e Correções Conferidas (US-42; US-44 B)
-- [ ] Cenário 6: Aba "Alunos" em blocos, painel do aluno e volta das telas de ação ao painel (US-41)
-- [ ] Cenário 7: Publicação e decisão de aproveitamento pelo Coordenador (US-46, US-20)
-- [ ] Cenário 8: Arquivar a turma cancela os pedidos e convites pendentes e avisa os docentes (Q-117)
+- [x] Cenário 1: Aluno pede orientador; o docente aceita em "Orientações" e o aluno é notificado (US-17, US-18)
+- [x] Cenário 2: Pedido de troca de orientador e resposta do docente (US-17, US-18)
+- [x] Cenário 3: Registro, convite, aceite, substituição e remoção de coorientador (US-45, US-36)
+- [x] Cenário 4: Registro, edição e comentário de ata; consulta pelo Professor da Disciplina (US-19)
+- [x] Cenário 5: Apto para Defesa e Correções Conferidas (US-42; US-44 B)
+- [x] Cenário 6: Aba "Alunos" em blocos, painel do aluno e volta das telas de ação ao painel (US-41)
+- [x] Cenário 7: Publicação e decisão de aproveitamento pelo Coordenador (US-46, US-20)
+- [x] Cenário 8: Arquivar a turma cancela os pedidos e convites pendentes e avisa os docentes (Q-117)
 
 **Pendências registradas em `docs/questoes-a-rever.md` (não bloqueiam o merge):**
 - Q-95: os 26 textos provisórios MO-01 a MO-26.
@@ -104,11 +114,12 @@ Dado/Quando/Então), e `test_navegacao_orientacao.py` percorre cada tela a parti
 - Q-117: regra nova de cancelamento dos pendentes ao arquivar a turma (ciência da PO).
 - Q-118: textos de estado vazio vindos do protótipo.
 - Q-119: teste instável da spec 003.
-- Q-96: ciência das responsáveis pelas specs 003/004 (Julia Cohen) e 005 (Leandra Matos) sobre os IC-01 a IC-14.
+- Q-120: exclusão do aluno "Sem Proposta" com pedido (respondida por Célio Benjamim; IC-15; a MT-33 é provisória e entra na validação da Q-36).
+- Q-96: ciência das responsáveis pelas specs 003/004 (Julia Cohen) e 005 (Leandra Matos) sobre os IC-01 a IC-15.
 
 ### 5. Revisão por Pares (Peer Review)
 
-* **Revisor Designado:** [nome do membro da equipe]
+* **Revisores:** [revisores] (não pode ser quem escreveu o código)
 * **Parecer do Revisor:**
 
 [ ] Aprovado integralmente para merge
