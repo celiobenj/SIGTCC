@@ -1085,13 +1085,14 @@ def tcc_do_aluno(turma, aluno):
 
 
 def _trabalho_movimentado(tcc):
-    """O TCC já tem solicitação, encontro, orientação por pedido, coorientação, palavra-chave,
+    """O TCC já tem encontro (ata), orientação por pedido aceito, coorientação, palavra-chave,
     publicação ou defesa: o trabalho já foi movimentado e a exclusão é recusada (research B14).
-    [US-09][RBN-CAD-05.4][FR-023]
+    Um pedido de orientação ou convite de coorientação não impede: o que decide a exclusão é o
+    Status "Sem Proposta" (decisão de Célio Benjamim, 2026-10-24; Clarifications; Q-120).
+    [US-09][RBN-CAD-05.4][FR-023][Q-120]
     """
     return (
-        SolicitacoesOrientacao.objects.filter(sol_tcc=tcc).exists()
-        or EncontroOrientacao.objects.filter(enc_tcc=tcc).exists()
+        EncontroOrientacao.objects.filter(enc_tcc=tcc).exists()
         or Orientacoes.objects.filter(ori_tcc=tcc)
         .exclude(ori_origem=OrigemOrientacao.AUTOMATICO)
         .exists()
@@ -1130,6 +1131,7 @@ def excluir_aluno(professor, tur_id, alu_id, justificativa):
         if not aluno_pode_ser_excluido(tcc):
             raise ErroTurma(mensagens.ALUNO_TEM_PROPOSTA)
         if tcc is not None:
+            _remover_solicitacoes_na_exclusao(tcc, aluno, turma, professor)
             HistoricoStatusTCC.objects.filter(hst_tcc=tcc).delete()
             Orientacoes.objects.filter(ori_tcc=tcc, ori_origem=OrigemOrientacao.AUTOMATICO).delete()
             tcc.delete()
@@ -1152,6 +1154,71 @@ def excluir_aluno(professor, tur_id, alu_id, justificativa):
         )
         notificar(aluno.alu, texto)
     return aluno
+
+
+def _detalhe_da_solicitacao(tcc, sol):
+    """Detalhe do log de uma solicitação apagada: ids, tipo, docente, status e datas (sem nome
+    nem e-mail, A13). [US-09][RAN-CAD-10 NFR][Q-120]
+    """
+    resposta = sol.sol_data_resposta.strftime("%Y-%m-%d %H:%M:%S") if sol.sol_data_resposta else "-"
+    return (
+        f"tcc_id={tcc.pk} sol_id={sol.pk} tipo={sol.sol_tipo} docente={sol.sol_doc_id} "
+        f"status={sol.sol_status} pedido={sol.sol_data_solicitacao:%Y-%m-%d %H:%M:%S} "
+        f"resposta={resposta}"
+    )
+
+
+class EventoExclusao(enum.Enum):
+    """Evento do log de acesso na exclusão do aluno (Q-120): cada pedido ou convite do TCC
+    apagado fica registrado com docente, status e datas, para não perder o registro de aceite ou
+    recusa exigido pelo RNF de Não Repúdio do RAN-CAD-10. `registrar_evento` só usa `.value`
+    (mesmo padrão de EventoFluxoTCC, spec 005), sem mexer no conjunto fechado de EventoAcesso.
+    [US-09][RBN-CAD-05.4][RAN-CAD-10 NFR][FR-023][Q-120]
+    """
+
+    SOLICITACAO_REMOVIDA = "SOLICITACAO_REMOVIDA_NA_EXCLUSAO"
+
+
+def _remover_solicitacoes_na_exclusao(tcc, aluno, turma, professor):
+    """Pedidos e convites do TCC na exclusão do aluno (Q-120): os pendentes viram 'Cancelado' e o
+    docente recebe a MT-33; depois do commit, cada solicitação vai para o log de acesso (tipo,
+    docente, status, datas); e todas são apagadas antes do TCC (FK PROTECT).
+    [US-09][RBN-CAD-05.4][RAN-CAD-10 NFR][FR-023][Q-120]
+    """
+    agora = timezone.now()
+    solicitacoes = list(
+        SolicitacoesOrientacao.objects.select_for_update(of=("self",))
+        .select_related("sol_doc__doc")
+        .filter(sol_tcc=tcc)
+        .order_by("sol_id")
+    )
+    for sol in solicitacoes:
+        if sol.sol_status in STATUS_SOLICITACAO_PENDENTE:
+            sol.sol_status = StatusSolicitacao.CANCELADO
+            sol.sol_data_resposta = agora
+            tipo = (
+                mensagens.TIPO_CONVITE_COORIENTACAO
+                if sol.sol_tipo == TipoSolicitacao.COORIENTACAO
+                else mensagens.TIPO_PEDIDO_ORIENTACAO
+            )
+            notificar(
+                sol.sol_doc.doc,
+                mensagens.MT33_SOLICITACAO_CANCELADA_EXCLUSAO.format(
+                    tipo=tipo, nome=aluno.alu.usu_nome, identificador=turma.tur_identificador
+                ),
+                link=reverse("cadastro:orientacoes"),
+            )
+    registros = [(sol.sol_doc.doc, _detalhe_da_solicitacao(tcc, sol)) for sol in solicitacoes]
+
+    def registrar():
+        """Grava no log, depois do commit, o registro de cada solicitação apagada. [Q-120]"""
+        for conta, detalhe in registros:
+            registrar_evento(
+                EventoExclusao.SOLICITACAO_REMOVIDA, conta, autor=professor, detalhe=detalhe
+            )
+
+    transaction.on_commit(registrar)
+    SolicitacoesOrientacao.objects.filter(pk__in=[s.pk for s in solicitacoes]).delete()
 
 
 def encerrar_participacao(professor, tur_id, alu_id, status, justificativa):

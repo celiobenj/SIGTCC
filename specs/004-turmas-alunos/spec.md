@@ -130,6 +130,23 @@ conta 'Aguardando Ativação', log e mensagens provisórias).
   coorientação pendente, o docente convidado é avisado? → A: Sim, por notificação (MT-31,
   PROVISÓRIA).
 
+### Session 2026-10-24 (teste manual da spec 006, passo 13)
+
+Decisão de Célio Benjamim, depois do teste manual da spec 006 (índice Q-120). Muda o comportamento
+desta spec já mesclada (FR-023; research B14): item de configuração IC-15 do plano da spec 006,
+como a Q-82.
+
+- Q20: um aluno com TCC "Sem Proposta" que já fez pedido de orientação (por exemplo, recusado) pode
+  ser excluído da turma? Hoje a exclusão é recusada porque qualquer solicitação conta como
+  "trabalho movimentado". → A: **Sim**. O que decide a exclusão é o Status "Sem Proposta" (RBN-CAD-
+  05.4: "Permitido apenas para aluno sem Proposta cadastrada"); pedido de orientação ou convite de
+  coorientação não impede. Continuam impedindo: ata, orientação por pedido aceito, coorientação,
+  Palavra-Chave, publicação e defesa. Os pedidos e convites pendentes são cancelados com aviso ao
+  docente (MT-33, PROVISÓRIA) e, como apagar o TCC exige apagar as solicitações (chave PROTECT),
+  cada uma é registrada antes no log de acesso (tipo, docente, status e datas), para não perder o
+  registro de aceite ou recusa exigido pelo RNF de Não Repúdio do RAN-CAD-10. "Encerrar
+  participação" continua só para TCC "Em Andamento" ou "Apto para Defesa".
+
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
@@ -484,7 +501,12 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   motivo (MT-21) e exibe "Aluno excluído da turma". A exclusão apaga o vínculo, o TCC 'Sem
   Proposta' da turma e o histórico de status desse TCC (Clarifications, Q8), e os registros do aluno
   nas entregas da turma sem envio; os com envio ficam como histórico (Q17). Cancelar na confirmação
-  final não altera nada.
+  final não altera nada. O que decide a exclusão é o Status "Sem Proposta": pedido de orientação
+  ou convite de coorientação não impede (Clarifications, Q20); continuam impedindo ata,
+  orientação por pedido aceito, coorientação, Palavra-Chave, publicação e defesa. Na exclusão, os
+  pedidos e convites pendentes do TCC são cancelados com aviso ao docente (MT-33), cada
+  solicitação é registrada no log de acesso (tipo, docente, status e datas, pelo RNF de Não
+  Repúdio do RAN-CAD-10) e depois apagada com o TCC.
   Para aluno com Proposta, a exclusão é recusada com "O aluno já tem Proposta. Use Encerrar
   participação" (RBN-CAD-05.4).
 - **FR-024**: Para aluno com Proposta, o Professor da Disciplina DEVE poder clicar em "Encerrar
@@ -601,6 +623,7 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
 | MT-30 | Encerramento com sessão de defesa ativa | "Não é possível encerrar a participação: há sessão de defesa ativa." | Clarifications, Q14; E4 da US-08 | A validar |
 | MT-31 | Notificação ao docente de pedido ou convite cancelado pelo encerramento | "O pedido de TIPO para o TCC de NOME foi cancelado porque a participação do aluno foi encerrada." | Clarifications, Q19 | A validar |
 | MT-32 | Confirmação da importação com prévia vencida (30 minutos), já usada ou de outra turma (research B10) | "A prévia da importação venceu ou não é desta turma. Envie o arquivo de novo." | Implementação (research B10, achado B-2) | A validar |
+| MT-33 | Notificação ao docente de pedido ou convite cancelado pela exclusão do aluno da turma | "O TIPO de NOME foi cancelado porque o aluno foi excluído da turma IDENTIFICADOR." (TIPO = "pedido de orientação" ou "convite de coorientação") | Clarifications, Q20 | A validar |
 
 ## Assumptions
 

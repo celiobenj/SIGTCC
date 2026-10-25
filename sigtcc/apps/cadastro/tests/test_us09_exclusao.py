@@ -213,13 +213,18 @@ class ExclusaoTest(TesteTurmas):
         self.assertIsNone(registro.hat_tur_destino)
         self.assertEqual(registro.hat_usu_id, self.professor.pk)
 
-    def test_exclusao_recusada_com_solicitacao_encontro_coorientacao_palavra_publicacao_ou_defesa(
-        self,
-    ):
-        """B14: o trabalho já foi movimentado → a mesma mensagem da Proposta."""
+    def test_exclusao_recusada_com_encontro_coorientacao_palavra_publicacao_ou_defesa(self):
+        """B14: o trabalho já foi movimentado → a mesma mensagem da Proposta. Pedido de orientação
+        não está mais na lista (Q-120: o que decide é o Status "Sem Proposta")."""
         outro = criar_docente_ativo()
         casos = {
-            "solicitação": lambda tcc: criar_solicitacao(tcc, outro),
+            "orientação por pedido aceito": lambda tcc: Orientacoes.objects.create(
+                ori_tcc=tcc,
+                ori_doc=outro.docentes,
+                ori_origem=OrigemOrientacao.PEDIDO_ACEITO,
+                ori_status=StatusOrientacao.ENCERRADA,
+                ori_data_inicio=timezone.now(),
+            ),
             "coorientação": lambda tcc: Coorientacoes.objects.create(
                 coo_tcc=tcc,
                 coo_doc=outro.docentes,
@@ -420,3 +425,112 @@ class EncerramentoTest(TesteTurmas):
         resposta = self.client.post(url, {"status": "Desistente", "justificativa": "x"})
         self.assertEqual(resposta.status_code, 404)
         self.assertEqual(tcc_de(aluno, destino).tcc_status, StatusTCC.EM_ANDAMENTO)
+
+
+class ExclusaoComPedidoTest(TesteTurmas):
+    """Q-120 (teste manual, passo 13): aluno "Sem Proposta" com pedido de orientação é excluído;
+    os pendentes são cancelados com aviso ao docente (MT-33); cada solicitação vai para o log de
+    acesso antes de ser apagada (Não Repúdio, RAN-CAD-10 NFR); ata, coorientação e artigo
+    continuam bloqueando. [US-09][RBN-CAD-05.4][RAN-CAD-10 NFR][FR-023][Q-120]
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.professor = criar_docente_ativo()
+        self.turma = criar_turma_de(self.professor, curso_nome=EC, identificador="ECP06_T02")
+        self.aluno = matricular_aluno(self.turma)
+        self.tcc = tcc_de(self.aluno, self.turma)
+        self.docente = criar_docente_ativo()
+        self.client.force_login(self.professor)
+
+    def excluir(self):
+        url = reverse("cadastro:aluno_excluir", args=[self.turma.pk, self.aluno.pk])
+        return self.client.post(
+            url, {"justificativa": JUSTIFICATIVA, "confirmacao_final": "1"}, follow=True
+        )
+
+    def na_turma(self):
+        return AlunosTurmas.objects.filter(mat_tur=self.turma, mat_alu=self.aluno).exists()
+
+    def test_pedido_recusado_nao_impede_e_fica_no_log(self):
+        pedido = criar_solicitacao(self.tcc, self.docente, status=StatusSolicitacao.RECUSADO)
+        pedido.sol_data_resposta = timezone.now()
+        pedido.save()
+        with self.assertLogs("sigtcc.acesso") as log:
+            with self.captureOnCommitCallbacks(execute=True):
+                resposta = self.excluir()
+        self.assertContains(resposta, mensagens.ALUNO_EXCLUIDO)
+        self.assertFalse(self.na_turma())
+        self.assertFalse(TCCs.objects.filter(pk=self.tcc.pk).exists())
+        from sigtcc.apps.cadastro.models import SolicitacoesOrientacao
+
+        self.assertFalse(SolicitacoesOrientacao.objects.filter(pk=pedido.pk).exists())
+        linha = next(x for x in log.output if "SOLICITACAO_REMOVIDA_NA_EXCLUSAO" in x)
+        self.assertIn(f"sol_id={pedido.pk}", linha)
+        self.assertIn("status=Recusado", linha)
+        self.assertIn(f"docente={self.docente.pk}", linha)
+        self.assertIn(f"autor={self.professor.pk}", linha)
+        self.assertFalse(Notificacoes.objects.filter(not_usu=self.docente).exists())
+
+    def test_pedido_pendente_e_cancelado_com_aviso(self):
+        criar_solicitacao(self.tcc, self.docente)
+        convidado = criar_docente_ativo()
+        criar_solicitacao(self.tcc, convidado, tipo=TipoSolicitacao.COORIENTACAO)
+        with self.assertLogs("sigtcc.acesso") as log:
+            with self.captureOnCommitCallbacks(execute=True):
+                self.excluir()
+        self.assertFalse(self.na_turma())
+        for docente, tipo in (
+            (self.docente, mensagens.TIPO_PEDIDO_ORIENTACAO),
+            (convidado, mensagens.TIPO_CONVITE_COORIENTACAO),
+        ):
+            aviso = Notificacoes.objects.get(not_usu=docente)
+            self.assertEqual(
+                aviso.not_mensagem,
+                mensagens.MT33_SOLICITACAO_CANCELADA_EXCLUSAO.format(
+                    tipo=tipo,
+                    nome=self.aluno.alu.usu_nome,
+                    identificador=self.turma.tur_identificador,
+                ),
+            )
+            self.assertEqual(aviso.not_link_tela, reverse("cadastro:orientacoes"))
+        removidas = [x for x in log.output if "SOLICITACAO_REMOVIDA_NA_EXCLUSAO" in x]
+        self.assertEqual(len(removidas), 2)
+        self.assertTrue(all("status=Cancelado" in x for x in removidas))
+
+    def test_com_ata_coorientacao_ou_artigo_continua_bloqueado(self):
+        criar_solicitacao(self.tcc, self.docente, status=StatusSolicitacao.RECUSADO)
+        casos = {
+            "ata": lambda tcc: EncontroOrientacao.objects.create(
+                enc_tcc=tcc, enc_data=timezone.now().date(), enc_pauta="P", enc_metas="M"
+            ),
+            "coorientação": lambda tcc: Coorientacoes.objects.create(
+                coo_tcc=tcc,
+                coo_doc=self.docente.docentes,
+                coo_status=StatusCoorientacao.ATIVA,
+                coo_data_inicio=timezone.now(),
+            ),
+            "artigo": lambda tcc: Artigos.objects.create(
+                art=tcc, art_link_doi="https://doi.org/10.1/x"
+            ),
+        }
+        for nome, criar in casos.items():
+            with self.subTest(caso=nome):
+                aluno = matricular_aluno(self.turma)
+                criar(tcc_de(aluno, self.turma))
+                url = reverse("cadastro:aluno_excluir", args=[self.turma.pk, aluno.pk])
+                resposta = self.client.post(
+                    url, {"justificativa": JUSTIFICATIVA, "confirmacao_final": "1"}, follow=True
+                )
+                self.assertContains(resposta, mensagens.ALUNO_TEM_PROPOSTA)
+                self.assertTrue(
+                    AlunosTurmas.objects.filter(mat_tur=self.turma, mat_alu=aluno).exists()
+                )
+
+    def test_painel_mostra_excluir_com_pedido(self):
+        criar_solicitacao(self.tcc, self.docente, status=StatusSolicitacao.RECUSADO)
+        resposta = self.client.get(
+            reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
+        )
+        self.assertContains(resposta, "Excluir aluno")
+        self.assertNotContains(resposta, "Encerrar participação")

@@ -66,7 +66,7 @@ CAMPOS = {
     "{r}": "R",
     "{c}": "C",
 }
-NUMEROS = [n for n in range(1, 33) if n != 20]
+NUMEROS = [n for n in range(1, 34) if n != 20]
 
 
 def _mensagens_da_spec():
@@ -104,11 +104,11 @@ class MensagensTurmasTest(SimpleTestCase):
             with self.subTest(constante=nome):
                 self.assertIn(texto, historias)
 
-    def test_tabela_da_spec_tem_mt01_a_mt32_sem_a_mt20(self):
+    def test_tabela_da_spec_tem_mt01_a_mt33_sem_a_mt20(self):
         self.assertEqual(sorted(_mensagens_da_spec()), [f"MT-{n:02d}" for n in NUMEROS])
 
     def test_mensagens_provisorias_da_spec(self):
-        """MT-01 a MT-32 (sem a MT-20) iguais à tabela da spec, com os campos trocados."""
+        """MT-01 a MT-33 (sem a MT-20; MT-33: Q-120) iguais à tabela da spec, campos trocados."""
         da_spec = _mensagens_da_spec()
         for numero in NUMEROS:
             nomes = [n for n in dir(mensagens) if n.startswith(f"MT{numero:02d}_")]
