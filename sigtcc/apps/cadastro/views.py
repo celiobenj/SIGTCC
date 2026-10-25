@@ -63,14 +63,19 @@ _ROTULO_PAPEL = {
 }
 
 
-def acesso_negado(request, exception=None):
-    """Página padrão do handler403, com a M-02 e nenhum dado da página pedida.
+# Mensagens de 403 próprias de uma US, levadas na exceção (PermissionDenied(texto)).
+MENSAGENS_403 = {mensagens.SEM_PERMISSAO_PAGINA}
 
-    [FR-025][SC-004][M-02]
+
+def acesso_negado(request, exception=None):
+    """Página padrão do handler403, com a M-02 e nenhum dado da página pedida. Quando a US define
+    um texto próprio (MENSAGENS_403, ex.: US-07 E8), mostra esse texto.
+
+    [FR-025][SC-004][M-02][US-07]
     """
-    return render(
-        request, "acesso_negado.html", {"mensagem": mensagens.M02_ACESSO_NEGADO}, status=403
-    )
+    texto = str(exception) if exception is not None else ""
+    mensagem = texto if texto in MENSAGENS_403 else mensagens.M02_ACESSO_NEGADO
+    return render(request, "acesso_negado.html", {"mensagem": mensagem}, status=403)
 
 
 def inicio(request):

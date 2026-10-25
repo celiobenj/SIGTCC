@@ -2,9 +2,9 @@
 índice Q-89) — spec 005, Phase 11, T036.
 
 Cenários 8 e 9 da US1, 9 da US4 e 6 da US5 do `spec.md`: o item de menu "Turmas" do Aluno e as
-listas `minhas_turmas`/`minhas_turmas_arquivadas`; as abas "Meu TCC" e "Atividades" do Aluno; as
-abas "Alunos" e "Atividades" do Professor na tela da turma da spec 004 (a Secretaria não vê
-"Atividades"); e a tela da turma da spec 004 continua fechada ao Aluno (FR-010 da spec 004).
+listas `minhas_turmas`/`minhas_turmas_arquivadas`; as abas "Meu TCC" e "Entregas" do Aluno; as
+abas "Alunos" e "Entregas" do Professor na tela da turma da spec 004 (a Secretaria não vê
+"Entregas"); e a tela da turma da spec 004 continua fechada ao Aluno (FR-010 da spec 004).
 Escritos antes de `services_tcc.turmas_do_aluno`, `views_tcc.minhas_turmas` e dos includes de
 abas (T037 a T040): devem falhar até a implementação.
 
@@ -123,7 +123,7 @@ class MenuETurmasDoAlunoTest(NavegacaoTestBase):
 
 
 class AbasDoAlunoTest(NavegacaoTestBase):
-    """Cenário 9 da US4: abas "Meu TCC" e "Atividades" do Aluno. [US-13][US-15][FR-031]"""
+    """Cenário 9 da US4: abas "Meu TCC" e "Entregas" do Aluno. [US-13][US-15][FR-031]"""
 
     def test_meu_tcc_mostra_as_abas_com_meu_tcc_atual(self):
         self.entrar_como_aluno()
@@ -146,7 +146,7 @@ class AbasDoAlunoTest(NavegacaoTestBase):
 
 
 class AbasDoProfessorTest(NavegacaoTestBase):
-    """Cenário 6 da US5: abas "Alunos" e "Atividades" do Professor. [US-16][US-43][FR-031]"""
+    """Cenário 6 da US5: abas "Alunos" e "Entregas" do Professor. [US-16][US-43][FR-031]"""
 
     def test_cenario6_turma_da_spec_004_mostra_alunos_e_atividades_ao_professor(self):
         self.client.force_login(self.professor)

@@ -10,7 +10,7 @@
 {% include "cadastro/contas/abas.html" with ativa="docentes" %}
 <div class="flex entre flex-wrap">
   <h2 class="pg">Docentes</h2>
-  <a class="btn pri" href="{% url 'cadastro:contas_docente_novo' %}"><span class="ms">add</span>Cadastrar Docente</a>
+  <a class="btn pri" href="{% url 'cadastro:contas_docente_novo' %}"><span class="ms">add</span>Cadastrar docente</a>
 </div>
 <form method="get" class="flex flex-wrap mt16" aria-label="Filtro de Curso">
   <div class="campo">
@@ -27,7 +27,7 @@
 {% if linhas %}
   <div class="tabela-wrap mt16">
     <table class="tabela">
-      <thead><tr><th>Nome</th><th>E-mail</th><th>Titulação</th><th>Curso de Lotação</th><th>Papéis</th><th>Status da Conta</th><th>Orientandos (TCC 1 / TCC 2)</th><th></th></tr></thead>
+      <thead><tr><th>Nome</th><th>E-mail Institucional</th><th>Titulação</th><th>Curso de Lotação</th><th>Papéis</th><th>Status da Conta</th><th>Orientandos (TCC 1 / TCC 2)</th><th></th></tr></thead>
       <tbody>
         {% for linha in linhas %}
           {% with docente=linha.docente %}
@@ -42,7 +42,7 @@
             <td>
               {% if linha.pode_gerir %}
                 <div class="flex">
-                  <a class="btn txt" href="{% url 'cadastro:contas_docente_editar' docente.pk %}">Editar</a>
+                  <a class="btn txt" href="{% url 'cadastro:contas_docente_editar' docente.pk %}">Alterar</a>
                   {% if docente.doc.usu_status == 'Ativa' and rota_inativar %}<a class="btn txt perigo" href="{% url 'cadastro:contas_docente_inativar' docente.pk %}">Inativar</a>{% endif %}
                   {% if docente.doc.usu_status == 'Inativa' and rota_reativar %}<a class="btn txt" href="{% url 'cadastro:contas_docente_reativar' docente.pk %}">Reativar</a>{% endif %}
                 </div>

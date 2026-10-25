@@ -32,11 +32,11 @@
   </div>
   {% if not arquivada %}
   <div class="flex flex-wrap">
-    {% if pode_editar %}<a class="btn" href="{% url 'cadastro:aluno_editar' turma.pk aluno.pk %}{{ volta }}"><span class="ms">edit</span>Editar aluno</a>{% endif %}
+    {% if pode_editar %}<a class="btn" href="{% url 'cadastro:aluno_editar' turma.pk aluno.pk %}{{ volta }}"><span class="ms">edit</span>Editar</a>{% endif %}
     {% if pode_resetar %}<a class="btn" href="{% url 'cadastro:resetar_primeiro_acesso' aluno.pk %}"><span class="ms">lock_reset</span>{{ texto_resetar }}</a>{% endif %}
-    {% if pode_transferir %}<a class="btn" href="{% url 'cadastro:aluno_transferir' turma.pk aluno.pk %}{{ volta }}"><span class="ms">swap_horiz</span>Transferir aluno</a>{% endif %}
+    {% if pode_transferir %}<a class="btn" href="{% url 'cadastro:aluno_transferir' turma.pk aluno.pk %}{{ volta }}"><span class="ms">swap_horiz</span>Transferir</a>{% endif %}
     {% if pode_encerrar %}<a class="btn perigo" href="{% url 'cadastro:aluno_encerrar' turma.pk aluno.pk %}{{ volta }}"><span class="ms">block</span>Encerrar participação</a>{% endif %}
-    {% if pode_excluir %}<a class="btn perigo" href="{% url 'cadastro:aluno_excluir' turma.pk aluno.pk %}{{ volta }}"><span class="ms">person_remove</span>Excluir aluno</a>{% endif %}
+    {% if pode_excluir %}<a class="btn perigo" href="{% url 'cadastro:aluno_excluir' turma.pk aluno.pk %}{{ volta }}"><span class="ms">person_remove</span>Excluir da turma</a>{% endif %}
   </div>
   {% endif %}
 </header>
@@ -84,13 +84,13 @@
     </section>
 
     <section class="cartao">
-      <header><span class="ms">history_edu</span><h3>Atas de orientação</h3><span class="cont">{{ n_atas }} encontro(s)</span></header>
+      <header><span class="ms">history_edu</span><h3>Atas</h3><span class="cont">{{ n_atas }} encontro(s)</span></header>
       <a class="btn txt" href="{% url 'cadastro:atas_painel' turma.pk aluno.pk %}">Ver atas</a>
     </section>
 
     {% if eh_artigo %}
     <section class="cartao">
-      <header><span class="ms">article</span><h3>Publicação do artigo</h3></header>
+      <header><span class="ms">article</span><h3>Publicação</h3></header>
       {% if artigo %}
       <div class="dado"><span>Veículo de Publicação</span><div>{{ artigo.art_veiculo_publicacao|default:"—" }}</div></div>
       <div class="dado"><span>Link ou DOI</span><div><a href="{{ artigo.art_link_doi }}" target="_blank" rel="noopener noreferrer">{{ artigo.art_link_doi }}</a></div></div>

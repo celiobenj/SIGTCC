@@ -380,13 +380,14 @@ class TurmasTest(TesteTurmas):
         self.assertEqual(self.client.get(self.url("turma_nova")).status_code, 403)
 
     def test_outro_docente_e_coordenador_recebem_403(self):
-        """Q9: só o Professor da turma e a Secretaria do curso abrem a turma."""
+        """Q9: só o Professor da turma e a Secretaria do curso abrem a turma. US-07 E8 (v3.4):
+        o Docente vê "Você não tem permissão para acessar esta página." (hotfix v0.2.1)."""
         turma = criar_turma_de(self.professor)
         for usuario in (criar_docente_ativo(), criar_coordenador()):
             with self.subTest(usuario=usuario.pk):
                 self.client.force_login(usuario)
                 resposta = self.client.get(self.url("turma", turma))
-                self.assertContains(resposta, mensagens.M02_ACESSO_NEGADO, status_code=403)
+                self.assertContains(resposta, mensagens.SEM_PERMISSAO_PAGINA, status_code=403)
 
     def test_disciplina_criada_e_reaproveitada(self):
         self.client.post(self.url("turma_nova"), dados_turma())

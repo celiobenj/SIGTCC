@@ -74,7 +74,7 @@ class PainelTest(PainelTestBase):
             "Proposta e TCC",
             "Orientação e coorientação",
             "Entregas",
-            "Atas de orientação",
+            "Atas",
             "Defesa",
         ):
             self.assertContains(resposta, secao)
@@ -105,7 +105,12 @@ class PainelTest(PainelTestBase):
         self.turma.save()
         resposta = self.painel()
         self.assertEqual(resposta.status_code, 200)
-        for botao in ("Editar aluno", "Encerrar participação", "Excluir aluno", "Transferir aluno"):
+        for botao in (
+            "</span>Editar</a>",
+            "Encerrar participação",
+            "Excluir da turma",
+            "</span>Transferir</a>",
+        ):
             self.assertNotContains(resposta, botao)
         self.assertNotContains(resposta, mensagens.RESETAR_PRIMEIRO_ACESSO)
         self.assertContains(resposta, "Histórico do Status do TCC")
@@ -134,11 +139,11 @@ class PainelTest(PainelTestBase):
 
     def test_botoes_de_acao_conforme_a_regra_de_cada_spec(self):
         resposta = self.painel(self.sem_proposta)
-        self.assertContains(resposta, "Excluir aluno")
+        self.assertContains(resposta, "Excluir da turma")
         self.assertNotContains(resposta, "Encerrar participação")
         resposta = self.painel(self.com_orientador)
         self.assertContains(resposta, "Encerrar participação")
-        self.assertContains(resposta, "Editar aluno")
+        self.assertContains(resposta, "</span>Editar</a>")
         self.assertContains(resposta, mensagens.RESETAR_PRIMEIRO_ACESSO)
 
     def test_consultas_constantes_aba_e_painel_r14(self):
@@ -240,7 +245,7 @@ class VoltaAoPainelTest(PainelTestBase):
 
 
 class SecretariaTest(TesteTurmas):
-    """Ponto #8: Secretaria vê os blocos sem painel e com "Transferir aluno". [Q4][RBN-CAD-05.6]"""
+    """Ponto #8: Secretaria vê os blocos sem painel, com "Transferir". [Q4][RBN-CAD-05.6]"""
 
     def test_ponto8_secretaria_blocos_sem_painel_com_transferir(self):
         professor = criar_docente_ativo()
@@ -255,4 +260,4 @@ class SecretariaTest(TesteTurmas):
         self.assertContains(
             resposta, reverse("cadastro:aluno_transferir", args=[turma.pk, aluno.pk])
         )
-        self.assertContains(resposta, "Transferir aluno")
+        self.assertContains(resposta, "</span>Transferir</a>")

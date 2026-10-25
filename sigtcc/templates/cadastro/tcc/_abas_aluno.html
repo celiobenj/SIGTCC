@@ -1,6 +1,6 @@
 {% comment %}
   Abas da turma do Aluno (barra "Seções da turma" do protótipo de 17/10, aqui com links, sem
-  JavaScript): "Meu TCC" e "Atividades" (nome provisório, Q-80), com a aba atual destacada.
+  JavaScript): "Meu TCC" e "Entregas" (US v3.4; Q-80), com a aba atual destacada.
   Uso: {% include "cadastro/tcc/_abas_aluno.html" with ativa="meu_tcc" %} (ou "atividades").
   [US-13][US-15][US-29][FR-031][Q-89]
 {% endcomment %}
@@ -8,5 +8,5 @@
 {% url 'cadastro:minhas_entregas' turma.pk as url_atividades %}
 <nav class="seg mt16" aria-label="Seções da turma">
   <a class="{% if ativa == 'meu_tcc' %}ativo{% endif %}" href="{{ url_meu_tcc }}"{% if ativa == 'meu_tcc' %} aria-current="page"{% endif %}><span class="ms">description</span>Meu TCC</a>
-  <a class="{% if ativa == 'atividades' %}ativo{% endif %}" href="{{ url_atividades }}"{% if ativa == 'atividades' %} aria-current="page"{% endif %}><span class="ms">assignment</span>Atividades</a>
+  <a class="{% if ativa == 'atividades' %}ativo{% endif %}" href="{{ url_atividades }}"{% if ativa == 'atividades' %} aria-current="page"{% endif %}><span class="ms">assignment</span>Entregas</a>
 </nav>
