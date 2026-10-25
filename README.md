@@ -15,7 +15,8 @@ Windows (padrão do PGCS 3.1):
 ```bat
 python -m venv venv
 venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
+pre-commit install
 copy .env.example .env
 ```
 
@@ -24,7 +25,8 @@ macOS ou Linux:
 ```bash
 python3.12 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
+pre-commit install
 cp .env.example .env
 ```
 
@@ -42,7 +44,12 @@ python manage.py migrate     # cria as 36 tabelas e a carga inicial dos domínio
 python manage.py test sigtcc.apps.cadastro sigtcc.apps.defesa
 ```
 
-Antes de abrir um Pull Request, rode `lint.bat` (isort, black e flake8, linha de 100).
+O `pre-commit install` faz o isort, o black e o flake8 (linha de 100) rodarem a cada commit, nos
+arquivos alterados. Antes de abrir um Pull Request, rode a verificação completa:
+
+```bash
+pre-commit run --all-files
+```
 
 ## Documentação
 

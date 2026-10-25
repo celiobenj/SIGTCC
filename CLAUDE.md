@@ -66,7 +66,8 @@ Regras de precedência quando os documentos divergirem:
   sigtcc/static/{css, js, img}
   sigtcc/media/           (ignorado no Git)
   ```
-- Qualidade: `isort`, `black --line-length 100`, `flake8 --max-line-length 100` (rodar `lint.bat`).
+- Qualidade: `isort`, `black --line-length 100`, `flake8 --max-line-length 100`, pelo pre-commit
+  (`pre-commit run --all-files` antes do PR; PGCS 3.3).
 - Segredos só no `.env` (nunca commitar `.env` nem `media/`).
 
 ## Convenções de código
