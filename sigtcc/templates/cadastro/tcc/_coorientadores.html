@@ -1,0 +1,39 @@
+{% comment %}
+  Coorientadores da seção Orientação, como no protótipo de 17/10: item com ícone de pessoa (azul
+  para docente do NUCOMP, cinza para externo), "Docente do NUCOMP" ou "Externo ao NUCOMP ·
+  instituição", convite pendente com "Aguardando Aceite", botões "Substituir", "Remover" e
+  "Remover convite" (desabilitados com sessão de defesa ativa) e "Registrar coorientador" (só com
+  orientador). Sem regra aqui: o estado vem de services_orientacao.estado_coorientadores.
+  [US-45][RBN-CAD-10.3][RBN-CAD-10.4][RBN-CAD-10.7][FR-028][FR-029][FR-030]
+{% endcomment %}
+{% if o.coorientadores or o.coo.convites or o.coo.pode_registrar %}
+<h4 style="font-weight:500;margin:16px 0 8px">Coorientadores</h4>
+{% for coo in o.coorientadores %}
+<div class="item">
+  <span class="ic" style="background:{% if coo.coo_doc_id %}var(--azul){% else %}#80868b{% endif %}"><span class="ms">person</span></span>
+  <div class="corpo"><b>{% if coo.coo_doc_id %}{{ coo.coo_doc.doc.usu_nome }}{% else %}{{ coo.coo_cext.cext_nome }}{% endif %}</b><small>{% if coo.coo_doc_id %}Docente do NUCOMP{% else %}Externo ao NUCOMP{% if coo.coo_cext.cext_instituicao %} · {{ coo.coo_cext.cext_instituicao }}{% endif %}{% endif %}</small></div>
+  {% if o.coo.mostra_botoes %}
+  <div class="acoes">
+    {% if o.coo.botoes_habilitados %}
+    <a class="btn txt" href="{% url 'cadastro:substituir_coorientador' turma.pk coo.pk %}">Substituir</a>
+    <a class="btn txt" href="{% url 'cadastro:remover_coorientador' turma.pk coo.pk %}">Remover</a>
+    {% else %}
+    <button type="button" class="btn txt" disabled>Substituir</button>
+    <button type="button" class="btn txt" disabled>Remover</button>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% for convite in o.coo.convites %}
+<div class="item">
+  <span class="ic" style="background:var(--azul)"><span class="ms">person</span></span>
+  <div class="corpo"><b>{{ convite.sol_doc.doc.usu_nome }}</b><small>Docente do NUCOMP</small></div>
+  <span class="chip amarelo">Aguardando Aceite</span>
+  {% if o.coo.mostra_botoes %}<div class="acoes"><a class="btn txt" href="{% url 'cadastro:remover_convite_coorientacao' turma.pk convite.pk %}">Remover</a></div>{% endif %}
+</div>
+{% endfor %}
+{% if o.coo.pode_registrar %}
+<a class="btn mt16" href="{% url 'cadastro:registrar_coorientador' turma.pk %}"><span class="ms">person_add</span>Registrar coorientador</a>
+{% endif %}
+{% endif %}

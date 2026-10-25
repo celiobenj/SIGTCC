@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% comment %}
+  Janela "Cadastrar atividade" (passos 3 a 6 da US-43 original): Título, Tipo (restrito pela
+  etapa da turma, FR-013), Instruções e Data Limite, com os botões Cancelar (fecha sem criar
+  nada, fluxo alternativo D) e Cadastrar.
+  [US-43][RBN-CAD-09.1][FR-013 a FR-017]
+{% endcomment %}
+{% block titulo %}Cadastrar atividade · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Cadastrar atividade</h2>
+<p class="pg-sub">{{ turma.tur_identificador }} · {{ turma.tur_descricao }}</p>
+<div class="cartao mt16">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% for campo in form %}{% include "includes/campo.html" with campo=campo %}{% endfor %}
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{% url 'cadastro:entregas' turma.pk %}">Cancelar</a>
+      <button type="submit" class="btn pri">Cadastrar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

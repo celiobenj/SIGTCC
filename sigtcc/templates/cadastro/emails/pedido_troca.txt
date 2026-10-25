@@ -1,0 +1,8 @@
+{% comment %}E-mail do pedido de troca de orientador ao docente indicado (MO-16, PROVISÓRIA), com o link que abre a tela Orientações com o pedido. [US-17][US-18][RBN-CAD-10.6][FR-005][R11]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
+
+{{ texto }}
+
+Para ver o pedido e responder, acesse: {{ link }}
+
+SIGTCC · Núcleo de Computação · EST/UEA
+{% endautoescape %}

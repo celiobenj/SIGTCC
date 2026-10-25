@@ -1,0 +1,8 @@
+{% comment %}E-mail ao Professor da Disciplina no aceite do pedido de orientação (MO-04, PROVISÓRIA), com o link do painel do aluno. [US-18][RBN-CAD-10.2][FR-010][R11]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
+
+{{ texto }}
+
+Para ver o aluno, acesse: {{ link }}
+
+SIGTCC · Núcleo de Computação · EST/UEA
+{% endautoescape %}

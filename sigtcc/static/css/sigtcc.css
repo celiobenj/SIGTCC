@@ -1,0 +1,245 @@
+/*
+  Folha de estilo do SIGTCC: visual do protótipo de 17/10
+  (docs/fonte/prototipo/prototipo_17_10.html). Nenhum código JavaScript copiado.
+  Tokens de cor e fonte iguais aos do protótipo; componentes reescritos para os templates Django.
+  Ajustes em 900 e 600 px, como no protótipo; sem rolagem horizontal a partir de 360 px.
+  [FR-024][Q22][SC-007] research A14
+*/
+
+/* ===================== Tokens de design (do protótipo) ===================== */
+:root {
+  --azul: #1967d2; --azul-claro: #e8f0fe; --azul-btn: #1a73e8;
+  --verde: #137333; --verde-claro: #e6f4ea;
+  --laranja: #e37400; --amarelo: #f9ab00; --amarelo-claro: #fef7e0;
+  --vermelho: #c5221f; --vermelho-claro: #fce8e6;
+  --roxo: #9334e6; --teal: #129eaf;
+  --texto: #202124; --texto2: #5f6368; --texto3: #80868b;
+  --borda: #dadce0; --fundo: #fff; --fundo2: #f8f9fa; --hover: #f1f3f4;
+  --radius: 8px;
+  --sombra: 0 1px 2px 0 rgba(60, 64, 67, .3), 0 1px 3px 1px rgba(60, 64, 67, .15);
+  --sombra2: 0 1px 3px 0 rgba(60, 64, 67, .3), 0 4px 8px 3px rgba(60, 64, 67, .15);
+  --fonte: "Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --fonte-tit: "Figtree", "Roboto", system-ui, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--fonte); color: var(--texto); background: var(--fundo); font-size: 14px; line-height: 1.45; min-width: 360px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--azul); }
+:focus-visible { outline: 2px solid var(--azul-btn); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Ícones Material Symbols */
+.ms { font-family: "Material Symbols Outlined"; font-weight: normal; font-style: normal; font-size: 22px; line-height: 1; display: inline-block; vertical-align: middle; -webkit-font-smoothing: antialiased; user-select: none; width: 1em; overflow: hidden; flex: none; }
+/* Sem a fonte de ícones, o nome do ícone não aparece no lugar dele. */
+body:not(.icones) .ms { visibility: hidden; }
+
+/* ===================== Barra superior ===================== */
+.topbar { position: sticky; top: 0; z-index: 30; height: 64px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #fff; border-bottom: 1px solid var(--borda); }
+.iconbtn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--texto2); position: relative; text-decoration: none; }
+.iconbtn:hover { background: var(--hover); }
+.logo { display: flex; align-items: center; gap: 10px; font-family: var(--fonte-tit); font-size: 22px; color: var(--texto2); text-decoration: none; white-space: nowrap; }
+.logo-mark { width: 36px; height: 36px; border-radius: 8px; background: var(--verde); display: grid; place-items: center; color: #fff; }
+.logo-mark.grande { width: 48px; height: 48px; }
+.logo-mark.grande .ms { font-size: 28px; }
+.spacer { flex: 1; }
+.badge { position: absolute; top: 6px; right: 6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--vermelho); color: #fff; font-size: 11px; display: grid; place-items: center; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; font-weight: 500; font-size: 14px; flex: none; background: var(--azul); }
+.avatar.lg { width: 72px; height: 72px; font-size: 30px; }
+
+/* Menu do usuário (details/summary, sem JavaScript) */
+.menu-usuario { position: relative; }
+.menu-usuario > summary { list-style: none; }
+.menu-usuario > summary::-webkit-details-marker { display: none; }
+.menu-user { position: absolute; right: 0; top: 52px; width: 320px; background: #fff; border-radius: 8px; box-shadow: var(--sombra2); z-index: 50; padding: 20px; text-align: center; }
+.menu-user .nome { margin-top: 12px; font-size: 16px; font-weight: 500; }
+.menu-user .acoes { justify-content: center; margin-top: 12px; }
+.menu-user form { display: inline; }
+
+/* ===================== Layout principal ===================== */
+.shell { display: flex; min-height: calc(100vh - 64px); }
+.drawer { width: 300px; flex: none; border-right: 1px solid var(--borda); padding: 8px 0; overflow-y: auto; height: calc(100vh - 64px); position: sticky; top: 64px; background: #fff; }
+.drawer.oculto { display: none; }
+.dr-item { display: flex; align-items: center; gap: 20px; height: 48px; padding: 0 24px; margin-right: 12px; border-radius: 0 24px 24px 0; color: var(--texto); text-decoration: none; font-weight: 500; }
+.dr-item:hover { background: var(--hover); }
+.dr-item.ativo { background: var(--azul-claro); color: var(--azul); }
+.dr-item .ms { color: var(--texto2); }
+.dr-item.ativo .ms { color: var(--azul); }
+.dr-sec { padding: 14px 24px 6px; font-size: 13px; color: var(--texto2); border-top: 1px solid var(--borda); margin-top: 8px; }
+main { flex: 1; min-width: 0; padding: 24px; max-width: 100%; }
+.wrap { max-width: 1000px; margin: 0 auto; }
+h2.pg { font-family: var(--fonte-tit); font-weight: 500; font-size: 28px; margin: 0 0 4px; }
+p.pg-sub { color: var(--texto2); margin: 0 0 20px; }
+
+/* ===================== Botões ===================== */
+.btn { height: 36px; padding: 0 20px; border-radius: 4px; border: 1px solid var(--borda); background: #fff; color: var(--azul-btn); font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; text-decoration: none; }
+.btn:hover { background: #f6fafe; border-color: #d2e3fc; }
+.btn.pri { background: var(--azul-btn); color: #fff; border-color: var(--azul-btn); }
+.btn.pri:hover { background: #1765cc; box-shadow: var(--sombra); }
+.btn.txt { border-color: transparent; background: none; }
+.btn.txt:hover { background: #f6fafe; }
+.btn.perigo { color: var(--vermelho); }
+.btn.pri.perigo { background: var(--vermelho); color: #fff; border-color: var(--vermelho); }
+.btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.btn .ms { font-size: 18px; }
+
+/* ===================== Campos ===================== */
+.campo { margin-bottom: 16px; }
+.campo label { display: block; font-size: 12px; color: var(--texto2); margin-bottom: 4px; font-weight: 500; }
+.campo .dica { font-size: 12px; color: var(--texto3); margin-top: 3px; }
+/* Campos de qualquer formulário dentro de .campo recebem o visual, sem classe extra. */
+.inp, .campo :is(input:not([type=checkbox]):not([type=radio]), select, textarea) { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 4px; background: var(--fundo2); }
+.campo :is(input, select, textarea):hover { background: #f1f3f4; }
+.campo :is(input, select, textarea):focus { outline: none; border-color: var(--azul-btn); background: #fff; box-shadow: inset 0 -2px 0 var(--azul-btn); }
+.campo :is(input, select, textarea):is([readonly], :disabled) { color: var(--texto2); background: var(--fundo); }
+/* Campo com erro: destacado em vermelho (US-10 e US-38, "campo destacado"). */
+.campo.com-erro :is(input, select, textarea), .inp.erro { border-color: var(--vermelho); box-shadow: inset 0 -2px 0 var(--vermelho); }
+.msg-erro { color: var(--vermelho); font-size: 12px; margin-top: 4px; }
+.check { display: flex; align-items: center; gap: 8px; margin: 6px 0; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--azul-btn); }
+
+/* ===================== Alertas e avisos temporários ===================== */
+.alerta { border-radius: 8px; padding: 12px 16px; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; font-size: 13px; }
+.alerta .ms { font-size: 20px; }
+.alerta .texto { flex: 1; }
+.alerta .fechar { border: 0; background: none; color: inherit; cursor: pointer; padding: 0; }
+.alerta.info { background: var(--azul-claro); color: #174ea6; }
+.alerta.aviso { background: var(--amarelo-claro); color: #7a4a00; }
+.alerta.erro { background: var(--vermelho-claro); color: var(--vermelho); }
+.alerta.sucesso { background: var(--verde-claro); color: var(--verde); }
+
+/* ===================== Cartões, dados e tabelas ===================== */
+.cartao { border: 1px solid var(--borda); border-radius: 10px; padding: 14px 16px; background: #fff; margin-bottom: 16px; }
+.cartao > header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.cartao > header h3 { margin: 0; font-family: var(--fonte-tit); font-weight: 600; font-size: 16px; flex: 1; }
+.dado { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--hover); font-size: 13px; }
+.dado:last-of-type { border-bottom: 0; }
+.dado > span { color: var(--texto2); }
+.tabela-wrap { overflow-x: auto; border: 1px solid var(--borda); border-radius: var(--radius); }
+table.tabela { border-collapse: collapse; width: 100%; font-size: 13px; }
+.tabela th { text-align: left; font-weight: 500; color: var(--texto2); background: var(--fundo2); padding: 10px 12px; border-bottom: 1px solid var(--borda); white-space: nowrap; }
+.tabela td { padding: 10px 12px; border-bottom: 1px solid var(--borda); vertical-align: top; overflow-wrap: anywhere; }
+.tabela tr:last-child td { border-bottom: 0; }
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: var(--hover); color: var(--texto2); white-space: nowrap; }
+.chip.azul { background: var(--azul-claro); color: var(--azul); }
+.chip.verde { background: var(--verde-claro); color: var(--verde); }
+
+/* Lista de notificações */
+.item { display: flex; align-items: center; gap: 16px; padding: 12px 8px; border-bottom: 1px solid var(--borda); min-height: 56px; color: var(--texto); text-decoration: none; }
+.item:last-child { border-bottom: 0; }
+.item:hover { background: var(--hover); }
+.item.nova { background: var(--azul-claro); }
+.item .corpo { flex: 1; min-width: 0; }
+.item .corpo small { color: var(--texto2); display: block; margin-top: 4px; }
+.vazio { text-align: center; padding: 48px 16px; color: var(--texto2); }
+.vazio .ms { font-size: 56px; color: var(--borda); display: block; margin: 0 auto 8px; }
+.paginacao { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 16px; }
+
+/* Trilha do Status do TCC (US-14, FR-010): etapas em sequência, com a atual destacada. */
+.trilha { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.trilha li { padding: 6px 12px; border-radius: 12px; font-size: 13px; background: var(--hover); color: var(--texto2); }
+.trilha li.trilha-atual { background: var(--azul-claro); color: var(--azul); font-weight: 600; }
+
+/* Abas da turma (spec 005, FR-031): barra "Seções da turma" do protótipo de 17/10, com links. */
+.seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+.seg a { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--borda); background: #fff; color: var(--texto2); font-weight: 500; text-decoration: none; }
+.seg a .ms { font-size: 18px; }
+.seg a:hover { background: var(--hover); color: var(--texto); }
+.seg a.ativo { background: var(--texto); border-color: var(--texto); color: #fff; }
+
+/* Imagem de assinatura */
+.assin { height: 56px; max-width: 220px; object-fit: contain; background: #fff; border: 1px dashed var(--borda); border-radius: 6px; padding: 4px; }
+
+/* ===================== Login e páginas públicas ===================== */
+.login-pg { min-height: 100vh; display: grid; place-items: center; background: var(--fundo2); padding: 24px; }
+.login-card { background: #fff; border: 1px solid var(--borda); border-radius: 8px; width: 100%; max-width: 460px; padding: 40px 36px; }
+.login-card .marca { display: flex; justify-content: center; }
+.login-card h1 { font-family: var(--fonte-tit); font-weight: 500; font-size: 24px; margin: 16px 0 4px; text-align: center; }
+.login-card p.sub { text-align: center; color: var(--texto2); margin: 0 0 24px; }
+.login-card .links { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+/* ===================== Utilidades ===================== */
+.flex { display: flex; gap: 8px; align-items: center; }
+.flex-wrap { flex-wrap: wrap; }
+.entre { justify-content: space-between; }
+.muted { color: var(--texto2); }
+.mt16 { margin-top: 16px; }
+
+/* ===================== Responsividade (900 e 600 px, como no protótipo) ===================== */
+@media (max-width: 900px) {
+  .drawer { position: fixed; left: 0; top: 64px; z-index: 40; box-shadow: var(--sombra2); }
+}
+@media (max-width: 600px) {
+  main { padding: 16px; }
+  .logo .nome { display: none; }
+  .menu-user { right: -8px; width: calc(100vw - 16px); max-width: 320px; }
+  .dado { grid-template-columns: 1fr; gap: 2px; }
+  .login-card { padding: 32px 20px; }
+  .login-pg { padding: 16px; }
+}
+
+/* Spec 002 (Gestão de Contas): abas Docentes | Secretarias | Membros externos, como no protótipo de
+   17/10 (aqui são links), e chips de status. [US-03][US-05][FR-011][FR-017] */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--borda); overflow-x: auto; margin-bottom: 16px; }
+.tab { height: 48px; padding: 0 20px; display: inline-flex; align-items: center; color: var(--texto2); font-weight: 500; border-bottom: 3px solid transparent; white-space: nowrap; text-decoration: none; }
+.tab:hover { background: var(--hover); color: var(--texto); }
+.tab.ativo { color: var(--azul); border-bottom-color: var(--azul); }
+.chip.amarelo { background: var(--amarelo-claro); color: #b06000; }
+.chip.vermelho { background: var(--vermelho-claro); color: var(--vermelho); }
+
+/* ===================== Spec 006: Orientação, Atas e Publicações =====================
+   Regras do protótipo de 17/10 (docs/fonte/prototipo/prototipo_17_10.html) que ainda não
+   existiam, copiadas das linhas indicadas e adaptadas aos nomes da base da spec 003
+   (.caixa → .cartao, .tb → .tabela). Nenhuma regra existente alterada.
+   [US-17][US-18][US-19][US-41][US-46][US-20][FR-017][FR-018][IC-10][Q-112] (tasks T004) */
+/* Avatar médio (linha 65) */
+.avatar.md { width: 40px; height: 40px; font-size: 16px; }
+/* Títulos de seção com contador (122-124) */
+.sec-tit { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid currentColor; padding-bottom: 10px; margin: 28px 0 8px; font-family: var(--fonte-tit); font-size: 28px; font-weight: 500; }
+.sec-tit.c-azul { color: var(--azul); }
+.sec-tit span.cont { font-size: 14px; font-family: var(--fonte); font-weight: 500; }
+/* Grupo de botões de uma linha (133) */
+.acoes { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+/* Filtros acima de tabelas (268-269) */
+.filtros { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+.filtros .campo { margin: 0; min-width: 150px; }
+/* Cabeçalho do painel do aluno e fatos (314-320) */
+.turma-cab { border: 1px solid var(--borda); border-radius: 12px; padding: 20px 22px 16px; margin-bottom: 16px; background: color-mix(in srgb, var(--cor, var(--azul)) 6%, #fff); }
+.turma-tit { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.turma-disc { font-size: 13px; color: var(--texto2); font-weight: 500; }
+.turma-cab h1 { margin: 2px 0 0; font-family: var(--fonte-tit); font-weight: 600; font-size: 30px; letter-spacing: .2px; color: var(--cor, var(--azul)); line-height: 1.15; word-break: break-word; }
+.fatos { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 14px 0 12px; }
+.fato span { display: block; font-size: 11px; color: var(--texto2); letter-spacing: .3px; }
+.fato b { font-weight: 500; font-size: 14px; }
+/* Blocos de alunos da aba "Alunos" (371-380) */
+.blocos { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.bloco { display: flex; flex-direction: column; gap: 10px; text-align: left; border: 1px solid var(--borda); border-radius: 10px; background: #fff; padding: 14px; min-height: 150px; color: var(--texto); text-decoration: none; }
+a.bloco { cursor: pointer; }
+a.bloco:hover { border-color: var(--azul-btn); box-shadow: var(--sombra); }
+.bloco-cab { display: flex; gap: 10px; align-items: center; }
+.bloco-cab b { display: block; font-weight: 500; font-size: 14px; line-height: 1.25; }
+.bloco-cab small { color: var(--texto2); font-size: 12px; }
+.bloco-tit { font-size: 13px; color: var(--texto); flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.bloco-rod { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bloco-ori { font-size: 12px; color: var(--texto2); display: flex; align-items: center; gap: 4px; }
+.bloco-ori .ms { font-size: 16px; }
+/* Painel do aluno em duas colunas (381-382) e cabeçalho do cartão com ícone e contador (384-387) */
+.painel { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.painel-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.painel-col .cartao { margin-bottom: 0; }
+.cartao > header .ms { color: var(--texto2); font-size: 20px; }
+.cartao > header .cont { font-size: 12px; color: var(--texto2); }
+/* Ata de orientação (391) */
+.ata { border: 1px solid var(--hover); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+/* Ícone redondo de item (protótipo: .item .ic) */
+.item .ic { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #fff; flex: none; }
+.chip.roxo { background: #f3e8fd; color: var(--roxo); }
+/* Destaque do pedido ou convite aberto pelo link (FR-012) */
+.item.destaque { background: var(--azul-claro); border-radius: 8px; }
+@media (max-width: 900px) { .painel { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .turma-cab h1 { font-size: 24px; } .fatos { gap: 8px 18px; } }
+/* Tabela larga (tela de orientandos, 9 colunas): rola dentro de .tabela-wrap em vez de quebrar
+   o texto letra a letra (T060). [US-18][FR-014] */
+.tabela.larga { min-width: 1080px; }
+.tabela.larga td { overflow-wrap: normal; }

@@ -1,0 +1,361 @@
+<mxfile host="app.diagrams.net" pages="2">
+  <diagram id="modulos" name="Componentes: módulos">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1860" pageHeight="990" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="a_titulo" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontColor=#333333;" value="&lt;font style=&quot;font-size:16px&quot;&gt;&lt;b&gt;[Diagrama de Componentes] SIGTCC: Aplicação Web, módulos&lt;/b&gt;&lt;/font&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="46" width="1200" x="20" y="4" as="geometry" />
+        </mxCell>
+        <mxCell id="a_fronteira" parent="1" style="rounded=1;fontSize=11;whiteSpace=wrap;html=1;dashed=1;arcSize=20;fillColor=none;strokeColor=#666666;fontColor=#333333;labelBackgroundColor=none;align=left;verticalAlign=bottom;labelBorderColor=none;spacingTop=0;spacing=10;dashPattern=8 4;metaEdit=1;rotatable=0;perimeter=rectanglePerimeter;noLabel=0;labelPadding=0;allowArrows=0;connectable=0;expand=0;recursiveResize=0;editable=1;pointerEvents=0;absoluteArcSize=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Aplicação Web&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Contêiner: Django]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="350" width="1594" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="a_coord" parent="1" style="html=1;fontSize=11;dashed=0;whiteSpace=wrap;fillColor=#083F75;strokeColor=#06315C;fontColor=#ffffff;shape=mxgraph.c4.person2;align=center;metaEdit=1;points=[[0.5,0,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0]];" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Coordenação e Secretaria&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Pessoa]&lt;/div&gt;&lt;br&gt;&lt;div&gt;Coordenador de Curso e Secretaria do curso.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="180" width="200" x="100" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="a_aluno" parent="1" style="html=1;fontSize=11;dashed=0;whiteSpace=wrap;fillColor=#083F75;strokeColor=#06315C;fontColor=#ffffff;shape=mxgraph.c4.person2;align=center;metaEdit=1;points=[[0.5,0,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0]];" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Aluno&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Pessoa]&lt;/div&gt;&lt;br&gt;&lt;div&gt;Aluno de TCC 1 e de TCC 2.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="180" width="200" x="420" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a_docente" parent="1" style="html=1;fontSize=11;dashed=0;whiteSpace=wrap;fillColor=#083F75;strokeColor=#06315C;fontColor=#ffffff;shape=mxgraph.c4.person2;align=center;metaEdit=1;points=[[0.5,0,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0]];" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Docente e Membro Externo&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Pessoa]&lt;/div&gt;&lt;br&gt;&lt;div&gt;Orientador, Professor da Disciplina e banca.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="180" width="200" x="900" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="a_rel" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Relatórios Gerenciais&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: app Django relatorios]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;Consultas operacionais e gerenciais com exportação.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="130" width="240" x="12" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="a_cad" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Cadastro e Manutenção&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: app Django cadastro]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;Usuários, turmas, TCCs, orientação, entregas, publicações e históricos.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="130" width="240" x="400" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="a_def" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Gestão da Defesa&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: app Django defesa]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;Agendamento sem conflito, banca, avaliação, resultado e histórico.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="130" width="240" x="880" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="a_rot" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Rotina Agendada&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: comandos de gestão do Django]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;Prazos, expiração e lembretes; agendamento planejado.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="130" width="180" x="1290" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="a_gh" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#8C8496;fontColor=#ffffff;align=center;arcSize=10;strokeColor=#736782;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;GitHub Actions&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Sistema de software externo: agendador]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;Planejado: executa a rotina de hora em hora.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="130" width="220" x="1620" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="a_bd" parent="1" style="shape=cylinder3;size=15;whiteSpace=wrap;html=1;boundedLbl=1;rounded=0;labelBackgroundColor=none;fillColor=#23A2D9;fontSize=12;fontColor=#ffffff;align=center;strokeColor=#0E7DAD;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Banco de Dados&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Contêiner: PostgreSQL 16]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;Tabelas do Modelo Lógico e sessões.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="140" width="1080" x="20" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="a_r0" edge="1" parent="1" source="a_coord" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;" target="a_rel" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Consulta e exporta relatórios&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[HTTPS]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.123" y="-8" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="140" y="280" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r1" edge="1" parent="1" source="a_coord" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.900;exitY=1.000;exitDx=0;exitDy=0;entryX=0.125;entryY=0.000;entryDx=0;entryDy=0;" target="a_cad" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Gerencia contas e turmas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[HTTPS]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r2" edge="1" parent="1" source="a_aluno" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="a_cad" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Registra proposta e envia entregas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[HTTPS]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r3" edge="1" parent="1" source="a_docente" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.100;exitY=1.000;exitDx=0;exitDy=0;entryX=0.875;entryY=0.000;entryDx=0;entryDy=0;" target="a_cad" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Orienta e acompanha entregas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[HTTPS]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r4" edge="1" parent="1" source="a_docente" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="a_def" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Agenda defesas e avalia&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[HTTPS]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <object label="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Lê turmas, TCCs e docentes&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;" id="a_r5">
+          <mxCell edge="1" parent="1" source="a_rel" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.423;exitDx=0;exitDy=0;entryX=0.000;entryY=0.423;entryDx=0;entryDy=0;" target="a_cad">
+            <mxGeometry relative="1" x="0.0541" y="25" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </object>
+        <mxCell id="a_r6" edge="1" parent="1" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;entryX=1.000;entryY=0.423;entryDx=0;entryDy=0;" target="a_cad" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Lê TCCs aptos e atualiza a situação&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="-0.0069" y="-20" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="880" y="384.99" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r7" edge="1" parent="1" source="a_rel" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.750;exitY=1.000;exitDx=0;exitDy=0;" target="a_def" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Lê defesas, bancas e notas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="-0.3609" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="290" y="560" />
+              <mxPoint x="1000" y="560" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r8" edge="1" parent="1" source="a_gh" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" target="a_rot" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Planejado: aciona de hora em hora&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[manage.py, DATABASE_URL]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r9" edge="1" parent="1" source="a_rot" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" target="a_def" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Inicia sessões no horário&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r10" edge="1" parent="1" source="a_rot" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.708;entryY=1.000;entryDx=0;entryDy=0;" target="a_cad" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Aplica prazos e gera lembretes&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.43" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1380" y="515" />
+              <mxPoint x="700" y="515" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r11" edge="1" parent="1" source="a_rel" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.111;entryY=0.000;entryDx=0;entryDy=0;" target="a_bd" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Consulta turmas, TCCs e defesas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[SQL, ORM do Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.7" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r12" edge="1" parent="1" source="a_cad" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.292;exitY=1.000;exitDx=0;exitDy=0;entryX=0.416;entryY=0.034;entryDx=0;entryDy=0;entryPerimeter=0;" target="a_bd" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Lê e grava cadastros e TCCs&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[SQL, ORM do Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.7" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_r13" edge="1" parent="1" source="a_def" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.72;entryY=0.015;entryDx=0;entryDy=0;entryPerimeter=0;" target="a_bd" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Lê e grava defesas e avaliações&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[SQL, ORM do Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.6556" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1060" y="610" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_leg_t" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="&lt;b&gt;Legenda&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="200" x="20" y="890" as="geometry" />
+        </mxCell>
+        <mxCell id="a_leg0" parent="1" style="html=1;fontSize=11;dashed=0;whiteSpace=wrap;fillColor=#083F75;strokeColor=#06315C;fontColor=#ffffff;shape=mxgraph.c4.person2;align=center;metaEdit=1;points=[[0.5,0,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0]];" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="20" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="a_legt0" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Pessoa" vertex="1">
+          <mxGeometry height="20" width="190" x="62" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="a_leg1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="250" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="a_legt1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Componente" vertex="1">
+          <mxGeometry height="20" width="190" x="292" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="a_leg2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;labelBackgroundColor=none;fillColor=#23A2D9;fontColor=#ffffff;align=center;arcSize=10;strokeColor=#0E7DAD;metaEdit=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="480" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="a_legt2" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Contêiner" vertex="1">
+          <mxGeometry height="20" width="190" x="522" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="a_leg3" parent="1" style="shape=cylinder3;size=15;whiteSpace=wrap;html=1;boundedLbl=1;rounded=0;labelBackgroundColor=none;fillColor=#23A2D9;fontSize=12;fontColor=#ffffff;align=center;strokeColor=#0E7DAD;metaEdit=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="710" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="a_legt3" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Contêiner: banco de dados" vertex="1">
+          <mxGeometry height="20" width="190" x="752" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="a_leg4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#8C8496;fontColor=#ffffff;align=center;arcSize=10;strokeColor=#736782;metaEdit=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="940" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="a_legt4" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Sistema de software externo" vertex="1">
+          <mxGeometry height="20" width="190" x="982" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="a_leg5" parent="1" style="rounded=1;fontSize=11;whiteSpace=wrap;html=1;dashed=1;arcSize=20;fillColor=none;strokeColor=#666666;fontColor=#333333;labelBackgroundColor=none;align=left;verticalAlign=bottom;labelBorderColor=none;spacingTop=0;spacing=10;dashPattern=8 4;metaEdit=1;rotatable=0;perimeter=rectanglePerimeter;noLabel=0;labelPadding=0;allowArrows=0;connectable=0;expand=0;recursiveResize=0;editable=1;pointerEvents=0;absoluteArcSize=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="1170" y="918" as="geometry" />
+        </mxCell>
+        <mxCell id="a_legt5" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Fronteira do contêiner" vertex="1">
+          <mxGeometry height="20" width="190" x="1212" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="a_legr" edge="1" parent="1" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1400" y="929" as="sourcePoint" />
+            <mxPoint x="1436" y="929" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_legtr" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Relação (sentido único)" vertex="1">
+          <mxGeometry height="20" width="190" x="1444" y="920" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="servicos" name="Componentes: serviços comuns">
+    <mxGraphModel dx="2424" dy="1286" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1480" pageHeight="1020" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="b_titulo" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontColor=#333333;" value="&lt;font style=&quot;font-size:16px&quot;&gt;&lt;b&gt;[Diagrama de Componentes] SIGTCC: Aplicação Web, serviços comuns&lt;/b&gt;&lt;/font&gt;&lt;div&gt;Serviços compartilhados pelos módulos e contêineres e sistemas externos ligados a eles.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="46" width="1200" x="20" y="4" as="geometry" />
+        </mxCell>
+        <mxCell id="b_fronteira" parent="1" style="rounded=1;fontSize=11;whiteSpace=wrap;html=1;dashed=1;arcSize=20;fillColor=none;strokeColor=#666666;fontColor=#333333;labelBackgroundColor=none;align=left;verticalAlign=bottom;labelBorderColor=none;spacingTop=0;spacing=10;dashPattern=8 4;metaEdit=1;rotatable=0;perimeter=rectanglePerimeter;noLabel=0;labelPadding=0;allowArrows=0;connectable=0;expand=0;recursiveResize=0;editable=1;pointerEvents=0;absoluteArcSize=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Aplicação Web&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Contêiner: Django]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="620" width="1150" x="10" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="b_rel" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Relatórios Gerenciais&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: app Django relatorios]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="20" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="b_aut" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Autenticação e Controle de Acesso&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: Django auth, backends.py, permissoes.py]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;Login, sessão, bloqueio, papel e log de acesso.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="440" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="b_doc" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Documentos e Planilhas&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: openpyxl; xhtml2pdf planejado]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;PDFs da defesa e dos relatórios; CSV e XLSX.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="20" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="b_cad" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Cadastro e Manutenção&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: app Django cadastro]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="440" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="b_def" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Gestão da Defesa&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: app Django defesa]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="854" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="b_not" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Notificações&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: serviço do cadastro, e-mail SMTP do Django]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;Registra no sino e envia o e-mail.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="440" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="b_arq" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Gerenciador de Arquivos&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Componente: default_storage]&lt;/div&gt;&lt;br&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot; color=&quot;#F0F0F0&quot;&gt;Assinaturas e PDFs no armazenamento do ambiente; externo planejado para o TP3.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="854" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="b_bd" parent="1" style="shape=cylinder3;size=15;whiteSpace=wrap;html=1;boundedLbl=1;rounded=0;labelBackgroundColor=none;fillColor=#23A2D9;fontSize=12;fontColor=#ffffff;align=center;strokeColor=#0E7DAD;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Banco de Dados&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Contêiner: PostgreSQL 16]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="340" width="240" x="1210" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="b_brevo" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#8C8496;fontColor=#ffffff;align=center;arcSize=10;strokeColor=#736782;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Serviço de E-mail Transacional&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Sistema de software externo: Brevo]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="379" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="b_blob" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;labelBackgroundColor=none;fillColor=#23A2D9;fontColor=#ffffff;align=center;arcSize=10;strokeColor=#0E7DAD;metaEdit=1;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Armazenamento de Arquivos&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Contêiner: disco do serviço; externo privado planejado]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="240" x="854" y="780" as="geometry" />
+        </mxCell>
+        <mxCell id="b_r0" edge="1" parent="1" source="b_rel" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" target="b_aut" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Verifica sessão e papel&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r1" edge="1" parent="1" source="b_rel" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="b_doc" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Exporta relatórios&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r2" edge="1" parent="1" source="b_cad" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.500;entryY=1.000;entryDx=0;entryDy=0;" target="b_aut" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Verifica sessão e papel&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r3" edge="1" parent="1" source="b_cad" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" target="b_doc" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Importa alunos de planilha&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="-0.0619" y="-5" as="geometry">
+            <mxPoint x="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r4" edge="1" parent="1" source="b_cad" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="b_not" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Notifica alunos e docentes&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r5" edge="1" parent="1" source="b_cad" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.833;exitY=1.000;exitDx=0;exitDy=0;entryX=0.333;entryY=0.000;entryDx=0;entryDy=0;" target="b_arq" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Grava a assinatura do perfil&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.1152" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="680" y="490" />
+              <mxPoint x="933.92" y="490" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r6" edge="1" parent="1" source="b_def" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.250;exitY=0.000;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" target="b_aut" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Verifica sessão e papel&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="-0.529" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="914" y="170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r7" edge="1" parent="1" source="b_def" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.833;exitY=0.000;exitDx=0;exitDy=0;entryX=0.750;entryY=0.000;entryDx=0;entryDy=0;" target="b_doc" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Gera Ata Final e Folha&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.5562" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1053.92" y="290" />
+              <mxPoint x="570" y="290" />
+              <mxPoint x="260" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r8" edge="1" parent="1" source="b_def" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.750;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" target="b_not" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Notifica a banca&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.3827" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="740" y="420" />
+              <mxPoint x="740" y="610" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r9" edge="1" parent="1" source="b_def" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.750;exitY=1.000;exitDx=0;exitDy=0;entryX=0.750;entryY=0.000;entryDx=0;entryDy=0;" target="b_arq" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Grava PDFs e lê assinaturas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Chamada Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r10" edge="1" parent="1" source="b_aut" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.250;exitDx=0;exitDy=0;entryX=0.000;entryY=0.088;entryDx=0;entryDy=0;" target="b_bd" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Lê contas e grava sessões e bloqueios&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[SQL, ORM do Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.2083" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r11" edge="1" parent="1" source="b_not" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.750;exitY=1.000;exitDx=0;exitDy=0;entryX=0.000;entryY=0.853;entryDx=0;entryDy=0;" target="b_bd" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Grava notificações&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[SQL, ORM do Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.513" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="660" y="735" />
+              <mxPoint x="1110" y="735" />
+              <mxPoint x="1110" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r12" edge="1" parent="1" source="b_not" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.250;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="b_brevo" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Envia e-mails&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[SMTP, porta 2525, TLS]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.3" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_r13" edge="1" parent="1" source="b_arq" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="b_blob" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Grava e lê arquivos&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Sistema de arquivos; API externa planejada]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.5" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_leg_t" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="&lt;b&gt;Legenda&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="200" x="20" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="b_leg0" parent="1" style="html=1;fontSize=11;dashed=0;whiteSpace=wrap;fillColor=#083F75;strokeColor=#06315C;fontColor=#ffffff;shape=mxgraph.c4.person2;align=center;metaEdit=1;points=[[0.5,0,0],[1,0.5,0],[1,0.75,0],[0.75,1,0],[0.5,1,0],[0.25,1,0],[0,0.75,0],[0,0.5,0]];" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="20" y="948" as="geometry" />
+        </mxCell>
+        <mxCell id="b_legt0" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Pessoa" vertex="1">
+          <mxGeometry height="20" width="190" x="62" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="b_leg1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#63BEF2;fontColor=#ffffff;align=center;arcSize=6;strokeColor=#2086C9;metaEdit=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="147" y="948" as="geometry" />
+        </mxCell>
+        <mxCell id="b_legt1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Componente" vertex="1">
+          <mxGeometry height="20" width="190" x="189" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="b_leg2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;labelBackgroundColor=none;fillColor=#23A2D9;fontColor=#ffffff;align=center;arcSize=10;strokeColor=#0E7DAD;metaEdit=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="377" y="948" as="geometry" />
+        </mxCell>
+        <mxCell id="b_legt2" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Contêiner" vertex="1">
+          <mxGeometry height="20" width="190" x="419" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="b_leg3" parent="1" style="shape=cylinder3;size=15;whiteSpace=wrap;html=1;boundedLbl=1;rounded=0;labelBackgroundColor=none;fillColor=#23A2D9;fontSize=12;fontColor=#ffffff;align=center;strokeColor=#0E7DAD;metaEdit=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="607" y="948" as="geometry" />
+        </mxCell>
+        <mxCell id="b_legt3" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Contêiner: banco de dados" vertex="1">
+          <mxGeometry height="20" width="190" x="649" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="b_leg4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fillColor=#8C8496;fontColor=#ffffff;align=center;arcSize=10;strokeColor=#736782;metaEdit=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="837" y="948" as="geometry" />
+        </mxCell>
+        <mxCell id="b_legt4" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Sistema de software externo" vertex="1">
+          <mxGeometry height="20" width="190" x="879" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="b_leg5" parent="1" style="rounded=1;fontSize=11;whiteSpace=wrap;html=1;dashed=1;arcSize=20;fillColor=none;strokeColor=#666666;fontColor=#333333;labelBackgroundColor=none;align=left;verticalAlign=bottom;labelBorderColor=none;spacingTop=0;spacing=10;dashPattern=8 4;metaEdit=1;rotatable=0;perimeter=rectanglePerimeter;noLabel=0;labelPadding=0;allowArrows=0;connectable=0;expand=0;recursiveResize=0;editable=1;pointerEvents=0;absoluteArcSize=1;" value="" vertex="1">
+          <mxGeometry height="22" width="34" x="1067" y="948" as="geometry" />
+        </mxCell>
+        <mxCell id="b_legt5" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Fronteira do contêiner" vertex="1">
+          <mxGeometry height="20" width="190" x="1109" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="b_legr" edge="1" parent="1" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1297" y="959" as="sourcePoint" />
+            <mxPoint x="1333" y="959" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="b_legtr" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Relação (sentido único)" vertex="1">
+          <mxGeometry height="20" width="190" x="1340" y="948" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

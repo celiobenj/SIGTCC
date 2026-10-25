@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% comment %}
+  Aba Atividades (lista de entregas, nome provisório, Q-80): Título, Tipo e Data Limite de cada
+  entrega já cadastrada; o botão "Cadastrar atividade" só aparece com a turma ativa (E4/E5 da
+  US-43 original — turma arquivada ou Docente que não é o Professor da Disciplina não veem o
+  botão; a permissão é restrita ao Professor da Disciplina na própria view). Cada Título abre o
+  acompanhamento da entrega (passo 4 da US-16); sem entregas, "Nenhuma entrega cadastrada" (E3).
+  [US-43][US-16][RBN-CAD-09.1][RBN-CAD-09.4][FR-013][FR-014][FR-017][FR-027]
+{% endcomment %}
+{% block titulo %}Atividades · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <div>
+    <h2 class="pg">Atividades</h2>
+    <p class="pg-sub">{{ turma.tur_identificador }} · {{ turma.tur_descricao }}{% if arquivada %} · <span class="chip">Arquivada</span>{% endif %}</p>
+  </div>
+  {% if pode_cadastrar %}
+  <a class="btn pri" href="{% url 'cadastro:entrega_cadastrar' turma.pk %}"><span class="ms">add</span>Cadastrar atividade</a>
+  {% endif %}
+</div>
+{% include "cadastro/tcc/_abas_professor.html" with ativa="atividades" mostra_atividades=True %}
+{% if arquivada %}<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Turma arquivada: só para consulta.</span></div>{% endif %}
+{% if entregas %}
+<div class="tabela-wrap mt16">
+  <table class="tabela">
+    <thead><tr><th>Título</th><th>Tipo</th><th>Data Limite</th></tr></thead>
+    <tbody>
+      {% for entrega in entregas %}
+      <tr>
+        <td><a href="{% url 'cadastro:entrega_acompanhar' turma.pk entrega.pk %}">{{ entrega.tma_titulo }}</a></td>
+        <td>{{ entrega.tma_tipo }}</td>
+        <td>{{ entrega.tma_data_limite|date:"d/m/Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="vazio mt16"><span class="ms">assignment</span>{{ nenhuma_entrega }}</div>
+{% endif %}
+{% endblock %}

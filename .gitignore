@@ -1,0 +1,20 @@
+# Segredos e arquivos locais (PGCS 3.4)
+.env
+venv/
+.venv/
+__pycache__/
+*.pyc
+sigtcc/media/
+.DS_Store
+# Configuração pessoal do Claude Code
+.claude/settings.local.json
+# Cache do bloqueio de login (research D2)
+/cache/
+# Log de eventos de acesso e cache do bloqueio de login (feature 003, research A2 e A13)
+/logs/
+/cache_acesso/
+# Saída do collectstatic (deploy)
+/staticfiles/
+# Cópias de segurança do banco de produção (PGCS 8.2): ficam no Drive, nunca no Git
+*.dump
+*.sql

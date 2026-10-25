@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% comment %}
+  Turma: dados, alunos e só as ações permitidas. Turma arquivada: só consulta (cenário 6 da US-07,
+  11 da US-08 e 11 da US-09). Links das fases seguintes com {% url ... as %}, que não quebra
+  enquanto a rota não existe. Spec 005: barra de abas "Alunos" | "Atividades" (esta só para o
+  Professor da Disciplina), só por inclusão, e o link "Histórico do Status do TCC" de cada aluno,
+  só para o Professor, até a tela do aluno (US-41) existir (FR-009, FR-031, Q-89).
+  Spec 006 (IC-02; FR-017): a lista vira blocos somente leitura, como blocoAluno do protótipo de
+  17/10 (Nome, Matrícula, Curso, Título ou "Sem Proposta", Área, Orientador ou "Sem orientador" e
+  Status). Para o Professor da Disciplina, o bloco abre o painel do aluno, onde ficam as ações;
+  a Secretaria vê os blocos sem o painel, com "Transferir aluno" quando permitido (Q4).
+  [US-07][US-08][US-09][FR-008][FR-009][FR-010][Q9][spec 006 FR-017][US-41]
+{% endcomment %}
+{% block titulo %}{{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+{% url 'cadastro:matricular' turma.pk as url_matricular %}
+{% url 'cadastro:importar' turma.pk as url_importar %}
+{% url 'cadastro:excluidos_transferidos' turma.pk as url_excluidos %}
+<div class="flex entre flex-wrap">
+  <div>
+    <h2 class="pg">{{ turma.tur_identificador }}</h2>
+    <p class="pg-sub">{{ turma.tur_descricao }} · {{ turma.tur_cur.cur_nome }} · {{ turma.tur_ano }}/{{ turma.tur_semestre }}{% if arquivada %} · <span class="chip">Arquivada</span>{% endif %}</p>
+  </div>
+  {% if pode_alterar %}
+  <div class="flex flex-wrap">
+    <a class="btn" href="{% url 'cadastro:turma_editar' turma.pk %}"><span class="ms">edit</span>Editar</a>
+    <a class="btn" href="{% url 'cadastro:turma_arquivar' turma.pk %}"><span class="ms">inventory_2</span>Arquivar</a>
+    <a class="btn perigo" href="{% url 'cadastro:turma_excluir' turma.pk %}"><span class="ms">delete</span>Excluir</a>
+  </div>
+  {% endif %}
+</div>
+{% include "cadastro/tcc/_abas_professor.html" with ativa="alunos" mostra_atividades=e_professor %}
+{% if arquivada %}<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">Turma arquivada: só para consulta.</span></div>{% endif %}
+<div class="cartao">
+  <div class="dado"><span>Código da Disciplina</span><b>{{ turma.tur_dis.dis_codigo }}</b></div>
+  <div class="dado"><span>Professor da Disciplina</span><b>{{ turma.tur_doc.doc.usu_nome }}</b></div>
+  <div class="dado"><span>Dia e horário</span><b>{{ turma.tur_dia_da_semana }}, {{ turma.tur_hora_inicio|time:"H:i" }}–{{ turma.tur_hora_termino|time:"H:i" }}</b></div>
+  <div class="dado"><span>Local</span><b>{{ turma.tur_local }}</b></div>
+</div>
+<div class="flex entre flex-wrap mt16">
+  <h3>Alunos ({{ alunos|length }})</h3>
+  <div class="flex flex-wrap">
+    {% if pode_alterar and url_matricular %}<a class="btn pri" href="{{ url_matricular }}"><span class="ms">person_add</span>Matricular alunos</a>{% endif %}
+    {% if e_professor and url_excluidos %}<a class="btn txt" href="{{ url_excluidos }}"><span class="ms">history</span>Excluídos ou transferidos</a>{% endif %}
+  </div>
+</div>
+{% if alunos %}
+<div class="blocos">
+  {% for linha in alunos %}
+  {% url 'cadastro:painel_aluno' turma.pk linha.aluno.pk as url_painel %}
+  {% url 'cadastro:aluno_transferir' turma.pk linha.aluno.pk as url_transferir %}
+  {% if abre_painel %}<a class="bloco" href="{{ url_painel }}">{% else %}<div class="bloco">{% endif %}
+    <span class="bloco-cab"><span class="avatar md">{{ linha.aluno.alu.usu_nome|slice:":1"|upper }}</span><span><b>{{ linha.aluno.alu.usu_nome }}</b><small>{{ linha.aluno.alu_matricula }} · {{ linha.curso }}</small></span></span>
+    <span class="bloco-tit">{% if linha.titulo %}{{ linha.titulo }}{% else %}{{ sem_proposta }}{% endif %}</span>
+    <small class="muted">Área de Interesse: {{ linha.area|default:"—" }}</small>
+    <span class="bloco-rod"><span class="bloco-ori"><span class="ms">supervisor_account</span>{% if linha.orientador %}{{ linha.orientador }}{% else %}{{ sem_orientador }}{% endif %}</span><span class="chip">{{ linha.status_tcc }}</span></span>
+    {% if not abre_painel and pode_transferir and linha.transferivel and url_transferir %}<span class="acoes"><a class="btn" href="{{ url_transferir }}"><span class="ms">swap_horiz</span>Transferir aluno</a></span>{% endif %}
+  {% if abre_painel %}</a>{% else %}</div>{% endif %}
+  {% endfor %}
+</div>
+{% else %}
+  <div class="vazio"><span class="ms">person_off</span>Nenhum aluno matriculado.</div>
+{% endif %}
+{% endblock %}

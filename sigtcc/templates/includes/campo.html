@@ -1,0 +1,16 @@
+{% comment %}
+  Um campo de formulário: rótulo, campo, ajuda e erro, com destaque em vermelho quando há erro.
+  Uso: {% include "includes/campo.html" with campo=form.nome %}. Atende texto, e-mail, senha,
+  número, data, arquivo, select e checkbox (contrato §1).
+  [FR-024][FR-003][US-10][US-38] research A9 e A14
+{% endcomment %}
+<div class="campo{% if campo.errors %} com-erro{% endif %}">
+  {% if campo.widget_type == "checkbox" %}
+    <label class="check">{{ campo }} {{ campo.label }}</label>
+  {% else %}
+    <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+    {{ campo }}
+  {% endif %}
+  {% if campo.help_text %}<div class="dica">{{ campo.help_text }}</div>{% endif %}
+  {% for erro in campo.errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}
+</div>

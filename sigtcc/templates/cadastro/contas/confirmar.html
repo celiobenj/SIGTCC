@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% comment %}
+  Confirmação de inativação ou reativação, sem JavaScript: pergunta, "Cancelar" (volta à lista sem
+  alterar nada) e o botão da ação (POST com CSRF).
+  [US-04][RBN-CAD-01.3][RBN-CAD-02.3][FR-024][FR-025][FR-029]
+{% endcomment %}
+{% block titulo %}{{ titulo }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">{{ titulo }}</h2>
+<div class="cartao mt16">
+  <p>{{ pergunta }}</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="flex entre">
+      <a class="btn txt" href="{{ voltar }}">Cancelar</a>
+      <button type="submit" class="btn pri{% if perigo %} perigo{% endif %}">{{ rotulo }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

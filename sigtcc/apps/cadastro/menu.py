@@ -1,0 +1,81 @@
+"""Itens do menu lateral do app cadastro (research A8; contrato §3).
+
+Cada item: rotulo, icone (Material Symbols), rota (nome da URL), perfis (tipos de conta e papéis),
+ordem e secao opcional (título de grupo no menu).
+
+[FR-022][FR-025][FR-010][Q7]
+"""
+
+ITENS = [
+    {
+        "rotulo": "Início",
+        "icone": "home",
+        "rota": "cadastro:painel",
+        "perfis": ("aluno", "docente", "secretaria", "membro_externo"),
+        "ordem": 0,
+    },
+    # Spec 005: item "Turmas" do Aluno, com as turmas em que está matriculado; não dá acesso à
+    # tela da turma da spec 004 (FR-010 da spec 004). [US-13][US-15][FR-031][Q-89]
+    {
+        "rotulo": "Turmas",
+        "icone": "groups",
+        "rota": "cadastro:minhas_turmas",
+        "perfis": ("aluno",),
+        "ordem": 10,
+    },
+    # Spec 004: turmas do Professor da Disciplina ou do curso da Secretaria (Q9). Enquanto a rota
+    # não existir, o processador de contexto esconde o item. [US-07][FR-010][Q9]
+    {
+        "rotulo": "Turmas",
+        "icone": "groups",
+        "rota": "cadastro:turmas",
+        "perfis": ("docente", "secretaria"),
+        "ordem": 10,
+    },
+    # Spec 006: tela Orientações (pedidos, convites e orientandos), para todo Docente (Q11),
+    # logo depois de "Turmas", como no protótipo de 17/10. [US-18][US-36][FR-040][IC-01]
+    {
+        "rotulo": "Orientações",
+        "icone": "supervisor_account",
+        "rota": "cadastro:orientacoes",
+        "perfis": ("docente",),
+        "ordem": 12,
+    },
+    # Spec 006: tela do Coordenador de Curso na seção nova "Gestão", como no protótipo de 17/10
+    # (a seção aparece depois de "Cadastros", pela ordem do processador; research R19).
+    # [US-20][FR-041][IC-01]
+    {
+        "rotulo": "Aproveitamento de artigos",
+        "icone": "article",
+        "rota": "cadastro:aproveitamento_artigos",
+        "perfis": ("coordenador",),
+        "ordem": 30,
+        "secao": "Gestão",
+    },
+    # Spec 002: Gestão de Contas (contracts/rotas.md, "Menu lateral"). O item só aparece quando a
+    # rota da sua fase já existe. [US-03][US-04][US-05][US-50][FR-010][FR-031]
+    {
+        "rotulo": "Docentes",
+        "icone": "badge",
+        "rota": "cadastro:contas_docentes",
+        "perfis": ("secretaria", "coordenador"),
+        "ordem": 20,
+        "secao": "Cadastros",
+    },
+    {
+        "rotulo": "Secretarias",
+        "icone": "support_agent",
+        "rota": "cadastro:contas_secretarias",
+        "perfis": ("secretaria", "coordenador"),
+        "ordem": 21,
+        "secao": "Cadastros",
+    },
+    {
+        "rotulo": "Membros externos",
+        "icone": "person_add",
+        "rota": "cadastro:contas_membros",
+        "perfis": ("orientador", "professor_disciplina", "secretaria", "coordenador"),
+        "ordem": 22,
+        "secao": "Cadastros",
+    },
+]

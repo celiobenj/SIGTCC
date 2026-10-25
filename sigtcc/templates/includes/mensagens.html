@@ -1,0 +1,15 @@
+{% comment %}
+  Mensagens do django.contrib.messages como alertas do protótipo. Os textos vêm de mensagens.py.
+  [FR-024][SC-002]
+{% endcomment %}
+{% for mensagem in messages %}
+  {% if mensagem.level_tag == "success" %}
+    <div class="alerta sucesso" role="status" data-temporario><span class="ms">check_circle</span><span class="texto">{{ mensagem }}</span><button type="button" class="fechar" data-fechar-aviso aria-label="Fechar"><span class="ms">close</span></button></div>
+  {% elif mensagem.level_tag == "error" %}
+    <div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ mensagem }}</span></div>
+  {% elif mensagem.level_tag == "warning" %}
+    <div class="alerta aviso" role="alert"><span class="ms">warning</span><span class="texto">{{ mensagem }}</span></div>
+  {% else %}
+    <div class="alerta info" role="status"><span class="ms">info</span><span class="texto">{{ mensagem }}</span></div>
+  {% endif %}
+{% endfor %}

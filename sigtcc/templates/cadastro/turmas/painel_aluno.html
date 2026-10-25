@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% comment %}
+  Painel do aluno (US-41), como viewAlunoTurma do protótipo de 17/10: volta à turma, cabeçalho
+  com avatar, nome, Status e fatos (Matrícula, Curso, E-mail Institucional), os botões de ação
+  (só com a turma ativa) e as seções em duas colunas: Proposta e TCC, Entregas, Atas,
+  Publicação (só Artigo Científico) | Orientação e coorientação, Defesa e Versão Final (TCC 2).
+  As ações abrem as telas das specs 003 a 005 com ?volta=painel. Sem regra aqui: tudo vem de
+  services_orientacao.contexto_painel.
+  [US-41][US-08][US-09][US-12][US-14][US-19][US-44][US-46][RBN-CAD-08.9][FR-017 a FR-020][FR-044]
+{% endcomment %}
+{% block titulo %}{{ aluno.alu.usu_nome }} · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <a class="btn txt" href="{% url 'cadastro:turma' turma.pk %}"><span class="ms">arrow_back</span>{{ turma.tur_descricao }} · {{ turma.tur_identificador }}</a>
+  <a class="btn" href="{% url 'cadastro:turma' turma.pk %}"><span class="ms">close</span>Fechar</a>
+</div>
+<header class="turma-cab">
+  <div class="turma-tit">
+    <div class="flex" style="gap:14px">
+      <span class="avatar lg">{{ aluno.alu.usu_nome|slice:":1"|upper }}</span>
+      <div>
+        <div class="turma-disc">Aluno · {{ turma.tur_descricao }} · {{ turma.tur_identificador }}</div>
+        <h1 style="font-size:26px">{{ aluno.alu.usu_nome }}</h1>
+      </div>
+    </div>
+    <div>{% if tcc %}<span class="chip">{{ tcc.tcc_status }}</span>{% endif %}{% if arquivada %} <span class="chip">Arquivada</span>{% endif %}</div>
+  </div>
+  <div class="fatos">
+    <div class="fato"><span>Matrícula</span><b>{{ aluno.alu_matricula }}</b></div>
+    <div class="fato"><span>Curso</span><b>{% if curso %}{{ curso.cur_nome }}{% else %}Código não reconhecido{% endif %}</b></div>
+    <div class="fato"><span>E-mail Institucional</span><b>{{ aluno.alu.usu_email|default:"—" }}</b></div>
+  </div>
+  {% if not arquivada %}
+  <div class="flex flex-wrap">
+    {% if pode_editar %}<a class="btn" href="{% url 'cadastro:aluno_editar' turma.pk aluno.pk %}{{ volta }}"><span class="ms">edit</span>Editar aluno</a>{% endif %}
+    {% if pode_resetar %}<a class="btn" href="{% url 'cadastro:resetar_primeiro_acesso' aluno.pk %}"><span class="ms">lock_reset</span>{{ texto_resetar }}</a>{% endif %}
+    {% if pode_transferir %}<a class="btn" href="{% url 'cadastro:aluno_transferir' turma.pk aluno.pk %}{{ volta }}"><span class="ms">swap_horiz</span>Transferir aluno</a>{% endif %}
+    {% if pode_encerrar %}<a class="btn perigo" href="{% url 'cadastro:aluno_encerrar' turma.pk aluno.pk %}{{ volta }}"><span class="ms">block</span>Encerrar participação</a>{% endif %}
+    {% if pode_excluir %}<a class="btn perigo" href="{% url 'cadastro:aluno_excluir' turma.pk aluno.pk %}{{ volta }}"><span class="ms">person_remove</span>Excluir aluno</a>{% endif %}
+  </div>
+  {% endif %}
+</header>
+
+{% if tcc %}
+<div class="painel">
+  <div class="painel-col">
+    <section class="cartao">
+      <header><span class="ms">description</span><h3>Proposta e TCC</h3></header>
+      {% if tcc.tcc_titulo %}
+      <div class="dado"><span>Título</span><div>{{ tcc.tcc_titulo }}</div></div>
+      {% if tcc.tcc_subtitulo %}<div class="dado"><span>Subtítulo</span><div>{{ tcc.tcc_subtitulo }}</div></div>{% endif %}
+      {% if mostra_resumo %}<div class="dado"><span>Resumo</span><div style="white-space:pre-wrap">{{ tcc.tcc_resumo }}</div></div>{% endif %}
+      <div class="dado"><span>Modalidade</span><div>{{ tcc.tcc_modalidade }}</div></div>
+      <div class="dado"><span>Link do Documento da Proposta</span><div>{% if tcc.tcc_link_proposta %}<a href="{{ tcc.tcc_link_proposta }}" target="_blank" rel="noopener noreferrer">abrir</a>{% else %}—{% endif %}</div></div>
+      <div class="dado"><span>Área de Interesse</span><div>{{ tcc.tcc_ari|default:"—" }}</div></div>
+      <div class="dado"><span>Palavras-Chave</span><div>{{ palavras|join:", "|default:"—" }}</div></div>
+      {% else %}
+      <div class="dado"><span>Título</span><div>Sem Proposta</div></div>
+      {% endif %}
+      <div class="dado"><span>Status do TCC</span><div><span class="chip">{{ tcc.tcc_status }}</span></div></div>
+      <div class="mt16"><a class="btn txt" href="{% url 'cadastro:historico_status' turma.pk aluno.pk %}"><span class="ms">history</span>Histórico do Status do TCC</a></div>
+    </section>
+
+    <section class="cartao">
+      <header><span class="ms">assignment</span><h3>Entregas</h3></header>
+      {% if entregas %}
+      <div class="tabela-wrap">
+        <table class="tabela">
+          <thead><tr><th>Entrega</th><th>Status de envio</th><th>Link</th></tr></thead>
+          <tbody>
+            {% for e in entregas %}
+            <tr>
+              <td>{{ e.marco.tma_titulo }}<br><small class="muted">{{ e.marco.tma_tipo }} · Data Limite {{ e.marco.tma_data_limite|date:"d/m/Y" }}</small></td>
+              <td><span class="chip">{{ e.status }}</span>{% if e.envio %}<br><small class="muted">{{ e.envio.hen_data_envio|date:"d/m/Y H:i" }}</small>{% endif %}</td>
+              <td>{% if e.envio %}<a href="{{ e.envio.hen_link }}" target="_blank" rel="noopener noreferrer">abrir</a>{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="muted">Nenhuma entrega cadastrada na turma.</p>
+      {% endif %}
+    </section>
+
+    <section class="cartao">
+      <header><span class="ms">history_edu</span><h3>Atas de orientação</h3><span class="cont">{{ n_atas }} encontro(s)</span></header>
+      <a class="btn txt" href="{% url 'cadastro:atas_painel' turma.pk aluno.pk %}">Ver atas</a>
+    </section>
+
+    {% if eh_artigo %}
+    <section class="cartao">
+      <header><span class="ms">article</span><h3>Publicação do artigo</h3></header>
+      {% if artigo %}
+      <div class="dado"><span>Veículo de Publicação</span><div>{{ artigo.art_veiculo_publicacao|default:"—" }}</div></div>
+      <div class="dado"><span>Link ou DOI</span><div><a href="{{ artigo.art_link_doi }}" target="_blank" rel="noopener noreferrer">{{ artigo.art_link_doi }}</a></div></div>
+      <div class="dado"><span>Estrato Qualis/CAPES</span><div>{{ artigo.art_qualis_capes|default:"—" }}</div></div>
+      <div class="dado"><span>Status de Submissão</span><div>{{ artigo.art_status_submissao|default:"—" }}</div></div>
+      <div class="dado"><span>Aproveitamento</span><div>{{ artigo.art_homologacao|default:"—" }}</div></div>
+      {% else %}
+      <p class="muted">Nenhuma publicação registrada.</p>
+      {% endif %}
+    </section>
+    {% endif %}
+  </div>
+
+  <div class="painel-col">
+    <section class="cartao">
+      <header><span class="ms">supervisor_account</span><h3>Orientação e coorientação</h3></header>
+      {% include "cadastro/tcc/_secao_orientacao.html" with o=orientacao sem_titulo=True %}
+    </section>
+
+    <section class="cartao">
+      <header><span class="ms">gavel</span><h3>Defesa</h3></header>
+      {% if defesa %}
+      <div class="dado"><span>Status</span><div><span class="chip">{{ defesa.def_status }}</span></div></div>
+      <div class="dado"><span>Data</span><div>{{ defesa.def_data|date:"d/m/Y" }}</div></div>
+      {% else %}
+      <p class="muted">{{ sem_defesa }}</p>
+      {% endif %}
+    </section>
+
+    {% if versao %}
+    <section class="cartao">
+      <header><span class="ms">task</span><h3>Versão Final</h3></header>
+      <div class="dado"><span>Status de envio</span><div><span class="chip">{{ versao.status }}</span></div></div>
+      {% if versao.pode_homologar or versao.pode_devolver %}
+      <div class="flex flex-wrap mt16">
+        {% if versao.pode_homologar %}<a class="btn pri" href="{% url 'cadastro:aluno_versao_final' turma.pk aluno.pk %}{{ volta }}">Homologar</a>{% endif %}
+        {% if versao.pode_devolver %}<a class="btn" href="{% url 'cadastro:aluno_versao_final' turma.pk aluno.pk %}{{ volta }}">Devolver para Ajuste</a>{% endif %}
+      </div>
+      {% else %}
+      <a class="btn txt" href="{% url 'cadastro:aluno_versao_final' turma.pk aluno.pk %}{{ volta }}">Ver Versão Final</a>
+      {% endif %}
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

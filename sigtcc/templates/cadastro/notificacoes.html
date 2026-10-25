@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% comment %}
+  Central de notificações: texto, data e hora, da mais recente para a mais antiga, 20 por página
+  (Q14); "Marcar como lidas" por POST.
+  [US-38][RBN-CAD-13.2][FR-022][FR-023][Q14]
+{% endcomment %}
+{% block titulo %}Notificações · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <h2 class="pg">Notificações</h2>
+  {% if pagina.object_list %}
+  <form method="post" action="{% url 'cadastro:marcar_lidas' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn txt"><span class="ms">done_all</span>Marcar como lidas</button>
+  </form>
+  {% endif %}
+</div>
+<div class="cartao mt16">
+  {% for notificacao in pagina %}
+    <a class="item{% if not notificacao.not_lida %} nova{% endif %}" href="{% url 'cadastro:abrir_notificacao' notificacao.pk %}" data-notificacao>
+      <span class="ms">{% if notificacao.not_lida %}drafts{% else %}mail{% endif %}</span>
+      <span class="corpo">{{ notificacao.not_mensagem }}<small>{{ notificacao.not_data_hora|date:"d/m/Y H:i" }}</small></span>
+    </a>
+  {% empty %}
+    <div class="vazio"><span class="ms">notifications_off</span>Você não tem notificações</div>
+  {% endfor %}
+</div>
+{% if pagina.has_other_pages %}
+<nav class="paginacao" aria-label="Páginas">
+  {% if pagina.has_previous %}<a class="btn txt" href="?pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+  <span class="muted">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+  {% if pagina.has_next %}<a class="btn txt" href="?pagina={{ pagina.next_page_number }}">Próxima</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

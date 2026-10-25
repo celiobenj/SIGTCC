@@ -1,0 +1,25 @@
+{% comment %}
+  Cartões das turmas (tela "Gerenciar turmas de TCC" do protótipo, só o visual).
+  [US-07][FR-008][FR-010][Q9]
+{% endcomment %}
+{% if turmas %}
+  <div class="tabela-wrap">
+    <table class="tabela">
+      <thead><tr><th>Identificador</th><th>Descrição</th><th>Curso</th><th>Período</th><th>Dia e horário</th><th>Local</th></tr></thead>
+      <tbody>
+        {% for turma in turmas %}
+          <tr>
+            <td><a href="{% url 'cadastro:turma' turma.pk %}">{{ turma.tur_identificador }}</a></td>
+            <td>{{ turma.tur_descricao }}</td>
+            <td>{{ turma.tur_cur.cur_nome }}</td>
+            <td>{{ turma.tur_ano }}/{{ turma.tur_semestre }}</td>
+            <td>{{ turma.tur_dia_da_semana }}, {{ turma.tur_hora_inicio|time:"H:i" }}–{{ turma.tur_hora_termino|time:"H:i" }}</td>
+            <td>{{ turma.tur_local }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="vazio"><span class="ms">groups</span>Nenhuma turma.</div>
+{% endif %}

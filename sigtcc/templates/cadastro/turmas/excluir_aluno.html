@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% comment %}
+  Exclusão do aluno sem Proposta em duas etapas, sem JavaScript: Justificativa e "Confirmar";
+  depois a confirmação final (MT-24), com a justificativa num campo oculto (tela "Excluir aluno da
+  turma" do protótipo de 17/10). [US-09][RBN-CAD-05.4][FR-023]
+{% endcomment %}
+{% block titulo %}Excluir aluno da turma · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Excluir aluno da turma</h2>
+<p class="pg-sub">{{ aluno.alu.usu_nome }} · {{ aluno.alu_matricula }} · {{ turma.tur_identificador }}</p>
+<div class="cartao mt16">
+  {% if confirmacao_final %}
+  <p>{{ pergunta }}</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="justificativa" value="{{ form.cleaned_data.justificativa }}">
+    <input type="hidden" name="confirmacao_final" value="1">
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{{ url_cancelar }}">Cancelar</a>
+      <button type="submit" class="btn pri perigo">Confirmar</button>
+    </div>
+  </form>
+  {% else %}
+  <p>O aluno perde o acesso à turma e recebe o motivo por notificação.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "includes/campo.html" with campo=form.justificativa %}
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{{ url_cancelar }}">Cancelar</a>
+      <button type="submit" class="btn pri perigo">Confirmar</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

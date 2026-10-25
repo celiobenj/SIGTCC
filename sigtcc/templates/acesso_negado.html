@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% comment %}
+  Página padrão de acesso não permitido (handler403), sem nenhum dado da página pedida.
+  [FR-025][SC-004][M-02] research A7
+{% endcomment %}
+{% block titulo %}Acesso não permitido · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="vazio">
+  <span class="ms">lock</span>
+  <p>{{ mensagem }}</p>
+</div>
+{% endblock %}

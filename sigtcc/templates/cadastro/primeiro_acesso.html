@@ -1,0 +1,15 @@
+{% extends "base_publica.html" %}
+{% comment %}
+  "Primeiro acesso": duas escolhas, como na matriz (spec Q8).
+  [US-10][RBN-CAD-06.1][RBN-CAD-06.2][FR-001][Q8]
+{% endcomment %}
+{% block titulo %}Primeiro acesso · SIGTCC{% endblock %}
+{% block cabecalho %}Primeiro acesso{% endblock %}
+{% block conteudo %}
+<p class="muted">Escolha o tipo da sua conta para receber o link de ativação por e-mail.</p>
+<div class="flex flex-wrap mt16">
+  <a class="btn pri" href="{% url 'cadastro:primeiro_acesso_aluno' %}"><span class="ms">school</span>Aluno</a>
+  <a class="btn" href="{% url 'cadastro:primeiro_acesso_email' %}"><span class="ms">badge</span>Docente, Secretaria ou Membro Externo</a>
+</div>
+<div class="links"><a href="{% url 'cadastro:entrar' %}">Voltar ao login</a></div>
+{% endblock %}

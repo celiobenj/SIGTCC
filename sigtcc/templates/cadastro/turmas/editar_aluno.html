@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% comment %}
+  Edição do aluno: Nome Completo e Curso; a Matrícula aparece só para leitura (RBN-CAD-05.3).
+  [US-08][RBN-CAD-05.3][FR-019]
+{% endcomment %}
+{% block titulo %}Editar aluno · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Editar aluno</h2>
+<div class="cartao mt16">
+  <div class="dado"><span>Matrícula</span><b>{{ aluno.alu_matricula }}</b></div>
+  <form method="post" novalidate class="mt16">
+    {% csrf_token %}
+    {% for campo in form %}{% include "includes/campo.html" with campo=campo %}{% endfor %}
+    {% include "cadastro/turmas/_datalist_cursos.html" %}
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{{ url_cancelar }}">Cancelar</a>
+      <button type="submit" class="btn pri">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% comment %}
+  Painel inicial mínimo por tipo de conta (boas-vindas e menu). O conteúdo de cada painel vem das
+  features dos épicos; o Docente tem um só painel, com os papéis no menu (spec Q7).
+  [US-11][RBN-CAD-06.4][FR-010][Q7]
+{% endcomment %}
+{% block titulo %}Painel · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Olá, {{ user.usu_nome }}</h2>
+<p class="pg-sub" data-painel="{{ tipo }}">Painel {{ rotulo_tipo }}</p>
+{% if papeis %}
+<div class="flex flex-wrap">
+  {% for papel in papeis %}<span class="chip azul">{{ papel }}</span>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% comment %}
+  Seção "Atas de orientação" da aba Meu TCC, como a seção de atas do protótipo de 17/10:
+  quantidade de encontros, "Registrar ata" (só quando o Aluno pode alterar o TCC) e "Ver atas".
+  Sem regra aqui: o estado vem da view. [US-19][RBN-CAD-11.1][FR-022][FR-042]
+{% endcomment %}
+<section id="atas">
+  <div class="sec-tit c-azul">Atas de orientação <span class="cont">{{ atas.n }} encontro(s)</span></div>
+  <div class="flex flex-wrap">
+    {% if atas.pode_registrar %}<a class="btn" href="{% url 'cadastro:registrar_ata_aluno' turma.pk %}"><span class="ms">add</span>Registrar ata</a>{% endif %}
+    <a class="btn txt" href="{% url 'cadastro:minhas_atas' turma.pk %}">Ver atas</a>
+  </div>
+</section>

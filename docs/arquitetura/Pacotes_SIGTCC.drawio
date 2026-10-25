@@ -1,0 +1,222 @@
+<mxfile host="app.diagrams.net" pages="1">
+  <diagram name="Página-1" id="it5BZ6pDdurfM979fV2M">
+    <mxGraphModel dx="2929" dy="1554" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="titulo" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontColor=#333333;" value="&lt;font style=&quot;font-size:16px&quot;&gt;&lt;b&gt;[Diagrama de Pacotes] SIGTCC: Aplicação Web&lt;/b&gt;&lt;/font&gt;&lt;div&gt;Subsistemas, camadas e dependências entre pacotes Python, conforme o código da v0.2.0 (Cadastro implementado; Defesa e Relatórios em parte planejados).&lt;/div&gt;" vertex="1">
+          <mxGeometry height="46" width="1300" x="20" y="4" as="geometry" />
+        </mxCell>
+        <mxCell id="proj" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;fillColor=#23A2D9;strokeColor=#0E7DAD;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=14;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;sigtcc&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Pacote: projeto Django]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;settings.py, urls.py, wsgi.py e asgi.py.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="400" x="660" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="rel" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;fillColor=#FFFFFF;strokeColor=#828282;fontColor=#333333;align=left;verticalAlign=top;spacingLeft=12;spacingTop=20;container=1;collapsible=0;dashed=1;dashPattern=6 4;opacity=100;fillOpacity=80;" value="&lt;font style=&quot;font-size:15px&quot;&gt;«subsystem»&lt;br&gt;&lt;b&gt;Relatórios Gerenciais&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Subsistema: sigtcc.apps.relatorios]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="705" width="460" x="40" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="cad" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;fillColor=#FFFFFF;strokeColor=#828282;fontColor=#333333;align=left;verticalAlign=top;spacingLeft=12;spacingTop=20;container=1;collapsible=0;" value="&lt;font style=&quot;font-size:15px&quot;&gt;«subsystem»&lt;br&gt;&lt;b&gt;Cadastro e Manutenção&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Subsistema: sigtcc.apps.cadastro]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="705" width="480" x="620" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="def" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;fillColor=#FFFFFF;strokeColor=#828282;fontColor=#333333;align=left;verticalAlign=top;spacingLeft=12;spacingTop=20;container=1;collapsible=0;" value="&lt;font style=&quot;font-size:15px&quot;&gt;«subsystem»&lt;br&gt;&lt;b&gt;Gestão da Defesa&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Subsistema: sigtcc.apps.defesa]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="705" width="460" x="1220" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_apl" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;dashed=1;dashPattern=6 4;opacity=100;fillOpacity=80;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Aplicação&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: aplicação]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Planejado: views.py e urls.py (consultas e filtros por período).&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="400" x="70" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_apr" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;dashed=1;dashPattern=6 4;opacity=100;fillOpacity=80;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Apresentação&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: apresentação]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Planejado: forms.py dos filtros e templates/relatorios/.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="400" x="70" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_dom" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;dashed=1;dashPattern=6 4;opacity=100;fillOpacity=80;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Domínio&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: domínio]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Planejado: services.py com as consultas e a exportação em PDF, CSV e XLSX.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="400" x="70" y="655" as="geometry" />
+        </mxCell>
+        <mxCell id="cad_apl" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Aplicação&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: aplicação]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;views*.py, urls.py, backends.py e management/commands/.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="420" x="650" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="cad_apr" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Apresentação&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: apresentação]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;forms.py, contexto.py, menu.py e templates/cadastro/.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="420" x="650" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="cad_dom" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Domínio&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: domínio]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;models.py, services*.py, permissoes.py, validators.py, managers.py, choices.py e mensagens.py.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="420" x="650" y="655" as="geometry" />
+        </mxCell>
+        <mxCell id="cad_st" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Serviços Técnicos&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: serviços técnicos]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;fields.py (tipos de coluna do dicionário) e cargas.py (cargas iniciais).&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="420" x="650" y="810" as="geometry" />
+        </mxCell>
+        <mxCell id="def_apl" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;dashed=1;dashPattern=6 4;opacity=100;fillOpacity=80;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Aplicação&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: aplicação]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Planejado: views.py e urls.py (agendamento, avaliação e liberação).&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="400" x="1250" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="def_apr" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;dashed=1;dashPattern=6 4;opacity=100;fillOpacity=80;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Apresentação&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: apresentação]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;Planejado: forms.py, templates/defesa/ e templates/defesa/pdf/.&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="400" x="1250" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="def_dom" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Domínio&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: domínio]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;models.py e choices.py; planejado: services.py (conflito de horário e PDFs).&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="400" x="1250" y="655" as="geometry" />
+        </mxCell>
+        <mxCell id="def_st" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;" value="&lt;font style=&quot;font-size:14px&quot;&gt;&lt;b&gt;Serviços Técnicos&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Camada: serviços técnicos]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;cargas.py (carga inicial dos critérios de avaliação).&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="400" x="1250" y="810" as="geometry" />
+        </mxCell>
+        <mxCell id="comum" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;fillColor=#23A2D9;strokeColor=#0E7DAD;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=14;" value="&lt;font style=&quot;font-size:15px&quot;&gt;&lt;b&gt;Apresentação comum&lt;/b&gt;&lt;/font&gt;&lt;div&gt;[Pacote: sigtcc/templates e sigtcc/static]&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size:11px&quot;&gt;base.html, base_publica.html, acesso_negado.html, includes/ e static/ (css, js e img).&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="1640" x="40" y="1040" as="geometry" />
+        </mxCell>
+        <mxCell id="r0" edge="1" parent="1" source="proj" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=0.100;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="rel" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Inclui as rotas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[include() do Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r1" edge="1" parent="1" source="proj" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="cad" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Inclui as rotas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[include() do Django]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r2" edge="1" parent="1" source="proj" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=0.900;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="def" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Inclui as rotas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[include() do Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r3" edge="1" parent="1" source="rel_apl" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=0.400;exitY=1.000;exitDx=0;exitDy=0;entryX=0.400;entryY=0.000;entryDx=0;entryDy=0;" target="rel_apr" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa formulários e templates&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r4" edge="1" parent="1" source="rel_apr" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=0.400;exitY=1.000;exitDx=0;exitDy=0;entryX=0.400;entryY=0.000;entryDx=0;entryDy=0;" target="rel_dom" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa serviços e modelos&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r5" edge="1" parent="1" source="rel_apl" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=1.000;exitY=0.478;exitDx=0;exitDy=0;entryX=1.000;entryY=0.496;entryDx=0;entryDy=0;" target="rel_dom" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa serviços e modelos&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="485" y="400" />
+              <mxPoint x="485" y="712" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r6" edge="1" parent="1" source="cad_apl" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.400;exitY=1.000;exitDx=0;exitDy=0;entryX=0.400;entryY=0.000;entryDx=0;entryDy=0;" target="cad_apr" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa formulários e templates&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r7" edge="1" parent="1" source="cad_apr" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.400;exitY=1.000;exitDx=0;exitDy=0;entryX=0.400;entryY=0.000;entryDx=0;entryDy=0;" target="cad_dom" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa serviços e modelos&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r8" edge="1" parent="1" source="cad_apl" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=1.000;exitY=0.478;exitDx=0;exitDy=0;entryX=1.000;entryY=0.496;entryDx=0;entryDy=0;" target="cad_dom" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa serviços e modelos&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="-0.386" y="5" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1085" y="400" />
+              <mxPoint x="1085" y="712" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r9" edge="1" parent="1" source="def_apl" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=0.400;exitY=1.000;exitDx=0;exitDy=0;entryX=0.400;entryY=0.000;entryDx=0;entryDy=0;" target="def_apr" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa formulários e templates&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r10" edge="1" parent="1" source="def_apr" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=0.400;exitY=1.000;exitDx=0;exitDy=0;entryX=0.400;entryY=0.000;entryDx=0;entryDy=0;" target="def_dom" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa serviços e modelos&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r11" edge="1" parent="1" source="def_apl" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=1.000;exitY=0.478;exitDx=0;exitDy=0;entryX=1.000;entryY=0.496;entryDx=0;entryDy=0;" target="def_dom" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa serviços e modelos&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1665" y="400" />
+              <mxPoint x="1665" y="712" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r12" edge="1" parent="1" source="cad_dom" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.400;exitY=1.000;exitDx=0;exitDy=0;entryX=0.400;entryY=0.000;entryDx=0;entryDy=0;" target="cad_st" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa tipos de coluna&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r13" edge="1" parent="1" source="def_dom" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.391;exitDx=0;exitDy=0;entryX=1.000;entryY=0.391;entryDx=0;entryDy=0;" target="cad_dom" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Referencia TCCs e restrições&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r14" edge="1" parent="1" source="def_dom" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.000;exitY=0.826;exitDx=0;exitDy=0;entryX=1.000;entryY=0.348;entryDx=0;entryDy=0;" target="cad_st" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Usa CharFixo e TimestampField&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r15" edge="1" parent="1" source="rel_dom" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=1.000;exitY=0.496;exitDx=0;exitDy=0;entryX=0.000;entryY=0.496;entryDx=0;entryDy=0;" target="cad_dom" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Consulta turmas, TCCs e docentes&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r16" edge="1" parent="1" source="rel" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=0.500;exitY=1.000;exitDx=0;exitDy=0;entryX=0.500;entryY=1.000;entryDx=0;entryDy=0;" target="def" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Consulta defesas, bancas e notas&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[import Python]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.283" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="270" y="990" />
+              <mxPoint x="1450" y="990" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r17" edge="1" parent="1" source="rel" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=0.174;exitY=1.000;exitDx=0;exitDy=0;entryX=0.049;entryY=0.000;entryDx=0;entryDy=0;" target="comum" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Estende base.html&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Template Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.3" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r18" edge="1" parent="1" source="cad" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;exitX=0.167;exitY=1.000;exitDx=0;exitDy=0;entryX=0.402;entryY=0.000;entryDx=0;entryDy=0;" target="comum" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Estende base.html&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Template Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r19" edge="1" parent="1" source="def" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;exitX=0.826;exitY=1.000;exitDx=0;exitDy=0;entryX=0.951;entryY=0.000;entryDx=0;entryDy=0;" target="comum" value="&lt;div style=&quot;text-align:center&quot;&gt;&lt;b&gt;Estende base.html&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center&quot;&gt;[Template Django]&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.4" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg_t" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="&lt;b&gt;Legenda&lt;/b&gt;" vertex="1">
+          <mxGeometry height="20" width="200" x="20" y="1172" as="geometry" />
+        </mxCell>
+        <mxCell id="leg0" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;fillColor=#23A2D9;strokeColor=#0E7DAD;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=14;" value="" vertex="1">
+          <mxGeometry height="26" width="40" x="20" y="1200" as="geometry" />
+        </mxCell>
+        <mxCell id="legt0" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Pacote" vertex="1">
+          <mxGeometry height="20" width="170" x="68" y="1203" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;fillColor=#FFFFFF;strokeColor=#828282;fontColor=#333333;align=left;verticalAlign=top;spacingLeft=12;spacingTop=20;container=1;collapsible=0;" value="" vertex="1">
+          <mxGeometry height="26" width="40" x="250" y="1200" as="geometry" />
+        </mxCell>
+        <mxCell id="legt1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Subsistema" vertex="1">
+          <mxGeometry height="20" width="170" x="298" y="1203" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;" value="" vertex="1">
+          <mxGeometry height="26" width="40" x="480" y="1200" as="geometry" />
+        </mxCell>
+        <mxCell id="legt2" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Pacote de camada" vertex="1">
+          <mxGeometry height="20" width="170" x="528" y="1203" as="geometry" />
+        </mxCell>
+        <mxCell id="leg3" parent="1" style="shape=folder;tabWidth=110;tabHeight=18;tabPosition=left;whiteSpace=wrap;html=1;metaEdit=1;tabWidth=70;tabHeight=12;fillColor=#63BEF2;strokeColor=#2086C9;fontColor=#ffffff;align=center;verticalAlign=middle;spacingTop=10;dashed=1;dashPattern=6 4;opacity=100;fillOpacity=80;" value="" vertex="1">
+          <mxGeometry height="26" width="40" x="710" y="1200" as="geometry" />
+        </mxCell>
+        <mxCell id="legt3" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Pacote planejado" vertex="1">
+          <mxGeometry height="20" width="170" x="758" y="1203" as="geometry" />
+        </mxCell>
+        <mxCell id="lege0" edge="1" parent="1" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="940" y="1213" as="sourcePoint" />
+            <mxPoint x="980" y="1213" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legte0" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Dependência (sentido único)" vertex="1">
+          <mxGeometry height="20" width="190" x="988" y="1203" as="geometry" />
+        </mxCell>
+        <mxCell id="lege1" edge="1" parent="1" style="endArrow=blockThin;html=1;fontSize=10;fontColor=#404040;strokeWidth=1;endFill=1;strokeColor=#828282;metaEdit=1;endSize=14;startSize=14;jumpStyle=arc;jumpSize=16;rounded=0;labelBackgroundColor=#FFFFFF;dashed=1;dashPattern=6 4;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1190" y="1213" as="sourcePoint" />
+            <mxPoint x="1230" y="1213" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legte1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=11;fontColor=#333333;" value="Dependência planejada" vertex="1">
+          <mxGeometry height="20" width="190" x="1238" y="1203" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% comment %}
+  Histórico do Status do TCC (nome provisório, Q-81): lista cronológica somente leitura (do mais
+  antigo ao mais recente, com o status anterior, o novo status, a data e a hora, o responsável e
+  o gatilho) e a trilha das etapas, com a etapa atual destacada; o Status não tem campo nem botão
+  de edição manual (FR-008) — esta tela só exibe o que os gatilhos de outras telas gravaram.
+  Spec 006 (IC-06): botão "Fechar", que volta à tela de origem (url_voltar: aba Meu TCC, painel
+  do aluno ou tela de orientandos). [FR-043]
+  [US-14][RBN-CAD-08.3][RBN-CAD-08.7][RBN-CAD-08.8][FR-009][FR-010]
+{% endcomment %}
+{% block titulo %}Histórico do Status do TCC · {{ turma.tur_identificador }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <h2 class="pg">Histórico do Status do TCC</h2>
+  {% if url_voltar %}<a class="btn" href="{{ url_voltar }}"><span class="ms">close</span>Fechar</a>{% endif %}
+</div>
+<p class="pg-sub">{{ tcc.tcc_alu.alu.usu_nome }} · {{ turma.tur_identificador }} · {{ turma.tur_descricao }}</p>
+
+<div class="cartao mt16">
+  <h3>Trilha</h3>
+  <ol class="trilha">
+    {% for etapa in trilha %}
+    <li class="{% if etapa.atual %}trilha-atual{% endif %}">{{ etapa.status }}</li>
+    {% endfor %}
+  </ol>
+</div>
+
+<div class="cartao mt16">
+  <h3>Linha do tempo</h3>
+  {% if historico %}
+  <div class="tabela-wrap mt16">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th>Status anterior</th>
+          <th>Novo status</th>
+          <th>Data e hora</th>
+          <th>Responsável</th>
+          <th>Gatilho</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in historico %}
+        <tr>
+          <td>{{ linha.hst_status_anterior|default:"—" }}</td>
+          <td>{{ linha.hst_status_novo }}</td>
+          <td>{{ linha.hst_data_hora|date:"d/m/Y H:i" }}</td>
+          <td>{{ linha.hst_usu.usu_nome }}</td>
+          <td>{{ linha.hst_gatilho }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="vazio mt16"><span class="ms">history</span>Nenhuma mudança de Status registrada.</div>
+  {% endif %}
+</div>
+{% endblock %}

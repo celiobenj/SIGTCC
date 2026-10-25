@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% comment %}
+  Cadastro e edição da turma (RBN-CAD-04.1 e 04.3); Descrição e Curso desabilitados na turma que
+  tem ou já teve aluno (Q15).
+  [US-07][RBN-CAD-04.1][RBN-CAD-04.3][FR-001][FR-002][FR-005][Q15]
+{% endcomment %}
+{% block titulo %}{{ titulo }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">{{ titulo }}</h2>
+<div class="cartao mt16">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% for campo in form %}{% include "includes/campo.html" with campo=campo %}{% endfor %}
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{% if turma %}{% url 'cadastro:turma' turma.pk %}{% else %}{% url 'cadastro:turmas' %}{% endif %}">Cancelar</a>
+      <button type="submit" class="btn pri">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
