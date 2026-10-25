@@ -69,10 +69,14 @@ Dados mínimos, criados pela interface ou pelas fábricas de `tests/apoio_orient
 ## 5. Painel do aluno (US-41) e aba Alunos
 
 13. P: turma → aba "Alunos": 3 blocos, só leitura, com "Sem orientador" e "Sem Proposta" onde
-    couber. O bloco abre o painel com as 7 seções. "Encerrar participação" → "Cancelar" volta ao
-    **painel** (IC-03). "Fechar" volta à aba.
-14. S (Secretaria) abre a turma de TCC 2 com orientador automático: blocos sem painel, com
-    "Transferir aluno" (Q4). *Teste de permissão, não de navegação*: abrir o painel pelo endereço
+    couber. O bloco abre o painel com as 7 seções. **Esperado nos botões**: A1 (com Proposta, "Em
+    Andamento") mostra "Encerrar participação"; A2 e A3 ("Sem Proposta") mostram "Excluir aluno",
+    mesmo com pedido de orientação (o pedido não impede a exclusão; spec 004, Clarifications de
+    2026-10-24). "Encerrar participação" (A1) → "Cancelar" volta ao **painel** (IC-03). "Fechar"
+    volta à aba.
+14. *Pré-condição*: na turma de TCC 2 de Engenharia de Computação, o aluno salva a Proposta antes
+    ("Transferir aluno" só aparece com o TCC "Em Andamento" ou "Apto para Defesa", RBN-CAD-05.6).
+    S (Secretaria) abre essa turma: blocos sem painel, com "Transferir aluno" (Q4). *Teste de permissão, não de navegação*: abrir o painel pelo endereço
     dá 403 (M-02).
 15. Endereço antigo `alunos/<id>/` (link guardado da spec 003; único passo que usa endereço, para
     provar o redirecionamento): leva ao painel (Q12).
@@ -99,7 +103,9 @@ Dados mínimos, criados pela interface ou pelas fábricas de `tests/apoio_orient
 
 ## 8. Cancelamentos e TCC 2 (FR-050, FR-051)
 
-21. Pedido pendente de A3 a D1; P encerra a participação de A3. D1 abre o link: MO-12 (texto de
+21. *Pré-condição*: A3 salva a Proposta antes de pedir orientação ("Encerrar participação" só
+    aparece com o TCC "Em Andamento" ou "Apto para Defesa", RBN-CAD-08.4). Pedido pendente de A3
+    a D1; P encerra a participação de A3. D1 abre o link: MO-12 (texto de
     pedido).
 22. TCC 1 aprovado com convite pendente, matriculado no TCC 2 (fábrica): o convite vira 'Cancelado'
     e o link mostra MO-18. As atas do TCC 1 aparecem abaixo na lista do TCC 2, e a tela do
