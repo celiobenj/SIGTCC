@@ -37,6 +37,8 @@ services:
         fromDatabase:
           name: sigtcc-db
           property: connectionString
-      # Sem SMTP configurado, os e-mails (links de ativação e de senha) aparecem em Logs.
+      # E-mail: valores só no painel do Render (aba Environment), nunca sobrescritos pelo
+      # Blueprint. Sem EMAIL_BACKEND, o settings usa o console e os e-mails aparecem em Logs;
+      # com o Brevo, ver docs/deploy-render.md (Passo 5).
       - key: EMAIL_BACKEND
-        value: django.core.mail.backends.console.EmailBackend
+        sync: false
