@@ -38,5 +38,6 @@
   Q-35).
 - Q5 (2026-10-20, com as Q-17, Q-37 e Q-38): a tabela de equivalência guarda EST08MCPD, EST31MSII e
   EST03MLV, e o curso do aluno vem do código informado no campo Curso; Q6 alinhou o FR-013 ao
-  diagrama de sequência (`docs/diagramas/US-08_matricula_por_csv.puml`). Revalidado: 16/16 itens
+  diagrama de sequência (`docs/diagramas/US-08_matricula_por_csv.puml` (hoje página MatricularAluno de
+`docs/diagramas/Diagramas_Sequencia_24_10.drawio`)). Revalidado: 16/16 itens
   continuam atendidos.

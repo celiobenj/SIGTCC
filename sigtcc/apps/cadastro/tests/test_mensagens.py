@@ -14,7 +14,7 @@ from sigtcc.apps.cadastro import mensagens
 FONTE = Path(settings.BASE_DIR) / "docs" / "fonte"
 SPEC = Path(settings.BASE_DIR) / "specs" / "003-acesso-login" / "spec.md"
 
-# Textos e rótulos copiados das US (docs/fonte/Historias_de_Usuario_v3_3.md) que aparecem entre
+# Textos e rótulos copiados das US (docs/fonte/Historias_de_Usuario_v3_4.md) que aparecem entre
 # aspas no documento.
 TEXTOS_DAS_US = (
     "LINK_ATIVACAO_ENVIADO",
@@ -43,13 +43,12 @@ TEXTOS_DAS_US = (
     "ITEM_INDISPONIVEL",
     "PRIMEIRO_ACESSO",
     "ESQUECI_MINHA_SENHA",
-    "ENVIAR",
     "REENVIAR_LINK",
-    "SALVAR",
 )
 
-# Rótulos de botão e de menu que a v3.3 das US cita sem aspas (ex.: "o botão Entrar"): exigem o
-# texto exato, sem as aspas. [Q-62][Q-77]
+# Rótulos de botão e de menu que as US citam sem aspas (ex.: "o botão Entrar"): exigem o texto
+# exato, sem as aspas. Enviar e Salvar passaram para cá na v3.4, que deixou de pôr os nomes de
+# botão entre aspas. [Q-62][Q-77]
 ROTULOS_DAS_US = (
     "ENTRAR",
     "ATIVAR_CONTA",
@@ -57,6 +56,8 @@ ROTULOS_DAS_US = (
     "RESETAR_PRIMEIRO_ACESSO",
     "MARCAR_COMO_LIDAS",
     "MEU_PERFIL",
+    "ENVIAR",
+    "SALVAR",
 )
 
 # Rótulos que vêm da spec 003 (FR-011: "Sair" no menu do usuário), não das US.
@@ -85,7 +86,7 @@ class MensagensTest(SimpleTestCase):
 
     def test_textos_das_us(self):
         """Cada texto das US aparece entre aspas no documento das US."""
-        historias = _texto_corrido(FONTE / "Historias_de_Usuario_v3_3.md")
+        historias = _texto_corrido(FONTE / "Historias_de_Usuario_v3_4.md")
         for nome in TEXTOS_DAS_US:
             texto = getattr(mensagens, nome)
             with self.subTest(constante=nome):
@@ -93,7 +94,7 @@ class MensagensTest(SimpleTestCase):
 
     def test_rotulos_das_us(self):
         """Cada rótulo citado sem aspas na v3.3 aparece com o texto exato no documento das US."""
-        historias = _texto_corrido(FONTE / "Historias_de_Usuario_v3_3.md")
+        historias = _texto_corrido(FONTE / "Historias_de_Usuario_v3_4.md")
         for nome in ROTULOS_DAS_US:
             texto = getattr(mensagens, nome)
             with self.subTest(constante=nome):

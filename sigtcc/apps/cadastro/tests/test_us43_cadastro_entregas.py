@@ -2,7 +2,7 @@
 
 T017 (Phase 5): os 5 cenários de aceite da User Story 3 do `spec.md` (cadastro; tipos por etapa
 TCC 1/TCC 2; aluno vinculado depois do cadastro; tipo repetido; turma arquivada ou usuário sem
-permissão), mais os cenários da US-43 original (`docs/fonte/Historias_de_Usuario_v3_3.md`): tipo
+permissão), mais os cenários da US-43 original (`docs/fonte/Historias_de_Usuario_v3_4.md`): tipo
 Proposta sem campo de link, tipo Versão Final define o prazo e cancelamento do cadastro — 6
 cenários de aceite no total, mais os 3 de exceção (tipo repetido, turma arquivada, usuário sem
 permissão). Escritos antes de `services_entregas.cadastrar_entrega`,

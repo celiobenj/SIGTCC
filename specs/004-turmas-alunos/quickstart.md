@@ -30,6 +30,9 @@ python manage.py criar_conta_teste --perfil secretaria --status ativa --email se
 - `alunos.xlsx`: 5 linhas na primeira planilha.
 - `documento.pdf`, um XLSX de 3 MB e um CSV com 201 linhas de alunos.
 
+Exemplos prontos (dados fictícios) em [`exemplos/`](exemplos/): `alunos_teste.csv` e
+`alunos_teste.xlsx`, com os três códigos de curso da equivalência.
+
 ## 3. Roteiro manual
 
 Cronometrar os itens a e d juntos (SC-007: até 5 minutos).
