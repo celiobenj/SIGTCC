@@ -204,15 +204,15 @@ MT30_ENCERRAMENTO_SESSAO = "Não é possível encerrar a participação: há ses
 MT32_PREVIA_INVALIDA = (
     "A prévia da importação venceu ou não é desta turma. Envie o arquivo de novo."
 )
+MT31_PEDIDO_CANCELADO = (
+    "O pedido de {tipo} para o TCC de {nome} foi cancelado porque a participação do aluno foi "
+    "encerrada."
+)
 # MT-33: PROVISÓRIA (spec 004, Clarifications de 2026-10-24; Q-120): aviso ao docente do pedido ou
 # convite cancelado pela exclusão do aluno da turma. {tipo} = "pedido de orientação" ou
 # "convite de coorientação". [US-09][RBN-CAD-05.4][FR-023]
 MT33_SOLICITACAO_CANCELADA_EXCLUSAO = (
     "O {tipo} de {nome} foi cancelado porque o aluno foi excluído da turma {identificador}."
-)
-MT31_PEDIDO_CANCELADO = (
-    "O pedido de {tipo} para o TCC de {nome} foi cancelado porque a participação do aluno foi "
-    "encerrada."
 )
 
 # =============================================================================================

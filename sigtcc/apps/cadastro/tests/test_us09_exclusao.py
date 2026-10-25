@@ -34,6 +34,7 @@ from sigtcc.apps.cadastro.models import (
     Notificacoes,
     Orientacoes,
     PalavrasChaveTCC,
+    SolicitacoesOrientacao,
     TCCs,
 )
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_docente_ativo, criar_secretaria
@@ -462,7 +463,6 @@ class ExclusaoComPedidoTest(TesteTurmas):
         self.assertContains(resposta, mensagens.ALUNO_EXCLUIDO)
         self.assertFalse(self.na_turma())
         self.assertFalse(TCCs.objects.filter(pk=self.tcc.pk).exists())
-        from sigtcc.apps.cadastro.models import SolicitacoesOrientacao
 
         self.assertFalse(SolicitacoesOrientacao.objects.filter(pk=pedido.pk).exists())
         linha = next(x for x in log.output if "SOLICITACAO_REMOVIDA_NA_EXCLUSAO" in x)

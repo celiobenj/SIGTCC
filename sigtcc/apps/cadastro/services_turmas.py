@@ -1180,9 +1180,9 @@ class EventoExclusao(enum.Enum):
 
 
 def _remover_solicitacoes_na_exclusao(tcc, aluno, turma, professor):
-    """Pedidos e convites do TCC na exclusão do aluno (Q-120): os pendentes viram 'Cancelado' e o
-    docente recebe a MT-33; depois do commit, cada solicitação vai para o log de acesso (tipo,
-    docente, status, datas); e todas são apagadas antes do TCC (FK PROTECT).
+    """Pedidos e convites do TCC na exclusão do aluno (Q-120): o docente de cada pendente recebe a
+    MT-33 e o pendente vai para o log como 'Cancelado'; depois do commit, cada solicitação vai para
+    o log de acesso (tipo, docente, status, datas); e todas são apagadas antes do TCC (FK PROTECT).
     [US-09][RBN-CAD-05.4][RAN-CAD-10 NFR][FR-023][Q-120]
     """
     agora = timezone.now()
