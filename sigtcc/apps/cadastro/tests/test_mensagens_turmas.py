@@ -16,7 +16,7 @@ from sigtcc.apps.cadastro.tests.test_mensagens import _texto_corrido
 FONTE = Path(settings.BASE_DIR) / "docs" / "fonte"
 SPEC = Path(settings.BASE_DIR) / "specs" / "004-turmas-alunos" / "spec.md"
 
-# Textos e rótulos copiados das US-07, 08 e 09 (docs/fonte/Historias_de_Usuario_v3_3.md) que
+# Textos e rótulos copiados das US-07, 08 e 09 (docs/fonte/Historias_de_Usuario_v3_4.md) que
 # aparecem entre aspas no documento.
 TEXTOS_DAS_US = (
     "TURMA_CADASTRADA",
@@ -90,7 +90,7 @@ class MensagensTurmasTest(SimpleTestCase):
 
     def test_textos_das_us(self):
         """Cada texto das US-07, 08 e 09 aparece entre aspas no documento das US."""
-        historias = _texto_corrido(FONTE / "Historias_de_Usuario_v3_3.md")
+        historias = _texto_corrido(FONTE / "Historias_de_Usuario_v3_4.md")
         for nome in TEXTOS_DAS_US:
             texto = getattr(mensagens, nome)
             with self.subTest(constante=nome):
@@ -98,7 +98,7 @@ class MensagensTurmasTest(SimpleTestCase):
 
     def test_rotulos_das_us(self):
         """Cada rótulo citado sem aspas na v3.3 aparece com o texto exato no documento das US."""
-        historias = _texto_corrido(FONTE / "Historias_de_Usuario_v3_3.md")
+        historias = _texto_corrido(FONTE / "Historias_de_Usuario_v3_4.md")
         for nome in ROTULOS_DAS_US:
             texto = getattr(mensagens, nome)
             with self.subTest(constante=nome):

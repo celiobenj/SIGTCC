@@ -20,7 +20,7 @@ from django.test import SimpleTestCase
 from sigtcc.apps.cadastro import mensagens
 from sigtcc.apps.cadastro.tests.test_mensagens import _texto_corrido
 
-FONTE = Path(settings.BASE_DIR) / "docs" / "fonte" / "Historias_de_Usuario_v3_3.md"
+FONTE = Path(settings.BASE_DIR) / "docs" / "fonte" / "Historias_de_Usuario_v3_4.md"
 SPEC = Path(settings.BASE_DIR) / "specs" / "006-orientacao" / "spec.md"
 
 # Textos copiados das US desta feature (T001), com os campos variáveis no formato da US.

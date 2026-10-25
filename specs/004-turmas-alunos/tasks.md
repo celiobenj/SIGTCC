@@ -6,7 +6,8 @@
 [spec.md](spec.md) (aprovada em 2026-10-20; Clarifications Q1 a Q19), [research.md](research.md)
 (B1 a B25), [data-model.md](data-model.md), [contracts/rotas.md](contracts/rotas.md),
 [contracts/servicos-compartilhados.md](contracts/servicos-compartilhados.md),
-[quickstart.md](quickstart.md), diagrama `docs/diagramas/US-08_matricula_por_csv.puml`
+[quickstart.md](quickstart.md), diagrama `docs/diagramas/US-08_matricula_por_csv.puml` (hoje página MatricularAluno de
+`docs/diagramas/Diagramas_Sequencia_24_10.drawio`)
 
 **Aprovação**: tasks aprovado por Julia Cohen em 2026-10-21.
 
