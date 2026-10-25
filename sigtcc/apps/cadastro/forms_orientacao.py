@@ -31,6 +31,8 @@ class CoorientadorForm(FormularioSigtcc):
     tipo = forms.ChoiceField(
         label="Tipo",
         choices=((DOCENTE, "Docente do NUCOMP"), (EXTERNO, "Externo ao NUCOMP")),
+        # data-alterna liga static/js/alternar_tipo.js (só visual; o servidor decide).
+        widget=forms.Select(attrs={"data-alterna": "tipo"}),
     )
     docente = forms.TypedChoiceField(label="Docente", coerce=int, required=False, empty_value=None)
     nome = forms.CharField(label="Nome Completo", required=False, max_length=150)

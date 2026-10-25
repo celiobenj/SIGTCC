@@ -1,10 +1,14 @@
 {% extends "base.html" %}
+{% load static %}
 {% comment %}
   Janela "Registrar coorientador" (e "Substituir"), como formCoorientador do protótipo de 17/10:
   Tipo, caixa do Docente do NUCOMP (com a dica do convite) e caixa do Externo ao NUCOMP (Nome
   Completo, E-mail, Instituição de Origem); "Cancelar" e "Salvar" voltam à seção Orientação.
-  Sem JavaScript obrigatório: as duas caixas aparecem e o Tipo decide o que vale (o servidor
-  confere). [US-45][RBN-CAD-10.3][RBN-CAD-10.7][FR-028][FR-030]
+  Só a caixa do Tipo escolhido fica visível: static/js/alternar_tipo.js esconde a outra ao
+  carregar e a cada mudança do Tipo, inclusive na reexibição com erro (o Tipo volta com o valor
+  enviado). Sem JavaScript, as duas caixas aparecem e o formulário continua funcionando: quem
+  decide o que vale é o servidor (CoorientadorForm.clean valida só os campos do Tipo).
+  [US-45][RBN-CAD-10.3][RBN-CAD-10.7][FR-028][FR-030]
 {% endcomment %}
 {% block titulo %}{{ titulo }} · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -14,11 +18,11 @@
   <form method="post" novalidate>
     {% csrf_token %}
     {% include "includes/campo.html" with campo=form.tipo %}
-    <fieldset class="cartao">
+    <fieldset class="cartao" data-tipo="docente">
       <legend>Docente do NUCOMP</legend>
       {% include "includes/campo.html" with campo=form.docente %}
     </fieldset>
-    <fieldset class="cartao">
+    <fieldset class="cartao" data-tipo="externo">
       <legend>Externo ao NUCOMP</legend>
       {% include "includes/campo.html" with campo=form.nome %}
       {% include "includes/campo.html" with campo=form.email %}
@@ -31,3 +35,4 @@
   </form>
 </section>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/alternar_tipo.js' %}"></script>{% endblock %}

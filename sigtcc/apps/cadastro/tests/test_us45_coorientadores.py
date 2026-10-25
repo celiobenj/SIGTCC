@@ -267,3 +267,44 @@ class SegurancaCoorientadoresTest(CoorientadoresTestBase):
                 self.assertEqual(self.client.post(self.url(rota, arg)).status_code, 404)
         coo.refresh_from_db()
         self.assertEqual(coo.coo_status, StatusCoorientacao.ATIVA)
+
+
+class AlternanciaDoTipoTest(CoorientadoresTestBase):
+    """Teste manual, passo 7: só a caixa do Tipo escolhido fica visível (alternar_tipo.js), sem
+    JavaScript o formulário funciona e o servidor decide o que vale. [US-45][FR-028]
+    """
+
+    def test_janela_liga_a_alternancia(self):
+        resposta = self.client.get(self.url("registrar_coorientador"))
+        self.assertContains(resposta, 'data-alterna="tipo"')
+        self.assertContains(resposta, 'data-tipo="docente"')
+        self.assertContains(resposta, 'data-tipo="externo"')
+        self.assertContains(resposta, "js/alternar_tipo.js")
+        # O servidor não esconde nenhuma caixa: sem JavaScript, as duas aparecem.
+        self.assertNotRegex(resposta.content.decode(), r"<fieldset[^>]*hidden")
+
+    def test_reexibicao_com_erro_mantem_o_tipo_enviado(self):
+        resposta = self.externo(nome="")
+        self.assertContains(resposta, '<option value="externo" selected>')
+        self.assertContains(resposta, 'data-tipo="externo"')
+
+    def test_servidor_ignora_a_caixa_do_outro_tipo(self):
+        """Sem JS, o aluno pode preencher as duas caixas: vale só a do Tipo."""
+        dados = {
+            "tipo": "externo",
+            "docente": self.docente.pk,
+            "nome": "Ana Externa Lima",
+            "email": "",
+            "instituicao": "",
+        }
+        self.client.post(self.url("registrar_coorientador"), dados)
+        self.assertFalse(SolicitacoesOrientacao.objects.exists())
+        self.assertEqual(
+            Coorientacoes.objects.get(coo_tcc=self.tcc).coo_cext.cext_nome, "Ana Externa Lima"
+        )
+
+    def test_substituir_tambem_alterna(self):
+        coo = vincular_coorientador(self.tcc, externo=criar_externo())
+        resposta = self.client.get(self.url("substituir_coorientador", coo.pk))
+        self.assertContains(resposta, 'data-alterna="tipo"')
+        self.assertContains(resposta, "js/alternar_tipo.js")
