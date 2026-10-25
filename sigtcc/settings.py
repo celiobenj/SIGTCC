@@ -182,26 +182,29 @@ CACHES = {
     },
 }
 
-# Log de eventos de acesso, em arquivo, sem tabela (FR-029; spec Q21; research A13).
+# Log de eventos de acesso, em arquivo, sem tabela (FR-029; spec Q21; research A13). Em produção
+# (LOG_STDOUT=True, no render.yaml), vai para a saída padrão e aparece em Logs do Render, porque o
+# disco do serviço é apagado a cada reinício (PGCS 3.5 e 9.6).
 # [US-11][RBN-CAD-06.6][US-12][US-38][FR-029]
-LOG_DIR = _pasta("LOG_DIR", "logs")
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_STDOUT = os.getenv("LOG_STDOUT", "False") == "True"
+if LOG_STDOUT:
+    HANDLER_ACESSO = {"class": "logging.StreamHandler", "formatter": "acesso"}
+else:
+    LOG_DIR = _pasta("LOG_DIR", "logs")
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    HANDLER_ACESSO = {
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": str(LOG_DIR / "acesso.log"),
+        "maxBytes": 5 * 1024 * 1024,
+        "backupCount": 5,
+        "delay": True,
+        "encoding": "utf-8",
+        "formatter": "acesso",
+    }
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {"acesso": {"format": "%(asctime)s | %(message)s"}},
-    "handlers": {
-        "arquivo_acesso": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": str(LOG_DIR / "acesso.log"),
-            "maxBytes": 5 * 1024 * 1024,
-            "backupCount": 5,
-            "delay": True,
-            "encoding": "utf-8",
-            "formatter": "acesso",
-        }
-    },
-    "loggers": {
-        "sigtcc.acesso": {"handlers": ["arquivo_acesso"], "level": "INFO", "propagate": False}
-    },
+    "handlers": {"log_acesso": HANDLER_ACESSO},
+    "loggers": {"sigtcc.acesso": {"handlers": ["log_acesso"], "level": "INFO", "propagate": False}},
 }
