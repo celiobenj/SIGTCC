@@ -532,5 +532,5 @@ class ExclusaoComPedidoTest(TesteTurmas):
         resposta = self.client.get(
             reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
         )
-        self.assertContains(resposta, "Excluir aluno")
+        self.assertContains(resposta, "Excluir da turma")
         self.assertNotContains(resposta, "Encerrar participação")

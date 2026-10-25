@@ -147,7 +147,7 @@ class AcompanhamentoServiceTest(AcompanhamentoTestBase):
 
 
 class AcompanhamentoViewTest(AcompanhamentoTestBase):
-    """View `entrega_acompanhar` e aba Atividades do Professor. [US-16][FR-026][FR-027]"""
+    """View `entrega_acompanhar` e aba Entregas do Professor. [US-16][FR-026][FR-027]"""
 
     def test_cenario1_tabela_com_as_tres_linhas(self):
         self.enviar(self.alunos[0], LINK_1, StatusEntrega.ENTREGUE)
@@ -164,7 +164,7 @@ class AcompanhamentoViewTest(AcompanhamentoTestBase):
         self.assertContains(resposta, "Fechar")
 
     def test_aba_atividades_leva_ao_acompanhamento(self):
-        """Passo 4: o Professor seleciona a entrega na aba Atividades."""
+        """Passo 4: o Professor seleciona a entrega na aba Entregas."""
         self.client.force_login(self.professor)
         resposta = self.client.get(reverse("cadastro:entregas", args=[self.turma.pk]))
         self.assertContains(resposta, f'href="{self.url()}"')

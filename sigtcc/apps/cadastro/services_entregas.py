@@ -154,7 +154,7 @@ def cadastrar_entrega(professor, tur_id, dados):
             notificar(
                 aluno.alu,
                 texto,
-                # Acesso pela notificação (fluxo alternativo A da US-15): abre a aba Atividades.
+                # Acesso pela notificação (fluxo alternativo A da US-15): abre a aba Entregas.
                 link=reverse("cadastro:minhas_entregas", args=[turma.pk]),
             )
             # E-mail com o Título e a Data Limite (passo 7 da US-43; FR-015; MF-11, Q-84).

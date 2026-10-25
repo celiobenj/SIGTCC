@@ -144,7 +144,14 @@ def turma(request, tur_id):
 
     [US-07][US-08][US-09][FR-008][FR-009][FR-010]
     """
-    registro = services_turmas.turma_para(request.user, tur_id, CONSULTAR)
+    try:
+        registro = services_turmas.turma_para(request.user, tur_id, CONSULTAR)
+    except PermissionDenied:
+        # US-07 E8 (v3.4): o Docente que não é o Professor da Disciplina vê o texto próprio da US
+        # (hotfix v0.2.1); os demais perfis seguem com a M-02.
+        if tipo_conta(request.user) == "docente":
+            raise PermissionDenied(mensagens.SEM_PERMISSAO_PAGINA)
+        raise
     arquivada = services_turmas.turma_arquivada(registro)
     pode_alterar = pode_alterar_turma(request.user, registro) and not arquivada
     contexto = {

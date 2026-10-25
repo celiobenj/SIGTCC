@@ -112,7 +112,14 @@ class PermissoesTurmasTest(TesteTurmas):
             self.client.force_login(usuario)
             for nome in ROTAS_DA_TURMA + ROTAS_DO_ALUNO:
                 with self.subTest(usuario=usuario.pk, rota=nome):
-                    self.assert_negado(nome)
+                    if nome == "turma":
+                        # US-07 E8 (v3.4; hotfix v0.2.1): texto próprio ao abrir a turma.
+                        resposta = self.pedir(nome)
+                        self.assertContains(
+                            resposta, mensagens.SEM_PERMISSAO_PAGINA, status_code=403
+                        )
+                    else:
+                        self.assert_negado(nome)
 
     def test_secretaria_de_outro_curso_403(self):
         self.client.force_login(criar_secretaria(curso=curso(SI)))

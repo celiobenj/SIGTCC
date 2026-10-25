@@ -31,7 +31,7 @@ _TIPOS_TCC_2 = (TipoEntrega.DOCUMENTO_PARA_DEFESA, TipoEntrega.VERSAO_FINAL, Tip
 
 
 class CadastroEntregaForm(FormularioSigtcc):
-    """Cadastro de uma entrega (`Turmas_Marcos`) na aba Atividades da turma: Tipo restrito pela
+    """Cadastro de uma entrega (`Turmas_Marcos`) na aba Entregas da turma: Tipo restrito pela
     etapa (FR-013), Título (até 100 caracteres), Instruções opcionais (até 1.000 caracteres) e
     Data Limite não anterior à data do cadastro (E2, Cenário 8 da US-43 original).
 

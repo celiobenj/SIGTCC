@@ -186,7 +186,7 @@ class CadastroMembroTest(TesteContas):
         self.client.force_login(professor)
         resposta = self.client.get(LISTA)
         self.assertEqual(resposta.status_code, 200)
-        self.assertNotContains(resposta, mensagens.NOVO_MEMBRO_EXTERNO)
+        self.assertNotContains(resposta, mensagens.CADASTRAR_MEMBRO_EXTERNO)
         self.assertEqual(self.client.get(NOVO).status_code, 403)
 
     def test_q19_lista_sem_filtro_de_curso(self):
