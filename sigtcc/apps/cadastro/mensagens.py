@@ -1,7 +1,7 @@
 """Textos exibidos ao usuário na feature 003 (Acesso e Login).
 
 Dois grupos:
-- textos das US, copiados caractere por caractere de docs/fonte/Historias_de_Usuario_v3_3.md;
+- textos das US, copiados caractere por caractere de docs/fonte/Historias_de_Usuario_v3_4.md;
 - mensagens PROVISÓRIAS M-01 a M-17, com o ID no nome, copiadas da tabela "Mensagens a validar com
   a PO" de specs/003-acesso-login/spec.md. São provisórias até a validação da PO (índice Q-01;
   spec Q25): quando a PO validar, mude só a constante e a tabela da spec.
@@ -291,8 +291,9 @@ MF12_ASSUNTO_LEMBRETE_PRAZO = "SIGTCC: lembrete de prazo"
 
 # =============================================================================================
 # Spec 002: Gestão de Contas (US-03, US-04, US-05, US-06, US-50)
-# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_3.md; MC-01 a MC-13 da tabela
-# "Mensagens a validar com a PO" de specs/002-gestao-contas/spec.md. [SC-002][FR-048]
+# Textos das US copiados da v3.3 (docs/fonte/anteriores/; a v3.4 reescreveu estas US, Q-121);
+# MC-01 a MC-13 da tabela "Mensagens a validar com a PO" de specs/002-gestao-contas/spec.md.
+# [SC-002][FR-048]
 # =============================================================================================
 
 # US-03 e US-05: cadastro e alteração [RBN-CAD-01.1][RBN-CAD-01.2][RBN-CAD-02.1][RBN-CAD-02.2]
@@ -370,7 +371,7 @@ MC13_FALHA_ENVIO_TROCA = (
 
 # =============================================================================================
 # Spec 006: Orientação, Atas e Publicações (US-17, 18, 19, 20, 36, 41, 42, 45, 46)
-# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_3.md; MO-01 a MO-26 da tabela
+# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_4.md; MO-01 a MO-26 da tabela
 # "Mensagens a validar com a PO" de specs/006-orientacao/spec.md (PROVISÓRIAS, índice Q-95).
 # Reaproveitadas sem duplicar: LINK_HTTPS_500, M14_CAMPO_OBRIGATORIO, MT25_TURMA_ARQUIVADA,
 # M02_ACESSO_NEGADO, MT31_PEDIDO_CANCELADO e MT22_NOTIFICACAO_TRANSFERENCIA. [SC-003][FR-048]

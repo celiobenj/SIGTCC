@@ -2,7 +2,7 @@
 US-13, 14, 15, 16, 29, 43 e 44 e contra a tabela "Mensagens a validar com a PO" da spec 005.
 
 Mesmo padrão de test_mensagens_turmas.py (spec 004), lendo a versão das US em uso nesta feature
-(`Historias_de_Usuario_v3_3.md`, citada no `spec.md`).
+(`Historias_de_Usuario_v3_4.md`, citada no `spec.md`).
 
 [SC-006][US-13][US-14][US-15][US-16][US-29][US-43][US-44]
 """
@@ -16,7 +16,7 @@ from django.test import SimpleTestCase
 from sigtcc.apps.cadastro import mensagens
 from sigtcc.apps.cadastro.tests.test_mensagens import _texto_corrido
 
-FONTE = Path(settings.BASE_DIR) / "docs" / "fonte" / "Historias_de_Usuario_v3_3.md"
+FONTE = Path(settings.BASE_DIR) / "docs" / "fonte" / "Historias_de_Usuario_v3_4.md"
 SPEC = Path(settings.BASE_DIR) / "specs" / "005-fluxo-do-tcc" / "spec.md"
 
 # Textos copiados, caractere por caractere, das US desta feature (T001 e T028).

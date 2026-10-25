@@ -105,7 +105,7 @@ specs/004-turmas-alunos/
 │   └── servicos-compartilhados.md   # o que as outras features usam
 ├── checklists/requirements.md
 └── tasks.md             # Phase 2 (/speckit-tasks)
-docs/diagramas/US-08_matricula_por_csv.puml   # diagrama da responsável
+docs/diagramas/Diagramas_Sequencia_24_10.drawio   # página MatricularAluno (substituiu o .puml)
 ```
 
 ### Source Code (repository root)

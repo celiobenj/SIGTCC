@@ -652,7 +652,8 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
   com os três códigos completos, no formato do exemplo do dicionário (`EST08MCPD`); o dicionário não
   muda.
 - **Diagrama de sequência "Matrícula por CSV"** (US-08): salvo em
-  `docs/diagramas/US-08_matricula_por_csv.puml` e conferido com FR-012 a FR-018. O diagrama não
+  `docs/diagramas/US-08_matricula_por_csv.puml` (substituído em 25/10/2026 pela página
+  MatricularAluno de `docs/diagramas/Diagramas_Sequencia_24_10.drawio`) e conferido com FR-012 a FR-018. O diagrama não
   mostra a orientação automática em TCC 2 de EC e LC (FR-004), que vem da matriz (RBN-CAD-04.2) e
   continua valendo; nem os alunos já cadastrados com outro Status do TCC (por exemplo 'Em
   Andamento' em outra turma), caso para o `/speckit-clarify`.
