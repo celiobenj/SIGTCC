@@ -53,7 +53,7 @@ Implementa o ciclo de orientação do TCC no app `cadastro`, sem tabela nem colu
 | IC-12 | `services_turmas.arquivar_turma` (004), `services.notificar` (003) | Arquivar cancela os pendentes da turma (MO-26); `notificar(agora=None)` |
 | IC-13 | `services.py` (003), `services_entregas._enviar_email_ao_aluno` (005) | + `enviar_email_apos_commit`, compartilhado; comportamento da 005 inalterado |
 | IC-14 | `services_entregas.enviar_entrega` (005) | Ordem de trava turma → aluno → TCC → entrega (evita deadlock) |
-| IC-15 | `services_turmas._trabalho_movimentado` e `excluir_aluno`, `mensagens.py` (004) | Pedido de orientação ou convite de coorientação não impede mais a exclusão do aluno "Sem Proposta"; os pendentes são cancelados com aviso ao docente (MT-33) e cada solicitação vai para o log de acesso antes de ser apagada com o TCC (decisão de Célio Benjamim depois do teste manual; spec 004, FR-023 e Clarifications Q20; Q-120) |
+| IC-15 | `services_turmas._trabalho_movimentado` e `excluir_aluno`, `mensagens.py` (004) | Pedido de orientação ou convite de coorientação não impede mais a exclusão do aluno "Sem Proposta"; os pendentes são cancelados com aviso ao docente (MT-33) e cada solicitação vai para o log de acesso antes de ser apagada com o TCC (decisão de Célio Benjamim depois do teste manual; spec 004, FR-023 e Clarifications Q20; Q-120). Testes: em `test_us09_exclusao.py`, o caso "solicitação" saiu da lista de bloqueios do research B14 (não é cenário de aceite da US) e entraram 4 testes em `ExclusaoComPedidoTest` |
 
 **Documentos fora da spec 006 alterados neste PR:**
 - Constituição 1.0.0 → 1.0.1 (PATCH: referência às US v3.2 → v3.3; sem efeito semântico; Q-62). **Requer aprovação neste PR.**
@@ -71,17 +71,19 @@ Implementa o ciclo de orientação do TCC no app `cadastro`, sem tabela nem colu
 
 ### 3. Checklist Técnico da Equipe (Definition of Done)
 
-- [x] Lint aprovado: `isort --check-only --profile black --line-length 100`, `black --check --line-length 100` e `flake8 --max-line-length 100` sobre `sigtcc/`, sem ocorrências (rodados direto, equivalentes ao `lint.bat`).
+- [x] Lint aprovado: `isort --check-only --profile black --line-length 100`, `black --check --line-length 100` e `flake8 --max-line-length 100` sobre `sigtcc/`, sem ocorrências. O repositório não tem `.pre-commit-config.yaml`; a verificação equivale ao `lint.bat` citado no `.github/PULL_REQUEST_TEMPLATE.md`.
 - [x] Não há variáveis, imports ou trechos de código não utilizados (flake8 limpo).
-- [x] `makemigrations --check --dry-run`: "No changes detected" (a spec 006 não cria tabela nem coluna).
-- [x] Os arquivos `.env`, `.env.local` e os diretórios `sigtcc/media/` e `staticfiles/` NÃO foram adicionados ao Git.
-- [x] A interface segue a paleta e os padrões do protótipo de 17/10: as 11 telas foram conferidas em 1280 px e em 360 px (sem rolagem horizontal), registro em `tasks.md`, "Conferência visual".
-- [x] Não há erros acusados no console do navegador com o sistema rodando (T061, 24/10/2026; conferência visual em 360, 768 e 1280 px sem problema).
+- [x] `makemigrations --check --dry-run`: "No changes detected" (a spec 006 não cria tabela nem coluna); nenhuma migração existente na `develop` foi alterada ou apagada.
+- [x] Os arquivos `.env`, `.env.local` e os diretórios `sigtcc/media/` e `staticfiles/` NÃO foram adicionados ao Git (`git ls-files`: só `.env.example`).
+- [x] A interface segue a paleta e os padrões de usabilidade da ISO/IEC 25010 e do protótipo de 17/10: as 11 telas foram conferidas em 1280 px e em 360 px (sem rolagem horizontal), registro em `tasks.md`, "Conferência visual".
+- [x] Não há quebras de layout nem erros acusados no console do navegador com o sistema rodando (T061, 24/10/2026; conferência visual em 360, 768 e 1280 px sem problema).
 
-**Testes automatizados:** suíte completa com 1107 testes, todos passando (1 falha esperada já
-marcada como `expectedFailure`). Fora da spec 006, `test_base_comum.BaseComumTest.test_cenario5_link_gerado_fora_das_telas`
-(spec 003) é instável no Windows quando roda isolado (resolução de ~15 ms do relógio), também sem
-as mudanças da 006; passou na suíte completa. Registrado na Q-119.
+**Testes automatizados:** suíte completa em 24/10/2026, depois do commit `6fc0bb6`, com 1115
+testes: 1113 passando, 1 falha esperada já marcada como `expectedFailure` e 1 falha intermitente fora
+da spec 006, `test_base_comum.BaseComumTest.test_cenario5_link_gerado_fora_das_telas` (spec 003):
+os dois links de ativação às vezes recebem o mesmo instante no Windows (resolução de ~15 ms do
+relógio), também sem as mudanças da 006; isolado, passou 5 vezes seguidas. Registrado na Q-119.
+Inclui os 4 testes novos de `ExclusaoComPedidoTest` (IC-15) e os da janela do coorientador.
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
@@ -110,7 +112,8 @@ Dado/Quando/Então), e `test_navegacao_orientacao.py` percorre cada tela a parti
 - Q-95: os 26 textos provisórios MO-01 a MO-26.
 - Q-97 a Q-99: divergências US × matriz decididas pela equipe (Secretaria na lista, "Editar" no painel, aviso na recusa).
 - Q-101: decisões D1 a D14 da revisão da spec 006.
-- Q-102: lacunas do modelo aceitas sem coluna nova.
+- Q-102: lacunas do modelo aceitas sem coluna nova; Q-91: ajuste do dicionário 3.5.1 (linha nova do TCC 2) com Maria Luiza Guimarães.
+- Q-81: nome do link de histórico ("Histórico" ou "Histórico do Status do TCC"), provisório desde a spec 005.
 - Q-117: regra nova de cancelamento dos pendentes ao arquivar a turma (ciência da PO).
 - Q-118: textos de estado vazio vindos do protótipo.
 - Q-119: teste instável da spec 003.

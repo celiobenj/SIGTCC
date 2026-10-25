@@ -11,7 +11,8 @@
 
 **Aprovação do plano**: aprovado por Leandra Matos (responsável pelas US) e Célio Benjamim
 (configuração) em 2026-10-24, depois da revisão e da reconferência do `arquiteto-django`. Os itens de
-configuração IC-01 a IC-14 ficaram aprovados com o plano (índice Q-103 a Q-116, respondidas); a
+configuração IC-01 a IC-14 ficaram aprovados com o plano (índice Q-103 a Q-116, respondidas); o
+IC-15 veio do teste manual (Q-120, respondida por Célio Benjamim em 2026-10-24); a
 ciência de Julia Cohen (specs 003 e 004) continua na Q-96.
 
 **Revisão do `arquiteto-django`** (2026-10-24): 34 pontos (1 bloqueante, 12 importantes, 21
@@ -53,8 +54,8 @@ As views ficam finas, em `views_orientacao.py`, `views_atas.py`, `views_artigos.
   `link_mais_recente`, `turma_do_aluno`, `palavras_chave_do`, `versao_final_do_aluno`,
   `exige_correcoes_conferidas`, `STATUS_ENVIO_AVALIAVEL`, `mensagens.LINK_HTTPS_500`.
 
-Mudanças em código já mesclado: todas estão listadas como itens de configuração IC-01 a IC-14 e no
-índice (Q-103 a Q-116). As maiores são:
+Mudanças em código já mesclado: todas estão listadas como itens de configuração IC-01 a IC-15 e no
+índice (Q-103 a Q-116 e Q-120). As maiores são:
 - a aba "Alunos" vira blocos de consulta;
 - as telas de ação voltam ao painel;
 - os cancelamentos automáticos gravam o mesmo instante do evento que os causou;
@@ -265,11 +266,11 @@ aprovação de Célio Benjamim (configuração) e ciência da autora da spec de 
 | IC-08 | `views.aluno`, `views.resetar_primeiro_acesso`, `templates/cadastro/aluno.html`, `confirmar_reset.html` (003) | `aluno` deixa de renderizar e redireciona ao painel da turma mais recente do aluno em que quem abre é o Professor da Disciplina; sem turma, 403 (M-02). O template `aluno.html` é removido. O reset e o "Cancelar" redirecionam para `cadastro:aluno`, que resolve o painel no servidor (nenhum `tur_id` vindo do usuário; research R5). "Mais recente": não arquivada primeiro, depois `tur_ano`, `tur_semestre` e `tur_id` decrescentes. A rota `cadastro:aluno` continua existindo (endereço antigo). | FR-044; Q12, D3; S-02 | `test_us12_senha.py` (37-39, 292-389) e `test_seguranca.py:152` ajustados (IC-11) | Q-110 |
 | IC-09 | `templates/cadastro/tcc/meu_tcc.html` e `views_tcc.meu_tcc` (005) | + 3 includes (Orientação, Atas de orientação, Publicação do artigo), com âncora e `?secao=`; o contexto vem dos services da 006. O comentário desatualizado das linhas 8 a 10 é corrigido (Q-87). | FR-042, FR-001, FR-022, FR-034 | `test_us14_status_historico.py:485-489` continua; só acréscimo | Q-111 |
 | IC-10 | Arquivos compartilhados: `urls.py`, `mensagens.py` (003) e o CSS base (`static/css/`) | + rotas, + textos (US e MO-01 a MO-26), + classes de bloco e painel. Nada removido. Os eventos do log das decisões do Coordenador ficam num enum local de `services_artigos` (`EventoArtigo`), como o `EventoFluxoTCC` da spec 005, sem mexer em `services.EventoAcesso` (research R9). | FR-048; D10 | só acréscimo; `test_log_acesso.py` não muda | Q-112 |
-| IC-11 | Testes de outras specs | Ajustados (só o caminho bloco → painel → ação): `test_navegacao_tcc.py`, `test_us08_transferencia.py` e `test_us12_senha.py`. Acrescentados: `test_notificar.py` (IC-12), `test_us08_matricula.py` (cópia para o TCC 2, IC-04) e `test_us15_envio_entrega.py` (ordem de trava, IC-14). `test_us09_exclusao.py`, `test_seguranca.py` e `test_base_comum.py` não precisaram mudar (conferido na implementação). Nenhum cenário de aceite é removido. | IC-02, IC-04, IC-08, IC-12, IC-14 | — | Q-113 |
+| IC-11 | Testes de outras specs | Ajustados (só o caminho bloco → painel → ação): `test_navegacao_tcc.py`, `test_us08_transferencia.py` e `test_us12_senha.py`. Acrescentados: `test_notificar.py` (IC-12), `test_us08_matricula.py` (cópia para o TCC 2, IC-04) e `test_us15_envio_entrega.py` (ordem de trava, IC-14). `test_seguranca.py` e `test_base_comum.py` não precisaram mudar (conferido na implementação); `test_us09_exclusao.py` mudou só pelo IC-15. Nenhum cenário de aceite é removido. | IC-02, IC-04, IC-08, IC-12, IC-14 | — | Q-113 |
 | IC-12 | `services_turmas.arquivar_turma` (004) e `services.notificar` (003) | Depois das condições da RBN-CAD-04.5, na mesma transação, trava alunos e depois TCCs da turma (por `pk`) e chama `services_orientacao.cancelar_pendentes_da_turma(turma, agora)` (import dentro da função, sem import circular), que cancela os pedidos e convites pendentes com o mesmo instante e grava, também na transação, a MO-26 ao docente de cada um, com o link da solicitação. `notificar` ganha `agora=None` opcional, para a notificação ter o mesmo instante (dedução do motivo, FR-050). | FR-050, FR-053; Q17 | testes da US-07 continuam; novos em `test_arquivamento_pendentes.py` | Q-114 |
 | IC-13 | `services.py` (003) e `services_entregas._enviar_email_ao_aluno` (005) | + `services.enviar_email_apos_commit(usuario, assunto, template, contexto)`, extraído de `_enviar_email_ao_aluno` (mesma regra de `SIGTCC_EMAIL_SINCRONO` e thread), que passa a chamá-lo. Comportamento da spec 005 inalterado. | R11; reaproveitamento sem cópia | testes de e-mail das US-15 e US-43 continuam | Q-115 |
-| IC-15 | `services_turmas._trabalho_movimentado` e `excluir_aluno`, `mensagens.py` (004) | Pedido de orientação ou convite de coorientação deixa de impedir a exclusão do aluno "Sem Proposta"; os pendentes são cancelados com a MT-33, cada solicitação vai para o log de acesso (Não Repúdio, RAN-CAD-10) e é apagada antes do TCC. Decidido depois do teste manual (passo 13). | spec 004, FR-023 e Clarifications Q20; research B14 | `test_us09_exclusao.py`: o caso "solicitação" saiu da lista de bloqueios; + 4 testes | Q-120 |
 | IC-14 | `services_entregas.enviar_entrega` (005) | Passa a travar turma (com `select_for_update` simples, sem exigir turma ativa) → aluno → TCC → entrega (acha a entrega sem trava para saber a turma e a relê travada), no lugar de entrega → TCC; a turma arquivada continua dando 404 por `envio_liberado`. Evita deadlock com "Correções Conferidas" (006) e com Homologar e Devolver da Versão Final (005). Regras de envio inalteradas. | research R2 [N1] | testes das US-15 e US-29 continuam; + 1 teste de ordem de trava e 1 de turma arquivada no meio (404) | Q-116 |
+| IC-15 | `services_turmas._trabalho_movimentado` e `excluir_aluno`, `mensagens.py` (004) | Pedido de orientação ou convite de coorientação deixa de impedir a exclusão do aluno "Sem Proposta"; os pendentes são cancelados com a MT-33, cada solicitação vai para o log de acesso (Não Repúdio, RAN-CAD-10) e é apagada antes do TCC. Decidido depois do teste manual (passo 13). | spec 004, FR-023 e Clarifications Q20; research B14 | `test_us09_exclusao.py`: o caso "solicitação" saiu da lista de bloqueios; + 4 testes | Q-120 |
 
 ## Pendências desta feature
 
@@ -277,7 +278,7 @@ aprovação de Célio Benjamim (configuração) e ciência da autora da spec de 
 
 | Pendência | Destino | Índice |
 |---|---|---|
-| Aprovar os IC-01 a IC-14 (código de specs já mescladas) | Célio Benjamim (config); ciência de Julia Cohen (003 e 004) e Leandra Matos (005) | Q-103 a Q-116, Q-96 |
+| Aprovar os IC-01 a IC-14 (código de specs já mescladas; o IC-15 foi decidido na Q-120) | Célio Benjamim (config); ciência de Julia Cohen (003 e 004) e Leandra Matos (005) | Q-103 a Q-116, Q-96 |
 | Ciência da regra nova no arquivamento (US-07 C; RBN-CAD-04.5): pendentes cancelados e MO-26 | Profa. Diana (PO) | Q-117 |
 | Validar MO-01 a MO-26 | Profa. Diana (PO) | Q-95 |
 | Divergências US × matriz decididas pela equipe: Secretaria na lista, "Editar" no painel, aviso na recusa | Profa. Diana (PO) | Q-97 a Q-99 |
