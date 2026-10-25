@@ -15,3 +15,6 @@ sigtcc/media/
 /cache_acesso/
 # Saída do collectstatic (deploy)
 /staticfiles/
+# Cópias de segurança do banco de produção (PGCS 8.2): ficam no Drive, nunca no Git
+*.dump
+*.sql
