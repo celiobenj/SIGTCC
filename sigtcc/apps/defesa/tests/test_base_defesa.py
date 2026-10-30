@@ -9,9 +9,11 @@ from decimal import Decimal
 
 from django.utils import timezone
 
-from sigtcc.apps.cadastro.tests.apoio_turmas import TesteTurmas, criar_defesa_de
+from sigtcc.apps.cadastro.choices import StatusTCC, StatusTurma
+from sigtcc.apps.cadastro.models import Turmas
+from sigtcc.apps.cadastro.tests.apoio_turmas import LC, SI, TesteTurmas, criar_defesa_de
 from sigtcc.apps.cadastro.tests.fabricas import criar_criterio
-from sigtcc.apps.defesa import services_defesa
+from sigtcc.apps.defesa import permissoes_defesa, services_defesa
 from sigtcc.apps.defesa.choices import (
     Conceito,
     EventoDefesa,
@@ -288,3 +290,81 @@ class TesteAvancarPara(TesteTurmas):
                 self.assertEqual(sessao.def_status, status)
                 ultimo = HistoricoDefesas.objects.filter(hdf_def=sessao).latest("hdf_id")
                 self.assertEqual(ultimo.hdf_status_novo, status)
+
+
+class TestePodeAgendar(TesteTurmas):
+    """Quem agenda, pelo curso da turma do TCC. [US-21][RBN-DEF-01.3][FR-003]"""
+
+    def test_engenharia_so_o_orientador(self):
+        tcc, professor, orientador = tcc_apto()
+        self.assertTrue(permissoes_defesa.pode_agendar(orientador, tcc))
+        self.assertFalse(permissoes_defesa.pode_agendar(professor, tcc))
+        self.assertFalse(permissoes_defesa.pode_agendar(docente(), tcc))
+
+    def test_sistemas_e_licenciatura_so_o_professor_da_disciplina(self):
+        for curso_nome in (SI, LC):
+            with self.subTest(curso=curso_nome):
+                tcc, professor, orientador = tcc_apto(curso_nome)
+                self.assertTrue(permissoes_defesa.pode_agendar(professor, tcc))
+                self.assertFalse(permissoes_defesa.pode_agendar(orientador, tcc))
+                self.assertFalse(permissoes_defesa.pode_agendar(docente(curso_nome), tcc))
+
+
+class TesteElegibilidade(TesteTurmas):
+    """tcc_elegivel e tccs_elegiveis. [US-21][RBN-DEF-01.1][RBN-DEF-01.3][FR-001][FR-003]"""
+
+    def test_apto_sem_sessao_e_elegivel(self):
+        tcc, _professor, orientador = tcc_apto()
+        self.assertTrue(services_defesa.tcc_elegivel(tcc))
+        self.assertEqual(list(services_defesa.tccs_elegiveis(orientador)), [tcc])
+
+    def test_sessao_ativa_tira_da_lista_e_encerrada_devolve(self):
+        for status in StatusSessao:
+            with self.subTest(status=status):
+                tcc, _professor, orientador = tcc_apto()
+                avancar_para(agendar_sessao_de(tcc, orientador), status)
+                ativa = status in (
+                    StatusSessao.AGENDADA,
+                    StatusSessao.REAGENDADA,
+                    StatusSessao.EM_ANDAMENTO,
+                )
+                self.assertEqual(services_defesa.tcc_elegivel(tcc), not ativa)
+                self.assertEqual(tcc in services_defesa.tccs_elegiveis(orientador), not ativa)
+
+    def test_status_diferente_de_apto_nao_entra(self):
+        tcc, _professor, orientador = tcc_apto()
+        tcc.tcc_status = StatusTCC.EM_ANDAMENTO
+        tcc.save(update_fields=["tcc_status"])
+        self.assertFalse(services_defesa.tcc_elegivel(tcc))
+        self.assertFalse(services_defesa.tccs_elegiveis(orientador).exists())
+
+    def test_turma_arquivada_nao_entra(self):
+        tcc, _professor, orientador = tcc_apto()
+        Turmas.objects.filter(pk=tcc.tcc_tur_id).update(tur_status=StatusTurma.ARQUIVADA)
+        tcc.refresh_from_db()
+        self.assertFalse(services_defesa.tcc_elegivel(tcc))
+        self.assertFalse(services_defesa.tccs_elegiveis(orientador).exists())
+
+    def test_lista_igual_a_permissao_mais_elegibilidade(self):
+        professor_ec, orientador_ec = docente(), docente()
+        professor_si, orientador_si = docente(SI), docente(SI)
+        tccs = [
+            tcc_apto(professor=professor_ec, orientador=orientador_ec)[0],
+            tcc_apto(professor=professor_ec, orientador=docente())[0],
+            tcc_apto(SI, professor=professor_si, orientador=orientador_si)[0],
+            tcc_apto(SI, professor=docente(SI), orientador=orientador_si)[0],
+            tcc_apto(LC, professor=professor_ec, orientador=orientador_ec)[0],
+        ]
+        avancar_para(agendar_sessao_de(tccs[0], orientador_ec), StatusSessao.REAGENDADA)
+        for usuario in (professor_ec, orientador_ec, professor_si, orientador_si):
+            with self.subTest(usuario=usuario.usu_nome):
+                esperado = {
+                    tcc.pk
+                    for tcc in tccs
+                    if permissoes_defesa.pode_agendar(usuario, tcc)
+                    and services_defesa.tcc_elegivel(tcc)
+                }
+                lista = {tcc.pk for tcc in services_defesa.tccs_elegiveis(usuario)}
+                self.assertEqual(lista, esperado)
+        # Professor de EC não agenda em EC, mas agenda o TCC de Licenciatura da sua turma.
+        self.assertEqual({t.pk for t in services_defesa.tccs_elegiveis(professor_ec)}, {tccs[4].pk})

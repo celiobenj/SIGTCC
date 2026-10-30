@@ -100,10 +100,10 @@ e `popular_demo`
   `services_defesa.py` — só registra em log que o descarte foi solicitado (sem tocar em
   `Avaliacoes`, tabela que esta spec não possui); assinatura exata da feat-08 — contrato §6,
   Clarifications
-- [ ] T024 [P] Implementar `pode_agendar(usuario, tcc)` em `sigtcc/apps/defesa/permissoes_defesa.py`
+- [X] T024 [P] Implementar `pode_agendar(usuario, tcc)` em `sigtcc/apps/defesa/permissoes_defesa.py`
   — `services_orientacao.e_orientador_atual` em Engenharia de Computação; Professor da Disciplina
   da turma nas demais — FR-003, RBN-DEF-01.3, research C1a (movida da US1 para a Fase 2a)
-- [ ] T058 Implementar `tcc_elegivel(tcc)` e `tccs_elegiveis(usuario)` em `services_defesa.py` —
+- [X] T058 Implementar `tcc_elegivel(tcc)` e `tccs_elegiveis(usuario)` em `services_defesa.py` —
   TCCs "Apto para Defesa", sem sessão "Agendada", "Reagendada" ou "Em Andamento"
   (`services_turmas.STATUS_SESSAO_ATIVA`), em turma ativa (RBN-CAD-04.5) e sob a responsabilidade
   do usuário pela regra de `pode_agendar` (mesmo critério, em consulta única), com título e nome do
