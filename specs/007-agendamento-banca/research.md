@@ -206,12 +206,15 @@ validação do servidor repete a checagem (E4 da US-23: "isso só ocorre por req
 na mesma transação — recupera o link via
 `services_entregas.link_mais_recente(entrega_documento_defesa)`, monta a notificação (data,
 horário, formato, local ou link, título, aluno, link do documento), chama
-`services.notificar`/`enviar_email_apos_commit` para o Aluno e cada membro de `BancaDefesa`
-(`membros_efetivos(sessao)`, contrato §2), e chama
+`services.notificar`/`enviar_email_apos_commit` para o Aluno e **todos** os membros de
+`BancaDefesa`, inclusive o Suplente não acionado (FR-018, RBN-DEF-03.2 — **não**
+`membros_efetivos`, que só traz os 3 membros que atuam; correção feita no `/speckit-implement`,
+2026-10-30), e chama
 `services_orientacao.cancelar_troca_no_agendamento(tcc, agora)` com o mesmo `agora` gravado no
 evento 'Agendamento' de `Historico_Defesas` (regra do "mesmo instante", já estabelecida pelo
 contrato da spec 006). `reagendar(sessao, dados, justificativa, autor)` — depois de
-`_travar_membros` com os pks de `membros_efetivos(sessao)` (C3, achado B3) e de revalidar
+`_travar_membros` com os pks de todos os membros de `BancaDefesa`, inclusive o Suplente
+(FR-014; não `membros_efetivos`) (C3, achado B3) e de revalidar
 conflito — chama `transicionar_status(..., StatusSessao.REAGENDADA, ...)` e notifica sem tocar na
 banca nem nas avaliações. `cancelar(sessao, justificativa, autor)` chama `transicionar_status(...,
 StatusSessao.CANCELADA, ...)`, o stub de `descartar_avaliacoes(sessao)` (todos os membros) e

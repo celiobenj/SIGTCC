@@ -9,6 +9,14 @@ description: "Task list para a feature 007 — Agendamento e Banca do SIGTCC"
 corrigidos: tags RBN completadas no spec.md; `_verificar_conflito` movida para a Fase 2, eliminando
 a dependência cruzada entre User Stories).
 
+**Divisão da Fase 2 (decisão de Julia Cohen, 2026-10-30, no início do `/speckit-implement`)**: a
+fase base pedida para 03/11 é a **Fase 2a** (elegibilidade e permissão de agendamento,
+`membros_efetivos`, status da sessão, `registrar_evento`, stub de `descartar_avaliacoes` e
+`popular_demo` com uma sessão em cada status, mais `agendar_sessao` e seus 2 auxiliares, de que o
+`popular_demo` precisa). O restante do `services_defesa.py` vira a **Fase 2b**, na próxima rodada.
+`pode_agendar` (antes T024, US1) passou para a Fase 2a, e entrou a T058 (`tccs_elegiveis`, serviço
+novo, tirando a regra de elegibilidade de dentro do `AgendarForm`). Os IDs foram mantidos.
+
 **Input**: Design documents from `/specs/007-agendamento-banca/`
 **Prerequisites**: [plan.md](plan.md) (Approved, Julia Cohen, 2026-10-30), [spec.md](spec.md),
 [research.md](research.md), [data-model.md](data-model.md), [contracts/](contracts/),
@@ -18,12 +26,10 @@ a dependência cruzada entre User Stories).
 princípio VI); testes incluídos nas tarefas de cada fase.
 
 **Organization**: tarefas agrupadas por User Story. A Fase 2 (Foundational) contém o serviço base
-`services_defesa.py` inteiro, incluindo a validação de conflito de horário (US-22/US3) — **prazo
-crítico 03/11**, porque a feat-08 (Célio Benjamim) depende de `agendar_sessao`,
-`transicionar_status`, `registrar_evento`, `membros_efetivos`, `TRANSICOES_VALIDAS` e
-`popular_demo` para começar (ver plan.md, "Prazo crítico"). Um único módulo de serviço (não
-dividido por User Story) porque todas as regras giram em torno de uma única entidade central
-(`Defesas`) — decisão já justificada no Complexity Tracking do plan.md.
+`services_defesa.py` inteiro, incluindo a validação de conflito de horário (US-22/US3); a parte de
+que a feat-08 (Célio Benjamim) depende para começar em **03/11** é a Fase 2a. Um único módulo de
+serviço (não dividido por User Story) porque todas as regras giram em torno de uma única entidade
+central (`Defesas`) — decisão já justificada no Complexity Tracking do plan.md.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -37,29 +43,28 @@ dividido por User Story) porque todas as regras giram em torno de uma única ent
 
 **Purpose**: estrutura inicial do app `defesa` para esta feature
 
-- [ ] T001 Criar os arquivos vazios (com o cabeçalho `[US-XX][RBN-...]` a preencher por tarefa)
-  `sigtcc/apps/defesa/services_defesa.py`, `permissoes_defesa.py`, `forms_defesa.py`,
-  `views_defesa.py`, `urls.py` (`app_name = "defesa"`) e `mensagens.py` — `models.py`, `choices.py`
-  e `cargas.py` já existem (spec 001)
+- [ ] T001 Criar os arquivos (com o cabeçalho `[US-XX][RBN-...]` a preencher por tarefa)
+  `sigtcc/apps/defesa/services_defesa.py` e `permissoes_defesa.py` na Fase 2a;
+  `forms_defesa.py`, `views_defesa.py`, `urls.py` (`app_name = "defesa"`) e `mensagens.py` quando
+  a primeira User Story precisar deles — `models.py`, `choices.py` e `cargas.py` já existem (spec
+  001)
 - [ ] T002 [P] IC-01 (índice Q-123): `+ path("", include("sigtcc.apps.defesa.urls"))` em
-  `sigtcc/urls.py`, sem remover nada existente
+  `sigtcc/urls.py`, sem remover nada existente (junto com a primeira view, Fase 3)
 - [ ] T003 [P] Criar `sigtcc/apps/defesa/tests/apoio_defesa.py` com fábricas que partem de
-  `tests/apoio_tcc.py`/`apoio_orientacao.py` (TCC "Apto para Defesa" com Orientador vinculado) e
-  esqueleto de `agendar_sessao_de(tcc, **dados)`, `compor_banca_de(sessao, **membros)` e
-  `avancar_para(sessao, status)` (research C8)
+  `tests/apoio_turmas.py`/`apoio_orientacao.py` (TCC "Apto para Defesa" com Orientador vinculado)
+  e `agendar_sessao_de(tcc, **dados)`, `avancar_para(sessao, status)` (research C8)
 
 **Checkpoint**: estrutura do app pronta para a Fase 2.
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites) — fase base, **prazo crítico 03/11**
+## Phase 2a: Foundational — fase base, **prazo crítico 03/11**
 
-**Purpose**: `services_defesa.py` completo (inclusive a validação de conflito de horário, US-22) —
-nenhuma User Story desta spec nem a feat-08 (Célio Benjamim) pode avançar sem isso
+**Purpose**: o que a feat-08 (Célio Benjamim) consome para começar: elegibilidade e permissão de
+agendamento, criação da sessão, status da sessão, histórico, `membros_efetivos`, stub de descarte
+e `popular_demo`
 
-**⚠️ CRITICAL**: esta fase bloqueia as Fases 3 a 7. `agendar_sessao`, `transicionar_status`,
-`registrar_evento`, `membros_efetivos`, `TRANSICOES_VALIDAS` e `popular_demo` MUST estar prontos
-até **03/11** (feat-08 depende deles).
+**⚠️ CRITICAL**: MUST estar pronta até **03/11**.
 
 - [ ] T004 [P] Definir, em `sigtcc/apps/defesa/services_defesa.py`, `EVENTO_DA_TRANSICAO` (dict
   `novo_status → EventoDefesa`) e `TRANSICOES_VALIDAS` (set de pares `(status_atual, novo_status)`
@@ -75,6 +80,56 @@ até **03/11** (feat-08 depende deles).
   contra `TRANSICOES_VALIDAS`, levanta `ValueError` sem gravar nada se inválida, grava
   `def_status` (`update_fields=["def_status"]`) e chama `registrar_evento` — FR-017, FR-023,
   contrato §1 (depende de T004, T005)
+- [ ] T009 [P] Implementar `_gravar_local_ou_link(sessao, local, link)` em `services_defesa.py` —
+  grava `DefesasPresenciais` (`dep_local`, até 100 caracteres) ou `DefesasRemotas` (`der_link`,
+  `https://`, até 500 caracteres) conforme `def_formato`; se a sessão já tiver a linha do outro
+  formato, remove-a — FR-001, FR-004, FR-005, data-model.md
+- [ ] T010 Implementar `_compor_banca(sessao, dados_banca)` em `services_defesa.py` — grava uma
+  linha de `BancaDefesa` por membro (Orientador de `services_orientacao.orientador_atual(tcc)`,
+  só leitura; 1º/2º Avaliador; Suplente opcional) — FR-007, RBN-DEF-02.1, research C4
+- [ ] T011 Implementar `agendar_sessao(tcc, dados_basicos, dados_banca, autor) -> Defesas` em
+  `services_defesa.py` — único ponto que cria `Defesas` (`def_status=AGENDADA`), chama
+  `_gravar_local_ou_link`, `_compor_banca` e `registrar_evento(..., EventoDefesa.AGENDAMENTO,
+  ...)` diretamente; pressupõe TCC travado e conflito já verificado pelo chamador (T007/T008) —
+  FR-001 a FR-020, FR-023, research C2 (depende de T005, T009, T010)
+- [ ] T012 Implementar `membros_efetivos(sessao) -> list[Usuarios]` em `services_defesa.py` — os
+  3 membros que de fato atuam (Orientador, 1º e 2º Avaliador), considerando o suplente acionado
+  (que passa a ocupar o papel do titular ausente); o Suplente **não** acionado não entra —
+  contrato §2
+- [ ] T013 [P] Implementar o stub `descartar_avaliacoes(sessao, membro=None)` em
+  `services_defesa.py` — só registra em log que o descarte foi solicitado (sem tocar em
+  `Avaliacoes`, tabela que esta spec não possui); assinatura exata da feat-08 — contrato §6,
+  Clarifications
+- [ ] T024 [P] Implementar `pode_agendar(usuario, tcc)` em `sigtcc/apps/defesa/permissoes_defesa.py`
+  — `services_orientacao.e_orientador_atual` em Engenharia de Computação; Professor da Disciplina
+  da turma nas demais — FR-003, RBN-DEF-01.3, research C1a (movida da US1 para a Fase 2a)
+- [ ] T058 Implementar `tcc_elegivel(tcc)` e `tccs_elegiveis(usuario)` em `services_defesa.py` —
+  TCCs "Apto para Defesa", sem sessão "Agendada", "Reagendada" ou "Em Andamento"
+  (`services_turmas.STATUS_SESSAO_ATIVA`), em turma ativa (RBN-CAD-04.5) e sob a responsabilidade
+  do usuário pela regra de `pode_agendar` (mesmo critério, em consulta única), com título e nome do
+  aluno — FR-001, FR-003, RBN-DEF-01.1, RBN-DEF-01.3 (depende de T024)
+- [ ] T022 IC-05: acrescentar, em `sigtcc/apps/cadastro/management/commands/popular_demo.py`, um
+  TCC "Apto para Defesa" em cada curso e uma sessão em cada um dos 5 valores de `StatusSessao`,
+  criadas só por `services_defesa` (`agendar_sessao` e `transicionar_status`; nunca
+  `Defesas.objects.create()` direto); a sessão "Realizada" fica num TCC que depois recebe o
+  resultado — contrato §5 (depende de T006, T011)
+- [ ] T023 [P] `sigtcc/apps/defesa/tests/test_base_defesa.py`: `transicionar_status` (transições
+  válidas e inválidas, nenhuma linha gravada quando inválida), `registrar_evento` (inclusive
+  `autor=None`), `agendar_sessao`, `membros_efetivos`, `descartar_avaliacoes` (stub),
+  `pode_agendar`, `tccs_elegiveis`, `popular_demo` (smoke test: uma sessão em cada status) —
+  SC-003 (depende de T004 a T013, T024, T058, T022)
+
+**Checkpoint**: fase base (2a) concluída — Célio Benjamim (feat-08) já pode depender de
+`agendar_sessao`, `transicionar_status`, `registrar_evento`, `membros_efetivos`,
+`TRANSICOES_VALIDAS`, `descartar_avaliacoes` (stub) e `popular_demo` (prazo 03/11).
+
+---
+
+## Phase 2b: Foundational — restante do `services_defesa.py` (próxima rodada)
+
+**Purpose**: travas, conflito de horário, alteração de banca, suplente, confirmação, reagendamento,
+cancelamento, início automático, lista e histórico. **Bloqueia as Fases 3 a 7.**
+
 - [ ] T007 [P] Implementar `_travar_membros(ids_usuarios)` em `services_defesa.py` —
   `Usuarios.objects.filter(pk__in=sorted(ids_usuarios)).select_for_update().order_by("pk")` —
   research C3, achado B2/B3 da revisão do `arquiteto-django`
@@ -83,27 +138,7 @@ até **03/11** (feat-08 depende deles).
   própria sessão no reagendamento; levanta exceção com os nomes de todos os membros
   indisponíveis numa única mensagem, sem gravar nada — FR-014, FR-015, FR-016, research C3
   (depende de T007; chamada sempre depois de `_travar_membros`, antes de `agendar_sessao`/
-  `reagendar`/`alterar_banca` — achado C1 do `/speckit-analyze`, 2026-10-30: movida para esta fase
-  porque a Fase 2 já é o módulo de serviço inteiro, eliminando a dependência cruzada que existia
-  entre a User Story 1/4 e a User Story 3)
-- [ ] T009 [P] Implementar `_criar_local_ou_link(sessao, dados_basicos)` em `services_defesa.py` —
-  cria `DefesasPresenciais` (`dep_local`, até 100 caracteres) ou `DefesasRemotas` (`der_link`,
-  `https://`, até 500 caracteres) conforme `def_formato`; ao trocar o formato remove a linha
-  antiga e cria a nova — FR-001, FR-004, FR-005, data-model.md
-- [ ] T010 Implementar `_compor_banca(sessao, dados_banca)` em `services_defesa.py` — grava uma
-  linha de `BancaDefesa` por membro (Orientador de `services_orientacao.orientador_atual(tcc)`,
-  só leitura; 1º/2º Avaliador; Suplente opcional) — FR-007, RBN-DEF-02.1, research C4
-- [ ] T011 Implementar `agendar_sessao(tcc, dados_basicos, dados_banca, autor) -> Defesas` em
-  `services_defesa.py` — único ponto que cria `Defesas` (`def_status=AGENDADA`), chama
-  `_criar_local_ou_link`, `_compor_banca` e `registrar_evento(..., EventoDefesa.AGENDAMENTO, ...)`
-  diretamente; pressupõe TCC travado e conflito já verificado pelo chamador (T007/T008) — FR-001 a
-  FR-020, FR-023, research C2 (depende de T005, T009, T010)
-- [ ] T012 Implementar `membros_efetivos(sessao) -> list[Usuarios]` em `services_defesa.py` —
-  membros que de fato atuam, considerando o suplente acionado (substitui o titular ausente) —
-  contrato §2
-- [ ] T013 [P] Implementar o stub `descartar_avaliacoes(sessao, membro=None)` em
-  `services_defesa.py` — só registra que o descarte foi solicitado (sem tocar em `Avaliacoes`,
-  tabela que esta spec não possui); assinatura exata da feat-08 — contrato §6, Clarifications
+  `reagendar`/`alterar_banca` — achado C1 do `/speckit-analyze`)
 - [ ] T014 Implementar `alterar_banca(sessao, papel, novo_membro, justificativa, autor) -> Defesas`
   em `services_defesa.py` — depois de `_travar_membros([novo_membro.pk])` (T007) e de
   `_verificar_conflito` (T008) só do novo membro, substitui a linha do papel indicado
@@ -121,14 +156,16 @@ até **03/11** (feat-08 depende deles).
 - [ ] T016 Implementar `confirmar_agendamento(sessao, autor)` em `services_defesa.py` — na mesma
   transação de `agendar_sessao`: recupera o link via
   `services_entregas.link_mais_recente(entrega_documento_defesa)`, notifica
-  (`services.notificar`/`enviar_email_apos_commit`) o Aluno e `membros_efetivos(sessao)`, e chama
-  `services_orientacao.cancelar_troca_no_agendamento(tcc, agora)` com o mesmo `agora` do evento
-  'Agendamento' — FR-018, research C5 (depende de T011, T012)
+  (`services.notificar`/`enviar_email_apos_commit`) o Aluno e **todos** os membros de
+  `BancaDefesa`, inclusive o Suplente não acionado (FR-018, RBN-DEF-03.2 — não
+  `membros_efetivos`), e chama `services_orientacao.cancelar_troca_no_agendamento(tcc, agora)`
+  com o mesmo `agora` do evento 'Agendamento' — FR-018, research C5 (depende de T011)
 - [ ] T017 Implementar `reagendar(sessao, dados, justificativa, autor) -> Defesas` em
   `services_defesa.py` — depois de `_travar_membros` (T007) e `_verificar_conflito` (T008) com os
-  pks de `membros_efetivos(sessao)`, chama `transicionar_status(..., StatusSessao.REAGENDADA,
-  ...)` e notifica a banca e o Aluno com os novos dados, sem tocar banca/avaliações — FR-019,
-  research C5 (depende de T006, T007, T008, T012)
+  pks de **todos** os membros de `BancaDefesa`, inclusive o Suplente (FR-014), chama
+  `transicionar_status(..., StatusSessao.REAGENDADA, ...)` e notifica a banca inteira e o Aluno
+  com os novos dados, sem tocar banca/avaliações — FR-019, research C5 (depende de T006, T007,
+  T008)
 - [ ] T018 Implementar `cancelar(sessao, justificativa, autor) -> Defesas` em `services_defesa.py`
   — chama `transicionar_status(..., StatusSessao.CANCELADA, ...)`, o stub
   `descartar_avaliacoes(sessao)` (todos os membros) e notifica a banca e o Aluno; nunca grava
@@ -143,45 +180,36 @@ até **03/11** (feat-08 depende deles).
 - [ ] T021 [P] Implementar `historico_da_sessao(sessao) -> queryset` em `services_defesa.py` —
   todas as linhas de `HistoricoDefesas` da sessão, ordenadas por `hdf_data_hora`, sem checagem de
   perfil — FR-029, research C7
-- [ ] T022 [P] IC-05: acrescentar, em
-  `sigtcc/apps/cadastro/management/commands/popular_demo.py`, TCCs "Apto para Defesa" (um por
-  curso) e uma sessão em cada um dos 5 valores de `StatusSessao`, criadas só por `services_defesa`
-  (nunca `Defesas.objects.create()` direto) — contrato §5 (depende de T011, T014, T015, T017, T018)
-- [ ] T023 [P] `sigtcc/apps/defesa/tests/test_base_defesa.py`: `agendar_sessao`,
-  `transicionar_status` (transições válidas e inválidas, nenhuma linha gravada quando inválida),
-  `registrar_evento`, `_travar_membros` (duas transações disputando o mesmo docente),
-  `_verificar_conflito` (sobreposição, exclusão da própria sessão, ignora Local), `alterar_banca`,
-  `acionar_suplente`, `membros_efetivos`, `TRANSICOES_VALIDAS`, `popular_demo` (smoke test) —
-  SC-002, SC-003 (depende de T004 a T022)
+- [ ] T059 [P] Acrescentar em `sigtcc/apps/defesa/tests/test_base_defesa.py` os testes da Fase 2b:
+  `_travar_membros` (duas transações disputando o mesmo docente), `_verificar_conflito`
+  (sobreposição, exclusão da própria sessão, ignora Local), `alterar_banca`, `acionar_suplente`,
+  `confirmar_agendamento`, `reagendar`, `cancelar`, `sessoes_para_iniciar`, `listar_defesas`,
+  `historico_da_sessao` — SC-002 (depende de T007, T008, T014 a T021)
 
-**Checkpoint**: fase base concluída — Célio Benjamim (feat-08) já pode depender de
-`agendar_sessao`, `transicionar_status`, `registrar_evento`, `membros_efetivos`,
-`TRANSICOES_VALIDAS` e `popular_demo` (prazo 03/11). As Fases 3 a 7 seguem com permissões,
-formulários, views, templates e mensagens — todas podem usar `_travar_membros`/
-`_verificar_conflito` desde já, sem depender de nenhuma fase posterior.
+**Checkpoint**: `services_defesa.py` completo. As Fases 3 a 7 seguem com formulários, views,
+templates e mensagens — todas podem usar `_travar_membros`/`_verificar_conflito` desde já.
 
 ---
 
 ## Phase 3: User Story 1 - Agendar a defesa com data, horário, formato e local ou link (Priority: P1) 🎯 MVP
 
 **Goal**: formulário "Agendar sessão de defesa" com os dados básicos, a validação de conflito já
-ativa (Fase 2) e os dois pontos de entrada já mesclados (aba Defesas da turma, tela de orientandos)
+ativa (Fase 2b) e os dois pontos de entrada já mesclados (aba Defesas da turma, tela de
+orientandos)
 
 **Independent Test**: criar um TCC "Apto para Defesa" sem sessão ativa, abrir o formulário, validar
 os campos básicos isoladamente (sem depender da seção Banca completa, User Story 2)
 
-- [ ] T024 [P] [US1] Implementar `pode_agendar(usuario, tcc)` em
-  `sigtcc/apps/defesa/permissoes_defesa.py` — `services_orientacao.e_orientador_atual` em
-  Engenharia de Computação; Professor da Disciplina da turma nas demais — FR-003, research C1a
+- T024 — movida para a Fase 2a (`pode_agendar`).
 - [ ] T025 [P] [US1] Implementar `AgendarForm` em `sigtcc/apps/defesa/forms_defesa.py` — TCC (lista
-  só "Apto para Defesa" sem sessão ativa e sob responsabilidade do usuário), Data (não anterior a
-  hoje), Horário de Início, Formato, Local (até 100 caracteres) ou Link (`https://`, até 500
-  caracteres), limpando o campo oposto ao trocar o formato — FR-001, FR-002, FR-004, FR-005
+  de `services_defesa.tccs_elegiveis(usuario)`, T058), Data (não anterior a hoje), Horário de
+  Início, Formato, Local (até 100 caracteres) ou Link (`https://`, até 500 caracteres), limpando o
+  campo oposto ao trocar o formato — FR-001, FR-002, FR-004, FR-005
 - [ ] T026 [US1] Implementar a view `agendar` em `sigtcc/apps/defesa/views_defesa.py` — GET lista
   TCCs elegíveis (`?tcc=` pré-seleciona), POST trava turma/aluno/TCC, chama `_travar_membros` +
-  `_verificar_conflito` (já prontos na Fase 2) e, sem conflito, `agendar_sessao` e
-  `confirmar_agendamento`, exibindo "Defesa agendada com sucesso" — FR-001, FR-003, FR-014 a
-  FR-016, contracts/rotas.md (depende de T024, T025, T008, T011, T016)
+  `_verificar_conflito` (Fase 2b) e, sem conflito, `agendar_sessao` e `confirmar_agendamento`,
+  exibindo "Defesa agendada com sucesso" — FR-001, FR-003, FR-014 a FR-016, contracts/rotas.md
+  (depende de T024, T025, T008, T011, T016)
 - [ ] T027 [P] [US1] Criar `sigtcc/templates/defesa/form_agendar.html` (protótipo de 17/10: layout,
   paleta, Roboto/Figtree, Material Symbols; nota de 15/20 minutos de apresentação, US-21 passo 4)
 - [ ] T028 [P] [US1] IC-02 (índice Q-123): item "Defesas" em `sigtcc/apps/cadastro/menu.py` (ícone
@@ -194,7 +222,7 @@ os campos básicos isoladamente (sem depender da seção Banca completa, User St
   T020)
 - [ ] T030 [P] [US1] IC-04 (índice Q-123): link "Agendar defesa" em
   `sigtcc/apps/cadastro/templates/cadastro/orientacao/orientacoes.html`, por orientando com TCC
-  "Apto para Defesa" sem sessão ativa (`defesa:agendar?tcc=<id>`) — FR-006
+  elegível (`services_defesa.tcc_elegivel`, T058; `defesa:agendar?tcc=<id>`) — FR-006
 - [ ] T031 [P] [US1] Acrescentar em `sigtcc/apps/defesa/mensagens.py` os textos exatos da US-21
   (ou provisórios `MD-XX`, registrados em `docs/questoes-a-rever.md`) — research C8
 - [ ] T032 [US1] `sigtcc/apps/defesa/tests/test_us21_agendar.py` — os 8 cenários de aceite da User
@@ -238,20 +266,20 @@ bloqueando a gravação).
 ## Phase 5: User Story 3 - Impedir agendamentos com conflito de horário da banca (Priority: P1)
 
 **Goal**: confirmar, com testes dedicados, que o bloqueio de conflito (já implementado e integrado
-nas Fases 2 a 4) cobre todos os cenários de aceite da User Story 3 — inclusive a corrida de duas
+nas Fases 2b a 4) cobre todos os cenários de aceite da User Story 3 — inclusive a corrida de duas
 sessões novas simultâneas
 
 **Independent Test**: com dois TCCs e banca parcialmente sobreposta, tentar agendar a segunda
 sessão no intervalo de um membro já ocupado e verificar a rejeição, sem gravar nada
 
 - [ ] T039 [US3] `sigtcc/apps/defesa/tests/test_us22_conflito.py` — os 6 cenários de aceite da
-  User Story 3 contra `_verificar_conflito`/`_travar_membros` (T007/T008, Fase 2) já integrados nas
-  views `agendar` (T026), `alterar_banca` (T035) e `reagendar` (Fase 6) — incluindo a corrida de
+  User Story 3 contra `_verificar_conflito`/`_travar_membros` (T007/T008, Fase 2b) já integrados
+  nas views `agendar` (T026), `alterar_banca` (T035) e `reagendar` (T042) — incluindo a corrida de
   duas sessões novas simultâneas para o mesmo docente (research C3) — FR-014 a FR-016 (depende de
-  T026, T035; e de T043 para o cenário de reagendamento, Fase 6)
+  T026, T035, T042)
 
 **Checkpoint**: User Story 3 coberta por teste próprio, sem nenhuma implementação pendente (toda a
-lógica já está na Fase 2).
+lógica já está na Fase 2b).
 
 ---
 
@@ -270,7 +298,7 @@ existente
   (Justificativa obrigatória até 500 caracteres) — FR-019, FR-020
 - [ ] T042 [US4] Implementar as views `reagendar` e `cancelar` em `views_defesa.py` — chamam
   `reagendar`/`cancelar` de `services_defesa.py` (que já usa `_travar_membros`/
-  `_verificar_conflito`, Fase 2), ocultam os botões quando Realizada/Cancelada — FR-019, FR-020,
+  `_verificar_conflito`, Fase 2b), ocultam os botões quando Realizada/Cancelada — FR-019, FR-020,
   FR-022 (depende de T040, T041, T017, T018)
 - [ ] T043 [P] [US4] Criar `sigtcc/templates/defesa/form_reagendar.html` e
   `confirmar_cancelar.html` (protótipo de 17/10)
@@ -339,40 +367,38 @@ perfil e verificar visibilidade e filtros
 ### Phase Dependencies
 
 - **Setup (Fase 1)**: sem dependências
-- **Foundational (Fase 2)**: depende da Fase 1 — **BLOQUEIA todas as User Stories**; prazo crítico
-  03/11 para `agendar_sessao`, `transicionar_status`, `registrar_evento`, `membros_efetivos`,
-  `TRANSICOES_VALIDAS`, `popular_demo`. Inclui `_verificar_conflito` (US-22), para que nenhuma
-  User Story dependa de outra para ter o bloqueio de conflito ativo (achado C1 do
-  `/speckit-analyze`, corrigido)
-- **User Stories (Fases 3 a 7)**: todas dependem só da Fase 2. Entre si, seguem a ordem de
-  prioridade da spec (US1, US2, US3, US4 — todas P1 — depois US5, P2); a única dependência entre
-  fases de User Story que permanece é a do teste da US3 (T039) sobre as views de US1/US2/US4
+- **Fase 2a**: depende da Fase 1 — prazo crítico **03/11** (feat-08 depende dela)
+- **Fase 2b**: depende da Fase 2a — **BLOQUEIA todas as User Stories**; inclui
+  `_verificar_conflito` (US-22), para que nenhuma User Story dependa de outra para ter o bloqueio
+  de conflito ativo (achado C1 do `/speckit-analyze`, corrigido)
+- **User Stories (Fases 3 a 7)**: todas dependem só da Fase 2 (2a e 2b). Entre si, seguem a ordem
+  de prioridade da spec (US1, US2, US3, US4 — todas P1 — depois US5, P2); a única dependência
+  entre fases de User Story que permanece é a do teste da US3 (T039) sobre as views de US1/US2/US4
   (T026, T035, T042), porque o teste de aceite da User Story 3 exercita essas views — a
   **implementação** da US3 não depende de nenhuma outra fase
 - **Polish (Fase 8)**: depende de todas as User Stories desejadas estarem completas
 
 ### Parallel Opportunities
 
-- Dentro da Fase 2: T004, T007, T009, T013, T019, T021, T022 (arquivos/trechos independentes)
-  podem rodar em paralelo entre si, respeitando as dependências sequenciais de T005→T006,
-  T007→T008, T009/T010→T011, T012→T016/T017/T020
+- Fase 2a: T004, T009, T013, T024 em paralelo; depois T005→T006, T009/T010→T011, T024→T058;
+  T022 e T023 por último
+- Fase 2b: T007, T019, T021 em paralelo; depois T007→T008→T014/T017, T013→T015/T018
 - Dentro de cada User Story: tarefas `[P]` (permissões, forms, templates, mensagens) em paralelo;
   a view e o teste de cada fase vêm depois
-- T022 (popular_demo) e T023 (test_base_defesa) só depois de toda a Fase 2 estar pronta
 
 ## Implementation Strategy
 
 ### MVP First
 
-1. Fase 1 (Setup) + Fase 2 (Foundational — prazo 03/11, já com o bloqueio de conflito)
+1. Fase 1 (Setup) + Fase 2a (prazo 03/11) + Fase 2b (já com o bloqueio de conflito)
 2. Fase 3 (US1) + Fase 4 (US2) — formam o agendamento completo e seguro (sem isso, não há MVP
    utilizável)
 3. **VALIDAR**: agendar uma defesa de ponta a ponta, com banca e bloqueio de conflito
 4. Fase 6 (US4) — ciclo de confirmação/reagendamento/cancelamento; Fase 5 (US3) pode entrar a
-   qualquer momento depois da Fase 2, já que é só teste
+   qualquer momento depois da Fase 2b, já que é só teste
 5. Fase 7 (US5) — lista e histórico (P2, pode entrar depois do MVP)
 
 ### Entrega incremental
 
-Fundação (com conflito) → US1+US2 (MVP de agendamento seguro) → US3 (teste de confirmação) → US4
-(ciclo completo) → US5 (consulta) → Polish.
+Fase 2a (fase base, 03/11) → Fase 2b → US1+US2 (MVP de agendamento seguro) → US3 (teste de
+confirmação) → US4 (ciclo completo) → US5 (consulta) → Polish.
