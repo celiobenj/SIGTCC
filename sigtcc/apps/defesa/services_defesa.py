@@ -10,9 +10,14 @@ transaction.atomic() (research C2 e C3).
 
 import logging
 
+from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import services_orientacao
+from sigtcc.apps.cadastro.cargas import CURSO_ENG_COMPUTACAO
+from sigtcc.apps.cadastro.choices import StatusOrientacao, StatusTCC, StatusTurma
+from sigtcc.apps.cadastro.models import Orientacoes, TCCs
+from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA
 from sigtcc.apps.defesa.choices import EventoDefesa, FormatoSessao, PapelBanca, StatusSessao
 from sigtcc.apps.defesa.models import (
     BancaDefesa,
@@ -106,6 +111,55 @@ def transicionar_status(sessao, novo_status, autor, justificativa=None, **dados_
         status_anterior=anterior,
         status_novo=novo_status,
         **dados_evento,
+    )
+
+
+# =============================================================================================
+# Elegibilidade para o agendamento (RBN-DEF-01.1 e 01.3)
+# =============================================================================================
+
+
+def _tem_sessao_ativa():
+    """Subconsulta: o TCC tem sessão "Agendada", "Reagendada" ou "Em Andamento".
+    [US-21][RBN-DEF-01.1][FR-003]
+    """
+    return Exists(
+        Defesas.objects.filter(def_tcc=OuterRef("pk"), def_status__in=STATUS_SESSAO_ATIVA)
+    )
+
+
+def tcc_elegivel(tcc):
+    """O TCC pode receber uma sessão agora: Status "Apto para Defesa", turma ativa (turma
+    arquivada é só consulta, RBN-CAD-04.5) e nenhuma sessão ativa. Não confere quem agenda (isso
+    é permissoes_defesa.pode_agendar). [US-21][RBN-DEF-01.1][RBN-DEF-01.3][FR-001][FR-003]
+    """
+    return (
+        tcc.tcc_status == StatusTCC.APTO_PARA_DEFESA
+        and tcc.tcc_tur.tur_status == StatusTurma.ATIVA
+        and not Defesas.objects.filter(def_tcc=tcc, def_status__in=STATUS_SESSAO_ATIVA).exists()
+    )
+
+
+def tccs_elegiveis(usuario):
+    """Lista do campo TCC do agendamento: os TCCs elegíveis (tcc_elegivel) que o usuário pode
+    agendar pela regra de permissoes_defesa.pode_agendar, numa consulta só, com aluno e turma já
+    carregados para mostrar título e nome do aluno.
+    [US-21][RBN-DEF-01.1][RBN-DEF-01.3][FR-001][FR-003]
+    """
+    e_orientador = Exists(
+        Orientacoes.objects.filter(
+            ori_tcc=OuterRef("pk"), ori_doc_id=usuario.pk, ori_status=StatusOrientacao.ATIVA
+        )
+    )
+    engenharia = Q(tcc_tur__tur_cur__cur_nome=CURSO_ENG_COMPUTACAO)
+    return (
+        TCCs.objects.filter(
+            tcc_status=StatusTCC.APTO_PARA_DEFESA, tcc_tur__tur_status=StatusTurma.ATIVA
+        )
+        .exclude(_tem_sessao_ativa())
+        .filter((engenharia & e_orientador) | (~engenharia & Q(tcc_tur__tur_doc_id=usuario.pk)))
+        .select_related("tcc_alu__alu", "tcc_tur__tur_cur")
+        .order_by("tcc_alu__alu__usu_nome", "tcc_id")
     )
 
 
