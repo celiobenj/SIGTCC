@@ -50,7 +50,7 @@ central (`Defesas`) — decisão já justificada no Complexity Tracking do plan.
   001)
 - [ ] T002 [P] IC-01 (índice Q-123): `+ path("", include("sigtcc.apps.defesa.urls"))` em
   `sigtcc/urls.py`, sem remover nada existente (junto com a primeira view, Fase 3)
-- [ ] T003 [P] Criar `sigtcc/apps/defesa/tests/apoio_defesa.py` com fábricas que partem de
+- [X] T003 [P] Criar `sigtcc/apps/defesa/tests/apoio_defesa.py` com fábricas que partem de
   `tests/apoio_turmas.py`/`apoio_orientacao.py` (TCC "Apto para Defesa" com Orientador vinculado)
   e `agendar_sessao_de(tcc, **dados)`, `avancar_para(sessao, status)` (research C8)
 
@@ -80,23 +80,23 @@ e `popular_demo`
   contra `TRANSICOES_VALIDAS`, levanta `ValueError` sem gravar nada se inválida, grava
   `def_status` (`update_fields=["def_status"]`) e chama `registrar_evento` — FR-017, FR-023,
   contrato §1 (depende de T004, T005)
-- [ ] T009 [P] Implementar `_gravar_local_ou_link(sessao, local, link)` em `services_defesa.py` —
+- [X] T009 [P] Implementar `_gravar_local_ou_link(sessao, local, link)` em `services_defesa.py` —
   grava `DefesasPresenciais` (`dep_local`, até 100 caracteres) ou `DefesasRemotas` (`der_link`,
   `https://`, até 500 caracteres) conforme `def_formato`; se a sessão já tiver a linha do outro
   formato, remove-a — FR-001, FR-004, FR-005, data-model.md
-- [ ] T010 Implementar `_compor_banca(sessao, dados_banca)` em `services_defesa.py` — grava uma
+- [X] T010 Implementar `_compor_banca(sessao, dados_banca)` em `services_defesa.py` — grava uma
   linha de `BancaDefesa` por membro (Orientador de `services_orientacao.orientador_atual(tcc)`,
   só leitura; 1º/2º Avaliador; Suplente opcional) — FR-007, RBN-DEF-02.1, research C4
-- [ ] T011 Implementar `agendar_sessao(tcc, dados_basicos, dados_banca, autor) -> Defesas` em
+- [X] T011 Implementar `agendar_sessao(tcc, dados_basicos, dados_banca, autor) -> Defesas` em
   `services_defesa.py` — único ponto que cria `Defesas` (`def_status=AGENDADA`), chama
   `_gravar_local_ou_link`, `_compor_banca` e `registrar_evento(..., EventoDefesa.AGENDAMENTO,
   ...)` diretamente; pressupõe TCC travado e conflito já verificado pelo chamador (T007/T008) —
   FR-001 a FR-020, FR-023, research C2 (depende de T005, T009, T010)
-- [ ] T012 Implementar `membros_efetivos(sessao) -> list[Usuarios]` em `services_defesa.py` — os
+- [X] T012 Implementar `membros_efetivos(sessao) -> list[Usuarios]` em `services_defesa.py` — os
   3 membros que de fato atuam (Orientador, 1º e 2º Avaliador), considerando o suplente acionado
   (que passa a ocupar o papel do titular ausente); o Suplente **não** acionado não entra —
   contrato §2
-- [ ] T013 [P] Implementar o stub `descartar_avaliacoes(sessao, membro=None)` em
+- [X] T013 [P] Implementar o stub `descartar_avaliacoes(sessao, membro=None)` em
   `services_defesa.py` — só registra em log que o descarte foi solicitado (sem tocar em
   `Avaliacoes`, tabela que esta spec não possui); assinatura exata da feat-08 — contrato §6,
   Clarifications
