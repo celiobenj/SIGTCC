@@ -59,12 +59,16 @@
   criada nesta rodada — todas as correções foram de atribuição, escopo ou referência, não de
   texto exibido ao usuário.
 - **Terceira rodada (2026-10-30, `/speckit-clarify`)**: 2 perguntas feitas e respondidas (quota
-  máxima de 5 não atingida) — cancelamento automático da sessão no encerramento da participação
-  (Opção A: esta spec implementa, novo FR-031, novo cenário 10 na User Story 4, nova pendência
-  Q-122) e inserção do botão "Agendar defesa" nas telas já mescladas da turma e de orientandos
-  (Opção A: esta spec insere, FR-006 atualizado, nova pendência Q-123). Também completado, fora do
-  loop de perguntas porque a resposta já estava na matriz sem ambiguidade: o prazo de 2 segundos
-  do filtro de Curso (RBN-CAD-14.1) ausente do FR-027. Todos os 16 itens deste checklist já
-  estavam marcados antes desta rodada e continuam marcados — nenhuma regressão; a rodada ampliou o
-  escopo (duas integrações novas com código já mesclado) sem mudar o resultado do checklist
-  (16/16 → 16/16).
+  máxima de 5 não atingida). A primeira (cancelamento automático da sessão no encerramento da
+  participação) foi respondida como "esta spec implementa" (Opção A, novo FR-031) e depois
+  **revertida na mesma sessão**: ao conferir `services_turmas.encerrar_participacao` (spec 004, já
+  mesclada) para desenhar a integração, constatou-se que essa função **já recusa** o encerramento
+  quando há sessão ativa (MT30, `STATUS_SESSAO_ATIVA`), com teste existente — o oposto do FR-031.
+  Decisão final: manter o MT30, sem alteração em `services_turmas.py`; FR-031 removido, cenário 10
+  da User Story 4 reescrito para refletir a recusa (não o cancelamento automático), e a pendência
+  correspondente nunca chegou a ser registrada no índice (removida antes de sair do rascunho). A
+  segunda pergunta (inserção do botão "Agendar defesa" nas telas já mescladas da turma e de
+  orientandos) manteve a decisão "esta spec insere" (FR-006 atualizado, pendência Q-123). Também
+  completado, fora do loop de perguntas porque a resposta já estava na matriz sem ambiguidade: o
+  prazo de 2 segundos do filtro de Curso (RBN-CAD-14.1) ausente do FR-027. Todos os 16 itens deste
+  checklist já estavam marcados antes desta rodada e continuam marcados — nenhuma regressão.

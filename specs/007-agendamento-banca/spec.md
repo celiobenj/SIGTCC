@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-30
 
-**Status**: Draft
+**Status**: Approved (Julia Cohen, 2026-10-30)
 
 **Input**: User description: "Agendamento e Banca do SIGTCC: US-21, US-22, US-23, US-24 e US-40, mais o filtro de Curso da tela Defesas (US-39)."
 
@@ -93,13 +93,6 @@
   reescrever o cabeçalho da sessão (data, horário, TCC, banca, status).
 - `popular_demo` (comando de gestão) ganha TCCs "Apto para Defesa" e uma sessão em cada um dos 5
   valores de `StatusSessao`, para a feat-08 e a feat-09 testarem sem montar cenário do zero.
-- `services_defesa.cancelar_por_encerramento(tcc, justificativa, autor, agora) -> Defesas | None`
-  (FR-031; Clarifications, sessão 2026-10-30) — chamada **obrigatória** por
-  `services_turmas.encerrar_participacao` (spec 004/005) no mesmo evento do encerramento da
-  participação, com o TCC já travado e o mesmo `agora` gravado no histórico (mesma regra do "mesmo
-  agora" já usada por `cancelar_troca_no_agendamento`, contrato da spec 006). Cancela a sessão
-  ativa do TCC (se houver), descarta as avaliações salvas (stub de `descartar_avaliacoes`) e
-  notifica a banca; sem sessão ativa, devolve `None` e não faz nada.
 
 ## Clarifications
 
@@ -139,13 +132,16 @@
   Achado da conferência do analista-requisitos (2026-10-30; ponto a decidir P2).
 - Q: Quando um TCC "Apto para Defesa" com sessão "Agendada", "Reagendada" ou "Em Andamento" tem a
   participação do aluno encerrada (Desistente, Reprovado ou Jubilado, spec 004/005), esta spec
-  deve cancelar automaticamente a sessão, ou isso fica fora do escopo, a cargo de quem mantém a
-  spec 004/005? → A: **esta spec implementa o cancelamento automático** (Opção A; decisão de
-  Julia Cohen, 2026-10-30). Ver FR-031 (nova) e a seção "Contratos desta feature" — a spec 004/005
-  (`services_turmas.encerrar_participacao`) passa a chamar
-  `services_defesa.cancelar_por_encerramento(tcc, justificativa, autor, agora)` no mesmo evento do
-  encerramento, com o TCC já travado. Por tocar código já mesclado de outra feature, essa
-  integração está registrada como pendência de aprovação em `docs/questoes-a-rever.md`.
+  deve cancelar automaticamente a sessão, ou isso fica fora do escopo? → A: inicialmente decidido
+  que esta spec implementaria o cancelamento automático (Opção A), **revertido na mesma sessão**
+  ao verificar `services_turmas.encerrar_participacao` (spec 004, já mesclada): essa função **já
+  recusa** o encerramento quando há sessão "Agendada", "Reagendada" ou "Em Andamento" para o TCC
+  (`STATUS_SESSAO_ATIVA`, mensagem MT30, "Não é possível encerrar a participação: há sessão de
+  defesa ativa"), com teste já existente (`test_us09_exclusao.py`). As duas regras não podiam
+  coexistir. **Decisão final (Julia Cohen, 2026-10-30): manter o MT30 como está, sem alteração em
+  `services_turmas.py`.** Quem quiser encerrar a participação de um aluno com defesa agendada
+  precisa primeiro cancelar ou reagendar a sessão (fora do âmbito desta sessão de encerramento).
+  Ver Edge Cases.
 - Q: O botão "Agendar defesa" na aba Defesas da turma (spec 004) e na tela de orientandos (spec
   006) — telas já mescladas de outras features — deve ser inserido por esta spec, ou fica para
   depois, com esta spec entregando só a rota/formulário reutilizável? → A: **esta spec insere o
@@ -153,6 +149,15 @@
   tocar código mesclado já usado na spec 005 (Q-46). Ver FR-006 (já previa o comportamento; agora
   explicitamente a cargo desta spec) e a pendência de aprovação correspondente em
   `docs/questoes-a-rever.md`.
+- Correção do `/speckit-analyze` (2026-10-30; achado D1): FR-006, FR-015, FR-016, FR-022, FR-023,
+  FR-026, FR-028 e FR-030 estavam sem a tag `[RBN-...]`, exigida pelo princípio II da constituição.
+  Tags acrescentadas, conferidas em `docs/fonte/Matriz_Requisitos_17_10.md` (aba
+  `Requisitos_Defesa`): FR-006 → RBN-DEF-01.1 (lista de TCCs elegíveis, mesmo campo do
+  agendamento, agora acessada por mais de um ponto de entrada); FR-015/FR-016 → RBN-DEF-03.1
+  (mesmo RBN do FR-014, que esses dois FRs detalham); FR-022 → RBN-DEF-03.3 (mesmo RBN do
+  FR-019/FR-020, sobre quem vê os botões); FR-023 → RBN-DEF-01.2 (mesmo RBN do FR-017, sobre o
+  gatilho único de cada transição); FR-026/FR-028 → RBN-DEF-01.4 (lista de sessões e seu filtro de
+  Status); FR-030 → RBN-DEF-01.4 (regra de visibilidade por perfil, mesmo RBN do FR-024).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -340,9 +345,10 @@ cancelar uma sessão existente.
    da turma, nem a Secretaria do curso, **When** aciona a ação, **Then** o sistema bloqueia e
    exibe "Você não tem permissão para esta ação".
 10. **Given** a sessão está "Agendada", "Reagendada" ou "Em Andamento", **When** o Professor da
-    Disciplina registra o encerramento da participação do aluno (Desistente, Reprovado ou
-    Jubilado, spec 004/005), **Then** o sistema cancela automaticamente a sessão, descarta as
-    avaliações salvas e notifica a banca com a justificativa do encerramento (FR-031).
+    Disciplina tenta registrar o encerramento da participação do aluno (Desistente, Reprovado ou
+    Jubilado, spec 004/005), **Then** o sistema recusa o encerramento com "Não é possível encerrar
+    a participação: há sessão de defesa ativa" (MT30, já existente na spec 004) — quem quiser
+    encerrar precisa primeiro cancelar ou reagendar a sessão.
 
 ---
 
@@ -404,11 +410,12 @@ outras histórias.
   registros de sessão dos membros envolvidos antes de gravar (ordem a definir no plano), para que
   a segunda requisição veja a sessão já gravada pela primeira e seja rejeitada corretamente, não
   ambas gravadas.
-- Um TCC "Apto para Defesa" é encerrado (Desistente, Reprovado ou Jubilado, spec 004/005) com uma
-  sessão já "Agendada", "Reagendada" ou "Em Andamento"? **Resolvido (Clarifications, sessão
-  2026-10-30; decisão de Julia Cohen)**: esta spec cancela automaticamente a sessão (FR-031), via
-  `services_defesa.cancelar_por_encerramento`, chamada por `services_turmas.encerrar_participacao`
-  no mesmo evento do encerramento.
+- Um TCC "Apto para Defesa" tem uma sessão já "Agendada", "Reagendada" ou "Em Andamento" quando
+  alguém tenta encerrar a participação do aluno? **Resolvido (Clarifications, sessão 2026-10-30;
+  decisão final de Julia Cohen)**: `services_turmas.encerrar_participacao` (spec 004, já mesclada)
+  **já recusa** o encerramento nesse caso (`STATUS_SESSAO_ATIVA`, mensagem MT30), com teste
+  existente (`test_us09_exclusao.py`); esta spec não altera esse comportamento. Quem quiser
+  encerrar a participação precisa primeiro cancelar ou reagendar a sessão.
 - O que acontece com a banca quando um Membro Externo recém-cadastrado (fluxo B da US-23) nunca
   ativa a conta? A sessão é agendada normalmente (a conta "Aguardando Ativação" não impede a
   indicação na banca); a notificação por e-mail é enviada ao endereço cadastrado, e o acesso real
@@ -454,7 +461,7 @@ outras histórias.
   Data e Horário de Início posteriores ao momento atual, limite de 100 caracteres do Local, e
   formato (`https://`, até 500 caracteres) do Link da Videochamada; nenhuma dessas validações MUST
   permitir gravar a sessão fora da regra.
-- **FR-006**: O sistema MUST oferecer o agendamento também a partir da aba Defesas de uma turma
+- **FR-006** [RBN-DEF-01.1]: O sistema MUST oferecer o agendamento também a partir da aba Defesas de uma turma
   (spec 004) e da tela de orientandos (spec 006), com a lista TCC limitada aos TCCs elegíveis desse
   contexto. Esta spec MUST inserir o botão "Agendar defesa" diretamente nesses dois templates já
   mesclados (Clarifications, sessão 2026-10-30; decisão de Julia Cohen) — não é uma tarefa deixada
@@ -498,10 +505,10 @@ outras histórias.
   agendamento, o reagendamento ou a alteração de banca se qualquer membro da banca (Orientador, 1º
   Avaliador, 2º Avaliador ou Suplente) tiver outra sessão "Agendada", "Reagendada" ou "Em
   Andamento" com sobreposição nessa janela.
-- **FR-015**: Essa validação MUST desconsiderar a própria sessão no reagendamento, MUST verificar
+- **FR-015** [RBN-DEF-03.1]: Essa validação MUST desconsiderar a própria sessão no reagendamento, MUST verificar
   só os membros novos na alteração de banca, MUST ignorar o Suplente quando a banca não o tiver, e
   MUST NOT considerar o campo Local (texto livre) como fonte de conflito.
-- **FR-016**: Com um ou mais conflitos, o sistema MUST identificar nominalmente, numa única
+- **FR-016** [RBN-DEF-03.1]: Com um ou mais conflitos, o sistema MUST identificar nominalmente, numa única
   mensagem, todos os membros indisponíveis, e MUST NOT gravar nenhuma sessão, vínculo de banca ou
   alteração enquanto houver conflito.
 
@@ -531,25 +538,16 @@ outras histórias.
   "Reagendada" para "Em Andamento" quando o horário previsto da sessão chegar, tornando a sessão
   somente leitura para os dados básicos e liberando o formulário da Parte Oral à banca (serviço
   aplicável tanto numa view quanto num comando de gestão agendado, research a detalhar).
-- **FR-022**: O sistema MUST ocultar os botões "Reagendar" e "Cancelar sessão" quando a sessão
+- **FR-022** [RBN-DEF-03.3]: O sistema MUST ocultar os botões "Reagendar" e "Cancelar sessão" quando a sessão
   estiver "Realizada" ou "Cancelada", e MUST bloquear essas ações (mensagem "Você não tem permissão
   para esta ação") para quem não for o Orientador do TCC, o Professor da Disciplina da turma, nem
   a Secretaria do curso.
-- **FR-023**: O sistema MUST expor um serviço único (`transicionar_status`) para qualquer mudança
+- **FR-023** [RBN-DEF-01.2]: O sistema MUST expor um serviço único (`transicionar_status`) para qualquer mudança
   de `def_status`, com `registrar_evento` associado (DEF-01.6), de forma que nenhum outro ponto do
   código grave `def_status` ou crie `HistoricoDefesas` diretamente — a feat-08 usa esse serviço
   para a transição "Realizada" (ver "Contratos desta feature"; referência a "FR-012" corrigida na
   conferência do analista-requisitos, 2026-10-30 — P6, erro de cópia sem relação com a transição
   "Realizada").
-- **FR-031** (Clarifications, sessão 2026-10-30): O sistema MUST cancelar automaticamente, via
-  `transicionar_status` para "Cancelada", qualquer sessão "Agendada", "Reagendada" ou "Em
-  Andamento" cujo TCC tenha a participação do aluno encerrada (Desistente, Reprovado ou Jubilado —
-  `services_turmas.encerrar_participacao`, spec 004/005); MUST descartar as avaliações salvas
-  (mesmo stub de FR-020/FR-011/FR-013) e MUST notificar a banca com a justificativa do
-  encerramento. `services_turmas.encerrar_participacao` MUST chamar
-  `services_defesa.cancelar_por_encerramento(tcc, justificativa, autor, agora)` no mesmo evento do
-  encerramento, com o TCC já travado — integração que toca código já mesclado de outra feature,
-  registrada como pendência de aprovação.
 
 ### Functional Requirements — Lista de sessões, filtros e histórico (US-40, US-39)
 
@@ -563,7 +561,7 @@ outras histórias.
   Final (calendário, DD/MM/AAAA) e os atalhos Período Letivo (padrão), Esta Semana, Este Mês e
   Próximos 30 Dias, e MUST validar que a Data Inicial não seja posterior à Data Final e que as
   datas sejam válidas no formato esperado.
-- **FR-026**: O sistema MUST oferecer o filtro de Status (Agendada, Reagendada, Em Andamento,
+- **FR-026** [RBN-DEF-01.4]: O sistema MUST oferecer o filtro de Status (Agendada, Reagendada, Em Andamento,
   Realizada, Cancelada ou Todos), combinável com o filtro de período.
 - **FR-027** [RBN-CAD-14.1]: Para o Coordenador de Curso e a Secretaria, o sistema MUST aplicar o
   filtro de Curso já existente (`services_contas.filtro_de_curso`) à lista de Defesas, preenchido
@@ -571,13 +569,13 @@ outras histórias.
   tabela em até 2 segundos ao trocar o curso (US-39, RBN-CAD-14.1; completude da conferência do
   analista-requisitos, 2026-10-30 — detalhe presente na matriz, sem ambiguidade, não constava
   antes nesta spec); Aluno, Docente comum e Membro Externo MUST NOT ver esse filtro.
-- **FR-028**: Sem nenhuma sessão para os filtros escolhidos, o sistema MUST manter os cabeçalhos da
+- **FR-028** [RBN-DEF-01.4]: Sem nenhuma sessão para os filtros escolhidos, o sistema MUST manter os cabeçalhos da
   tabela e exibir "Nenhuma sessão de defesa encontrada para o período e filtros selecionados".
 - **FR-029** [RBN-DEF-01.6]: O sistema MUST exibir, para cada sessão, a janela "Histórico da
   defesa" (somente leitura), com a linha do tempo de todos os eventos (agendamento, reagendamento,
   cancelamento, alteração da banca, acionamento de suplente, início automático, liberação do
   resultado), cada um com data, hora, responsável e a justificativa informada quando houver.
-- **FR-030**: O sistema MUST bloquear o acesso direto a uma sessão por quem não faz parte da banca
+- **FR-030** [RBN-DEF-01.4]: O sistema MUST bloquear o acesso direto a uma sessão por quem não faz parte da banca
   nem é o Professor da Disciplina da turma, exibindo "Você não tem permissão para visualizar esta
   defesa".
 
@@ -638,9 +636,12 @@ outras histórias.
 - O mecanismo geral do filtro de Curso (US-39) já existe (`services_contas.filtro_de_curso`,
   feat-04); esta spec só o aplica à tela Defesas, sem reimplementá-lo nem alterar seu
   comportamento para as demais telas que já o usam.
-- Esta spec toca código já mesclado de outras features em dois pontos (Clarifications, sessão
-  2026-10-30; decisão de Julia Cohen): acrescenta a chamada a
-  `services_defesa.cancelar_por_encerramento` dentro de `services_turmas.encerrar_participacao`
-  (spec 004/005, FR-031); e insere o botão "Agendar defesa" na aba Defesas da turma (spec 004) e
-  na tela de orientandos (spec 006, FR-006). As duas integrações estão registradas como pendência
-  de aprovação em `docs/questoes-a-rever.md`, no mesmo padrão já usado na spec 005 (Q-46).
+- Esta spec toca código já mesclado de outra feature num ponto (Clarifications, sessão
+  2026-10-30; decisão de Julia Cohen): insere o botão "Agendar defesa" na aba Defesas da turma
+  (spec 004) e na tela de orientandos (spec 006, FR-006). Essa integração está registrada como
+  pendência de aprovação em `docs/questoes-a-rever.md` (Q-123), no mesmo padrão já usado na spec
+  005 (Q-46).
+- `services_turmas.encerrar_participacao` (spec 004, já mesclada) continua recusando o
+  encerramento da participação quando há sessão de defesa ativa (MT30); esta spec **não** altera
+  esse arquivo nem essa regra (Clarifications, sessão 2026-10-30 — decisão revertida depois de
+  encontrar o comportamento já existente).
