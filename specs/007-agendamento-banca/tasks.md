@@ -66,16 +66,16 @@ e `popular_demo`
 
 **⚠️ CRITICAL**: MUST estar pronta até **03/11**.
 
-- [ ] T004 [P] Definir, em `sigtcc/apps/defesa/services_defesa.py`, `EVENTO_DA_TRANSICAO` (dict
+- [X] T004 [P] Definir, em `sigtcc/apps/defesa/services_defesa.py`, `EVENTO_DA_TRANSICAO` (dict
   `novo_status → EventoDefesa`) e `TRANSICOES_VALIDAS` (set de pares `(status_atual, novo_status)`
   permitidos para sessão já existente — sem entrada para criação) — research C2
-- [ ] T005 Implementar `registrar_evento(sessao, tipo, justificativa, autor, **dados) ->
+- [X] T005 Implementar `registrar_evento(sessao, tipo, justificativa, autor, **dados) ->
   HistoricoDefesas` em `services_defesa.py` — grava uma linha de `HistoricoDefesas`
   (`hdf_status_anterior`/`hdf_status_novo`, `hdf_data_anterior`/`hdf_hora_anterior`/
   `hdf_data_nova`/`hdf_hora_nova`, `hdf_membro_removido`/`hdf_membro_incluido`,
   `hdf_justificativa`, `hdf_data_hora`, `hdf_usu` aceitando `autor=None`) — contrato §2, FR-023,
   FR-029, RBN-DEF-01.6, RBN-DEF-02.2 (depende de T004)
-- [ ] T006 Implementar `transicionar_status(sessao, novo_status, autor, justificativa=None,
+- [X] T006 Implementar `transicionar_status(sessao, novo_status, autor, justificativa=None,
   **dados_evento) -> Defesas` em `services_defesa.py` — valida `(status_atual, novo_status)`
   contra `TRANSICOES_VALIDAS`, levanta `ValueError` sem gravar nada se inválida, grava
   `def_status` (`update_fields=["def_status"]`) e chama `registrar_evento` — FR-017, FR-023,
