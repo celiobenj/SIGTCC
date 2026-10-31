@@ -54,7 +54,12 @@
     Scenario 4 da User Story 2 — um Membro Externo recém-cadastrado nasce "Aguardando Ativação" e
     precisa ficar imediatamente selecionável na banca, não some da lista por causa do status. O
     cadastro rápido (US-23, fluxo B) reaproveita o formulário de cadastro de Membro Externo da
-    US-05 (spec 002).
+    US-05 (spec 002), pelo atalho do contrato §3 da spec 002 (`cadastro:contas_membro_novo?voltar=`).
+    Pelo mesmo contrato (§1 e §2; índice Q-67), quem inclui alguém na banca chama
+    `services_contas.travar_e_conferir_ativo` na transação da gravação, e a Defesa chama
+    `services_contas.recalcular_validade` para cada Membro Externo afetado ao agendar, alterar a
+    banca, reagendar, cancelar e acionar o suplente (renovação da validade da US-06). Acrescentado
+    no `/speckit-implement` (2026-10-31): o plano não listava essas duas chamadas.
   - `services_contas.filtro_de_curso(usuario, valor)` (feat-04, spec 002-gestao-contas,
     `services_contas.py`) — mecanismo geral do filtro de Curso (US-39); esta spec só **aplica**
     esse componente à tela Defesas (US-40, fluxo alternativo A), sem reimplementá-lo.
@@ -702,3 +707,4 @@ a 006 (índice Q-124). Todos os textos entre aspas nos FR acima são cópia exat
 | MD-05 | Aviso (notificação e e-mail, assunto "SIGTCC: defesa agendada") ao Aluno e a toda a banca, inclusive o Suplente | "Defesa de {aluno} agendada para {quando} ({formato}: {lugar}). TCC: {titulo}. Documento para Defesa: {documento}" ({lugar} = Local ou Link) | US-24 passos 4 e 5 (sem texto exato); FR-018 | A validar |
 | MD-06 | Aviso do reagendamento (assunto "SIGTCC: defesa reagendada") | "Defesa de {aluno} reagendada para {quando} ({formato}: {lugar}). TCC: {titulo}. Justificativa: {justificativa}" | US-24 B.e; FR-019 | A validar |
 | MD-07 | Aviso do cancelamento (assunto "SIGTCC: defesa cancelada") | "A defesa de {aluno} marcada para {quando} foi cancelada. TCC: {titulo}. Justificativa: {justificativa}" | US-24 C.d; FR-020 | A validar |
+| MD-08 | Erro do campo Local com mais de 100 caracteres | "O Local deve ter até 100 caracteres" | US-21 E5 ("informa o limite de até 100 caracteres", sem texto exato); FR-005 | A validar |

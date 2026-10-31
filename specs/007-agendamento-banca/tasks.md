@@ -183,6 +183,13 @@ cancelamento, início automático, lista e histórico. **Bloqueia as Fases 3 a 7
 - [X] T021 [P] Implementar `historico_da_sessao(sessao) -> queryset` em `services_defesa.py` —
   todas as linhas de `HistoricoDefesas` da sessão, ordenadas por `hdf_data_hora`, sem checagem de
   perfil — FR-029, research C7
+- [X] T060 Ligar o contrato da spec 002 (§1 e §2; Q-67) em `services_defesa.py`:
+  `travar_e_conferir_ativo` para cada conta que entra na banca (agendar, alterar_banca; recusa
+  com 404, Q-68) e `recalcular_validade` para os Membros Externos afetados (agendar, alterar_banca,
+  reagendar, cancelar e, no acionamento, só o suplente); serviço `agendar(usuario, tcc_id,
+  dados_basicos, dados_banca)` que junta travas, conferências, conflito, `agendar_sessao` e
+  `confirmar_agendamento` (as views só orquestram) — RBN-CAD-03.3, US-06, US-21 a US-24
+  *(acrescentada no `/speckit-implement`, 2026-10-31)*
 - [X] T059 [P] Acrescentar em `sigtcc/apps/defesa/tests/test_base_defesa.py` os testes da Fase 2b:
   `_travar_membros` (duas transações disputando o mesmo docente), `_verificar_conflito`
   (sobreposição, exclusão da própria sessão, ignora Local), `alterar_banca`, `acionar_suplente`,

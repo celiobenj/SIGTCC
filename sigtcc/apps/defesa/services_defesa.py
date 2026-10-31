@@ -18,7 +18,7 @@ from django.db.models import Exists, OuterRef, Q, Subquery
 from django.http import Http404
 from django.utils import timezone
 
-from sigtcc.apps.cadastro import services_entregas, services_orientacao
+from sigtcc.apps.cadastro import services_contas, services_entregas, services_orientacao
 from sigtcc.apps.cadastro.cargas import CURSO_ENG_COMPUTACAO
 from sigtcc.apps.cadastro.choices import (
     StatusCoorientacao,
@@ -453,6 +453,26 @@ def validar_banca(tcc, banca):
         raise ErroDefesa(mensagens.AVALIADORES_DISTINTOS)
 
 
+def _conferir_contas(membros):
+    """Contrato §1 da spec 002: cada conta que entra na banca é travada e relida no mesmo POST;
+    docente que deixou de ser 'Ativa' no meio da operação é tratado como fora da lista (404,
+    Q-68), sem gravar nada. Chamar depois de _travar_membros (mesma ordem de travas).
+    [US-23][RBN-DEF-02.1][RBN-CAD-01.3][Q-67]
+    """
+    for membro in membros:
+        if not services_contas.travar_e_conferir_ativo(membro):
+            raise Http404
+
+
+def _recalcular_validades(membros):
+    """Contrato §2 da spec 002 (US-06): recalcula a validade de cada Membro Externo afetado,
+    depois de gravar o evento; docentes são ignorados pelo próprio serviço, e uma falha fica só
+    no log, sem desfazer a operação da Defesa. [US-06][US-23][US-24][RBN-CAD-03.3][Q-67]
+    """
+    for membro in membros:
+        services_contas.recalcular_validade(membro)
+
+
 def _quando(sessao):
     """ "DD/MM/AAAA às HH:MM" da sessão, para os avisos. [US-23][US-24]"""
     return f"{sessao.def_data:%d/%m/%Y} às {sessao.def_h_inicio:%H:%M}"
@@ -505,6 +525,7 @@ def alterar_banca(usuario, def_id, nova_banca, justificativa):
         entram = [(novo, papel) for papel, _antigo, novo in trocas if novo is not None]
         entram = [(membro, papel) for membro, papel in entram if membro.pk not in ja_na_banca]
         _travar_membros([membro.pk for membro, _papel in entram])
+        _conferir_contas([membro for membro, _papel in entram])
         sessao = _travar_sessao(def_id)
         _verificar_conflito(entram, sessao.def_data, sessao.def_h_inicio, excluir_sessao=sessao)
         # Apaga antes de criar: a PK (sessão, membro) permite trocar dois membros de papel.
@@ -528,6 +549,9 @@ def alterar_banca(usuario, def_id, nova_banca, justificativa):
                 membro_incluido=novo,
             )
             _avisar_alteracao(sessao, papel, antigo, novo)
+        _recalcular_validades(
+            {pessoa for _papel, antigo, novo in trocas for pessoa in (antigo, novo) if pessoa}
+        )
     return sessao
 
 
@@ -587,6 +611,7 @@ def acionar_suplente(usuario, def_id, papel_substituido, justificativa):
             membro_removido=ausente,
             membro_incluido=suplente,
         )
+        _recalcular_validades([suplente])  # o substituído mantém a validade (spec 002, Q33)
     return sessao
 
 
@@ -701,6 +726,7 @@ def reagendar(usuario, def_id, dados_basicos, justificativa):
             justificativa=justificativa,
         )
         _avisar_aluno_e_banca(sessao, texto, mensagens.MD06_ASSUNTO)
+        _recalcular_validades(atual.values())
     return sessao
 
 
@@ -722,6 +748,7 @@ def cancelar(usuario, def_id, justificativa):
             justificativa=justificativa,
         )
         _avisar_aluno_e_banca(sessao, texto, mensagens.MD07_ASSUNTO)
+        _recalcular_validades(banca_por_papel(sessao).values())
     return sessao
 
 
@@ -859,3 +886,40 @@ def historico_da_sessao(sessao):
         .select_related("hdf_def", "hdf_usu", "hdf_membro_removido", "hdf_membro_incluido")
         .order_by("hdf_data_hora", "hdf_id")
     )
+
+
+# =============================================================================================
+# Agendamento completo (US-21, US-22, US-23 e US-24, fluxo principal; research C2 a C5)
+# =============================================================================================
+
+
+def agendar(usuario, tcc_id, dados_basicos, dados_banca):
+    """Botão Agendar: trava turma → aluno → TCC, confere de novo quem agenda e a elegibilidade
+    (E7 e E2 da US-21, com a mensagem E7), valida a banca (US-23 E2 a E4), trava e confere as
+    contas da banca (contrato §1 da spec 002), checa o conflito de horário de toda a banca
+    (US-22), cria a sessão "Agendada" e confirma (avisos e cancelamento da troca, US-24) e
+    recalcula a validade dos Membros Externos (contrato §2 da spec 002). Qualquer recusa: nada
+    gravado. `dados_banca` = {primeiro_avaliador, segundo_avaliador, suplente}.
+    [US-21][US-22][US-23][US-24][RBN-DEF-01.1][RBN-DEF-01.3][RBN-DEF-02.1][RBN-DEF-03.1]
+    [RBN-DEF-03.2][FR-001][FR-003][FR-009][FR-014][FR-018]
+    """
+    with transaction.atomic():
+        tcc = _travar_tcc(tcc_id)
+        if not (permissoes_defesa.pode_agendar(usuario, tcc) and tcc_elegivel(tcc)):
+            raise ErroDefesa(mensagens.TCC_NAO_AGENDAVEL)
+        banca = {
+            PapelBanca.PRIMEIRO_AVALIADOR: dados_banca.get("primeiro_avaliador"),
+            PapelBanca.SEGUNDO_AVALIADOR: dados_banca.get("segundo_avaliador"),
+            PapelBanca.SUPLENTE: dados_banca.get("suplente"),
+        }
+        validar_banca(tcc, banca)
+        presidente = services_orientacao.orientador_atual(tcc).doc
+        membros = [(presidente, PapelBanca.ORIENTADOR_PRESIDENTE)]
+        membros += [(membro, papel) for papel, membro in banca.items() if membro is not None]
+        _travar_membros([membro.pk for membro, _papel in membros])
+        _conferir_contas([membro for membro, _papel in membros])
+        _verificar_conflito(membros, dados_basicos["data"], dados_basicos["h_inicio"])
+        sessao = agendar_sessao(tcc, dados_basicos, dados_banca, usuario)
+        confirmar_agendamento(sessao, usuario)
+        _recalcular_validades([membro for membro, _papel in membros])
+    return sessao

@@ -59,3 +59,11 @@ MD07_DEFESA_CANCELADA = (
     "Justificativa: {justificativa}"
 )
 MD07_ASSUNTO = "SIGTCC: defesa cancelada"
+
+# US-21 (E2, E4, E6, E7). [US-21][RBN-DEF-01.1][RBN-DEF-01.3]
+NENHUM_TCC_DISPONIVEL = "Nenhum TCC disponível para agendamento"
+DATA_NO_PASSADO = "A data e o horário devem ser posteriores ao momento atual"
+LINK_INVALIDO = "O link deve começar com https:// e ter até 500 caracteres"
+TCC_NAO_AGENDAVEL = "Este TCC não pode ser agendado por você"
+# MD-08 (PROVISÓRIA): a US-21 E5 só diz que o sistema "informa o limite de até 100 caracteres".
+MD08_LOCAL_LONGO = "O Local deve ter até 100 caracteres"

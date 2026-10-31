@@ -12,17 +12,20 @@ from unittest import mock
 from django.core.exceptions import PermissionDenied
 from django.core.management import call_command
 from django.db import connection
+from django.http import Http404
 from django.utils import timezone
 
+from sigtcc.apps.cadastro import services_contas
 from sigtcc.apps.cadastro.choices import (
+    StatusConta,
     StatusSolicitacao,
     StatusTCC,
     StatusTurma,
     TipoEntrega,
     TipoSolicitacao,
 )
-from sigtcc.apps.cadastro.models import Notificacoes, TCCs, Turmas
-from sigtcc.apps.cadastro.tests.apoio_acesso import criar_secretaria
+from sigtcc.apps.cadastro.models import Notificacoes, TCCs, Turmas, Usuarios
+from sigtcc.apps.cadastro.tests.apoio_acesso import criar_membro_externo, criar_secretaria
 from sigtcc.apps.cadastro.tests.apoio_orientacao import criar_pedido, vincular_coorientador
 from sigtcc.apps.cadastro.tests.apoio_tcc import cadastrar_entrega, enviar_link
 from sigtcc.apps.cadastro.tests.apoio_turmas import (
@@ -1072,3 +1075,75 @@ class TesteHistorico(TesteTurmas):
             ],
         )
         self.assertEqual(eventos[1].hdf_usu, orientador)
+
+
+class TesteAgendar(TesteTurmas):
+    """agendar: o botão Agendar de ponta a ponta no serviço. [US-21][US-22][US-23][US-24]
+    [RBN-DEF-01.3][RBN-DEF-03.1][RBN-DEF-03.2][Q-67]
+    """
+
+    BASICOS = {
+        "data": datetime(2026, 11, 20).date(),
+        "h_inicio": time(14, 0),
+        "formato": FormatoSessao.PRESENCIAL,
+        "local": "Laboratório LSI",
+    }
+
+    def setUp(self):
+        self.tcc, self.professor, self.orientador = tcc_apto()
+        self.banca = {"primeiro_avaliador": docente(), "segundo_avaliador": docente()}
+
+    def agendar(self, usuario=None, banca=None):
+        return services_defesa.agendar(
+            usuario or self.orientador, self.tcc.pk, self.BASICOS, banca or self.banca
+        )
+
+    def test_grava_confirma_e_avisa(self):
+        sessao = self.agendar()
+        self.assertEqual(sessao.def_status, StatusSessao.AGENDADA)
+        self.assertEqual(Notificacoes.objects.filter(not_usu=self.tcc.tcc_alu.alu).count(), 1)
+
+    def test_quem_nao_agenda_ou_tcc_nao_elegivel(self):
+        with self.assertRaises(services_defesa.ErroDefesa) as erro:
+            self.agendar(usuario=self.professor)
+        self.assertEqual(erro.exception.mensagem, "Este TCC não pode ser agendado por você")
+        self.agendar()
+        with self.assertRaises(services_defesa.ErroDefesa):
+            self.agendar(banca={"primeiro_avaliador": docente(), "segundo_avaliador": docente()})
+        self.assertEqual(Defesas.objects.filter(def_tcc=self.tcc).count(), 1)
+
+    def test_conflito_ou_banca_invalida_nao_grava_nada(self):
+        outro, _p, outro_ori = tcc_apto()
+        agendar_sessao_de(
+            outro,
+            outro_ori,
+            {"primeiro_avaliador": self.banca["segundo_avaliador"], "segundo_avaliador": docente()},
+        )
+        with self.assertRaises(services_defesa.ConflitoDeHorario):
+            self.agendar()
+        with self.assertRaises(services_defesa.ErroDefesa):
+            self.agendar(
+                banca={"primeiro_avaliador": self.orientador, "segundo_avaliador": docente()}
+            )
+        self.assertFalse(Defesas.objects.filter(def_tcc=self.tcc).exists())
+        self.assertFalse(Notificacoes.objects.filter(not_usu=self.tcc.tcc_alu.alu).exists())
+
+    def test_docente_inativado_no_meio_e_recusado(self):
+        Usuarios.objects.filter(pk=self.banca["primeiro_avaliador"].pk).update(
+            usu_status=StatusConta.INATIVA
+        )
+        with self.assertRaises(Http404):
+            self.agendar()
+        self.assertFalse(Defesas.objects.filter(def_tcc=self.tcc).exists())
+
+    def test_renova_a_validade_do_membro_externo_expirado(self):
+        externo = criar_membro_externo(
+            status=StatusConta.EXPIRADA, validade=datetime(2026, 1, 31).date()
+        )
+        with mock.patch.object(
+            services_contas, "data_de_hoje", return_value=datetime(2026, 11, 1).date()
+        ):
+            self.agendar(banca={"primeiro_avaliador": externo, "segundo_avaliador": docente()})
+        externo.refresh_from_db()
+        self.assertEqual(externo.usu_status, StatusConta.ATIVA)
+        self.assertEqual(externo.membrosexternos.mem_validade_ate, datetime(2026, 11, 27).date())
