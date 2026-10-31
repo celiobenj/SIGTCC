@@ -286,11 +286,13 @@ sessões novas simultâneas
 **Independent Test**: com dois TCCs e banca parcialmente sobreposta, tentar agendar a segunda
 sessão no intervalo de um membro já ocupado e verificar a rejeição, sem gravar nada
 
-- [ ] T039 [US3] `sigtcc/apps/defesa/tests/test_us22_conflito.py` — os 6 cenários de aceite da
+- [X] T039 [US3] `sigtcc/apps/defesa/tests/test_us22_conflito.py` — os 6 cenários de aceite da
   User Story 3 contra `_verificar_conflito`/`_travar_membros` (T007/T008, Fase 2b) já integrados
   nas views `agendar` (T026), `alterar_banca` (T035) e `reagendar` (T042) — incluindo a corrida de
   duas sessões novas simultâneas para o mesmo docente (research C3) — FR-014 a FR-016 (depende de
   T026, T035, T042)
+  *O cenário 6 (reagendamento) é testado no serviço `reagendar`, já pronto na Fase 2b; o teste
+  pela tela fica na T045.*
 
 **Checkpoint**: User Story 3 coberta por teste próprio, sem nenhuma implementação pendente (toda a
 lógica já está na Fase 2b).
