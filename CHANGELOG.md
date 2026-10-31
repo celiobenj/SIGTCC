@@ -4,7 +4,35 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 
 ## [Não lançado]
 
-Nada ainda.
+### Adicionado
+
+- Agendamento e Banca (spec 007, feat-07; US-21, US-22, US-23, US-24 e US-40, com a US-39 na
+  tela Defesas), no app `defesa`, sem tabela nem coluna nova:
+  - "Agendar sessão de defesa": TCC só entre os Aptos sem sessão ativa e pelo perfil do curso
+    (Orientador em Eng. Comp., Professor da Disciplina em SI e LC), Local ou Link da Videochamada
+    e reserva de 1 hora; a partir do menu "Defesas", da aba "Defesas" da turma e da tela de
+    orientandos.
+  - Banca com Presidente fixo, listas sem a orientação e sem quem já foi escolhido, cadastro rápido
+    do Membro Externo, "Alterar banca" e "Acionar suplente".
+  - Conflito de horário da banca na janela de 1 hora, com todos os membros numa única mensagem e
+    trava dos docentes contra agendamentos simultâneos.
+  - Confirmação com avisos ao Aluno e à banca (com o link do Documento para Defesa), cancelamento
+    da troca de orientador pendente, "Reagendar", "Cancelar sessão" e início automático ao chegar
+    o horário (nas telas e pelo comando `iniciar_sessoes`).
+  - Tela "Defesas" com visibilidade por perfil e filtros de período, Status e Curso; janelas
+    "Sessão de defesa" e "Histórico da defesa".
+  - Contratos para a feat-08 e a feat-09: status e histórico da sessão, membros efetivos, filtro de
+    período e o template da sessão com os blocos reservados.
+- `popular_demo` com o cenário do roteiro manual da spec 007 (TCCs Aptos sem sessão, uma sessão em
+  cada status, suplentes) e a tabela de contas do roteiro.
+
+### Alterado
+
+- A Defesa passa a renovar a validade do Membro Externo nos eventos de banca e a conferir a conta
+  de quem entra na banca (contrato da spec 002; Q-67).
+- Menu com o item "Defesas" (também para o Membro Externo), aba "Defesas" na turma, link "Agendar
+  defesa" na tela de orientandos e as mensagens de acesso negado da US-21 E7 e da US-40 E5 (IC-01
+  a IC-06; Q-123).
 
 ## [v0.2.1] - 25/10/2026 - Hotfix: nomes iguais às US v3.4 e aos diagramas
 

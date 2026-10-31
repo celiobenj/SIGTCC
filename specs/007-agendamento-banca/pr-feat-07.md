@@ -4,7 +4,7 @@
 
 **Spec:** `specs/007-agendamento-banca/` (`spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`, `tasks.md`)
 
-**Responsável:** Julia Cohen (spec e implementação); responsável pelas US de origem: Célio Benjamim (US-21 a 24 e 40) e Maria Luísa Gomes (US-39, mecanismo do filtro de Curso)
+**Responsável:** Célio Benjamim (R do épico no RACI; Leandra Matos, A); spec e implementação: Julia Cohen. Responsáveis pelas US de origem: Célio Benjamim (US-21 a 24 e 40) e Maria Luísa Gomes (US-39, mecanismo do filtro de Curso)
 
 ### 1. Resumo da Alteração
 
@@ -15,9 +15,10 @@ Implementa o agendamento da defesa e a banca no app `defesa`, sem tabela nem col
   sessão ativa e sob a responsabilidade do usuário pelo curso: Orientador em Eng. Comp., Professor
   da Disciplina em SI e LC), com Local ou Link da Videochamada e a reserva de 1 hora; tela
   "Defesas", aba "Defesas" da turma e link "Agendar defesa" na tela de orientandos.
-- **Banca (US-23):** Presidente fixo (orientador atual), listas sem a orientação e sem quem já foi
-  escolhido, cadastro rápido do Membro Externo (atalho do contrato §3 da spec 002), "Alterar
-  banca" e "Acionar suplente", com justificativa e evento no histórico.
+- **Banca (US-23):** Presidente fixo (orientador atual), listas só com docentes 'Ativa' e Membros
+  Externos, sem a orientação e sem quem já foi escolhido, cadastro rápido do Membro Externo
+  (atalho do contrato §3 da spec 002), "Alterar banca" e "Acionar suplente", com justificativa e
+  evento no histórico.
 - **Conflito de horário (US-22):** rejeita, numa única mensagem com o nome e o papel de cada
   membro, qualquer sobreposição na janela de 1 hora; trava os docentes propostos antes da
   consulta (duas sessões novas para o mesmo docente: só uma é gravada).
@@ -31,16 +32,18 @@ Implementa o agendamento da defesa e a banca no app `defesa`, sem tabela nem col
 - **Contratos para a feat-08 e a feat-09** (`contracts/servicos-defesa.md`): `agendar_sessao`,
   `transicionar_status`, `registrar_evento`, `membros_efetivos`, `historico_da_sessao`, filtro de
   período (`filtro_de_periodo`, `FiltroPeriodoForm`), `sessao.html` com os blocos reservados e o
-  stub `descartar_avaliacoes`.
+  stub `services_defesa.descartar_avaliacoes` (no lugar de `services_avaliacoes.descartar_avaliacoes`
+  até a feat-08; contrato §6).
 - **Contrato da spec 002 ligado (Q-67):** `travar_e_conferir_ativo` ao incluir alguém na banca e
   `recalcular_validade` dos Membros Externos nos eventos de banca (US-06).
-- **`popular_demo`:** cenário completo do roteiro da T056 (contas, TCCs Aptos sem sessão, sessões
-  em cada status, suplentes) e a tabela do roteiro no fim.
+- **`popular_demo`:** cenário completo do roteiro da T056 (contas, docentes extras para as bancas,
+  TCCs Aptos sem sessão, sessões em cada status, suplentes) e a tabela do roteiro no fim.
 
-**Decisões tomadas na implementação** (spec, Clarifications da sessão 2026-10-31): permissões de
-alterar banca, reagendar e cancelar pela matriz (perfil que agenda pelo curso; Secretaria do curso
-em reagendar e cancelar); janela da sessão para banca, Professor da Disciplina, Secretaria do curso
-e Aluno; histórico com todas as sessões do TCC; período letivo atual pelas turmas ativas.
+**Decisões tomadas na implementação** (spec, Clarifications da sessão 2026-10-31, Julia Cohen):
+permissões de alterar banca, reagendar e cancelar pela matriz (perfil que agenda pelo curso;
+Secretaria do curso em reagendar e cancelar); janela da sessão para banca (inclusive o Suplente),
+Professor da Disciplina, Secretaria do curso e Aluno do próprio TCC; histórico com todas as
+sessões do TCC; período letivo atual pelas turmas ativas.
 
 **Itens de configuração em código de specs já mescladas (IC-01 a IC-06, índice Q-123, aprovação de Célio Benjamim):**
 
@@ -53,15 +56,15 @@ e Aluno; histórico com todas as sessões do TCC; período letivo atual pelas tu
 | IC-05 | `popular_demo.py` (005/006) | + docentes extras, TCCs Aptos sem sessão, sessões em cada status pelos serviços e o roteiro da T056 |
 | IC-06 | `cadastro/views.py` (003) | + mensagens próprias de 403 da US-21 E7 e da US-40 E5 em `MENSAGENS_403` |
 
-Nenhum IC muda comportamento de outra feature; os testes das specs de origem continuam passando.
-`services_turmas.encerrar_participacao` (spec 004) não foi alterado: o MT30 continua recusando o
-encerramento com sessão ativa.
+Todos os IC são só acréscimo: nenhum muda o comportamento de outra feature, e os testes das specs
+de origem continuam passando. `services_turmas.encerrar_participacao` (spec 004) não foi alterado:
+o MT30 continua recusando o encerramento com sessão ativa.
 
 ### 2. Rastreabilidade com o Projeto
 
 * **Feature Impactada:** Feature 07 – Agendamento e Banca
 * **Histórias de Usuário Atendidas:** US-21, US-22, US-23, US-24, US-40 (e a aplicação da US-39 à tela Defesas)
-* **Cartão no Trello:** [preencher: cartão da Feat-07 no quadro do Sprint]
+* **Cartão no Trello:** 4.4 Interface e documentos do módulo de Defesa
 
 ### 3. Checklist Técnico da Equipe (Definition of Done)
 
@@ -72,18 +75,19 @@ encerramento com sessão ativa.
 - [x] A interface segue a paleta e os padrões do protótipo de 17/10: telas conferidas em 360, 768 e 1280 px, sem problema (T056).
 - [x] Não há quebras de layout nem erros acusados no console do navegador com o sistema rodando (T056, 31/10/2026).
 
-**Testes automatizados:** suíte completa em 31/10/2026, depois do commit `6b040af`, com 1308
-testes: todos passando, mais 1 falha esperada já marcada como `expectedFailure` (anterior a esta
-spec). Rodar com `--noinput`: com `--keepdb`, a segunda rodada seguida perde as cargas das
-migrações no banco de teste depois dos `TransactionTestCase`; o problema já existia antes desta
-spec (reproduzido no commit `5af9631`).
+**Testes automatizados:** suíte completa em 31/10/2026, no commit `90a4e90`
+(`manage.py test --noinput --parallel 4`): 1308 testes, todos passando, mais 1 falha esperada já
+marcada como `expectedFailure` (anterior a esta spec). Rodar com `--noinput`, sem `--keepdb`: com
+`--keepdb`, a segunda rodada seguida perde as cargas das migrações no banco de teste depois dos
+`TransactionTestCase`; o problema já existia antes desta spec (reproduzido no commit `5af9631`).
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
 Roteiro manual do `quickstart.md` (seção 2, passos a a n) executado por Julia Cohen em
-31/10/2026, sobre o cenário do `popular_demo --local`, sem defeito; conferência visual em 360, 768
-e 1280 px sem problema; console do navegador sem erros. Registro na seção 5 do `quickstart.md`
-(T056).
+31/10/2026, sobre o cenário do `popular_demo --local`: **sem defeito**. Conferência visual em 360,
+768 e 1280 px sem problema (inclui o JavaScript da troca de formato e da seção Banca,
+`alternar_formato.js` e `banca.js`) e console do navegador sem erros. Registro na seção 5 do
+`quickstart.md` (T056).
 
 Os cenários de aceite também estão cobertos por testes automatizados (um ou mais por cenário
 Dado/Quando/Então): `test_us21_agendar.py`, `test_us23_banca.py`, `test_us22_conflito.py` (com a
@@ -105,5 +109,24 @@ orientandos (US-40 B) e a transição para "Realizada" (US-24 E, feat-08).
 - Q-123: aprovação dos IC-01 a IC-06 (Célio Benjamim, configuração).
 - Q-124: os 13 textos provisórios MD-01 a MD-13 (Profa. Diana).
 - Q-79: agendar no servidor o comando `iniciar_sessoes` (Célio Benjamim).
-- Q-67: ciência do contrato da spec 002 ligado pela Defesa (recálculo da validade e conferência da conta).
-- `services_avaliacoes.descartar_avaliacoes` é stub (só log) até a feat-08 entregar a função real (contrato §6).
+- Q-67: contrato da spec 002 com a Defesa; esta spec liga o recálculo da validade do Membro
+  Externo, a trava e conferência da conta ao incluir na banca, o atalho de cadastro e as listas só
+  com contas 'Ativa'; continua aberto o item 4 (rotina diária de expiração no servidor).
+- Q-125: `services_defesa.descartar_avaliacoes` é stub (só log) até a feat-08 entregar
+  `services_avaliacoes.descartar_avaliacoes` real (contrato §6; Célio Benjamim).
+- Q-126: confirmar o nome e o ícone do item de menu "Defesas" (IC-02).
+
+**Aviso ao revisor:** dois títulos de commit ficaram sem verbo no imperativo (`61cd26b` "tela de
+agendamento da defesa (US-21)" e `6d5c222` "cenarios de conflito de horario da banca (US-22)");
+já estão no `origin`, e corrigi-los exigiria reescrever o histórico.
+
+### 5. Revisão por Pares (Peer Review)
+
+* **Revisor Designado:** Célio Benjamim (consome os contratos da feature na feat-08 e na feat-09)
+* **Parecer do Revisor:**
+
+[ ] Aprovado integralmente para merge
+
+[ ] Solicitação de ajustes (detalhar nos comentários)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
