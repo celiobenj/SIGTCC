@@ -130,10 +130,10 @@ e `popular_demo`
 **Purpose**: travas, conflito de horário, alteração de banca, suplente, confirmação, reagendamento,
 cancelamento, início automático, lista e histórico. **Bloqueia as Fases 3 a 7.**
 
-- [ ] T007 [P] Implementar `_travar_membros(ids_usuarios)` em `services_defesa.py` —
+- [X] T007 [P] Implementar `_travar_membros(ids_usuarios)` em `services_defesa.py` —
   `Usuarios.objects.filter(pk__in=sorted(ids_usuarios)).select_for_update().order_by("pk")` —
   research C3, achado B2/B3 da revisão do `arquiteto-django`
-- [ ] T008 Implementar `_verificar_conflito(ids_usuarios, data, h_inicio, excluir_sessao=None)` em
+- [X] T008 Implementar `_verificar_conflito(ids_usuarios, data, h_inicio, excluir_sessao=None)` em
   `services_defesa.py` — janela de 1h (ou início real, para sessões Em Andamento); desconsidera a
   própria sessão no reagendamento; levanta exceção com os nomes de todos os membros
   indisponíveis numa única mensagem, sem gravar nada — FR-014, FR-015, FR-016, research C3

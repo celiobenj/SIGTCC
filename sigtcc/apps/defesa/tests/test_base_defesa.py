@@ -410,3 +410,126 @@ class TestePopularDemo(TesteTurmas):
             )
         )
         self.assertEqual(cursos_com_apto, {EC, SI, LC})
+
+
+class TesteVerificarConflito(TesteTurmas):
+    """_verificar_conflito: janela de 1 hora, só membros da banca, nada gravado.
+    [US-22][RBN-DEF-03.1][FR-014][FR-015][FR-016]
+    """
+
+    DIA = datetime(2026, 11, 20).date()
+
+    def setUp(self):
+        self.tcc, _professor, self.orientador = tcc_apto()
+        self.av1, self.av2 = docente(), docente()
+        self.sessao = agendar_sessao_de(
+            self.tcc,
+            self.orientador,
+            {"primeiro_avaliador": self.av1, "segundo_avaliador": self.av2},
+            data=self.DIA,
+            h_inicio=time(9, 0),
+        )
+
+    def conferir(self, membros, hora, dia=None, excluir=None):
+        services_defesa._verificar_conflito(membros, dia or self.DIA, hora, excluir)
+
+    def test_sobreposicao_rejeita_com_o_nome_e_o_papel(self):
+        with self.assertRaises(services_defesa.ConflitoDeHorario) as erro:
+            self.conferir([(self.av1, PapelBanca.SEGUNDO_AVALIADOR)], time(9, 30))
+        self.assertEqual(erro.exception.membros, [(self.av1, PapelBanca.SEGUNDO_AVALIADOR)])
+        self.assertIn(f"{self.av1.usu_nome} (2º Avaliador)", erro.exception.mensagem)
+
+    def test_sessoes_encostadas_nao_conflitam(self):
+        self.conferir([(self.av1, PapelBanca.PRIMEIRO_AVALIADOR)], time(10, 0))
+        self.conferir([(self.av1, PapelBanca.PRIMEIRO_AVALIADOR)], time(8, 0))
+
+    def test_varios_membros_numa_unica_mensagem(self):
+        livre = docente()
+        membros = [
+            (self.orientador, PapelBanca.ORIENTADOR_PRESIDENTE),
+            (livre, PapelBanca.PRIMEIRO_AVALIADOR),
+            (self.av2, PapelBanca.SUPLENTE),
+        ]
+        with self.assertRaises(services_defesa.ConflitoDeHorario) as erro:
+            self.conferir(membros, time(8, 30))
+        self.assertEqual(
+            erro.exception.membros,
+            [(self.orientador, PapelBanca.ORIENTADOR_PRESIDENTE), (self.av2, PapelBanca.SUPLENTE)],
+        )
+        mensagem = erro.exception.mensagem
+        self.assertIn(f"{self.orientador.usu_nome} (Orientador)", mensagem)
+        self.assertIn(f"{self.av2.usu_nome} (Suplente)", mensagem)
+        self.assertNotIn(livre.usu_nome, mensagem)
+
+    def test_conta_agendada_reagendada_e_em_andamento(self):
+        for status in (StatusSessao.REAGENDADA, StatusSessao.EM_ANDAMENTO):
+            with self.subTest(status=status):
+                tcc, _professor, orientador = tcc_apto()
+                membro = docente()
+                avancar_para(
+                    agendar_sessao_de(
+                        tcc,
+                        orientador,
+                        {"primeiro_avaliador": membro, "segundo_avaliador": docente()},
+                        data=self.DIA,
+                        h_inicio=time(14, 0),
+                    ),
+                    status,
+                )
+                with self.assertRaises(services_defesa.ConflitoDeHorario):
+                    self.conferir([(membro, PapelBanca.PRIMEIRO_AVALIADOR)], time(14, 30))
+
+    def test_ignora_sessao_cancelada_e_realizada(self):
+        for status in (StatusSessao.CANCELADA, StatusSessao.REALIZADA):
+            with self.subTest(status=status):
+                tcc, _professor, orientador = tcc_apto()
+                membro = docente()
+                avancar_para(
+                    agendar_sessao_de(
+                        tcc,
+                        orientador,
+                        {"primeiro_avaliador": membro, "segundo_avaliador": docente()},
+                        data=self.DIA,
+                        h_inicio=time(16, 0),
+                    ),
+                    status,
+                )
+                self.conferir([(membro, PapelBanca.PRIMEIRO_AVALIADOR)], time(16, 0))
+
+    def test_desconsidera_a_propria_sessao(self):
+        self.conferir([(self.av1, PapelBanca.PRIMEIRO_AVALIADOR)], time(9, 30), excluir=self.sessao)
+
+    def test_janela_que_passa_da_meia_noite(self):
+        tcc, _professor, orientador = tcc_apto()
+        membro = docente()
+        agendar_sessao_de(
+            tcc,
+            orientador,
+            {"primeiro_avaliador": membro, "segundo_avaliador": docente()},
+            data=self.DIA,
+            h_inicio=time(23, 30),
+        )
+        with self.assertRaises(services_defesa.ConflitoDeHorario):
+            self.conferir(
+                [(membro, PapelBanca.PRIMEIRO_AVALIADOR)],
+                time(0, 0),
+                dia=datetime(2026, 11, 21).date(),
+            )
+
+    def test_mesmo_local_com_banca_diferente_nao_conflita(self):
+        self.conferir([(docente(), PapelBanca.PRIMEIRO_AVALIADOR)], time(9, 0))
+
+    def test_nao_grava_nada(self):
+        antes = (Defesas.objects.count(), BancaDefesa.objects.count())
+        with self.assertRaises(services_defesa.ConflitoDeHorario):
+            self.conferir([(self.av1, PapelBanca.PRIMEIRO_AVALIADOR)], time(9, 0))
+        self.assertEqual((Defesas.objects.count(), BancaDefesa.objects.count()), antes)
+
+
+class TesteTravarMembros(TesteTurmas):
+    """_travar_membros trava os usuários em ordem de pk, sem repetir. [US-22][RBN-DEF-03.1]"""
+
+    def test_ordem_por_pk_sem_repeticao(self):
+        a, b = docente(), docente()
+        travados = services_defesa._travar_membros([b.pk, a.pk, b.pk])
+        self.assertEqual([u.pk for u in travados], sorted([a.pk, b.pk]))

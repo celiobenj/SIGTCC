@@ -9,6 +9,7 @@ transaction.atomic() (research C2 e C3).
 """
 
 import logging
+from datetime import datetime, timedelta
 
 from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
@@ -16,8 +17,9 @@ from django.utils import timezone
 from sigtcc.apps.cadastro import services_orientacao
 from sigtcc.apps.cadastro.cargas import CURSO_ENG_COMPUTACAO
 from sigtcc.apps.cadastro.choices import StatusOrientacao, StatusTCC, StatusTurma
-from sigtcc.apps.cadastro.models import Orientacoes, TCCs
+from sigtcc.apps.cadastro.models import Orientacoes, TCCs, Usuarios
 from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA
+from sigtcc.apps.defesa import mensagens
 from sigtcc.apps.defesa.choices import EventoDefesa, FormatoSessao, PapelBanca, StatusSessao
 from sigtcc.apps.defesa.models import (
     BancaDefesa,
@@ -28,6 +30,44 @@ from sigtcc.apps.defesa.models import (
 )
 
 logger = logging.getLogger("sigtcc.defesa")
+
+# Reserva automática de cada sessão (RBN-DEF-01.1, campo 3). [US-21][US-22][RBN-DEF-03.1]
+DURACAO_DA_SESSAO = timedelta(hours=1)
+
+
+class ErroDefesa(Exception):
+    """Ação recusada com a mensagem exata da US e, se houver, o campo a destacar (a view mostra a
+    mensagem e volta ao formulário, sem gravar nada). [US-21][US-22][US-23][US-24]
+    """
+
+    def __init__(self, mensagem, campo=None):
+        """Guarda a mensagem e o campo. [US-21][US-22][US-23][US-24]"""
+        super().__init__(mensagem)
+        self.mensagem = mensagem
+        self.campo = campo
+
+
+class ConflitoDeHorario(ErroDefesa):
+    """Um ou mais membros da banca têm outra sessão ativa no intervalo de 1 hora; `membros` traz
+    todos eles, com o papel, para uma única mensagem (US-22, E3).
+    [US-22][RBN-DEF-03.1][FR-014][FR-016]
+    """
+
+    def __init__(self, membros):
+        """Monta a MD-01 com "Nome (papel)" de cada membro. [US-22][RBN-DEF-03.1][FR-016]"""
+        nomes = ", ".join(f"{usuario.usu_nome} ({_rotulo(papel)})" for usuario, papel in membros)
+        super().__init__(mensagens.MD01_CONFLITO_DE_HORARIO.format(membros=nomes))
+        self.membros = membros
+
+
+def _rotulo(papel):
+    """Papel na banca para as mensagens ("Orientador" em vez de "Orientador (Presidente)").
+    [US-22][US-23][RBN-DEF-02.1]
+    """
+    if papel == PapelBanca.ORIENTADOR_PRESIDENTE:
+        return "Orientador"
+    return PapelBanca(papel).label
+
 
 # =============================================================================================
 # Status da sessão e histórico da defesa (research C2; contrato §1 e §2)
@@ -262,3 +302,53 @@ def descartar_avaliacoes(sessao, membro=None):
         sessao.pk,
         membro.pk if membro is not None else "todos",
     )
+
+
+# =============================================================================================
+# Travas e conflito de horário (research C3; US-22)
+# =============================================================================================
+
+
+def _travar_membros(ids_usuarios):
+    """Trava, em ordem fixa de pk (evita deadlock), os usuários propostos para a banca. Serializa
+    duas transações que disputam o mesmo docente, mesmo quando nenhuma das sessões em jogo existe
+    ainda (research C3; bloqueante B2 da revisão do plano). Chamar dentro de transaction.atomic(),
+    antes de _verificar_conflito. [US-22][RBN-DEF-03.1][FR-014][FR-016]
+    """
+    return list(
+        Usuarios.objects.filter(pk__in=sorted(set(ids_usuarios))).select_for_update().order_by("pk")
+    )
+
+
+def _janela(data, h_inicio):
+    """Início e fim da reserva de 1 hora. [US-22][RBN-DEF-01.1][RBN-DEF-03.1]"""
+    inicio = datetime.combine(data, h_inicio)
+    return inicio, inicio + DURACAO_DA_SESSAO
+
+
+def _verificar_conflito(membros, data, h_inicio, excluir_sessao=None):
+    """Levanta ConflitoDeHorario se algum membro tem outra sessão "Agendada", "Reagendada" ou "Em
+    Andamento" que se sobrepõe à janela de 1 hora (a da sessão Em Andamento conta do início, que é
+    o horário marcado, US-22 E4). Sessões encostadas (09:00-10:00 e 10:00) não conflitam. O Local
+    não entra (US-22, fluxo B). `membros` = pares (Usuarios, papel); `excluir_sessao` é a própria
+    sessão no reagendamento e na alteração da banca. Não grava nada; chamar depois de
+    _travar_membros. [US-22][RBN-DEF-03.1][FR-014][FR-015][FR-016]
+    """
+    membros = list(membros)
+    inicio, fim = _janela(data, h_inicio)
+    linhas = BancaDefesa.objects.select_related("ban_def").filter(
+        ban_usu_id__in=[usuario.pk for usuario, _papel in membros],
+        ban_def__def_status__in=STATUS_SESSAO_ATIVA,
+        # A janela pode passar da meia-noite: confere o dia anterior e o seguinte.
+        ban_def__def_data__range=(data - timedelta(days=1), data + timedelta(days=1)),
+    )
+    if excluir_sessao is not None:
+        linhas = linhas.exclude(ban_def=excluir_sessao)
+    ocupados = set()
+    for linha in linhas:
+        outro_inicio, outro_fim = _janela(linha.ban_def.def_data, linha.ban_def.def_h_inicio)
+        if outro_inicio < fim and inicio < outro_fim:
+            ocupados.add(linha.ban_usu_id)
+    em_conflito = [(usuario, papel) for usuario, papel in membros if usuario.pk in ocupados]
+    if em_conflito:
+        raise ConflitoDeHorario(em_conflito)

@@ -670,3 +670,13 @@ outras histórias.
   encerramento da participação quando há sessão de defesa ativa (MT30); esta spec **não** altera
   esse arquivo nem essa regra (Clarifications, sessão 2026-10-30 — decisão revertida depois de
   encontrar o comportamento já existente).
+
+## Mensagens a validar com a PO
+
+Textos exibidos ao usuário sem texto exato nas US — **PROVISÓRIOS**, pela convenção das specs 003
+a 006 (índice Q-124). Todos os textos entre aspas nos FR acima são cópia exata das US. Ficam em
+`sigtcc/apps/defesa/mensagens.py`.
+
+| ID | Uso | Texto proposto (PROVISÓRIO) | Origem | Situação |
+|---|---|---|---|---|
+| MD-01 | Conflito de horário de um ou mais membros da banca, numa única mensagem | "Os seguintes membros da banca já possuem uma defesa agendada neste horário: {membros}" ({membros} = "Nome (papel)", separados por vírgula) | US-22 E1 a E4 (só exemplo: "O docente selecionado já possui uma defesa agendada neste horário"); FR-016 | A validar |
