@@ -75,11 +75,11 @@ o MT30 continua recusando o encerramento com sessão ativa.
 - [x] A interface segue a paleta e os padrões do protótipo de 17/10: telas conferidas em 360, 768 e 1280 px, sem problema (T056).
 - [x] Não há quebras de layout nem erros acusados no console do navegador com o sistema rodando (T056, 31/10/2026).
 
-**Testes automatizados:** suíte completa em 31/10/2026, no commit `90a4e90`
+**Testes automatizados:** suíte completa em 31/10/2026, no commit `1440564`
 (`manage.py test --noinput --parallel 4`): 1308 testes, todos passando, mais 1 falha esperada já
 marcada como `expectedFailure` (anterior a esta spec). Rodar com `--noinput`, sem `--keepdb`: com
 `--keepdb`, a segunda rodada seguida perde as cargas das migrações no banco de teste depois dos
-`TransactionTestCase`; o problema já existia antes desta spec (reproduzido no commit `5af9631`).
+`TransactionTestCase`; o problema já existia antes desta spec (reproduzido no commit `88fe62a`).
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
@@ -116,8 +116,8 @@ orientandos (US-40 B) e a transição para "Realizada" (US-24 E, feat-08).
   `services_avaliacoes.descartar_avaliacoes` real (contrato §6; Célio Benjamim).
 - Q-126: confirmar o nome e o ícone do item de menu "Defesas" (IC-02).
 
-**Aviso ao revisor:** dois títulos de commit ficaram sem verbo no imperativo (`61cd26b` "tela de
-agendamento da defesa (US-21)" e `6d5c222` "cenarios de conflito de horario da banca (US-22)");
+**Aviso ao revisor:** dois títulos de commit ficaram sem verbo no imperativo (`4958d6b` "tela de
+agendamento da defesa (US-21)" e `31a228a` "cenarios de conflito de horario da banca (US-22)");
 já estão no `origin`, e corrigi-los exigiria reescrever o histórico.
 
 ### 5. Revisão por Pares (Peer Review)

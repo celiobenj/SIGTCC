@@ -228,7 +228,7 @@ Nenhum IC altera comportamento ou teste de outra feature — são só acréscimo
 | Aprovar os IC-01 a IC-06 (código de specs já mescladas) | Célio Benjamim (config) | Q-123 |
 | Validar os textos provisórios MD-01 a MD-13 (tabela "Mensagens a validar com a PO" da spec; os demais são cópia exata das US) | Profa. Diana (PO) | Q-124 |
 | Entregar `services_avaliacoes.descartar_avaliacoes(sessao, membro=None)` real, no lugar do stub `services_defesa.descartar_avaliacoes` (contrato §6) | Célio Benjamim (feat-08) | Q-125 |
-| Fase base pronta até 03/11 (`agendar_sessao`, `membros_efetivos`, `registrar_evento`, `transicionar_status`, `TRANSICOES_VALIDAS`, `popular_demo`) para a feat-08 depender dela | Julia Cohen → Célio Benjamim | **entregue em 31/10/2026** (Fase 2a do `tasks.md`, commits `36f5db3` a `bef50c0`) |
+| Fase base pronta até 03/11 (`agendar_sessao`, `membros_efetivos`, `registrar_evento`, `transicionar_status`, `TRANSICOES_VALIDAS`, `popular_demo`) para a feat-08 depender dela | Julia Cohen → Célio Benjamim | **entregue em 31/10/2026** (Fase 2a do `tasks.md`, commits `1f9690f` a `9e65ec7`) |
 | Nome/ícone definitivo do item de menu "Defesas" (implementado com o rótulo e o ícone `event` do protótipo de 17/10) | Profa. Diana ou Célio Benjamim | Q-126 |
 
 ## Complexity Tracking
