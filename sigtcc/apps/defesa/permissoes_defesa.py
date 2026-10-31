@@ -2,11 +2,13 @@
 cadastro/permissoes.py: predicados sem efeito colateral; quem chama decide a resposta (403 ou
 mensagem).
 
-[US-21][US-23][RBN-DEF-01.3][RBN-DEF-02.2][RBN-DEF-02.4]
+[US-21][US-23][US-24][RBN-DEF-01.3][RBN-DEF-02.2][RBN-DEF-02.4][RBN-DEF-03.3]
 """
 
 from sigtcc.apps.cadastro import services_orientacao
 from sigtcc.apps.cadastro.cargas import CURSO_ENG_COMPUTACAO
+from sigtcc.apps.cadastro.permissoes import especializacao
+from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA
 from sigtcc.apps.defesa.choices import PapelBanca, StatusSessao
 from sigtcc.apps.defesa.models import BancaDefesa
 
@@ -44,3 +46,16 @@ def pode_acionar_suplente(usuario, sessao):
         and services_orientacao.e_orientador_atual(usuario, sessao.def_tcc)
         and BancaDefesa.objects.filter(ban_def=sessao, ban_papel=PapelBanca.SUPLENTE).exists()
     )
+
+
+def pode_reagendar_ou_cancelar(usuario, sessao):
+    """Botões e ações Reagendar e Cancelar sessão: quem pode agendar o TCC (pelo curso) ou a
+    Secretaria do curso, com a sessão "Agendada", "Reagendada" ou "Em Andamento" (RBN-DEF-03.3;
+    US-24 E4 e E5; Clarifications 2026-10-31). [US-24][RBN-DEF-03.3][FR-019][FR-020][FR-022]
+    """
+    if sessao.def_status not in STATUS_SESSAO_ATIVA:
+        return False
+    secretaria = especializacao(usuario, "secretarios")
+    if secretaria is not None and secretaria.sec_cur_id == sessao.def_tcc.tcc_tur.tur_cur_id:
+        return True
+    return pode_agendar(usuario, sessao.def_tcc)

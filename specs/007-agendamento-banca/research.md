@@ -75,6 +75,7 @@ EVENTO_DA_TRANSICAO = {
 TRANSICOES_VALIDAS = {
     (StatusSessao.AGENDADA, StatusSessao.REAGENDADA),
     (StatusSessao.REAGENDADA, StatusSessao.REAGENDADA),       # reagendar de novo
+    (StatusSessao.EM_ANDAMENTO, StatusSessao.REAGENDADA),     # antes do resultado (FR-019)
     (StatusSessao.AGENDADA, StatusSessao.EM_ANDAMENTO),       # início automático
     (StatusSessao.REAGENDADA, StatusSessao.EM_ANDAMENTO),
     (StatusSessao.AGENDADA, StatusSessao.CANCELADA),
@@ -110,6 +111,11 @@ def transicionar_status(sessao, novo_status, autor, justificativa=None, **dados_
         sessao, EVENTO_DA_TRANSICAO[novo_status], justificativa, autor, **dados_evento
     )
 ```
+
+**Correção no `/speckit-implement` (2026-10-31)**: a tabela acima ganhou `(EM_ANDAMENTO,
+REAGENDADA)`. A primeira versão não tinha esse par, mas o FR-019, a RBN-DEF-03.3 e a US-23 (E8:
+titular ausente sem suplente obriga a reagendar) permitem reagendar a sessão Em Andamento antes da
+liberação do resultado.
 
 **"Alteração da Banca" e "Acionamento do Suplente"** (FR-011, FR-013) **não mudam `def_status`**
 (data-model.md) — por isso chamam `registrar_evento(...)` **diretamente**, nunca

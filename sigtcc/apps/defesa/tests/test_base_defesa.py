@@ -14,10 +14,25 @@ from django.core.management import call_command
 from django.db import connection
 from django.utils import timezone
 
-from sigtcc.apps.cadastro.choices import StatusTCC, StatusTurma
+from sigtcc.apps.cadastro.choices import (
+    StatusSolicitacao,
+    StatusTCC,
+    StatusTurma,
+    TipoEntrega,
+    TipoSolicitacao,
+)
 from sigtcc.apps.cadastro.models import Notificacoes, TCCs, Turmas
-from sigtcc.apps.cadastro.tests.apoio_orientacao import vincular_coorientador
-from sigtcc.apps.cadastro.tests.apoio_turmas import EC, LC, SI, TesteTurmas, criar_defesa_de
+from sigtcc.apps.cadastro.tests.apoio_acesso import criar_secretaria
+from sigtcc.apps.cadastro.tests.apoio_orientacao import criar_pedido, vincular_coorientador
+from sigtcc.apps.cadastro.tests.apoio_tcc import cadastrar_entrega, enviar_link
+from sigtcc.apps.cadastro.tests.apoio_turmas import (
+    EC,
+    LC,
+    SI,
+    TesteTurmas,
+    criar_defesa_de,
+    curso,
+)
 from sigtcc.apps.cadastro.tests.fabricas import criar_criterio
 from sigtcc.apps.defesa import permissoes_defesa, services_defesa
 from sigtcc.apps.defesa.choices import (
@@ -721,3 +736,162 @@ class TesteAcionarSuplente(TesteTurmas):
             BancaDefesa.objects.get(ban_def=self.sessao, ban_usu=self.suplente).ban_papel,
             PapelBanca.SUPLENTE,
         )
+
+
+class TesteConfirmarAgendamento(TesteTurmas):
+    """confirmar_agendamento (US-24, passos 3 a 7). [US-24][RBN-DEF-03.2][FR-018]"""
+
+    def setUp(self):
+        self.tcc, self.professor, self.orientador = tcc_apto()
+        self.aluno = self.tcc.tcc_alu
+        entrega = cadastrar_entrega(self.tcc.tcc_tur, tipo=TipoEntrega.DOCUMENTO_PARA_DEFESA)
+        enviar_link(entrega, self.aluno, "https://drive.example.org/antigo")
+        enviar_link(entrega, self.aluno, "https://drive.example.org/documento")
+        self.banca = {
+            "primeiro_avaliador": docente(),
+            "segundo_avaliador": docente(),
+            "suplente": docente(),
+        }
+
+    def test_avisa_aluno_e_banca_inteira_com_o_documento(self):
+        sessao = agendar_sessao_de(self.tcc, self.orientador, self.banca, local="Laboratório LSI")
+        with self.captureOnCommitCallbacks(execute=True):
+            services_defesa.confirmar_agendamento(sessao, self.orientador)
+        destinatarios = [self.aluno.alu, self.orientador, *self.banca.values()]
+        for usuario in destinatarios:
+            aviso = Notificacoes.objects.get(not_usu=usuario)
+            self.assertIn("20/11/2026 às 14:00", aviso.not_mensagem)
+            self.assertIn("Presencial: Laboratório LSI", aviso.not_mensagem)
+            self.assertIn(self.aluno.alu.usu_nome, aviso.not_mensagem)
+            self.assertIn(self.tcc.tcc_titulo, aviso.not_mensagem)
+            self.assertIn("https://drive.example.org/documento", aviso.not_mensagem)
+
+    def test_cancela_a_troca_pendente_no_mesmo_instante(self):
+        pedido = criar_pedido(self.tcc, docente(), tipo=TipoSolicitacao.TROCA_DE_ORIENTACAO)
+        sessao = agendar_sessao_de(self.tcc, self.orientador, self.banca)
+        services_defesa.confirmar_agendamento(sessao, self.orientador)
+        pedido.refresh_from_db()
+        agendamento = HistoricoDefesas.objects.get(hdf_def=sessao)
+        self.assertEqual(pedido.sol_status, StatusSolicitacao.CANCELADO)
+        self.assertEqual(pedido.sol_data_resposta, agendamento.hdf_data_hora)
+
+    def test_sem_troca_pendente_nada_e_cancelado(self):
+        pedido = criar_pedido(self.tcc, docente())
+        sessao = agendar_sessao_de(self.tcc, self.orientador, self.banca)
+        services_defesa.confirmar_agendamento(sessao, self.orientador)
+        pedido.refresh_from_db()
+        self.assertEqual(pedido.sol_status, StatusSolicitacao.AGUARDANDO_RESPOSTA)
+
+
+class TesteReagendarECancelar(TesteTurmas):
+    """reagendar e cancelar (US-24 B e C). [US-24][RBN-DEF-03.3][FR-019][FR-020][FR-022]"""
+
+    NOVOS = {
+        "data": datetime(2026, 12, 3).date(),
+        "h_inicio": time(10, 0),
+        "formato": FormatoSessao.REMOTA,
+        "link": "https://meet.example.org/nova",
+    }
+
+    def setUp(self):
+        self.tcc, self.professor, self.orientador = tcc_apto(SI)
+        self.av1, self.av2, self.suplente = docente(SI), docente(SI), docente(SI)
+        self.sessao = agendar_sessao_de(
+            self.tcc,
+            self.professor,
+            {
+                "primeiro_avaliador": self.av1,
+                "segundo_avaliador": self.av2,
+                "suplente": self.suplente,
+            },
+        )
+        self.secretaria = criar_secretaria(curso=curso(SI))
+
+    def test_reagendar_mantem_a_banca_e_grava_as_datas(self):
+        banca = services_defesa.banca_por_papel(self.sessao)
+        services_defesa.reagendar(self.professor, self.sessao.pk, self.NOVOS, "Banca em viagem")
+        self.sessao.refresh_from_db()
+        self.assertEqual(self.sessao.def_status, StatusSessao.REAGENDADA)
+        self.assertEqual(
+            (self.sessao.def_data, self.sessao.def_h_inicio), (self.NOVOS["data"], time(10, 0))
+        )
+        self.assertEqual(
+            DefesasRemotas.objects.get(der_def=self.sessao).der_link, self.NOVOS["link"]
+        )
+        self.assertFalse(DefesasPresenciais.objects.filter(dep_def=self.sessao).exists())
+        self.assertEqual(services_defesa.banca_por_papel(self.sessao), banca)
+        evento = HistoricoDefesas.objects.filter(hdf_def=self.sessao).latest("hdf_id")
+        self.assertEqual(evento.hdf_evento, EventoDefesa.REAGENDAMENTO)
+        self.assertEqual(evento.hdf_data_anterior, datetime(2026, 11, 20).date())
+        self.assertEqual(evento.hdf_hora_anterior, time(14, 0))
+        self.assertEqual(evento.hdf_data_nova, self.NOVOS["data"])
+        self.assertEqual(evento.hdf_justificativa, "Banca em viagem")
+        for usuario in (self.tcc.tcc_alu.alu, self.suplente):
+            self.assertIn(
+                "03/12/2026 às 10:00", Notificacoes.objects.get(not_usu=usuario).not_mensagem
+            )
+
+    def test_reagendar_com_conflito_do_suplente_nao_muda_nada(self):
+        outro, _prof, outro_ori = tcc_apto(SI)
+        agendar_sessao_de(
+            outro,
+            outro_ori,
+            {"primeiro_avaliador": self.suplente, "segundo_avaliador": docente(SI)},
+            data=self.NOVOS["data"],
+            h_inicio=time(10, 30),
+        )
+        with self.assertRaises(services_defesa.ConflitoDeHorario):
+            services_defesa.reagendar(self.professor, self.sessao.pk, self.NOVOS, "Motivo")
+        self.sessao.refresh_from_db()
+        self.assertEqual(self.sessao.def_status, StatusSessao.AGENDADA)
+        self.assertEqual(self.sessao.def_data, datetime(2026, 11, 20).date())
+
+    def test_reagendar_a_mesma_hora_nao_conflita_com_ela_mesma(self):
+        dados = dict(self.NOVOS, data=datetime(2026, 11, 20).date(), h_inicio=time(14, 30))
+        services_defesa.reagendar(self.secretaria, self.sessao.pk, dados, "Ajuste")
+
+    def test_reagendar_em_andamento(self):
+        avancar_para(self.sessao, StatusSessao.EM_ANDAMENTO)
+        services_defesa.reagendar(self.professor, self.sessao.pk, self.NOVOS, "Avaliador faltou")
+        self.sessao.refresh_from_db()
+        self.assertEqual(self.sessao.def_status, StatusSessao.REAGENDADA)
+
+    def test_cancelar_mantem_o_tcc_apto_e_descarta(self):
+        with self.assertLogs("sigtcc.defesa", level="INFO") as log:
+            services_defesa.cancelar(self.secretaria, self.sessao.pk, "Aluno pediu adiamento")
+        self.assertIn("membro todos", log.output[0])
+        self.sessao.refresh_from_db()
+        self.tcc.refresh_from_db()
+        self.assertEqual(self.sessao.def_status, StatusSessao.CANCELADA)
+        self.assertEqual(self.tcc.tcc_status, StatusTCC.APTO_PARA_DEFESA)
+        self.assertTrue(services_defesa.tcc_elegivel(self.tcc))
+        evento = HistoricoDefesas.objects.filter(hdf_def=self.sessao).latest("hdf_id")
+        self.assertEqual(evento.hdf_justificativa, "Aluno pediu adiamento")
+        self.assertIn("foi cancelada", Notificacoes.objects.get(not_usu=self.av1).not_mensagem)
+
+    def test_justificativa_vazia_ou_longa(self):
+        for justificativa in ("", "x" * 501):
+            for acao in (
+                lambda j: services_defesa.cancelar(self.professor, self.sessao.pk, j),
+                lambda j: services_defesa.reagendar(self.professor, self.sessao.pk, self.NOVOS, j),
+            ):
+                with self.subTest(tamanho=len(justificativa)):
+                    with self.assertRaises(services_defesa.ErroDefesa) as erro:
+                        acao(justificativa)
+                    self.assertEqual(
+                        erro.exception.mensagem, "Informe uma justificativa de até 500 caracteres"
+                    )
+        self.sessao.refresh_from_db()
+        self.assertEqual(self.sessao.def_status, StatusSessao.AGENDADA)
+
+    def test_permissao_pelo_curso_e_secretaria_de_outro_curso(self):
+        outra_secretaria = criar_secretaria(curso=curso(EC))
+        for usuario in (self.orientador, self.av1, outra_secretaria):
+            with self.subTest(usuario=usuario.usu_nome):
+                with self.assertRaises(PermissionDenied):
+                    services_defesa.cancelar(usuario, self.sessao.pk, "Motivo")
+
+    def test_sessao_realizada_ou_cancelada_bloqueia(self):
+        avancar_para(self.sessao, StatusSessao.CANCELADA)
+        with self.assertRaises(PermissionDenied):
+            services_defesa.reagendar(self.professor, self.sessao.pk, self.NOVOS, "Motivo")

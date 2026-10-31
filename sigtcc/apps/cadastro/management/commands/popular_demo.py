@@ -985,8 +985,7 @@ class Command(BaseCommand):
             (self.ori_ecp1, self.ori_ecp2, self.externo),
             local="Laboratório LSI",
         )
-        # Reagendada (remota). Até a Fase 2b (reagendar, tasks T017) a nova data é gravada aqui e
-        # o status muda pelo serviço único, com as datas anterior e nova no histórico.
+        # Reagendada (remota).
         sessao = self._agendar(
             self.apto_ecp2,
             self.prof_ecp2,
@@ -995,17 +994,16 @@ class Command(BaseCommand):
             (self.ori_ecp1, self.prof_ecp3),
             link="https://meet.google.com/demo-defesa-ecp",
         )
-        nova_data, nova_hora = self.hoje + timedelta(days=12), time(10, 0)
-        Defesas.objects.filter(pk=sessao.pk).update(def_data=nova_data, def_h_inicio=nova_hora)
-        services_defesa.transicionar_status(
-            sessao,
-            StatusSessao.REAGENDADA,
+        services_defesa.reagendar(
             self.prof_ecp2,
+            sessao.pk,
+            {
+                "data": self.hoje + timedelta(days=12),
+                "h_inicio": time(10, 0),
+                "formato": FormatoSessao.REMOTA,
+                "link": "https://meet.google.com/demo-defesa-ecp",
+            },
             "Avaliador em viagem para congresso na data original.",
-            data_anterior=sessao.def_data,
-            hora_anterior=sessao.def_h_inicio,
-            data_nova=nova_data,
-            hora_nova=nova_hora,
         )
         # Em Andamento: começou há 20 minutos.
         inicio = (timezone.now() - timedelta(minutes=20)).replace(second=0, microsecond=0)
@@ -1027,11 +1025,8 @@ class Command(BaseCommand):
             (self.prof_lic, self.externo),
             local="Bloco A, sala 2",
         )
-        services_defesa.transicionar_status(
-            sessao,
-            StatusSessao.CANCELADA,
-            self.prof_lic,
-            "Aluno pediu mais prazo para revisar o projeto.",
+        services_defesa.cancelar(
+            self.prof_lic, sessao.pk, "Aluno pediu mais prazo para revisar o projeto."
         )
 
     # =========================================================================================

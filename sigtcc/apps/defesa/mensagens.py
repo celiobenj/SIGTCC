@@ -37,3 +37,25 @@ MD04_ASSUNTO = "SIGTCC: alteração da banca"
 
 # US-21 E3 e US-23 E2. [US-21][US-23][RBN-DEF-01.1][RBN-DEF-02.1]
 CAMPO_OBRIGATORIO = "Campo obrigatório"
+
+# US-24. [US-24][RBN-DEF-03.2][RBN-DEF-03.3]
+DEFESA_AGENDADA = "Defesa agendada com sucesso"
+
+# MD-05 a MD-07 (PROVISÓRIAS): avisos ao Aluno e a toda a banca (US-24 passos 4 e 5, B.e, C.d;
+# sem texto exato). {lugar} = Local ou Link da Videochamada; {documento} = link do Documento para
+# Defesa.
+MD05_DEFESA_AGENDADA = (
+    "Defesa de {aluno} agendada para {quando} ({formato}: {lugar}). TCC: {titulo}. "
+    "Documento para Defesa: {documento}"
+)
+MD05_ASSUNTO = "SIGTCC: defesa agendada"
+MD06_DEFESA_REAGENDADA = (
+    "Defesa de {aluno} reagendada para {quando} ({formato}: {lugar}). TCC: {titulo}. "
+    "Justificativa: {justificativa}"
+)
+MD06_ASSUNTO = "SIGTCC: defesa reagendada"
+MD07_DEFESA_CANCELADA = (
+    "A defesa de {aluno} marcada para {quando} foi cancelada. TCC: {titulo}. "
+    "Justificativa: {justificativa}"
+)
+MD07_ASSUNTO = "SIGTCC: defesa cancelada"

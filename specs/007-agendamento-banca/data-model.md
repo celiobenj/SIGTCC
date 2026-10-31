@@ -34,7 +34,7 @@ demais são da feat-08/feat-09, pela mesma função `transicionar_status`):
 | Evento | De | Para | Quem dispara |
 |---|---|---|---|
 | **Agendamento** | — | Agendada | **esta spec, US-21/24** |
-| **Reagendamento** | Agendada/Reagendada | Reagendada | **esta spec, US-24** |
+| **Reagendamento** | Agendada/Reagendada/Em Andamento (antes do resultado, FR-019) | Reagendada | **esta spec, US-24** |
 | **Cancelamento** | Agendada/Reagendada/Em Andamento | Cancelada | **esta spec, US-24** |
 | **Início Automático** | Agendada/Reagendada | Em Andamento | **esta spec, US-24** (view ou comando agendado) |
 | **Acionamento do Suplente** | (sem mudar `def_status`) | — | **esta spec, US-23** (só histórico) |

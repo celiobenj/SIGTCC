@@ -17,10 +17,10 @@ from django.db.models import Exists, OuterRef, Q
 from django.http import Http404
 from django.utils import timezone
 
-from sigtcc.apps.cadastro import services_orientacao
+from sigtcc.apps.cadastro import services_entregas, services_orientacao
 from sigtcc.apps.cadastro.cargas import CURSO_ENG_COMPUTACAO
-from sigtcc.apps.cadastro.choices import StatusOrientacao, StatusTCC, StatusTurma
-from sigtcc.apps.cadastro.models import Alunos, Orientacoes, TCCs, Usuarios
+from sigtcc.apps.cadastro.choices import StatusOrientacao, StatusTCC, StatusTurma, TipoEntrega
+from sigtcc.apps.cadastro.models import Alunos, EntregasMarcos, Orientacoes, TCCs, Usuarios
 from sigtcc.apps.cadastro.services import enviar_email_apos_commit, notificar
 from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA, travar_turma_ativa
 from sigtcc.apps.defesa import mensagens, permissoes_defesa
@@ -92,6 +92,8 @@ TRANSICOES_VALIDAS = frozenset(
     {
         (StatusSessao.AGENDADA, StatusSessao.REAGENDADA),
         (StatusSessao.REAGENDADA, StatusSessao.REAGENDADA),
+        # Reagendar Em Andamento, antes do resultado (RBN-DEF-03.3; US-23 E8).
+        (StatusSessao.EM_ANDAMENTO, StatusSessao.REAGENDADA),
         (StatusSessao.AGENDADA, StatusSessao.EM_ANDAMENTO),
         (StatusSessao.REAGENDADA, StatusSessao.EM_ANDAMENTO),
         (StatusSessao.AGENDADA, StatusSessao.CANCELADA),
@@ -569,4 +571,139 @@ def acionar_suplente(usuario, def_id, papel_substituido, justificativa):
             membro_removido=ausente,
             membro_incluido=suplente,
         )
+    return sessao
+
+
+# =============================================================================================
+# Confirmação, reagendamento e cancelamento (US-24; research C5)
+# =============================================================================================
+
+
+def _lugar(sessao):
+    """Local (Presencial) ou Link da Videochamada (Remota). [US-21][US-24][RBN-DEF-01.1]"""
+    if sessao.def_formato == FormatoSessao.PRESENCIAL:
+        return DefesasPresenciais.objects.get(dep_def=sessao).dep_local
+    return DefesasRemotas.objects.get(der_def=sessao).der_link
+
+
+def link_do_documento(tcc):
+    """Link mais recente enviado pelo Aluno na entrega do tipo Documento para Defesa da turma do
+    TCC (CAD-09.2), ou None (services_entregas.link_mais_recente, contrato da spec 005).
+    [US-24][RBN-DEF-03.2][RBN-CAD-09.2][FR-018]
+    """
+    entrega = (
+        EntregasMarcos.objects.filter(
+            ent_tma__tma_tur=tcc.tcc_tur,
+            ent_tma__tma_tipo=TipoEntrega.DOCUMENTO_PARA_DEFESA,
+            ent_alu=tcc.tcc_alu,
+        )
+        .order_by("-ent_tma__tma_data_limite", "-ent_tma_id")
+        .first()
+    )
+    envio = services_entregas.link_mais_recente(entrega) if entrega is not None else None
+    return envio.hen_link if envio is not None else None
+
+
+def _avisar_aluno_e_banca(sessao, texto, assunto):
+    """O mesmo aviso ao Aluno e a todos os membros da banca, inclusive o Suplente não acionado
+    (RBN-DEF-03.2; não membros_efetivos). [US-24][RBN-DEF-03.2][RBN-DEF-03.3][FR-018]
+    """
+    destinatarios = [sessao.def_tcc.tcc_alu.alu, *banca_por_papel(sessao).values()]
+    for usuario in destinatarios:
+        _avisar(usuario, texto, assunto)
+
+
+def confirmar_agendamento(sessao, autor):
+    """Fecha o agendamento (US-24, passos 3 a 7), na mesma transação de agendar_sessao, com o TCC
+    já travado: avisa o Aluno e a banca (MD-05, com o link do Documento para Defesa) e cancela o
+    pedido de troca de orientador pendente com o mesmo instante do evento 'Agendamento' (contrato
+    §3 da spec 006). [US-24][RBN-DEF-03.2][RBN-CAD-10.6][FR-018][research C5]
+    """
+    tcc = sessao.def_tcc
+    texto = mensagens.MD05_DEFESA_AGENDADA.format(
+        aluno=tcc.tcc_alu.alu.usu_nome,
+        quando=_quando(sessao),
+        formato=sessao.def_formato,
+        lugar=_lugar(sessao),
+        titulo=tcc.tcc_titulo,
+        documento=link_do_documento(tcc) or "-",
+    )
+    _avisar_aluno_e_banca(sessao, texto, mensagens.MD05_ASSUNTO)
+    agendamento = HistoricoDefesas.objects.get(hdf_def=sessao, hdf_evento=EventoDefesa.AGENDAMENTO)
+    services_orientacao.cancelar_troca_no_agendamento(tcc, agendamento.hdf_data_hora)
+
+
+def _sessao_para_reagendar_ou_cancelar(usuario, def_id, justificativa):
+    """Confere a Justificativa (E3) e trava turma → aluno → TCC, antes
+    das travas de membros e da sessão. Sem permissão ou fora de status: PermissionDenied (M-02).
+    [US-24][RBN-DEF-03.3][FR-019][FR-020][FR-022]
+    """
+    if not justificativa or len(justificativa) > 500:
+        raise ErroDefesa(mensagens.JUSTIFICATIVA, campo="justificativa")
+    _travar_tcc(_tcc_da_sessao(def_id))
+    if not permissoes_defesa.pode_reagendar_ou_cancelar(usuario, Defesas.objects.get(pk=def_id)):
+        raise PermissionDenied
+
+
+def reagendar(usuario, def_id, dados_basicos, justificativa):
+    """Reagendar (US-24 B): nova data, horário, formato e local ou link, mantendo a banca e as
+    avaliações. Confere o conflito de todos os membros da banca, inclusive o Suplente, sem
+    contar a própria sessão (US-22 D); com conflito, nada muda. Status "Reagendada", com as datas
+    e horas anterior e nova no histórico; avisa o Aluno e a banca (MD-06).
+    [US-24][RBN-DEF-03.3][RBN-DEF-03.1][FR-019][research C5]
+    """
+    with transaction.atomic():
+        _sessao_para_reagendar_ou_cancelar(usuario, def_id, justificativa)
+        atual = banca_por_papel(Defesas.objects.get(pk=def_id))
+        membros = [(membro, papel) for papel, membro in atual.items()]
+        _travar_membros([membro.pk for membro, _papel in membros])
+        sessao = _travar_sessao(def_id)
+        data, hora = dados_basicos["data"], dados_basicos["h_inicio"]
+        _verificar_conflito(membros, data, hora, excluir_sessao=sessao)
+        anterior = (sessao.def_data, sessao.def_h_inicio)
+        sessao.def_data, sessao.def_h_inicio = data, hora
+        sessao.def_formato = dados_basicos["formato"]
+        sessao.save(update_fields=["def_data", "def_h_inicio", "def_formato"])
+        _gravar_local_ou_link(sessao, dados_basicos.get("local"), dados_basicos.get("link"))
+        transicionar_status(
+            sessao,
+            StatusSessao.REAGENDADA,
+            usuario,
+            justificativa,
+            data_anterior=anterior[0],
+            hora_anterior=anterior[1],
+            data_nova=data,
+            hora_nova=hora,
+        )
+        tcc = sessao.def_tcc
+        texto = mensagens.MD06_DEFESA_REAGENDADA.format(
+            aluno=tcc.tcc_alu.alu.usu_nome,
+            quando=_quando(sessao),
+            formato=sessao.def_formato,
+            lugar=_lugar(sessao),
+            titulo=tcc.tcc_titulo,
+            justificativa=justificativa,
+        )
+        _avisar_aluno_e_banca(sessao, texto, mensagens.MD06_ASSUNTO)
+    return sessao
+
+
+def cancelar(usuario, def_id, justificativa):
+    """Cancelar sessão (US-24 C): status "Cancelada", descarta todas as avaliações (stub) e avisa
+    o Aluno e a banca (MD-07). O Status do TCC continua "Apto para Defesa" (esta spec nunca grava
+    tcc_status), e o TCC volta a poder ser agendado. [US-24][RBN-DEF-03.3][FR-020][research C5]
+    """
+    with transaction.atomic():
+        _sessao_para_reagendar_ou_cancelar(usuario, def_id, justificativa)
+        sessao = _travar_sessao(def_id)
+        transicionar_status(sessao, StatusSessao.CANCELADA, usuario, justificativa)
+        descartar_avaliacoes(sessao)
+        tcc = sessao.def_tcc
+        texto = mensagens.MD07_DEFESA_CANCELADA.format(
+            aluno=tcc.tcc_alu.alu.usu_nome,
+            quando=_quando(sessao),
+            titulo=tcc.tcc_titulo,
+            justificativa=justificativa,
+        )
+        _avisar_aluno_e_banca(sessao, texto, mensagens.MD07_ASSUNTO)
     return sessao

@@ -155,21 +155,21 @@ cancelamento, início automático, lista e histórico. **Bloqueia as Fases 3 a 7
   chama o stub de descarte para o ausente e `registrar_evento(...,
   EventoDefesa.ACIONAMENTO_DO_SUPLENTE, ...)` diretamente — FR-013, research C4 (depende de T005,
   T013)
-- [ ] T016 Implementar `confirmar_agendamento(sessao, autor)` em `services_defesa.py` — na mesma
+- [X] T016 Implementar `confirmar_agendamento(sessao, autor)` em `services_defesa.py` — na mesma
   transação de `agendar_sessao`: recupera o link via
   `services_entregas.link_mais_recente(entrega_documento_defesa)`, notifica
   (`services.notificar`/`enviar_email_apos_commit`) o Aluno e **todos** os membros de
   `BancaDefesa`, inclusive o Suplente não acionado (FR-018, RBN-DEF-03.2 — não
   `membros_efetivos`), e chama `services_orientacao.cancelar_troca_no_agendamento(tcc, agora)`
   com o mesmo `agora` do evento 'Agendamento' — FR-018, research C5 (depende de T011)
-- [ ] T017 Implementar `reagendar(sessao, dados, justificativa, autor) -> Defesas` em
+- [X] T017 Implementar `reagendar(sessao, dados, justificativa, autor) -> Defesas` em
   `services_defesa.py` — depois de `_travar_membros` (T007) e `_verificar_conflito` (T008) com os
   pks de **todos** os membros de `BancaDefesa`, inclusive o Suplente (FR-014), chama
   `transicionar_status(..., StatusSessao.REAGENDADA, ...)` e notifica a banca inteira e o Aluno
   com os novos dados, sem tocar banca/avaliações; trocar, no `popular_demo` (`_defesas`), a
   gravação direta da nova data/hora pela chamada a `reagendar` — FR-019, research C5 (depende de
   T006, T007, T008)
-- [ ] T018 Implementar `cancelar(sessao, justificativa, autor) -> Defesas` em `services_defesa.py`
+- [X] T018 Implementar `cancelar(sessao, justificativa, autor) -> Defesas` em `services_defesa.py`
   — chama `transicionar_status(..., StatusSessao.CANCELADA, ...)`, o stub
   `descartar_avaliacoes(sessao)` (todos os membros) e notifica a banca e o Aluno; nunca grava
   `tcc_status` — FR-020, research C5 (depende de T006, T013)
@@ -294,9 +294,9 @@ lógica já está na Fase 2b).
 verificar a notificação e o status "Agendada"; separadamente, reagendar e cancelar uma sessão
 existente
 
-- [ ] T040 [P] [US4] Implementar `pode_reagendar_ou_cancelar(usuario, sessao)` em
+- [X] T040 [P] [US4] Implementar `pode_reagendar_ou_cancelar(usuario, sessao)` em
   `permissoes_defesa.py` — quem pode agendar o TCC (`pode_agendar`) ou a Secretaria do curso
-  (Clarifications 2026-10-31), com sessão Agendada/Reagendada/Em Andamento — FR-022
+  (Clarifications 2026-10-31), com sessão Agendada/Reagendada/Em Andamento — FR-022 *(feito na Fase 2b, junto com T017/T018)*
 - [ ] T041 [P] [US4] Implementar `ReagendarForm` e `CancelarForm` em `forms_defesa.py`
   (Justificativa obrigatória até 500 caracteres) — FR-019, FR-020
 - [ ] T042 [US4] Implementar as views `reagendar` e `cancelar` em `views_defesa.py` — chamam
