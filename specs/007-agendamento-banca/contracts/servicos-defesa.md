@@ -30,7 +30,7 @@ cria, por `agendar_sessao`).
 |---|---|
 | `services_defesa.registrar_evento(sessao, tipo, justificativa, autor, **dados) -> HistoricoDefesas` | grava uma linha do histórico (`EventoDefesa`); chamada internamente por `agendar_sessao` (evento 'Agendamento') e por `transicionar_status` (demais transições de status), e diretamente por quem grava eventos sem mudança de status (Alteração da Banca, Acionamento do Suplente; a feat-08 segue o mesmo padrão se precisar registrar um evento sem mudar `def_status`). |
 | `services_defesa.membros_efetivos(sessao) -> list[Usuarios]` | membros que **de fato** atuam na sessão — já considera o suplente acionado (substitui o titular ausente na composição real). A feat-08 usa para saber a quem pedir avaliação e para calcular o quórum; a feat-09 usa para a declaração de participação em banca. |
-| `services_defesa.historico_da_sessao(sessao) -> queryset` | todas as linhas de `Historico_Defesas` da sessão, ordenadas por data/hora, **sem checagem de perfil** (quem chama decide se autoriza) — mesmo padrão de `services_tcc.historico_do_status` (spec 005, §2). |
+| `services_defesa.historico_da_sessao(sessao) -> queryset` | todas as linhas de `Historico_Defesas` de todas as sessões do TCC da sessão, inclusive as canceladas (RBN-DEF-01.6; Clarifications 2026-10-31), ordenadas por data/hora, com a sessão já carregada (`hdf_def`), **sem checagem de perfil** (quem chama decide se autoriza) — mesmo padrão de `services_tcc.historico_do_status` (spec 005, §2). |
 
 ## 3. Dados básicos da sessão (US-21; RBN-DEF-01.1)
 
@@ -44,7 +44,7 @@ cria, por `agendar_sessao`).
 
 | Item | Uso |
 |---|---|
-| `services_defesa.componente_filtro_periodo(valor, periodo_letivo_atual) -> (data_inicial, data_final)` | resolve os atalhos (Período Letivo, Esta Semana, Este Mês, Próximos 30 Dias) ou o intervalo manual; reaproveitável pela agenda de defesas, pela lista de ouvintes e pelos relatórios (RAN-REL) da feat-08/feat-09, combinado com o filtro de Curso (`services_contas.filtro_de_curso`, spec 002). |
+| `services_defesa.periodo_letivo_atual() -> (ano, semestre)` e `services_defesa.filtro_de_periodo(atalho, data_inicial=None, data_final=None, hoje=None, prefixo="") -> Q` | o período letivo atual é o maior ano/semestre das turmas ativas (sem turma ativa, o do calendário); `filtro_de_periodo` resolve os atalhos (`periodo_letivo`, padrão, pelo ano/semestre da turma do TCC; `esta_semana`, `este_mes`, `proximos_30_dias`, pela data da sessão) ou o intervalo manual (`intervalo`), num `Q` sobre `Defesas` (`prefixo` para consultar a partir de outro modelo, ex. `"pre_def__"` em `PresencaOuvintes`); a validação das datas (ordem e formato) fica no formulário `FiltroPeriodoForm` de `forms_defesa.py` (Clarifications 2026-10-31); reaproveitável pela agenda de defesas, pela lista de ouvintes e pelos relatórios (RAN-REL) da feat-08/feat-09, combinado com o filtro de Curso (`services_contas.filtro_de_curso`, spec 002). |
 
 ## 5. `popular_demo` (contrato)
 

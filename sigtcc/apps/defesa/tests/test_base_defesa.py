@@ -895,3 +895,180 @@ class TesteReagendarECancelar(TesteTurmas):
         avancar_para(self.sessao, StatusSessao.CANCELADA)
         with self.assertRaises(PermissionDenied):
             services_defesa.reagendar(self.professor, self.sessao.pk, self.NOVOS, "Motivo")
+
+
+class TesteSessoesParaIniciar(TesteTurmas):
+    """sessoes_para_iniciar (US-24 D). [US-24][RBN-DEF-01.2][FR-021]"""
+
+    def test_so_agendada_ou_reagendada_com_horario_alcancado(self):
+        tcc, _professor, orientador = tcc_apto()
+        sessao = agendar_sessao_de(tcc, orientador, h_inicio=time(14, 0))
+        antes = datetime(2026, 11, 20, 13, 59)
+        na_hora = datetime(2026, 11, 20, 14, 0)
+        self.assertNotIn(sessao, services_defesa.sessoes_para_iniciar(antes))
+        self.assertIn(sessao, services_defesa.sessoes_para_iniciar(na_hora))
+        self.assertIn(sessao, services_defesa.sessoes_para_iniciar(datetime(2026, 11, 21, 8, 0)))
+        avancar_para(sessao, StatusSessao.CANCELADA)
+        self.assertNotIn(sessao, services_defesa.sessoes_para_iniciar(na_hora))
+
+
+class TestePeriodo(TesteTurmas):
+    """periodo_letivo_atual e filtro_de_periodo (contrato §4). [US-40][RBN-DEF-01.5][FR-025]"""
+
+    HOJE = datetime(2026, 11, 18).date()  # quarta-feira
+
+    def datas(self, atalho, **kwargs):
+        tcc, _professor, orientador = tcc_apto()
+        sessoes = {
+            dia: agendar_sessao_de(tcc, orientador, data=datetime(2026, *dia).date())
+            for dia in ((11, 16), (11, 22), (11, 23), (11, 30), (12, 1), (12, 18), (12, 19))
+        }
+        filtro = services_defesa.filtro_de_periodo(atalho, hoje=self.HOJE, **kwargs)
+        achadas = set(Defesas.objects.filter(filtro, def_tcc=tcc))
+        return {dia for dia, sessao in sessoes.items() if sessao in achadas}
+
+    def test_esta_semana_de_segunda_a_domingo(self):
+        self.assertEqual(self.datas("esta_semana"), {(11, 16), (11, 22)})
+
+    def test_este_mes(self):
+        self.assertEqual(self.datas("este_mes"), {(11, 16), (11, 22), (11, 23), (11, 30)})
+
+    def test_proximos_30_dias(self):
+        self.assertEqual(
+            self.datas("proximos_30_dias"), {(11, 22), (11, 23), (11, 30), (12, 1), (12, 18)}
+        )
+
+    def test_intervalo_manual(self):
+        dias = self.datas(
+            "intervalo",
+            data_inicial=datetime(2026, 11, 22).date(),
+            data_final=datetime(2026, 11, 30).date(),
+        )
+        self.assertEqual(dias, {(11, 22), (11, 23), (11, 30)})
+
+    def test_periodo_letivo_pela_turma_das_turmas_ativas(self):
+        atual, _p, ori = tcc_apto()
+        Turmas.objects.filter(pk=atual.tcc_tur_id).update(tur_ano=2027, tur_semestre=1)
+        antigo, _p2, ori2 = tcc_apto()
+        Turmas.objects.filter(pk=antigo.tcc_tur_id).update(tur_ano=2026, tur_semestre=2)
+        arquivado, _p3, ori3 = tcc_apto()
+        Turmas.objects.filter(pk=arquivado.tcc_tur_id).update(
+            tur_ano=2028, tur_semestre=1, tur_status=StatusTurma.ARQUIVADA
+        )
+        self.assertEqual(services_defesa.periodo_letivo_atual(), (2027, 1))
+        na_lista = agendar_sessao_de(atual, ori, data=datetime(2026, 12, 1).date())
+        fora = agendar_sessao_de(antigo, ori2)
+        filtro = services_defesa.filtro_de_periodo("periodo_letivo")
+        self.assertEqual(list(Defesas.objects.filter(filtro)), [na_lista])
+        self.assertNotIn(fora, Defesas.objects.filter(filtro))
+
+    def test_sem_turma_ativa_usa_o_calendario(self):
+        Turmas.objects.update(tur_status=StatusTurma.ARQUIVADA)
+        self.assertEqual(services_defesa.periodo_letivo_atual(self.HOJE), (2026, 2))
+        self.assertEqual(
+            services_defesa.periodo_letivo_atual(datetime(2026, 3, 1).date()), (2026, 1)
+        )
+
+    def test_prefixo_para_outro_modelo(self):
+        filtro = services_defesa.filtro_de_periodo("este_mes", hoje=self.HOJE, prefixo="ban_def__")
+        tcc, _professor, orientador = tcc_apto()
+        sessao = agendar_sessao_de(tcc, orientador)
+        self.assertTrue(BancaDefesa.objects.filter(filtro, ban_def=sessao).exists())
+
+
+class TesteListarDefesas(TesteTurmas):
+    """listar_defesas: visibilidade por perfil somada por OR e filtros. [US-40][US-39]
+    [RBN-DEF-01.4][FR-024][FR-026][FR-027]
+    """
+
+    def setUp(self):
+        self.tcc_ec, self.prof_ec, self.ori_ec = tcc_apto()
+        self.av = docente()
+        self.coorientador = docente()
+        vincular_coorientador(self.tcc_ec, self.coorientador)
+        self.sessao_ec = agendar_sessao_de(
+            self.tcc_ec,
+            self.ori_ec,
+            {"primeiro_avaliador": self.av, "segundo_avaliador": docente()},
+        )
+        self.tcc_si, self.prof_si, self.ori_si = tcc_apto(SI)
+        self.sessao_si = agendar_sessao_de(
+            self.tcc_si,
+            self.prof_si,
+            {"primeiro_avaliador": docente(SI), "segundo_avaliador": docente(SI)},
+            data=datetime(2026, 11, 10).date(),
+        )
+
+    def lista(self, usuario, **filtros):
+        return list(services_defesa.listar_defesas(usuario, **filtros))
+
+    def test_cada_perfil_ve_so_o_seu_ambito(self):
+        casos = {
+            "aluno": (self.tcc_ec.tcc_alu.alu, [self.sessao_ec]),
+            "avaliador": (self.av, [self.sessao_ec]),
+            "orientador": (self.ori_si, [self.sessao_si]),
+            "coorientador": (self.coorientador, [self.sessao_ec]),
+            "professor": (self.prof_ec, [self.sessao_ec]),
+            "outro docente": (docente(), []),
+        }
+        for nome, (usuario, esperado) in casos.items():
+            with self.subTest(perfil=nome):
+                self.assertEqual(self.lista(usuario), esperado)
+
+    def test_dois_papeis_somam_sem_repetir(self):
+        # Professor da Disciplina da turma de SI e avaliador da banca de EC.
+        tcc, _p, ori = tcc_apto(professor=docente())
+        sessao = agendar_sessao_de(
+            tcc, ori, {"primeiro_avaliador": self.prof_si, "segundo_avaliador": docente()}
+        )
+        self.assertEqual(self.lista(self.prof_si), [self.sessao_si, sessao])
+
+    def test_coordenacao_e_secretaria_pelo_curso_do_filtro(self):
+        secretaria = criar_secretaria(curso=curso(SI))
+        self.assertEqual(self.lista(secretaria, cur_id=curso(SI).pk), [self.sessao_si])
+        self.assertEqual(self.lista(secretaria, cur_id=None), [self.sessao_si, self.sessao_ec])
+
+    def test_filtro_de_status_e_de_periodo(self):
+        avancar_para(self.sessao_si, StatusSessao.CANCELADA)
+        secretaria = criar_secretaria(curso=curso(SI))
+        self.assertEqual(self.lista(secretaria, status=StatusSessao.CANCELADA), [self.sessao_si])
+        periodo = services_defesa.filtro_de_periodo(
+            "intervalo",
+            data_inicial=datetime(2026, 11, 15).date(),
+            data_final=datetime(2026, 11, 30).date(),
+        )
+        self.assertEqual(self.lista(secretaria, periodo=periodo), [self.sessao_ec])
+
+    def test_ordem_cronologica_e_dados_carregados(self):
+        secretaria = criar_secretaria(curso=curso(SI))
+        aluno_ec = self.tcc_ec.tcc_alu.alu
+        linhas = self.lista(secretaria)
+        with self.assertNumQueries(0):  # tudo já veio na consulta da lista
+            self.assertEqual(
+                [s.orientador_nome for s in linhas], [self.ori_si.usu_nome, self.ori_ec.usu_nome]
+            )
+            self.assertEqual(linhas[0].defesaspresenciais.dep_local, "Laboratório LSI")
+            self.assertEqual(linhas[1].def_tcc.tcc_alu.alu, aluno_ec)
+            self.assertEqual(linhas[1].def_tcc.tcc_tur.tur_cur.cur_nome, EC)
+
+
+class TesteHistorico(TesteTurmas):
+    """historico_da_sessao: todas as sessões do TCC, em ordem. [US-40][RBN-DEF-01.6][FR-029]"""
+
+    def test_reune_as_sessoes_do_tcc_inclusive_canceladas(self):
+        tcc, professor, orientador = tcc_apto()
+        primeira = agendar_sessao_de(tcc, orientador)
+        avancar_para(primeira, StatusSessao.CANCELADA, orientador)
+        segunda = agendar_sessao_de(tcc, orientador, data=datetime(2026, 12, 2).date())
+        outro, _p, outro_ori = tcc_apto()
+        agendar_sessao_de(outro, outro_ori)
+        eventos = list(services_defesa.historico_da_sessao(segunda))
+        self.assertEqual(
+            [(e.hdf_def, e.hdf_evento) for e in eventos],
+            [
+                (primeira, EventoDefesa.AGENDAMENTO),
+                (primeira, EventoDefesa.CANCELAMENTO),
+                (segunda, EventoDefesa.AGENDAMENTO),
+            ],
+        )
+        self.assertEqual(eventos[1].hdf_usu, orientador)

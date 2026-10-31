@@ -173,17 +173,17 @@ cancelamento, início automático, lista e histórico. **Bloqueia as Fases 3 a 7
   — chama `transicionar_status(..., StatusSessao.CANCELADA, ...)`, o stub
   `descartar_avaliacoes(sessao)` (todos os membros) e notifica a banca e o Aluno; nunca grava
   `tcc_status` — FR-020, research C5 (depende de T006, T013)
-- [ ] T019 [P] Implementar `sessoes_para_iniciar(agora)` em `services_defesa.py` — função pura
+- [X] T019 [P] Implementar `sessoes_para_iniciar(agora)` em `services_defesa.py` — função pura
   (mesmo padrão de `services_entregas.entregas_para_lembrar`), devolve sessões
   "Agendada"/"Reagendada" cujo `def_data`+`def_h_inicio` já passou — FR-021, research C6
-- [ ] T020 Implementar `listar_defesas(usuario, filtros) -> queryset` em `services_defesa.py` —
+- [X] T020 Implementar `listar_defesas(usuario, filtros) -> queryset` em `services_defesa.py` —
   `select_related`, visibilidade por perfil somada por `Q()` com OR (nunca if/elif), filtros de
   período (FR-025), status (FR-026) e curso (FR-027, `services_contas.filtro_de_curso`) somados
   por `&`, com `.distinct()` — FR-024 a FR-028, RBN-CAD-14.1, research C6 (depende de T012)
-- [ ] T021 [P] Implementar `historico_da_sessao(sessao) -> queryset` em `services_defesa.py` —
+- [X] T021 [P] Implementar `historico_da_sessao(sessao) -> queryset` em `services_defesa.py` —
   todas as linhas de `HistoricoDefesas` da sessão, ordenadas por `hdf_data_hora`, sem checagem de
   perfil — FR-029, research C7
-- [ ] T059 [P] Acrescentar em `sigtcc/apps/defesa/tests/test_base_defesa.py` os testes da Fase 2b:
+- [X] T059 [P] Acrescentar em `sigtcc/apps/defesa/tests/test_base_defesa.py` os testes da Fase 2b:
   `_travar_membros` (duas transações disputando o mesmo docente), `_verificar_conflito`
   (sobreposição, exclusão da própria sessão, ignora Local), `alterar_banca`, `acionar_suplente`,
   `confirmar_agendamento`, `reagendar`, `cancelar`, `sessoes_para_iniciar`, `listar_defesas`,
@@ -341,7 +341,7 @@ perfil e verificar visibilidade e filtros
   reservados `{% block avaliacao %}`, `resultado`, `documentos`, `ouvintes`, `ocorrencias` do
   contrato §4 da feat-08/feat-09) e `historico.html` (protótipo de 17/10)
 - [ ] T051 [P] [US5] Criar o componente do filtro de período (`sigtcc/templates/defesa/` + função
-  auxiliar em `services_defesa.py`, `componente_filtro_periodo`) reaproveitável pela feat-08/feat-09
+  auxiliar em `services_defesa.py`, `periodo_letivo_atual` e `filtro_de_periodo`, contrato §4) reaproveitável pela feat-08/feat-09
   — contrato §4, RBN-DEF-01.5
 - [ ] T052 [P] [US5] Acrescentar em `mensagens.py` os textos exatos da US-40 e da aplicação do
   filtro de Curso (US-39) à tela Defesas

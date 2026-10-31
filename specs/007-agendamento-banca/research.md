@@ -262,8 +262,9 @@ Orientador que também está na `BancaDefesa` como Presidente).
 
 ## C7. Histórico da defesa (US-40, FR-029)
 
-**Decisão**: `historico_da_sessao(sessao) -> queryset` — todas as linhas de `Historico_Defesas`
-daquela sessão, ordenadas por `hdf_data_hora`, **sem checagem de perfil** (quem chama decide se
+**Decisão** (corrigida no `/speckit-implement`, Clarifications 2026-10-31): `historico_da_sessao(sessao)
+-> queryset` — todas as linhas de `Historico_Defesas` de **todas as sessões do TCC** da sessão,
+inclusive as canceladas (RBN-DEF-01.6), ordenadas por `hdf_data_hora`, **sem checagem de perfil** (quem chama decide se
 autoriza), no mesmo padrão de `services_tcc.historico_do_status` (spec 005, research C9) — a view
 desta spec aplica `pode_ver_sessao` antes de chamar; qualquer tela futura (painel do aluno, tela
 de orientandos) que precise mostrar o link "Histórico da defesa" chama a mesma função, com a

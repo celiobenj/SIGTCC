@@ -178,6 +178,17 @@
   turma, Secretaria do curso e Aluno do próprio TCC**. O Coordenador de Curso e o Coorientador
   (docentes fora da banca) ficam só com a lista, como diz o E5. FR-030 e `contracts/rotas.md`
   atualizados.
+- Q: A janela "Histórico da defesa" mostra os eventos só da sessão aberta (research C7) ou de todas
+  as sessões do TCC, como diz a matriz (RBN-DEF-01.6: "todos os eventos de todas as sessões do
+  TCC, inclusive as canceladas")? → A (Julia Cohen, 2026-10-31): **todas as sessões do TCC**, em
+  ordem cronológica, com a data marcada da sessão de cada evento. FR-029, research C7 e contrato
+  §2 atualizados.
+- Q: Qual é o "período letivo atual" do atalho Período Letivo, padrão da lista Defesas? A matriz
+  (RBN-DEF-01.5) diz "Ano e Semestre da turma do TCC", sem definir o atual. → A (Julia Cohen,
+  2026-10-31): **o maior ano e semestre entre as turmas ativas** (as arquivadas já encerraram o
+  período, RBN-CAD-04.5); o atalho mostra as sessões cujo TCC é de turma desse ano e semestre.
+  Sem turma ativa, vale o do calendário (janeiro a junho = 1, julho a dezembro = 2). FR-025 e
+  contrato §4 atualizados.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -583,7 +594,10 @@ outras histórias.
 - **FR-025** [RBN-DEF-01.5]: O sistema MUST oferecer o filtro de período com Data Inicial e Data
   Final (calendário, DD/MM/AAAA) e os atalhos Período Letivo (padrão), Esta Semana, Este Mês e
   Próximos 30 Dias, e MUST validar que a Data Inicial não seja posterior à Data Final e que as
-  datas sejam válidas no formato esperado.
+  datas sejam válidas no formato esperado. O atalho Período Letivo mostra as sessões cujo TCC é
+  de turma do período letivo atual (Ano e Semestre da turma, RBN-DEF-01.5), que é o maior ano e
+  semestre entre as turmas ativas; sem turma ativa, o do calendário (janeiro a junho = 1, julho a
+  dezembro = 2) (Clarifications 2026-10-31).
 - **FR-026** [RBN-DEF-01.4]: O sistema MUST oferecer o filtro de Status (Agendada, Reagendada, Em Andamento,
   Realizada, Cancelada ou Todos), combinável com o filtro de período.
 - **FR-027** [RBN-CAD-14.1]: Para o Coordenador de Curso e a Secretaria, o sistema MUST aplicar o
@@ -597,7 +611,9 @@ outras histórias.
 - **FR-029** [RBN-DEF-01.6]: O sistema MUST exibir, para cada sessão, a janela "Histórico da
   defesa" (somente leitura), com a linha do tempo de todos os eventos (agendamento, reagendamento,
   cancelamento, alteração da banca, acionamento de suplente, início automático, liberação do
-  resultado), cada um com data, hora, responsável e a justificativa informada quando houver.
+  resultado), cada um com data, hora, responsável e a justificativa informada quando houver,
+  reunindo os eventos de todas as sessões do TCC, inclusive as canceladas (RBN-DEF-01.6;
+  Clarifications 2026-10-31).
 - **FR-030** [RBN-DEF-01.4]: O sistema MUST abrir a janela "Sessão de defesa" e o "Histórico da
   defesa" só para os membros da banca (inclusive o Suplente), o Professor da Disciplina da turma,
   a Secretaria do curso e o Aluno do próprio TCC, e MUST bloquear o acesso direto de qualquer

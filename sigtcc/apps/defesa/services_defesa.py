@@ -8,19 +8,35 @@ transaction.atomic() (research C2 e C3).
 [US-21][US-23][US-24][US-40][RBN-DEF-01.1][RBN-DEF-01.2][RBN-DEF-01.6][RBN-DEF-02.1]
 """
 
+import calendar
 import logging
 from datetime import datetime, timedelta
 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef, Q, Subquery
 from django.http import Http404
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import services_entregas, services_orientacao
 from sigtcc.apps.cadastro.cargas import CURSO_ENG_COMPUTACAO
-from sigtcc.apps.cadastro.choices import StatusOrientacao, StatusTCC, StatusTurma, TipoEntrega
-from sigtcc.apps.cadastro.models import Alunos, EntregasMarcos, Orientacoes, TCCs, Usuarios
+from sigtcc.apps.cadastro.choices import (
+    StatusCoorientacao,
+    StatusOrientacao,
+    StatusTCC,
+    StatusTurma,
+    TipoEntrega,
+)
+from sigtcc.apps.cadastro.models import (
+    Alunos,
+    Coorientacoes,
+    EntregasMarcos,
+    Orientacoes,
+    TCCs,
+    Turmas,
+    Usuarios,
+)
+from sigtcc.apps.cadastro.permissoes import tem_perfil
 from sigtcc.apps.cadastro.services import enviar_email_apos_commit, notificar
 from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA, travar_turma_ativa
 from sigtcc.apps.defesa import mensagens, permissoes_defesa
@@ -707,3 +723,139 @@ def cancelar(usuario, def_id, justificativa):
         )
         _avisar_aluno_e_banca(sessao, texto, mensagens.MD07_ASSUNTO)
     return sessao
+
+
+# =============================================================================================
+# Início automático, lista de sessões, filtro de período e histórico (US-40; research C6, C7)
+# =============================================================================================
+
+# Atalhos do filtro de período (RBN-DEF-01.5); "periodo_letivo" é o padrão. [US-40][FR-025]
+ATALHOS_DE_PERIODO = {
+    "periodo_letivo": "Período Letivo",
+    "esta_semana": "Esta Semana",
+    "este_mes": "Este Mês",
+    "proximos_30_dias": "Próximos 30 Dias",
+    "intervalo": "Data Inicial e Data Final",
+}
+
+
+def sessoes_para_iniciar(agora):
+    """Sessões "Agendada" ou "Reagendada" cuja data e horário marcados já chegaram (US-24 D).
+    Função pura: quem chama (view ou comando agendado) faz a transição.
+    [US-24][RBN-DEF-01.2][FR-021][research C6]
+    """
+    return Defesas.objects.filter(
+        Q(def_data__lt=agora.date()) | Q(def_data=agora.date(), def_h_inicio__lte=agora.time()),
+        def_status__in=(StatusSessao.AGENDADA, StatusSessao.REAGENDADA),
+    ).order_by("def_data", "def_h_inicio", "def_id")
+
+
+def periodo_letivo_atual(hoje=None):
+    """(ano, semestre) do período letivo atual: o maior entre as turmas ativas (as arquivadas
+    já encerraram o período, RBN-CAD-04.5); sem turma ativa, o do calendário (janeiro a junho =
+    1). [US-40][RBN-DEF-01.5][FR-025][Clarifications 2026-10-31]
+    """
+    maior = (
+        Turmas.objects.filter(tur_status=StatusTurma.ATIVA)
+        .order_by("-tur_ano", "-tur_semestre")
+        .values_list("tur_ano", "tur_semestre")
+        .first()
+    )
+    if maior is not None:
+        return maior
+    hoje = hoje or timezone.now().date()
+    return hoje.year, 1 if hoje.month <= 6 else 2
+
+
+def filtro_de_periodo(atalho, data_inicial=None, data_final=None, hoje=None, prefixo=""):
+    """Q sobre Defesas para o filtro de período (contrato §4), reaproveitável pela agenda, pelos
+    ouvintes e pelos relatórios: Período Letivo pelo ano e semestre da turma do TCC; Esta Semana
+    (segunda a domingo), Este Mês, Próximos 30 Dias e o intervalo manual pela data da sessão.
+    `prefixo` permite consultar a partir de outro modelo (ex.: "pre_def__"). As datas do
+    intervalo chegam já validadas (FiltroPeriodoForm). [US-40][RBN-DEF-01.5][FR-025]
+    """
+    hoje = hoje or timezone.now().date()
+    if atalho == "periodo_letivo":
+        ano, semestre = periodo_letivo_atual(hoje)
+        return Q(
+            **{
+                f"{prefixo}def_tcc__tcc_tur__tur_ano": ano,
+                f"{prefixo}def_tcc__tcc_tur__tur_semestre": semestre,
+            }
+        )
+    if atalho == "esta_semana":
+        inicio = hoje - timedelta(days=hoje.weekday())
+        fim = inicio + timedelta(days=6)
+    elif atalho == "este_mes":
+        inicio = hoje.replace(day=1)
+        fim = hoje.replace(day=calendar.monthrange(hoje.year, hoje.month)[1])
+    elif atalho == "proximos_30_dias":
+        inicio, fim = hoje, hoje + timedelta(days=30)
+    elif atalho == "intervalo":
+        inicio, fim = data_inicial, data_final
+    else:
+        raise ValueError(f"Atalho de período desconhecido: {atalho!r}")
+    return Q(**{f"{prefixo}def_data__gte": inicio, f"{prefixo}def_data__lte": fim})
+
+
+def _visiveis_para(usuario, cur_id):
+    """Q da visibilidade por perfil (RBN-DEF-01.4), somada por OR: Coordenador de Curso e
+    Secretaria veem todas as sessões do curso do filtro (cur_id None = todos os cursos); os
+    demais, as sessões em que constam (Aluno, banca, Orientador e Coorientador ativos) e as dos
+    alunos das turmas de que são Professor da Disciplina. [US-40][US-39][RBN-DEF-01.4][FR-024]
+    """
+    if tem_perfil(usuario, "coordenador", "secretaria"):
+        return Q() if cur_id is None else Q(def_tcc__tcc_tur__tur_cur_id=cur_id)
+    na_banca = BancaDefesa.objects.filter(ban_def=OuterRef("pk"), ban_usu_id=usuario.pk)
+    orienta = Orientacoes.objects.filter(
+        ori_tcc=OuterRef("def_tcc"), ori_doc_id=usuario.pk, ori_status=StatusOrientacao.ATIVA
+    )
+    coorienta = Coorientacoes.objects.filter(
+        coo_tcc=OuterRef("def_tcc"), coo_doc_id=usuario.pk, coo_status=StatusCoorientacao.ATIVA
+    )
+    return (
+        Q(def_tcc__tcc_alu_id=usuario.pk)
+        | Q(Exists(na_banca))
+        | Q(Exists(orienta))
+        | Q(Exists(coorienta))
+        | Q(def_tcc__tcc_tur__tur_doc_id=usuario.pk)
+    )
+
+
+def listar_defesas(usuario, periodo=None, status=None, cur_id=None):
+    """Lista Defesas (US-40), em ordem cronológica, com a visibilidade do perfil e os filtros de
+    período (Q de filtro_de_periodo), de Status (None = Todos) e de curso (Coordenador e
+    Secretaria; None = Todos), numa consulta, com aluno, turma, Local ou Link e o nome do
+    Orientador (Presidente) já carregados. [US-40][US-39][RBN-DEF-01.4][RBN-DEF-01.5][FR-024]
+    [FR-025][FR-026][FR-027]
+    """
+    presidente = BancaDefesa.objects.filter(
+        ban_def=OuterRef("pk"), ban_papel=PapelBanca.ORIENTADOR_PRESIDENTE
+    ).values("ban_usu__usu_nome")[:1]
+    sessoes = Defesas.objects.filter(_visiveis_para(usuario, cur_id))
+    if periodo is not None:
+        sessoes = sessoes.filter(periodo)
+    if status:
+        sessoes = sessoes.filter(def_status=status)
+    return (
+        sessoes.select_related(
+            "def_tcc__tcc_alu__alu",
+            "def_tcc__tcc_tur__tur_cur",
+            "defesaspresenciais",
+            "defesasremotas",
+        )
+        .annotate(orientador_nome=Subquery(presidente))
+        .order_by("def_data", "def_h_inicio", "def_id")
+    )
+
+
+def historico_da_sessao(sessao):
+    """Histórico da defesa do TCC (RBN-DEF-01.6): os eventos de todas as sessões do TCC desta
+    sessão, inclusive as canceladas, em ordem cronológica, sem checagem de perfil (quem chama
+    autoriza com permissoes_defesa.pode_ver_sessao). [US-40][RBN-DEF-01.6][FR-029][research C7]
+    """
+    return (
+        HistoricoDefesas.objects.filter(hdf_def__def_tcc_id=sessao.def_tcc_id)
+        .select_related("hdf_def", "hdf_usu", "hdf_membro_removido", "hdf_membro_incluido")
+        .order_by("hdf_data_hora", "hdf_id")
+    )
