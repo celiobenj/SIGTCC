@@ -82,3 +82,12 @@ python manage.py test sigtcc.apps.defesa --noinput
 ```
 
 `test_base_defesa.TestePopularDemo` confere este cenário; cada US tem o seu `test_usXX_*.py`.
+
+## 5. Resultado da validação manual (T056)
+
+Executado por Julia Cohen em 31/10/2026, sobre o cenário do `popular_demo --local`:
+
+- Roteiro manual da seção 2 (passos a a n): sem defeito.
+- Conferência visual em 360, 768 e 1280 px: sem problema (inclui o JavaScript da troca de formato
+  e da seção Banca, `alternar_formato.js` e `banca.js`).
+- Console do navegador: sem erros.

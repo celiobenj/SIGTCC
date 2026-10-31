@@ -378,9 +378,10 @@ perfil e verificar visibilidade e filtros
   `pode_*` (por curso e por perfil), incluindo acesso por endereço direto (SC-004)
 - [X] T055 [P] `sigtcc/apps/defesa/tests/test_mensagens_defesa.py` — confere, caractere por
   caractere, os textos entre aspas das US-21, 22, 23, 24, 39 e 40 (SC-006)
-- [ ] T056 Rodar o roteiro de [quickstart.md](quickstart.md) manualmente e registrar o resultado
-  *Pendente para uma pessoa da equipe (cria contas no banco local e precisa de navegador): conferir
-  em especial `alternar_formato.js` e `banca.js`, que os testes automáticos só checam pela presença.*
+- [X] T056 Rodar o roteiro de [quickstart.md](quickstart.md) manualmente e registrar o resultado
+  *Executado por Julia Cohen em 31/10/2026 sobre o cenário do `popular_demo` (passos a a n, sem
+  defeito; telas em 360, 768 e 1280 px sem problema; console do navegador sem erros); registro na
+  seção 5 do `quickstart.md` e no `pr-feat-07.md`.*
 - [X] T057 `pre-commit run --all-files` (`isort`, `black -l 100`, `flake8 --max-line-length 100`)
   em todos os arquivos novos/alterados desta feature
 
