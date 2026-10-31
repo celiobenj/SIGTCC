@@ -59,3 +59,18 @@ def pode_reagendar_ou_cancelar(usuario, sessao):
     if secretaria is not None and secretaria.sec_cur_id == sessao.def_tcc.tcc_tur.tur_cur_id:
         return True
     return pode_agendar(usuario, sessao.def_tcc)
+
+
+def pode_ver_sessao(usuario, sessao):
+    """Janela "Sessão de defesa" e "Histórico da defesa": membros da banca (inclusive o
+    Suplente), Professor da Disciplina da turma, Secretaria do curso e Aluno do próprio TCC; o
+    Coordenador e o Coorientador fora da banca, não (US-40 E5; Clarifications 2026-10-31).
+    [US-40][US-23][US-24][RBN-DEF-01.4][FR-030]
+    """
+    tcc = sessao.def_tcc
+    if tcc.tcc_alu_id == usuario.pk or tcc.tcc_tur.tur_doc_id == usuario.pk:
+        return True
+    secretaria = especializacao(usuario, "secretarios")
+    if secretaria is not None and secretaria.sec_cur_id == tcc.tcc_tur.tur_cur_id:
+        return True
+    return BancaDefesa.objects.filter(ban_def=sessao, ban_usu_id=usuario.pk).exists()

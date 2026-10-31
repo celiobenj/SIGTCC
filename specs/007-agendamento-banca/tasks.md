@@ -258,18 +258,18 @@ Banca, sem depender da confirmação final da sessão
   `pode_acionar_suplente(usuario, sessao)` em `permissoes_defesa.py` — quem pode agendar o TCC
   (`pode_agendar`, pelo curso; Clarifications 2026-10-31) com sessão Agendada/Reagendada;
   exclusivamente o Orientador com sessão Em Andamento e suplente presente — FR-011, FR-013 *(feito na Fase 2b, junto com T014/T015, que dependem dele)*
-- [ ] T034 [P] [US2] Implementar, em `forms_defesa.py`: a seção Banca do `AgendarForm` (exclui
+- [X] T034 [P] [US2] Implementar, em `forms_defesa.py`: a seção Banca do `AgendarForm` (exclui
   orientador/coorientadores, listas excludentes entre papéis, cadastro rápido de Membro Externo
   reaproveitando o formulário da US-05), `AlterarBancaForm` e `AcionarSuplenteForm` (Justificativa
   obrigatória até 500 caracteres) — FR-008, FR-009, FR-010, FR-012, FR-013
-- [ ] T035 [US2] Implementar as views `alterar_banca` e `acionar_suplente` em `views_defesa.py` —
+- [X] T035 [US2] Implementar as views `alterar_banca` e `acionar_suplente` em `views_defesa.py` —
   chamam `alterar_banca`/`acionar_suplente` de `services_defesa.py` (depende de T033, T034, T014,
   T015)
-- [ ] T036 [P] [US2] Criar `sigtcc/templates/defesa/form_alterar_banca.html` e
+- [X] T036 [P] [US2] Criar `sigtcc/templates/defesa/form_alterar_banca.html` e
   `form_acionar_suplente.html` (protótipo de 17/10)
-- [ ] T037 [P] [US2] Acrescentar em `mensagens.py` os textos exatos da US-23 (ou provisórios
+- [X] T037 [P] [US2] Acrescentar em `mensagens.py` os textos exatos da US-23 (ou provisórios
   `MD-XX`)
-- [ ] T038 [US2] `sigtcc/apps/defesa/tests/test_us23_banca.py` — os 11 cenários de aceite da User
+- [X] T038 [US2] `sigtcc/apps/defesa/tests/test_us23_banca.py` — os 11 cenários de aceite da User
   Story 2 (depende de T035)
 
 **Checkpoint**: Users Stories 1 e 2 funcionais (agendamento completo com banca e conflito
@@ -338,16 +338,19 @@ automático funcional; User Story 3 (T039) pode ser concluída depois de T042.
 **Independent Test**: com sessões em status e perfis distintos, abrir a tela Defesas como cada
 perfil e verificar visibilidade e filtros
 
-- [ ] T047 [P] [US5] Implementar `pode_ver_sessao(usuario, sessao)` em `permissoes_defesa.py` —
+- [X] T047 [P] [US5] Implementar `pode_ver_sessao(usuario, sessao)` em `permissoes_defesa.py` —
   membro da banca (inclusive o Suplente), Professor da Disciplina da turma, Secretaria do curso ou
   Aluno do próprio TCC; Coordenador e Coorientador fora da banca, não (Clarifications
-  2026-10-31, contracts/rotas.md) — FR-030
+  2026-10-31, contracts/rotas.md) — FR-030 *(feito na Fase 4, com a janela da sessão, onde ficam os
+  botões Alterar banca e Acionar suplente)*
 - [ ] T048 [US5] Implementar a view `defesas` em `views_defesa.py` — lista + filtros de período
   (atalhos e intervalo manual), status e, para Coordenador/Secretaria, curso (`?curso=`,
   `services_contas.filtro_de_curso`), atualizando em até 2 segundos — FR-024 a FR-028, RBN-CAD-14.1
   (depende de T020, T047)
 - [ ] T049 [US5] Implementar as views `sessao` e `historico` em `views_defesa.py` — 404 → 403
   (M-02) → conteúdo, nessa ordem — FR-029, FR-030 (depende de T047, T021)
+  *A view `sessao` (com a E5 da US-40) e o `sessao.html` com os blocos reservados já entraram na
+  Fase 4 (US-23 cenários 15 e 17); falta o `historico`.*
 - [ ] T050 [P] [US5] Criar `sigtcc/templates/defesa/defesas.html`, `sessao.html` (com os blocos
   reservados `{% block avaliacao %}`, `resultado`, `documentos`, `ouvintes`, `ocorrencias` do
   contrato §4 da feat-08/feat-09) e `historico.html` (protótipo de 17/10)

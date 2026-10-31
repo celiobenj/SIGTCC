@@ -708,3 +708,5 @@ a 006 (índice Q-124). Todos os textos entre aspas nos FR acima são cópia exat
 | MD-06 | Aviso do reagendamento (assunto "SIGTCC: defesa reagendada") | "Defesa de {aluno} reagendada para {quando} ({formato}: {lugar}). TCC: {titulo}. Justificativa: {justificativa}" | US-24 B.e; FR-019 | A validar |
 | MD-07 | Aviso do cancelamento (assunto "SIGTCC: defesa cancelada") | "A defesa de {aluno} marcada para {quando} foi cancelada. TCC: {titulo}. Justificativa: {justificativa}" | US-24 C.d; FR-020 | A validar |
 | MD-08 | Erro do campo Local com mais de 100 caracteres | "O Local deve ter até 100 caracteres" | US-21 E5 ("informa o limite de até 100 caracteres", sem texto exato); FR-005 | A validar |
+| MD-09 | Confirmação na tela depois de alterar a banca | "Banca alterada com sucesso" | US-23 C.e (sem texto exato); FR-011 | A validar |
+| MD-10 | Confirmação na tela depois de acionar o suplente | "Suplente acionado com sucesso" | US-23 D.e (sem texto exato); FR-013 | A validar |

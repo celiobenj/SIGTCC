@@ -13,4 +13,7 @@ urlpatterns = [
     path("defesas/", views_defesa.defesas, name="defesas"),
     path("defesas/agendar/", views_defesa.agendar, name="agendar"),
     path("turmas/<int:tur_id>/defesas/", views_defesa.turma_defesas, name="turma_defesas"),
+    path("defesas/<int:def_id>/", views_defesa.sessao, name="sessao"),
+    path("defesas/<int:def_id>/banca/", views_defesa.alterar_banca, name="alterar_banca"),
+    path("defesas/<int:def_id>/suplente/", views_defesa.acionar_suplente, name="acionar_suplente"),
 ]

@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q, Subquery
+from django.db.models import BooleanField, Case, Exists, OuterRef, Q, Subquery, Value, When
 from django.http import Http404
 from django.utils import timezone
 
@@ -36,7 +36,7 @@ from sigtcc.apps.cadastro.models import (
     Turmas,
     Usuarios,
 )
-from sigtcc.apps.cadastro.permissoes import tem_perfil
+from sigtcc.apps.cadastro.permissoes import especializacao, tem_perfil
 from sigtcc.apps.cadastro.services import enviar_email_apos_commit, notificar
 from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA, travar_turma_ativa
 from sigtcc.apps.defesa import mensagens, permissoes_defesa
@@ -849,12 +849,27 @@ def _visiveis_para(usuario, cur_id):
     )
 
 
+def _abre_a_sessao(usuario):
+    """Q de quem abre a janela da sessão, a mesma regra de permissoes_defesa.pode_ver_sessao,
+    para marcar as linhas da lista sem uma consulta por linha. [US-40][RBN-DEF-01.4][FR-030]
+    """
+    condicao = (
+        Q(def_tcc__tcc_alu_id=usuario.pk)
+        | Q(def_tcc__tcc_tur__tur_doc_id=usuario.pk)
+        | Q(Exists(BancaDefesa.objects.filter(ban_def=OuterRef("pk"), ban_usu_id=usuario.pk)))
+    )
+    secretaria = especializacao(usuario, "secretarios")
+    if secretaria is not None:
+        condicao |= Q(def_tcc__tcc_tur__tur_cur_id=secretaria.sec_cur_id)
+    return condicao
+
+
 def listar_defesas(usuario, periodo=None, status=None, cur_id=None):
     """Lista Defesas (US-40), em ordem cronológica, com a visibilidade do perfil e os filtros de
     período (Q de filtro_de_periodo), de Status (None = Todos) e de curso (Coordenador e
-    Secretaria; None = Todos), numa consulta, com aluno, turma, Local ou Link e o nome do
-    Orientador (Presidente) já carregados. [US-40][US-39][RBN-DEF-01.4][RBN-DEF-01.5][FR-024]
-    [FR-025][FR-026][FR-027]
+    Secretaria; None = Todos), numa consulta, com aluno, turma, Local ou Link, o nome do
+    Orientador (Presidente) e `pode_abrir` (a linha abre a janela da sessão) já carregados.
+    [US-40][US-39][RBN-DEF-01.4][RBN-DEF-01.5][FR-024][FR-025][FR-026][FR-027]
     """
     presidente = BancaDefesa.objects.filter(
         ban_def=OuterRef("pk"), ban_papel=PapelBanca.ORIENTADOR_PRESIDENTE
@@ -871,7 +886,14 @@ def listar_defesas(usuario, periodo=None, status=None, cur_id=None):
             "defesaspresenciais",
             "defesasremotas",
         )
-        .annotate(orientador_nome=Subquery(presidente))
+        .annotate(
+            orientador_nome=Subquery(presidente),
+            pode_abrir=Case(
+                When(_abre_a_sessao(usuario), then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField(),
+            ),
+        )
         .order_by("def_data", "def_h_inicio", "def_id")
     )
 
@@ -923,3 +945,15 @@ def agendar(usuario, tcc_id, dados_basicos, dados_banca):
         confirmar_agendamento(sessao, usuario)
         _recalcular_validades([membro for membro, _papel in membros])
     return sessao
+
+
+def substituicoes(sessao):
+    """Suplentes acionados na sessão: [(suplente, titular substituído, justificativa)], para a
+    janela da sessão. [US-23][US-40][RBN-DEF-02.2]
+    """
+    return [
+        (linha.ban_usu, linha.ban_usu_substituido, linha.ban_justificativa_substituicao)
+        for linha in BancaDefesa.objects.select_related("ban_usu", "ban_usu_substituido").filter(
+            ban_def=sessao, ban_usu_substituido__isnull=False
+        )
+    ]

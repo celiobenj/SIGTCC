@@ -67,3 +67,12 @@ LINK_INVALIDO = "O link deve começar com https:// e ter até 500 caracteres"
 TCC_NAO_AGENDAVEL = "Este TCC não pode ser agendado por você"
 # MD-08 (PROVISÓRIA): a US-21 E5 só diz que o sistema "informa o limite de até 100 caracteres".
 MD08_LOCAL_LONGO = "O Local deve ter até 100 caracteres"
+
+# US-40 E5. [US-40][RBN-DEF-01.4][FR-030]
+SEM_PERMISSAO_SESSAO = "Você não tem permissão para visualizar esta defesa"
+
+# US-23. [US-23][RBN-DEF-02.3]
+LINK_CADASTRAR_EXTERNO = "O Membro Externo não está na lista? Cadastrar"
+# MD-09 e MD-10 (PROVISÓRIAS): confirmação na tela (US-23 C.e e D.e, sem texto exato).
+MD09_BANCA_ALTERADA = "Banca alterada com sucesso"
+MD10_SUPLENTE_ACIONADO = "Suplente acionado com sucesso"
