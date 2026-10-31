@@ -6,6 +6,8 @@ monta turmas dos três cursos com alunos em todos os Status do TCC, passando pel
 das telas (matrícula, Proposta, entregas, pedidos, coorientação, atas, Apto para Defesa, Versão
 Final e aproveitamento de artigo). O resultado da defesa, que ainda não tem tela (Épico 2), é
 simulado pelo serviço único do Status com o gatilho "Liberação do resultado", como nos testes.
+As sessões de defesa (spec 007) ficam num TCC "Apto para Defesa" de cada curso, uma em cada Status
+da sessão, criadas só pelos serviços da Defesa (agendar_sessao e transicionar_status).
 
 Todas as contas ativas usam a mesma senha, informada em --senha. Os e-mails são fictícios
 (demo.nome@uea.edu.br) e nenhum e-mail é enviado durante a carga.
@@ -66,6 +68,9 @@ from sigtcc.apps.cadastro.models import (
     TurmasMarcos,
     Usuarios,
 )
+from sigtcc.apps.defesa import services_defesa
+from sigtcc.apps.defesa.choices import FormatoSessao, StatusSessao
+from sigtcc.apps.defesa.models import Defesas
 
 # Tabelas carregadas pelas migrações, que a limpeza mantém.
 MANTER = {"Cursos", "Equivalencia_Cursos", "Areas_Interesse"}
@@ -239,6 +244,7 @@ class Command(BaseCommand):
                 self._turmas_engenharia()
                 self._turmas_sistemas()
                 self._turmas_licenciatura()
+                self._defesas()
                 services_entregas.marcar_nao_entregues()
         self._resumo()
 
@@ -349,6 +355,8 @@ class Command(BaseCommand):
             ),
         ):
             usuario = self._usuario(nome, f"demo.{_slug(nome)}@{DOMINIO}", status, papel)
+            if status == StatusConta.ATIVA:
+                self.externo = usuario
             MembrosExternos.objects.create(
                 mem=usuario,
                 mem_titulacao=Titulacao.DOUTOR,
@@ -680,6 +688,7 @@ class Command(BaseCommand):
         self._orientador(a[7], t1, self.ori_ecp3)
         self._enviar(a[7], doc, "documento-defesa")
         self._apto(self.ori_ecp3, tccs[7])
+        self.apto_ecp1 = tccs[7]
         # a[8]: orientador e pedido de troca de orientação pendente.
         self._orientador(a[8], t1, self.ori_ecp2)
         self._pedido(a[8], t1, self.ori_ecp1)
@@ -758,6 +767,7 @@ class Command(BaseCommand):
         # b[2]: Apto para Defesa.
         self._enviar(b[2], doc2, "monografia")
         self._apto(p2, t2tcc[2])
+        self.apto_ecp2 = t2tcc[2]
         # b[3]: Aprovado, Versão Final enviada aguardando homologação.
         for i, status in (
             (3, StatusTCC.APROVADO),
@@ -766,6 +776,8 @@ class Command(BaseCommand):
         ):
             self._enviar(b[i], doc2, "monografia")
             self._apto(p2, t2tcc[i])
+            if i == 3:
+                self._sessao_realizada(t2tcc[i], p2)
             self._resultado(t2tcc[i], p2, status)
             self._enviar(b[i], vf2, "versao-final")
         # b[4]: Concluído (Versão Final homologada).
@@ -823,6 +835,7 @@ class Command(BaseCommand):
         self._orientador(alunos[2], t1, self.ori_si2)
         self._enviar(alunos[2], doc, "projeto")
         self._apto(self.ori_si2, tccs[2])
+        self.apto_si = tccs[2]
         self._pedido(alunos[3], t1, self.ori_si1)
         self._orientador(alunos[4], t1, self.ori_si1)
         self._coorientador_externo(
@@ -910,13 +923,116 @@ class Command(BaseCommand):
         )
         alunos = [self._aluno(p, t1) for _ in range(4)]
         self._entrega(p, t1, TipoEntrega.PROPOSTA, "Proposta", self.hoje + timedelta(days=10))
-        self._entrega(
+        doc = self._entrega(
             p, t1, TipoEntrega.DOCUMENTO_PARA_DEFESA, "Projeto", self.hoje + timedelta(days=40)
         )
-        for i in (1, 2, 3):
-            self._proposta(alunos[i], t1)
+        tccs = {i: self._proposta(alunos[i], t1) for i in (1, 2, 3)}
+        # alunos[2]: Apto para Defesa (sessão cancelada em _defesas, volta a poder agendar).
         self._orientador(alunos[2], t1, self.ori_lic)
+        self._enviar(alunos[2], doc, "projeto")
+        self._apto(self.ori_lic, tccs[2])
+        self.apto_lic = tccs[2]
         self._pedido(alunos[3], t1, self.ori_lic)
+
+    # =========================================================================================
+    # Sessões de defesa (spec 007): uma em cada Status da sessão
+    # =========================================================================================
+
+    def _agendar(self, tcc, autor, dia, hora, banca, local=None, link=None):
+        """Sessão "Agendada" pelo serviço da Defesa (US-21, US-23); presencial com `local`,
+        remota com `link`. [US-21][RBN-DEF-01.1][contrato §5]
+        """
+        formato = FormatoSessao.PRESENCIAL if local else FormatoSessao.REMOTA
+        primeiro, segundo, *suplente = banca
+        return services_defesa.agendar_sessao(
+            tcc,
+            {"data": dia, "h_inicio": hora, "formato": formato, "local": local, "link": link},
+            {
+                "primeiro_avaliador": primeiro,
+                "segundo_avaliador": segundo,
+                "suplente": suplente[0] if suplente else None,
+            },
+            autor,
+        )
+
+    def _sessao_realizada(self, tcc, orientador):
+        """Sessão já realizada, antes da liberação do resultado (US-24, US-27): Agendada → Em
+        Andamento (início automático) → Realizada. [US-24][RBN-DEF-01.2][contrato §5]
+        """
+        sessao = self._agendar(
+            tcc,
+            orientador,
+            self.hoje - timedelta(days=5),
+            time(14, 0),
+            (self.ori_ecp2, self.ori_ecp3),
+            local="Bloco B, sala 14",
+        )
+        services_defesa.transicionar_status(sessao, StatusSessao.EM_ANDAMENTO, None)
+        services_defesa.transicionar_status(sessao, StatusSessao.REALIZADA, orientador)
+
+    def _defesas(self):
+        """Agendada (Eng. Comp. TCC 1), Reagendada (Eng. Comp. TCC 2), Em Andamento (Sist. Inf.)
+        e Cancelada (Lic. Comp., TCC volta a poder agendar); a Realizada fica no TCC 2 de Eng.
+        Comp. que recebeu o resultado. Quem agenda segue o curso (RBN-DEF-01.3).
+        [US-21][US-24][RBN-DEF-01.2][RBN-DEF-01.3][contrato §5]
+        """
+        # Agendada, com suplente (Membro Externo).
+        self._agendar(
+            self.apto_ecp1,
+            self.ori_ecp3,
+            self.hoje + timedelta(days=10),
+            time(14, 0),
+            (self.ori_ecp1, self.ori_ecp2, self.externo),
+            local="Laboratório LSI",
+        )
+        # Reagendada (remota). Até a Fase 2b (reagendar, tasks T017) a nova data é gravada aqui e
+        # o status muda pelo serviço único, com as datas anterior e nova no histórico.
+        sessao = self._agendar(
+            self.apto_ecp2,
+            self.prof_ecp2,
+            self.hoje + timedelta(days=6),
+            time(9, 0),
+            (self.ori_ecp1, self.prof_ecp3),
+            link="https://meet.google.com/demo-defesa-ecp",
+        )
+        nova_data, nova_hora = self.hoje + timedelta(days=12), time(10, 0)
+        Defesas.objects.filter(pk=sessao.pk).update(def_data=nova_data, def_h_inicio=nova_hora)
+        services_defesa.transicionar_status(
+            sessao,
+            StatusSessao.REAGENDADA,
+            self.prof_ecp2,
+            "Avaliador em viagem para congresso na data original.",
+            data_anterior=sessao.def_data,
+            hora_anterior=sessao.def_h_inicio,
+            data_nova=nova_data,
+            hora_nova=nova_hora,
+        )
+        # Em Andamento: começou há 20 minutos.
+        inicio = (timezone.now() - timedelta(minutes=20)).replace(second=0, microsecond=0)
+        sessao = self._agendar(
+            self.apto_si,
+            self.prof_si1,
+            inicio.date(),
+            inicio.time(),
+            (self.ori_si1, self.prof_si2),
+            local="Bloco C, sala 5",
+        )
+        services_defesa.transicionar_status(sessao, StatusSessao.EM_ANDAMENTO, None)
+        # Cancelada: o TCC continua "Apto para Defesa".
+        sessao = self._agendar(
+            self.apto_lic,
+            self.prof_lic,
+            self.hoje + timedelta(days=15),
+            time(16, 0),
+            (self.prof_lic, self.externo),
+            local="Bloco A, sala 2",
+        )
+        services_defesa.transicionar_status(
+            sessao,
+            StatusSessao.CANCELADA,
+            self.prof_lic,
+            "Aluno pediu mais prazo para revisar o projeto.",
+        )
 
     # =========================================================================================
     # Resumo
@@ -927,7 +1043,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Carga concluída."))
         self.stdout.write(
             f"Contas: {Usuarios.objects.count()} | Turmas: {Turmas.objects.count()} | "
-            f"TCCs: {TCCs.objects.count()} | Notificações: {Notificacoes.objects.count()}"
+            f"TCCs: {TCCs.objects.count()} | Notificações: {Notificacoes.objects.count()} | "
+            f"Sessões de defesa: {Defesas.objects.count()}"
         )
         self.stdout.write("\nContas para a demonstração (todas com a senha informada):")
         for papel, email, _status in self.logins:

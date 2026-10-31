@@ -108,12 +108,12 @@ e `popular_demo`
   (`services_turmas.STATUS_SESSAO_ATIVA`), em turma ativa (RBN-CAD-04.5) e sob a responsabilidade
   do usuário pela regra de `pode_agendar` (mesmo critério, em consulta única), com título e nome do
   aluno — FR-001, FR-003, RBN-DEF-01.1, RBN-DEF-01.3 (depende de T024)
-- [ ] T022 IC-05: acrescentar, em `sigtcc/apps/cadastro/management/commands/popular_demo.py`, um
+- [X] T022 IC-05: acrescentar, em `sigtcc/apps/cadastro/management/commands/popular_demo.py`, um
   TCC "Apto para Defesa" em cada curso e uma sessão em cada um dos 5 valores de `StatusSessao`,
   criadas só por `services_defesa` (`agendar_sessao` e `transicionar_status`; nunca
   `Defesas.objects.create()` direto); a sessão "Realizada" fica num TCC que depois recebe o
   resultado — contrato §5 (depende de T006, T011)
-- [ ] T023 [P] `sigtcc/apps/defesa/tests/test_base_defesa.py`: `transicionar_status` (transições
+- [X] T023 [P] `sigtcc/apps/defesa/tests/test_base_defesa.py`: `transicionar_status` (transições
   válidas e inválidas, nenhuma linha gravada quando inválida), `registrar_evento` (inclusive
   `autor=None`), `agendar_sessao`, `membros_efetivos`, `descartar_avaliacoes` (stub),
   `pode_agendar`, `tccs_elegiveis`, `popular_demo` (smoke test: uma sessão em cada status) —
@@ -164,8 +164,9 @@ cancelamento, início automático, lista e histórico. **Bloqueia as Fases 3 a 7
   `services_defesa.py` — depois de `_travar_membros` (T007) e `_verificar_conflito` (T008) com os
   pks de **todos** os membros de `BancaDefesa`, inclusive o Suplente (FR-014), chama
   `transicionar_status(..., StatusSessao.REAGENDADA, ...)` e notifica a banca inteira e o Aluno
-  com os novos dados, sem tocar banca/avaliações — FR-019, research C5 (depende de T006, T007,
-  T008)
+  com os novos dados, sem tocar banca/avaliações; trocar, no `popular_demo` (`_defesas`), a
+  gravação direta da nova data/hora pela chamada a `reagendar` — FR-019, research C5 (depende de
+  T006, T007, T008)
 - [ ] T018 Implementar `cancelar(sessao, justificativa, autor) -> Defesas` em `services_defesa.py`
   — chama `transicionar_status(..., StatusSessao.CANCELADA, ...)`, o stub
   `descartar_avaliacoes(sessao)` (todos os membros) e notifica a banca e o Aluno; nunca grava

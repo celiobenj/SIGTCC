@@ -3,15 +3,19 @@
 [US-21][US-23][US-24][US-40][RBN-DEF-01.2][RBN-DEF-01.6][SC-003] (tasks T023)
 """
 
+from collections import Counter
 from datetime import datetime, time
-from datetime import timezone as dt_timezone
 from decimal import Decimal
+from io import StringIO
+from unittest import mock
 
+from django.core.management import call_command
+from django.db import connection
 from django.utils import timezone
 
 from sigtcc.apps.cadastro.choices import StatusTCC, StatusTurma
-from sigtcc.apps.cadastro.models import Turmas
-from sigtcc.apps.cadastro.tests.apoio_turmas import LC, SI, TesteTurmas, criar_defesa_de
+from sigtcc.apps.cadastro.models import TCCs, Turmas
+from sigtcc.apps.cadastro.tests.apoio_turmas import EC, LC, SI, TesteTurmas, criar_defesa_de
 from sigtcc.apps.cadastro.tests.fabricas import criar_criterio
 from sigtcc.apps.defesa import permissoes_defesa, services_defesa
 from sigtcc.apps.defesa.choices import (
@@ -24,6 +28,7 @@ from sigtcc.apps.defesa.choices import (
 from sigtcc.apps.defesa.models import (
     Avaliacoes,
     BancaDefesa,
+    Defesas,
     DefesasPresenciais,
     DefesasRemotas,
     HistoricoDefesas,
@@ -134,7 +139,7 @@ class TesteRegistrarEvento(TesteTurmas):
         self.assertEqual(self.sessao.def_status, StatusSessao.AGENDADA)
 
     def test_usa_o_instante_informado(self):
-        agora = datetime(2026, 10, 30, 14, 0, tzinfo=dt_timezone.utc)
+        agora = datetime(2026, 10, 30, 14, 0)
         evento = services_defesa.registrar_evento(
             self.sessao, EventoDefesa.AGENDAMENTO, None, self.orientador, agora=agora
         )
@@ -368,3 +373,40 @@ class TesteElegibilidade(TesteTurmas):
                 self.assertEqual(lista, esperado)
         # Professor de EC não agenda em EC, mas agenda o TCC de Licenciatura da sua turma.
         self.assertEqual({t.pk for t in services_defesa.tccs_elegiveis(professor_ec)}, {tccs[4].pk})
+
+
+class TestePopularDemo(TesteTurmas):
+    """popular_demo com uma sessão em cada status (contrato §5; IC-05). [US-24][RBN-DEF-01.2]"""
+
+    def test_uma_sessao_em_cada_status_criada_pelos_servicos(self):
+        nome_banco = connection.settings_dict["NAME"]
+        with mock.patch("builtins.input", return_value=nome_banco):
+            call_command(
+                "popular_demo",
+                "--senha",
+                "Demo2026sig",
+                "--confirmar",
+                "--local",
+                stdout=StringIO(),
+            )
+        contagem = Counter(Defesas.objects.values_list("def_status", flat=True))
+        self.assertEqual(contagem, Counter(StatusSessao.values))
+        for sessao in Defesas.objects.select_related("def_tcc__tcc_tur__tur_cur"):
+            with self.subTest(status=sessao.def_status):
+                primeiro = HistoricoDefesas.objects.filter(hdf_def=sessao).earliest("hdf_id")
+                self.assertEqual(primeiro.hdf_evento, EventoDefesa.AGENDAMENTO)
+                self.assertTrue(
+                    permissoes_defesa.pode_agendar(primeiro.hdf_usu, sessao.def_tcc),
+                    "quem agendou segue a regra do curso",
+                )
+                self.assertEqual(len(services_defesa.membros_efetivos(sessao)), 3)
+        realizada = Defesas.objects.get(def_status=StatusSessao.REALIZADA)
+        self.assertEqual(realizada.def_tcc.tcc_status, StatusTCC.APROVADO)
+        cancelada = Defesas.objects.get(def_status=StatusSessao.CANCELADA)
+        self.assertTrue(services_defesa.tcc_elegivel(cancelada.def_tcc))
+        cursos_com_apto = set(
+            TCCs.objects.filter(tcc_status=StatusTCC.APTO_PARA_DEFESA).values_list(
+                "tcc_tur__tur_cur__cur_nome", flat=True
+            )
+        )
+        self.assertEqual(cursos_com_apto, {EC, SI, LC})
