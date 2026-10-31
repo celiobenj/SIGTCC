@@ -228,7 +228,8 @@ os campos básicos isoladamente (sem depender da seção Banca completa, User St
   paleta, Roboto/Figtree, Material Symbols; nota de 15/20 minutos de apresentação, US-21 passo 4)
 - [X] T028 [P] [US1] IC-02 (índice Q-123): item "Defesas" em `sigtcc/apps/cadastro/menu.py` (ícone
   do protótipo, rota `defesa:defesas`, perfis aluno/docente/secretaria, logo depois de
-  "Orientações")
+  "Orientações") *Implementado também para o perfil `membro_externo`: o Avaliador da FR-024
+  inclui o Membro Externo, que vê as sessões em que está na banca (IC-02 do plan).*
 - [X] T029 [P] [US1] IC-03 (índice Q-123): aba "Defesas" em
   `sigtcc/apps/cadastro/templates/cadastro/tcc/_abas_professor.html` (visível quando
   `e_professor`, rota `defesa:turma_defesas`); implementar a view `turma_defesas` em

@@ -214,7 +214,7 @@ aprovação de Célio Benjamim (configuração).
 | IC-03 | `cadastro/templates/cadastro/tcc/_abas_professor.html` (005; usado por `turma.html` da 004 e `entregas.html` da 005) | `+` aba "Defesas" (`defesa:turma_defesas`, `turma.pk`), visível quando `e_professor` (mesma condição já usada para "Entregas"). Abas existentes inalteradas. | FR-006 | `test_navegacao_tcc.py` (abas) conferido; só acréscimo | Q-123 |
 | IC-04 | `cadastro/templates/cadastro/orientacao/orientacoes.html` e `cadastro/views_orientacao.py` (006) | `+` link "Agendar defesa" na linha de cada orientando que o docente pode agendar (`defesa:agendar?tcc=<id>`), com o conjunto `agendaveis` calculado na view por `services_defesa.tccs_elegiveis`. Linhas sem essa condição não mudam. | FR-006 | `test_us18_resposta_orientandos.py` conferido; só acréscimo | Q-123 |
 | IC-06 | `cadastro/views.py` (003; `MENSAGENS_403`, já usado pela US-07 E8) | `+` as mensagens da US-21 E7, "Este TCC não pode ser agendado por você", e da US-40 E5, "Você não tem permissão para visualizar esta defesa", entre as mensagens de 403 próprias de uma US. Demais mensagens inalteradas. *(Acrescentado no `/speckit-implement`, 2026-10-31.)* | US-21 E7 (FR-003) | `test_seguranca.py` conferido; só acréscimo | Q-123 |
-| IC-05 | `cadastro/management/commands/popular_demo.py` (005 ou 006, o que já existir) | `+` TCCs "Apto para Defesa" (um por curso) e uma sessão em cada um dos 5 valores de `StatusSessao`, usando `services_defesa` (nunca criando `Defesas` direto). | Contrato desta spec, §4 (feat-08/feat-09) | comando idempotente; sem teste de aceite próprio, só smoke test | — |
+| IC-05 | `cadastro/management/commands/popular_demo.py` (005 ou 006, o que já existir) | `+` TCCs "Apto para Defesa" (um por curso) e uma sessão em cada um dos 5 valores de `StatusSessao`, usando `services_defesa` (nunca criando `Defesas` direto). | Contrato desta spec, §5 (feat-08/feat-09); roteiro manual da T056 | comando idempotente; sem teste de aceite próprio, conferido por `test_base_defesa.TestePopularDemo` | Q-123 |
 
 Nenhum IC altera comportamento ou teste de outra feature — são só acréscimos independentes
 (inclusão de rota, item de menu, aba e link).
@@ -225,11 +225,11 @@ Nenhum IC altera comportamento ou teste de outra feature — são só acréscimo
 
 | Pendência | Destino | Índice |
 |---|---|---|
-| Aprovar os IC-01 a IC-05 (código de specs já mescladas) | Célio Benjamim (config) | Q-123 |
-| Validar os textos exatos das mensagens desta spec (se algum não tiver aspas na US, vira provisório no `tasks.md`, mesmo padrão das specs 004 a 006) | Profa. Diana (PO) | a abrir no `tasks.md`, se houver |
-| Entregar `services_avaliacoes.descartar_avaliacoes(sessao, membro=None)` real, substituindo o stub desta spec | Célio Benjamim (feat-08) | Clarifications |
-| **Fase base pronta até 03/11** (`agendar_sessao`, `membros_efetivos`, `registrar_evento`, `transicionar_status`, `TRANSICOES_VALIDAS`, `popular_demo`) para a feat-08 depender dela | Julia Cohen → Célio Benjamim | prazo crítico (ver Summary) |
-| Nome/ícone definitivo do item de menu "Defesas" (segue o protótipo de 17/10 por padrão) | Profa. Diana ou Célio Benjamim | a confirmar na implementação |
+| Aprovar os IC-01 a IC-06 (código de specs já mescladas) | Célio Benjamim (config) | Q-123 |
+| Validar os textos provisórios MD-01 a MD-13 (tabela "Mensagens a validar com a PO" da spec; os demais são cópia exata das US) | Profa. Diana (PO) | Q-124 |
+| Entregar `services_avaliacoes.descartar_avaliacoes(sessao, membro=None)` real, no lugar do stub `services_defesa.descartar_avaliacoes` (contrato §6) | Célio Benjamim (feat-08) | Q-125 |
+| Fase base pronta até 03/11 (`agendar_sessao`, `membros_efetivos`, `registrar_evento`, `transicionar_status`, `TRANSICOES_VALIDAS`, `popular_demo`) para a feat-08 depender dela | Julia Cohen → Célio Benjamim | **entregue em 31/10/2026** (Fase 2a do `tasks.md`, commits `36f5db3` a `bef50c0`) |
+| Nome/ícone definitivo do item de menu "Defesas" (implementado com o rótulo e o ícone `event` do protótipo de 17/10) | Profa. Diana ou Célio Benjamim | Q-126 |
 
 ## Complexity Tracking
 
