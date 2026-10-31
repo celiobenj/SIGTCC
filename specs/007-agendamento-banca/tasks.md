@@ -43,12 +43,12 @@ central (`Defesas`) — decisão já justificada no Complexity Tracking do plan.
 
 **Purpose**: estrutura inicial do app `defesa` para esta feature
 
-- [ ] T001 Criar os arquivos (com o cabeçalho `[US-XX][RBN-...]` a preencher por tarefa)
+- [X] T001 Criar os arquivos (com o cabeçalho `[US-XX][RBN-...]` a preencher por tarefa)
   `sigtcc/apps/defesa/services_defesa.py` e `permissoes_defesa.py` na Fase 2a;
   `forms_defesa.py`, `views_defesa.py`, `urls.py` (`app_name = "defesa"`) e `mensagens.py` quando
   a primeira User Story precisar deles — `models.py`, `choices.py` e `cargas.py` já existem (spec
   001)
-- [ ] T002 [P] IC-01 (índice Q-123): `+ path("", include("sigtcc.apps.defesa.urls"))` em
+- [X] T002 [P] IC-01 (índice Q-123): `+ path("", include("sigtcc.apps.defesa.urls"))` em
   `sigtcc/urls.py`, sem remover nada existente (junto com a primeira view, Fase 3)
 - [X] T003 [P] Criar `sigtcc/apps/defesa/tests/apoio_defesa.py` com fábricas que partem de
   `tests/apoio_turmas.py`/`apoio_orientacao.py` (TCC "Apto para Defesa" com Orientador vinculado)
@@ -211,31 +211,35 @@ orientandos)
 os campos básicos isoladamente (sem depender da seção Banca completa, User Story 2)
 
 - T024 — movida para a Fase 2a (`pode_agendar`).
-- [ ] T025 [P] [US1] Implementar `AgendarForm` em `sigtcc/apps/defesa/forms_defesa.py` — TCC (lista
+- [X] T025 [P] [US1] Implementar `AgendarForm` em `sigtcc/apps/defesa/forms_defesa.py` — TCC (lista
   de `services_defesa.tccs_elegiveis(usuario)`, T058), Data (não anterior a hoje), Horário de
   Início, Formato, Local (até 100 caracteres) ou Link (`https://`, até 500 caracteres), limpando o
   campo oposto ao trocar o formato — FR-001, FR-002, FR-004, FR-005
-- [ ] T026 [US1] Implementar a view `agendar` em `sigtcc/apps/defesa/views_defesa.py` — GET lista
+- [X] T026 [US1] Implementar a view `agendar` em `sigtcc/apps/defesa/views_defesa.py` — GET lista
   TCCs elegíveis (`?tcc=` pré-seleciona), POST trava turma/aluno/TCC, chama `_travar_membros` +
   `_verificar_conflito` (Fase 2b) e, sem conflito, `agendar_sessao` e `confirmar_agendamento`,
   exibindo "Defesa agendada com sucesso" — FR-001, FR-003, FR-014 a FR-016, contracts/rotas.md
   (depende de T024, T025, T008, T011, T016)
-- [ ] T027 [P] [US1] Criar `sigtcc/templates/defesa/form_agendar.html` (protótipo de 17/10: layout,
+  *A tela Defesas (`defesas`, lista do Período Letivo e botão Agendar defesa) entrou aqui, porque é o
+  passo 1-2 da US-21 e o destino da E2 e do sucesso; os filtros e a janela da sessão são da Fase 7.
+  O `AgendarForm` já traz os campos da banca com a validação no servidor; a T034 acrescenta o
+  Presidente na tela, as listas que excluem os escolhidos e o atalho do Membro Externo.*
+- [X] T027 [P] [US1] Criar `sigtcc/templates/defesa/form_agendar.html` (protótipo de 17/10: layout,
   paleta, Roboto/Figtree, Material Symbols; nota de 15/20 minutos de apresentação, US-21 passo 4)
-- [ ] T028 [P] [US1] IC-02 (índice Q-123): item "Defesas" em `sigtcc/apps/cadastro/menu.py` (ícone
+- [X] T028 [P] [US1] IC-02 (índice Q-123): item "Defesas" em `sigtcc/apps/cadastro/menu.py` (ícone
   do protótipo, rota `defesa:defesas`, perfis aluno/docente/secretaria, logo depois de
   "Orientações")
-- [ ] T029 [P] [US1] IC-03 (índice Q-123): aba "Defesas" em
+- [X] T029 [P] [US1] IC-03 (índice Q-123): aba "Defesas" em
   `sigtcc/apps/cadastro/templates/cadastro/tcc/_abas_professor.html` (visível quando
   `e_professor`, rota `defesa:turma_defesas`); implementar a view `turma_defesas` em
   `views_defesa.py` e o template `sigtcc/templates/defesa/turma_defesas.html` — FR-006 (depende de
   T020)
-- [ ] T030 [P] [US1] IC-04 (índice Q-123): link "Agendar defesa" em
+- [X] T030 [P] [US1] IC-04 (índice Q-123): link "Agendar defesa" em
   `sigtcc/apps/cadastro/templates/cadastro/orientacao/orientacoes.html`, por orientando com TCC
   elegível (`services_defesa.tcc_elegivel`, T058; `defesa:agendar?tcc=<id>`) — FR-006
-- [ ] T031 [P] [US1] Acrescentar em `sigtcc/apps/defesa/mensagens.py` os textos exatos da US-21
+- [X] T031 [P] [US1] Acrescentar em `sigtcc/apps/defesa/mensagens.py` os textos exatos da US-21
   (ou provisórios `MD-XX`, registrados em `docs/questoes-a-rever.md`) — research C8
-- [ ] T032 [US1] `sigtcc/apps/defesa/tests/test_us21_agendar.py` — os 8 cenários de aceite da User
+- [X] T032 [US1] `sigtcc/apps/defesa/tests/test_us21_agendar.py` — os 8 cenários de aceite da User
   Story 1 (depende de T026)
 
 **Checkpoint**: User Story 1 funcional e testável (agendamento com conflito já bloqueado; falta a

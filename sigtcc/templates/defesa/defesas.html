@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% comment %}
+  Tela Defesas (viewDefesas do protótipo de 17/10, só o visual): lista das sessões do Período
+  Letivo atual e o botão "Agendar defesa" para quem agenda (Orientador ou Professor da
+  Disciplina). [US-21][US-40][RBN-DEF-01.4][FR-024]
+{% endcomment %}
+{% block titulo %}Defesas · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <h2 class="pg">Defesas</h2>
+  {% if pode_agendar %}<a class="btn pri" href="{{ url_agendar }}"><span class="ms">event</span>Agendar defesa</a>{% endif %}
+</div>
+<div class="mt16">{% include "defesa/_tabela_defesas.html" %}</div>
+{% endblock %}

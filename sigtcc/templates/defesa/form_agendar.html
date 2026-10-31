@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+{% comment %}
+  "Agendar sessão de defesa" (formAgendar do protótipo de 17/10, só o visual; aqui em página
+  própria): TCC, Data, Horário de Início (com a reserva de 1 hora), Formato da Sessão, Local ou
+  Link da Videochamada, a nota do tempo de apresentação e a seção Banca examinadora; botões
+  Cancelar e Agendar. static/js/alternar_formato.js mostra só o campo do formato escolhido e
+  limpa o outro ao trocar; sem JavaScript, os dois aparecem e o servidor decide.
+  [US-21][US-23][RBN-DEF-01.1][RBN-DEF-02.1][FR-001][FR-002][FR-004][FR-007]
+{% endcomment %}
+{% block titulo %}{{ titulo }} · SIGTCC{% endblock %}
+{% block conteudo %}
+<section class="cartao mt16" style="max-width:760px">
+  <header><span class="ms">event</span><h3>{{ titulo }}</h3></header>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% for erro in form.non_field_errors %}<div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>{% endfor %}
+    {% include "includes/campo.html" with campo=form.tcc %}
+    <div class="alerta info"><span class="ms">info</span><span class="texto">A apresentação oral dispõe de 15 minutos em TCC 1 e 20 minutos em TCC 2, seguida da arguição da banca.</span></div>
+    <div class="blocos">
+      {% include "includes/campo.html" with campo=form.data %}
+      {% include "includes/campo.html" with campo=form.h_inicio %}
+      {% include "includes/campo.html" with campo=form.formato %}
+    </div>
+    <div data-caixa-formato="Presencial">{% include "includes/campo.html" with campo=form.local %}</div>
+    <div data-caixa-formato="Remota">{% include "includes/campo.html" with campo=form.link %}</div>
+    <h4 class="sec-tit c-azul">Banca examinadora</h4>
+    <div class="blocos">
+      {% include "includes/campo.html" with campo=form.primeiro_avaliador %}
+      {% include "includes/campo.html" with campo=form.segundo_avaliador %}
+    </div>
+    {% include "includes/campo.html" with campo=form.suplente %}
+    <div class="flex entre mt16">
+      <a class="btn txt" href="{{ url_cancelar }}">Cancelar</a>
+      <button type="submit" class="btn pri">Agendar</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/alternar_formato.js' %}"></script>{% endblock %}

@@ -1,0 +1,30 @@
+{% load defesa_tags %}
+{% comment %}
+  Tabela das sessões de defesa (tabelaDefesas do protótipo de 17/10, só o visual): Data, Horário
+  (com a reserva de 1 hora), Aluno, Título, Orientador, Local ou Link e Status, em ordem
+  cronológica. Sem sessões, mantém os cabeçalhos e mostra a mensagem da US-40 E2.
+  Uso: {% include "defesa/_tabela_defesas.html" with sessoes=sessoes %}
+  [US-21][US-40][RBN-DEF-01.4][FR-024][FR-028]
+{% endcomment %}
+<div class="tabela-wrap">
+  <table class="tabela larga">
+    <thead>
+      <tr><th>Data</th><th>Horário</th><th>Aluno</th><th>Título</th><th>Orientador</th><th>Local ou Link</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for sessao in sessoes %}
+      <tr>
+        <td>{{ sessao.def_data|date:"d/m/Y" }}</td>
+        <td>{{ sessao|horario }}</td>
+        <td>{{ sessao.def_tcc.tcc_alu.alu.usu_nome }}</td>
+        <td>{{ sessao.def_tcc.tcc_titulo }}</td>
+        <td>{{ sessao.orientador_nome }}</td>
+        <td>{{ sessao|lugar }}</td>
+        <td><span class="chip">{{ sessao.def_status }}</span></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="muted">Nenhuma sessão de defesa encontrada para o período e filtros selecionados</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

@@ -45,6 +45,7 @@ from sigtcc.apps.cadastro.services import (
     EstadoLogin,
     EstadoTroca,
 )
+from sigtcc.apps.defesa import mensagens as mensagens_defesa
 
 # Texto de cada tipo de conta no painel (spec FR-010).
 _ROTULO_TIPO = {
@@ -63,8 +64,9 @@ _ROTULO_PAPEL = {
 }
 
 
-# Mensagens de 403 próprias de uma US, levadas na exceção (PermissionDenied(texto)).
-MENSAGENS_403 = {mensagens.SEM_PERMISSAO_PAGINA}
+# Mensagens de 403 próprias de uma US, levadas na exceção (PermissionDenied(texto)); a da US-21
+# E7 entra pela spec 007 (IC-06). [US-07][US-21][RBN-DEF-01.3]
+MENSAGENS_403 = {mensagens.SEM_PERMISSAO_PAGINA, mensagens_defesa.TCC_NAO_AGENDAVEL}
 
 
 def acesso_negado(request, exception=None):

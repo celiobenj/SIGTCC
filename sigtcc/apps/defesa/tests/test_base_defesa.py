@@ -67,6 +67,7 @@ class TesteTransicaoDeStatus(TesteTurmas):
     """transicionar_status e TRANSICOES_VALIDAS (contrato §1). [US-24][RBN-DEF-01.2][FR-017]"""
 
     def setUp(self):
+        super().setUp()
         self.tcc, self.professor, self.orientador = tcc_apto()
 
     def sessao(self, status):
@@ -138,6 +139,7 @@ class TesteRegistrarEvento(TesteTurmas):
     """registrar_evento (contrato §2). [US-40][RBN-DEF-01.6][FR-023][FR-029]"""
 
     def setUp(self):
+        super().setUp()
         self.tcc, self.professor, self.orientador = tcc_apto()
         self.sessao = criar_defesa_de(self.tcc, StatusSessao.AGENDADA)
 
@@ -177,6 +179,7 @@ class TesteAgendarSessao(TesteTurmas):
     """agendar_sessao (contrato §1 e §3). [US-21][US-23][RBN-DEF-01.1][RBN-DEF-02.1][FR-007]"""
 
     def setUp(self):
+        super().setUp()
         self.tcc, self.professor, self.orientador = tcc_apto()
         self.av1, self.av2, self.suplente = docente(), docente(), docente()
 
@@ -252,6 +255,7 @@ class TesteMembrosEfetivos(TesteTurmas):
     """membros_efetivos (contrato §2). [US-23][RBN-DEF-02.1][RBN-DEF-02.2]"""
 
     def setUp(self):
+        super().setUp()
         self.tcc, _professor, self.orientador = tcc_apto()
         self.av1, self.av2, self.suplente = docente(), docente(), docente()
         self.sessao = agendar_sessao_de(
@@ -440,6 +444,7 @@ class TesteVerificarConflito(TesteTurmas):
     DIA = datetime(2026, 11, 20).date()
 
     def setUp(self):
+        super().setUp()
         self.tcc, _professor, self.orientador = tcc_apto()
         self.av1, self.av2 = docente(), docente()
         self.sessao = agendar_sessao_de(
@@ -559,6 +564,7 @@ class TesteAlterarBanca(TesteTurmas):
     """alterar_banca (US-23 C). [US-23][RBN-DEF-02.4][FR-011][FR-012][FR-015]"""
 
     def setUp(self):
+        super().setUp()
         self.tcc, self.professor, self.orientador = tcc_apto()
         self.av1, self.av2, self.suplente = docente(), docente(), docente()
         self.sessao = agendar_sessao_de(
@@ -683,6 +689,7 @@ class TesteAcionarSuplente(TesteTurmas):
     """acionar_suplente (US-23 D). [US-23][RBN-DEF-02.2][FR-013]"""
 
     def setUp(self):
+        super().setUp()
         self.tcc, self.professor, self.orientador = tcc_apto()
         self.av1, self.av2, self.suplente = docente(), docente(), docente()
         self.sessao = agendar_sessao_de(
@@ -745,6 +752,7 @@ class TesteConfirmarAgendamento(TesteTurmas):
     """confirmar_agendamento (US-24, passos 3 a 7). [US-24][RBN-DEF-03.2][FR-018]"""
 
     def setUp(self):
+        super().setUp()
         self.tcc, self.professor, self.orientador = tcc_apto()
         self.aluno = self.tcc.tcc_alu
         entrega = cadastrar_entrega(self.tcc.tcc_tur, tipo=TipoEntrega.DOCUMENTO_PARA_DEFESA)
@@ -797,6 +805,7 @@ class TesteReagendarECancelar(TesteTurmas):
     }
 
     def setUp(self):
+        super().setUp()
         self.tcc, self.professor, self.orientador = tcc_apto(SI)
         self.av1, self.av2, self.suplente = docente(SI), docente(SI), docente(SI)
         self.sessao = agendar_sessao_de(
@@ -985,6 +994,7 @@ class TesteListarDefesas(TesteTurmas):
     """
 
     def setUp(self):
+        super().setUp()
         self.tcc_ec, self.prof_ec, self.ori_ec = tcc_apto()
         self.av = docente()
         self.coorientador = docente()
@@ -1090,6 +1100,7 @@ class TesteAgendar(TesteTurmas):
     }
 
     def setUp(self):
+        super().setUp()
         self.tcc, self.professor, self.orientador = tcc_apto()
         self.banca = {"primeiro_avaliador": docente(), "segundo_avaliador": docente()}
 
