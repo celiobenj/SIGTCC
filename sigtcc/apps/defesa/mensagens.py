@@ -12,3 +12,28 @@ MD-xx são PROVISÓRIOS (spec 007, "Mensagens a validar com a PO"; índice Q-124
 MD01_CONFLITO_DE_HORARIO = (
     "Os seguintes membros da banca já possuem uma defesa agendada neste horário: {membros}"
 )
+
+# US-23 (E3, E4, E6, E7). [US-23][RBN-DEF-02.1][RBN-DEF-02.2][RBN-DEF-02.4]
+AVALIADORES_DISTINTOS = (
+    "Selecione avaliadores distintos que não façam parte da orientação do trabalho"
+)
+JUSTIFICATIVA = "Informe uma justificativa de até 500 caracteres"
+AUSENCIA_DO_ORIENTADOR = "A ausência do Orientador exige o reagendamento da sessão"
+
+# MD-02 a MD-04 (PROVISÓRIAS): avisos da alteração da banca (US-23 C.e, sem texto exato).
+# {quando} = "DD/MM/AAAA às HH:MM".
+MD02_BANCA_INCLUIDO = (
+    "Você passou a integrar, como {papel}, a banca da defesa de {aluno} em {quando}. "
+    "TCC: {titulo}."
+)
+MD03_BANCA_REMOVIDO = (
+    "Você não faz mais parte da banca da defesa de {aluno} marcada para {quando}. TCC: {titulo}."
+)
+MD04_BANCA_ALTERADA_ALUNO = (
+    "A banca da sua defesa de {quando} foi alterada: {incluido} entrou como {papel}"
+    " no lugar de {removido}."
+)
+MD04_ASSUNTO = "SIGTCC: alteração da banca"
+
+# US-21 E3 e US-23 E2. [US-21][US-23][RBN-DEF-01.1][RBN-DEF-02.1]
+CAMPO_OBRIGATORIO = "Campo obrigatório"

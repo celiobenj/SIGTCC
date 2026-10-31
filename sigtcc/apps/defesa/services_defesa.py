@@ -11,15 +11,19 @@ transaction.atomic() (research C2 e C3).
 import logging
 from datetime import datetime, timedelta
 
+from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Exists, OuterRef, Q
+from django.http import Http404
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import services_orientacao
 from sigtcc.apps.cadastro.cargas import CURSO_ENG_COMPUTACAO
 from sigtcc.apps.cadastro.choices import StatusOrientacao, StatusTCC, StatusTurma
-from sigtcc.apps.cadastro.models import Orientacoes, TCCs, Usuarios
-from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA
-from sigtcc.apps.defesa import mensagens
+from sigtcc.apps.cadastro.models import Alunos, Orientacoes, TCCs, Usuarios
+from sigtcc.apps.cadastro.services import enviar_email_apos_commit, notificar
+from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA, travar_turma_ativa
+from sigtcc.apps.defesa import mensagens, permissoes_defesa
 from sigtcc.apps.defesa.choices import EventoDefesa, FormatoSessao, PapelBanca, StatusSessao
 from sigtcc.apps.defesa.models import (
     BancaDefesa,
@@ -352,3 +356,217 @@ def _verificar_conflito(membros, data, h_inicio, excluir_sessao=None):
     em_conflito = [(usuario, papel) for usuario, papel in membros if usuario.pk in ocupados]
     if em_conflito:
         raise ConflitoDeHorario(em_conflito)
+
+
+# =============================================================================================
+# Travas da sessão, validação da banca e avisos (research C3 e C4)
+# =============================================================================================
+
+PAPEIS_ALTERAVEIS = (
+    PapelBanca.PRIMEIRO_AVALIADOR,
+    PapelBanca.SEGUNDO_AVALIADOR,
+    PapelBanca.SUPLENTE,
+)
+TEMPLATE_AVISO = "defesa/emails/aviso_sessao.txt"
+
+
+def _travar_tcc(tcc_id):
+    """Trava turma → aluno → TCC (mesma ordem das specs 004 a 006) e relê o TCC. Chamar dentro
+    de transaction.atomic(). TCC inexistente: 404. [US-21][US-23][US-24][research C3]
+    """
+    achado = TCCs.objects.filter(pk=tcc_id).values("tcc_tur_id", "tcc_alu_id").first()
+    if achado is None:
+        raise Http404
+    travar_turma_ativa(achado["tcc_tur_id"])
+    Alunos.objects.select_for_update().filter(pk=achado["tcc_alu_id"]).first()
+    return (
+        TCCs.objects.select_for_update(of=("self",))
+        .select_related("tcc_tur__tur_cur", "tcc_alu__alu")
+        .get(pk=tcc_id)
+    )
+
+
+def _tcc_da_sessao(def_id):
+    """pk do TCC da sessão, sem trava; sessão inexistente: 404. [US-23][US-24][US-40]"""
+    tcc_id = Defesas.objects.filter(pk=def_id).values_list("def_tcc_id", flat=True).first()
+    if tcc_id is None:
+        raise Http404
+    return tcc_id
+
+
+def _travar_sessao(def_id):
+    """Trava e relê a sessão, por último na ordem de C3 (depois do TCC e dos membros).
+    [US-23][US-24][research C3]
+    """
+    return (
+        Defesas.objects.select_for_update(of=("self",))
+        .select_related("def_tcc__tcc_tur__tur_cur", "def_tcc__tcc_alu__alu")
+        .get(pk=def_id)
+    )
+
+
+def banca_por_papel(sessao):
+    """{papel: Usuarios} da composição atual. [US-23][RBN-DEF-02.1]"""
+    return {
+        linha.ban_papel: linha.ban_usu
+        for linha in BancaDefesa.objects.select_related("ban_usu").filter(ban_def=sessao)
+    }
+
+
+def validar_banca(tcc, banca):
+    """1º e 2º Avaliador preenchidos (E2), membros distintos (E3) e nenhum orientador ou
+    coorientador do trabalho como avaliador ou suplente (E4). `banca` = {papel: Usuarios ou
+    None}, sem o Presidente. Levanta ErroDefesa sem gravar nada.
+    [US-23][RBN-DEF-02.1][FR-009]
+    """
+    for papel in (PapelBanca.PRIMEIRO_AVALIADOR, PapelBanca.SEGUNDO_AVALIADOR):
+        if banca.get(papel) is None:
+            raise ErroDefesa(mensagens.CAMPO_OBRIGATORIO, campo=papel)
+    escolhidos = [usuario.pk for usuario in banca.values() if usuario is not None]
+    orientacao = {
+        coo.coo_doc_id
+        for coo in services_orientacao.coorientadores_ativos(tcc)
+        if coo.coo_doc_id is not None
+    }
+    orientador = services_orientacao.orientador_atual(tcc)
+    if orientador is not None:
+        orientacao.add(orientador.pk)
+    if len(set(escolhidos)) != len(escolhidos) or orientacao & set(escolhidos):
+        raise ErroDefesa(mensagens.AVALIADORES_DISTINTOS)
+
+
+def _quando(sessao):
+    """ "DD/MM/AAAA às HH:MM" da sessão, para os avisos. [US-23][US-24]"""
+    return f"{sessao.def_data:%d/%m/%Y} às {sessao.def_h_inicio:%H:%M}"
+
+
+def _avisar(usuario, texto, assunto):
+    """Aviso por notificação no sistema e por e-mail depois do commit (contrato da spec 004).
+    [US-23][US-24][RBN-DEF-02.4][RBN-DEF-03.2][RBN-DEF-03.3]
+    """
+    notificar(usuario, texto)
+    enviar_email_apos_commit(usuario, assunto, TEMPLATE_AVISO, {"texto": texto})
+
+
+# =============================================================================================
+# Alteração da banca e acionamento do suplente (US-23, fluxos C e D; research C4)
+# =============================================================================================
+
+
+def alterar_banca(usuario, def_id, nova_banca, justificativa):
+    """Alterar banca (US-23 C): troca o 1º Avaliador, o 2º Avaliador e/ou o Suplente de uma
+    sessão "Agendada" ou "Reagendada". `nova_banca` = {papel: Usuarios ou None}; se trouxer o
+    Presidente diferente do atual, recusa com a E7 (o Orientador só sai por reagendamento).
+    Confere o conflito de horário só dos membros que entram na banca (US-22 E). Cada troca grava
+    um evento 'Alteração da Banca' (sem mudar def_status), descarta as avaliações do membro que
+    saiu (stub) e avisa quem entrou, quem saiu e o Aluno. Sem troca, não grava nada.
+    [US-23][RBN-DEF-02.1][RBN-DEF-02.4][FR-011][FR-012][FR-015][research C4]
+    """
+    tcc_id = _tcc_da_sessao(def_id)
+    with transaction.atomic():
+        tcc = _travar_tcc(tcc_id)
+        sessao = Defesas.objects.get(pk=def_id)
+        if not permissoes_defesa.pode_alterar_banca(usuario, sessao):
+            raise PermissionDenied
+        atual = banca_por_papel(sessao)
+        presidente = nova_banca.get(PapelBanca.ORIENTADOR_PRESIDENTE)
+        if presidente is not None and presidente != atual[PapelBanca.ORIENTADOR_PRESIDENTE]:
+            raise ErroDefesa(mensagens.AUSENCIA_DO_ORIENTADOR)
+        if not justificativa or len(justificativa) > 500:
+            raise ErroDefesa(mensagens.JUSTIFICATIVA, campo="justificativa")
+        proposta = {papel: nova_banca.get(papel) for papel in PAPEIS_ALTERAVEIS}
+        validar_banca(tcc, proposta)
+        trocas = [
+            (papel, atual.get(papel), proposta[papel])
+            for papel in PAPEIS_ALTERAVEIS
+            if proposta[papel] != atual.get(papel)
+        ]
+        if not trocas:
+            return sessao
+        ja_na_banca = {membro.pk for membro in atual.values()}
+        entram = [(novo, papel) for papel, _antigo, novo in trocas if novo is not None]
+        entram = [(membro, papel) for membro, papel in entram if membro.pk not in ja_na_banca]
+        _travar_membros([membro.pk for membro, _papel in entram])
+        sessao = _travar_sessao(def_id)
+        _verificar_conflito(entram, sessao.def_data, sessao.def_h_inicio, excluir_sessao=sessao)
+        # Apaga antes de criar: a PK (sessão, membro) permite trocar dois membros de papel.
+        BancaDefesa.objects.filter(
+            ban_def=sessao, ban_papel__in=[papel for papel, _antigo, _novo in trocas]
+        ).delete()
+        BancaDefesa.objects.bulk_create(
+            BancaDefesa(ban_def=sessao, ban_usu=novo, ban_papel=papel)
+            for papel, _antigo, novo in trocas
+            if novo is not None
+        )
+        for papel, antigo, novo in trocas:
+            if antigo is not None:
+                descartar_avaliacoes(sessao, antigo)
+            registrar_evento(
+                sessao,
+                EventoDefesa.ALTERACAO_DA_BANCA,
+                justificativa,
+                usuario,
+                membro_removido=antigo,
+                membro_incluido=novo,
+            )
+            _avisar_alteracao(sessao, papel, antigo, novo)
+    return sessao
+
+
+def _avisar_alteracao(sessao, papel, antigo, novo):
+    """MD-02 a quem entrou, MD-03 a quem saiu e MD-04 ao Aluno (US-23 C.e).
+    [US-23][RBN-DEF-02.4][FR-011]
+    """
+    tcc = sessao.def_tcc
+    aluno = tcc.tcc_alu.alu
+    dados = {"aluno": aluno.usu_nome, "quando": _quando(sessao), "titulo": tcc.tcc_titulo}
+    assunto = mensagens.MD04_ASSUNTO
+    if novo is not None:
+        _avisar(novo, mensagens.MD02_BANCA_INCLUIDO.format(papel=_rotulo(papel), **dados), assunto)
+    if antigo is not None:
+        _avisar(antigo, mensagens.MD03_BANCA_REMOVIDO.format(**dados), assunto)
+    texto = mensagens.MD04_BANCA_ALTERADA_ALUNO.format(
+        quando=dados["quando"],
+        incluido=novo.usu_nome if novo is not None else "ninguém",
+        papel=_rotulo(papel),
+        removido=antigo.usu_nome if antigo is not None else "ninguém",
+    )
+    _avisar(aluno, texto, assunto)
+
+
+def acionar_suplente(usuario, def_id, papel_substituido, justificativa):
+    """Acionar suplente (US-23 D): só o Orientador, com a sessão "Em Andamento" e Suplente na
+    banca (senão PermissionDenied, M-02). O Suplente passa ao papel do titular ausente (1º ou 2º
+    Avaliador), guardando quem ele substituiu e a Justificativa; o ausente sai da banca e as
+    avaliações dele são descartadas (stub). Sem checar conflito: o suplente já passou por ele ao
+    entrar na banca (research C3). Grava 'Acionamento do Suplente' sem mudar def_status.
+    [US-23][RBN-DEF-02.2][FR-013][research C4]
+    """
+    if papel_substituido not in (PapelBanca.PRIMEIRO_AVALIADOR, PapelBanca.SEGUNDO_AVALIADOR):
+        raise ErroDefesa(mensagens.CAMPO_OBRIGATORIO, campo="papel_substituido")
+    if not justificativa or len(justificativa) > 500:
+        raise ErroDefesa(mensagens.JUSTIFICATIVA, campo="justificativa")
+    tcc_id = _tcc_da_sessao(def_id)
+    with transaction.atomic():
+        _travar_tcc(tcc_id)
+        sessao = _travar_sessao(def_id)
+        if not permissoes_defesa.pode_acionar_suplente(usuario, sessao):
+            raise PermissionDenied
+        atual = banca_por_papel(sessao)
+        suplente, ausente = atual[PapelBanca.SUPLENTE], atual[papel_substituido]
+        BancaDefesa.objects.filter(ban_def=sessao, ban_usu=ausente).delete()
+        BancaDefesa.objects.filter(ban_def=sessao, ban_usu=suplente).update(
+            ban_papel=papel_substituido,
+            ban_usu_substituido=ausente,
+            ban_justificativa_substituicao=justificativa,
+        )
+        descartar_avaliacoes(sessao, ausente)
+        registrar_evento(
+            sessao,
+            EventoDefesa.ACIONAMENTO_DO_SUPLENTE,
+            justificativa,
+            usuario,
+            membro_removido=ausente,
+            membro_incluido=suplente,
+        )
+    return sessao

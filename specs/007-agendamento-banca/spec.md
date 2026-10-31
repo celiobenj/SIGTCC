@@ -680,3 +680,6 @@ a 006 (índice Q-124). Todos os textos entre aspas nos FR acima são cópia exat
 | ID | Uso | Texto proposto (PROVISÓRIO) | Origem | Situação |
 |---|---|---|---|---|
 | MD-01 | Conflito de horário de um ou mais membros da banca, numa única mensagem | "Os seguintes membros da banca já possuem uma defesa agendada neste horário: {membros}" ({membros} = "Nome (papel)", separados por vírgula) | US-22 E1 a E4 (só exemplo: "O docente selecionado já possui uma defesa agendada neste horário"); FR-016 | A validar |
+| MD-02 | Aviso (notificação e e-mail, assunto MD-04) a quem entra na banca pela alteração | "Você passou a integrar, como {papel}, a banca da defesa de {aluno} em {quando}. TCC: {titulo}." ({quando} = "DD/MM/AAAA às HH:MM") | US-23 C.e (sem texto exato); FR-011 | A validar |
+| MD-03 | Aviso a quem sai da banca pela alteração | "Você não faz mais parte da banca da defesa de {aluno} marcada para {quando}. TCC: {titulo}." | US-23 C.e; FR-011 | A validar |
+| MD-04 | Aviso ao Aluno: banca alterada (assunto do e-mail das MD-02 a MD-04: "SIGTCC: alteração da banca") | "A banca da sua defesa de {quando} foi alterada: {incluido} entrou como {papel} no lugar de {removido}." ("ninguém" quando o Suplente é incluído ou retirado) | US-23 C.e; FR-011 | A validar |

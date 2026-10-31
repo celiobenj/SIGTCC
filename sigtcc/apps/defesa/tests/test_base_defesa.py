@@ -9,12 +9,14 @@ from decimal import Decimal
 from io import StringIO
 from unittest import mock
 
+from django.core.exceptions import PermissionDenied
 from django.core.management import call_command
 from django.db import connection
 from django.utils import timezone
 
 from sigtcc.apps.cadastro.choices import StatusTCC, StatusTurma
-from sigtcc.apps.cadastro.models import TCCs, Turmas
+from sigtcc.apps.cadastro.models import Notificacoes, TCCs, Turmas
+from sigtcc.apps.cadastro.tests.apoio_orientacao import vincular_coorientador
 from sigtcc.apps.cadastro.tests.apoio_turmas import EC, LC, SI, TesteTurmas, criar_defesa_de
 from sigtcc.apps.cadastro.tests.fabricas import criar_criterio
 from sigtcc.apps.defesa import permissoes_defesa, services_defesa
@@ -533,3 +535,189 @@ class TesteTravarMembros(TesteTurmas):
         a, b = docente(), docente()
         travados = services_defesa._travar_membros([b.pk, a.pk, b.pk])
         self.assertEqual([u.pk for u in travados], sorted([a.pk, b.pk]))
+
+
+class TesteAlterarBanca(TesteTurmas):
+    """alterar_banca (US-23 C). [US-23][RBN-DEF-02.4][FR-011][FR-012][FR-015]"""
+
+    def setUp(self):
+        self.tcc, self.professor, self.orientador = tcc_apto()
+        self.av1, self.av2, self.suplente = docente(), docente(), docente()
+        self.sessao = agendar_sessao_de(
+            self.tcc,
+            self.orientador,
+            {
+                "primeiro_avaliador": self.av1,
+                "segundo_avaliador": self.av2,
+                "suplente": self.suplente,
+            },
+        )
+
+    def banca(self, **trocas):
+        banca = {
+            PapelBanca.PRIMEIRO_AVALIADOR: self.av1,
+            PapelBanca.SEGUNDO_AVALIADOR: self.av2,
+            PapelBanca.SUPLENTE: self.suplente,
+        }
+        banca.update(trocas)
+        return banca
+
+    def alterar(self, banca, usuario=None, justificativa="Avaliador em licença"):
+        return services_defesa.alterar_banca(
+            usuario or self.orientador, self.sessao.pk, banca, justificativa
+        )
+
+    def test_troca_grava_evento_descarta_e_avisa(self):
+        novo = docente()
+        aluno = self.tcc.tcc_alu.alu
+        with self.assertLogs("sigtcc.defesa", level="INFO") as log:
+            self.alterar(self.banca(**{PapelBanca.SEGUNDO_AVALIADOR: novo}))
+        self.assertEqual(
+            services_defesa.banca_por_papel(self.sessao)[PapelBanca.SEGUNDO_AVALIADOR], novo
+        )
+        self.assertIn(f"membro {self.av2.pk}", log.output[0])
+        evento = HistoricoDefesas.objects.filter(hdf_def=self.sessao).latest("hdf_id")
+        self.assertEqual(evento.hdf_evento, EventoDefesa.ALTERACAO_DA_BANCA)
+        self.assertEqual((evento.hdf_membro_removido, evento.hdf_membro_incluido), (self.av2, novo))
+        self.assertEqual(evento.hdf_justificativa, "Avaliador em licença")
+        self.sessao.refresh_from_db()
+        self.assertEqual(self.sessao.def_status, StatusSessao.AGENDADA)
+        for pessoa in (novo, self.av2, aluno):
+            self.assertTrue(Notificacoes.objects.filter(not_usu=pessoa).exists(), pessoa)
+
+    def test_sem_troca_nao_grava(self):
+        self.alterar(self.banca())
+        self.assertEqual(HistoricoDefesas.objects.filter(hdf_def=self.sessao).count(), 1)
+
+    def test_tirar_o_suplente(self):
+        self.alterar(self.banca(**{PapelBanca.SUPLENTE: None}))
+        self.assertNotIn(PapelBanca.SUPLENTE, services_defesa.banca_por_papel(self.sessao))
+
+    def test_justificativa_vazia_ou_longa(self):
+        for justificativa in ("", "x" * 501):
+            with self.subTest(tamanho=len(justificativa)):
+                with self.assertRaises(services_defesa.ErroDefesa) as erro:
+                    self.alterar(
+                        self.banca(**{PapelBanca.SEGUNDO_AVALIADOR: docente()}),
+                        justificativa=justificativa,
+                    )
+                self.assertEqual(
+                    erro.exception.mensagem, "Informe uma justificativa de até 500 caracteres"
+                )
+
+    def test_trocar_o_presidente_exige_reagendamento(self):
+        banca = self.banca(**{PapelBanca.ORIENTADOR_PRESIDENTE: docente()})
+        with self.assertRaises(services_defesa.ErroDefesa) as erro:
+            self.alterar(banca)
+        self.assertEqual(
+            erro.exception.mensagem, "A ausência do Orientador exige o reagendamento da sessão"
+        )
+
+    def test_repetido_ou_da_orientacao_recusa(self):
+        coorientador = docente()
+        vincular_coorientador(self.tcc, coorientador)
+        for banca in (
+            self.banca(**{PapelBanca.SUPLENTE: self.av1}),
+            self.banca(**{PapelBanca.PRIMEIRO_AVALIADOR: self.orientador}),
+            self.banca(**{PapelBanca.SUPLENTE: coorientador}),
+        ):
+            with self.subTest(banca=banca):
+                with self.assertRaises(services_defesa.ErroDefesa) as erro:
+                    self.alterar(banca)
+                self.assertEqual(
+                    erro.exception.mensagem,
+                    "Selecione avaliadores distintos que não façam parte da orientação do trabalho",
+                )
+
+    def test_conflito_so_do_membro_que_entra(self):
+        ocupado = docente()
+        outro_tcc, _professor, outro_orientador = tcc_apto()
+        agendar_sessao_de(
+            outro_tcc,
+            outro_orientador,
+            {"primeiro_avaliador": ocupado, "segundo_avaliador": docente()},
+        )
+        with self.assertRaises(services_defesa.ConflitoDeHorario):
+            self.alterar(self.banca(**{PapelBanca.PRIMEIRO_AVALIADOR: ocupado}))
+        self.assertEqual(
+            services_defesa.banca_por_papel(self.sessao)[PapelBanca.PRIMEIRO_AVALIADOR], self.av1
+        )
+        # Trocar dois membros de papel não é entrada nova: sem checagem de conflito.
+        self.alterar(
+            self.banca(
+                **{
+                    PapelBanca.PRIMEIRO_AVALIADOR: self.av2,
+                    PapelBanca.SEGUNDO_AVALIADOR: self.av1,
+                }
+            )
+        )
+
+    def test_permissao_pelo_curso_e_pelo_status(self):
+        troca = self.banca(**{PapelBanca.SEGUNDO_AVALIADOR: docente()})
+        with self.assertRaises(PermissionDenied):
+            self.alterar(troca, usuario=self.professor)
+        avancar_para(self.sessao, StatusSessao.EM_ANDAMENTO)
+        with self.assertRaises(PermissionDenied):
+            self.alterar(troca)
+
+
+class TesteAcionarSuplente(TesteTurmas):
+    """acionar_suplente (US-23 D). [US-23][RBN-DEF-02.2][FR-013]"""
+
+    def setUp(self):
+        self.tcc, self.professor, self.orientador = tcc_apto()
+        self.av1, self.av2, self.suplente = docente(), docente(), docente()
+        self.sessao = agendar_sessao_de(
+            self.tcc,
+            self.orientador,
+            {
+                "primeiro_avaliador": self.av1,
+                "segundo_avaliador": self.av2,
+                "suplente": self.suplente,
+            },
+        )
+        avancar_para(self.sessao, StatusSessao.EM_ANDAMENTO)
+
+    def acionar(self, usuario=None, papel=PapelBanca.SEGUNDO_AVALIADOR, justificativa="Faltou"):
+        return services_defesa.acionar_suplente(
+            usuario or self.orientador, self.sessao.pk, papel, justificativa
+        )
+
+    def test_suplente_assume_o_papel_do_ausente(self):
+        self.acionar()
+        linha = BancaDefesa.objects.get(ban_def=self.sessao, ban_usu=self.suplente)
+        self.assertEqual(linha.ban_papel, PapelBanca.SEGUNDO_AVALIADOR)
+        self.assertEqual(linha.ban_usu_substituido, self.av2)
+        self.assertEqual(linha.ban_justificativa_substituicao, "Faltou")
+        self.assertFalse(BancaDefesa.objects.filter(ban_def=self.sessao, ban_usu=self.av2).exists())
+        self.assertEqual(
+            services_defesa.membros_efetivos(self.sessao),
+            [self.orientador, self.av1, self.suplente],
+        )
+        evento = HistoricoDefesas.objects.filter(hdf_def=self.sessao).latest("hdf_id")
+        self.assertEqual(evento.hdf_evento, EventoDefesa.ACIONAMENTO_DO_SUPLENTE)
+        self.assertEqual(
+            (evento.hdf_membro_removido, evento.hdf_membro_incluido), (self.av2, self.suplente)
+        )
+        self.sessao.refresh_from_db()
+        self.assertEqual(self.sessao.def_status, StatusSessao.EM_ANDAMENTO)
+
+    def test_so_o_orientador(self):
+        for usuario in (self.professor, self.av1):
+            with self.subTest(usuario=usuario.usu_nome):
+                with self.assertRaises(PermissionDenied):
+                    self.acionar(usuario=usuario)
+
+    def test_sem_suplente_ou_fora_de_andamento(self):
+        BancaDefesa.objects.filter(ban_def=self.sessao, ban_usu=self.suplente).delete()
+        with self.assertRaises(PermissionDenied):
+            self.acionar()
+
+    def test_justificativa_obrigatoria(self):
+        with self.assertRaises(services_defesa.ErroDefesa) as erro:
+            self.acionar(justificativa="")
+        self.assertEqual(erro.exception.campo, "justificativa")
+        self.assertEqual(
+            BancaDefesa.objects.get(ban_def=self.sessao, ban_usu=self.suplente).ban_papel,
+            PapelBanca.SUPLENTE,
+        )

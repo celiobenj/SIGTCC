@@ -139,14 +139,16 @@ cancelamento, início automático, lista e histórico. **Bloqueia as Fases 3 a 7
   indisponíveis numa única mensagem, sem gravar nada — FR-014, FR-015, FR-016, research C3
   (depende de T007; chamada sempre depois de `_travar_membros`, antes de `agendar_sessao`/
   `reagendar`/`alterar_banca` — achado C1 do `/speckit-analyze`)
-- [ ] T014 Implementar `alterar_banca(sessao, papel, novo_membro, justificativa, autor) -> Defesas`
+- [X] T014 Implementar `alterar_banca(sessao, papel, novo_membro, justificativa, autor) -> Defesas`
   em `services_defesa.py` — depois de `_travar_membros([novo_membro.pk])` (T007) e de
   `_verificar_conflito` (T008) só do novo membro, substitui a linha do papel indicado
   (`delete()` + `create()`), chama o stub `descartar_avaliacoes(sessao, membro=antigo)` e
   `registrar_evento(..., EventoDefesa.ALTERACAO_DA_BANCA, ..., membro_removido=antigo,
   membro_incluido=novo_membro)` diretamente (não muda `def_status`) — FR-011, FR-012, research C4
-  (depende de T005, T007, T008, T010, T013)
-- [ ] T015 Implementar `acionar_suplente(sessao, papel_substituido, autor, justificativa) ->
+  (depende de T005, T007, T008, T010, T013). *Implementado como `alterar_banca(usuario, def_id,
+  nova_banca, justificativa)`: aplica numa transação todas as trocas do formulário (1º, 2º e
+  Suplente), um evento por troca, e já confere a permissão (T033).*
+- [X] T015 Implementar `acionar_suplente(sessao, papel_substituido, autor, justificativa) ->
   Defesas` em `services_defesa.py` — sem `_travar_membros`/`_verificar_conflito` (suplente já
   passou pela checagem quando entrou na banca original); promove o suplente ao papel do titular
   ausente, grava `ban_usu_substituido`/`ban_justificativa_substituicao`, remove a linha antiga,
@@ -241,10 +243,10 @@ seção Banca completa — ver Fase 4).
 **Independent Test**: com um TCC com Orientador vinculado, compor 2 ou 3 avaliadores na seção
 Banca, sem depender da confirmação final da sessão
 
-- [ ] T033 [P] [US2] Implementar `pode_alterar_banca(usuario, sessao)` e
+- [X] T033 [P] [US2] Implementar `pode_alterar_banca(usuario, sessao)` e
   `pode_acionar_suplente(usuario, sessao)` em `permissoes_defesa.py` — quem pode agendar o TCC
   (`pode_agendar`, pelo curso; Clarifications 2026-10-31) com sessão Agendada/Reagendada;
-  exclusivamente o Orientador com sessão Em Andamento e suplente presente — FR-011, FR-013
+  exclusivamente o Orientador com sessão Em Andamento e suplente presente — FR-011, FR-013 *(feito na Fase 2b, junto com T014/T015, que dependem dele)*
 - [ ] T034 [P] [US2] Implementar, em `forms_defesa.py`: a seção Banca do `AgendarForm` (exclui
   orientador/coorientadores, listas excludentes entre papéis, cadastro rápido de Membro Externo
   reaproveitando o formulário da US-05), `AlterarBancaForm` e `AcionarSuplenteForm` (Justificativa
