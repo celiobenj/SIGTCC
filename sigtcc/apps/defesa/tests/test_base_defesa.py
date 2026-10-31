@@ -4,7 +4,7 @@
 """
 
 from collections import Counter
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 from io import StringIO
 from unittest import mock
@@ -15,7 +15,7 @@ from django.db import connection
 from django.http import Http404
 from django.utils import timezone
 
-from sigtcc.apps.cadastro import services_contas
+from sigtcc.apps.cadastro import services_contas, services_orientacao
 from sigtcc.apps.cadastro.choices import (
     StatusConta,
     StatusSolicitacao,
@@ -24,7 +24,13 @@ from sigtcc.apps.cadastro.choices import (
     TipoEntrega,
     TipoSolicitacao,
 )
-from sigtcc.apps.cadastro.models import Notificacoes, TCCs, Turmas, Usuarios
+from sigtcc.apps.cadastro.models import (
+    Notificacoes,
+    SolicitacoesOrientacao,
+    TCCs,
+    Turmas,
+    Usuarios,
+)
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_membro_externo, criar_secretaria
 from sigtcc.apps.cadastro.tests.apoio_orientacao import criar_pedido, vincular_coorientador
 from sigtcc.apps.cadastro.tests.apoio_tcc import cadastrar_entrega, enviar_link
@@ -400,19 +406,24 @@ class TesteElegibilidade(TesteTurmas):
 
 
 class TestePopularDemo(TesteTurmas):
-    """popular_demo com uma sessão em cada status (contrato §5; IC-05). [US-24][RBN-DEF-01.2]"""
+    """popular_demo com o cenário do roteiro da spec 007 (contrato §5; IC-05; T056): uma sessão
+    em cada status, criadas pelos serviços, e os TCCs Aptos sem sessão para agendar.
+    [US-21][US-22][US-23][US-24][US-40][RBN-DEF-01.2]
+    """
 
-    def test_uma_sessao_em_cada_status_criada_pelos_servicos(self):
+    @classmethod
+    def setUpTestData(cls):
         nome_banco = connection.settings_dict["NAME"]
+        cls.saida = StringIO()
         with mock.patch("builtins.input", return_value=nome_banco):
             call_command(
-                "popular_demo",
-                "--senha",
-                "Demo2026sig",
-                "--confirmar",
-                "--local",
-                stdout=StringIO(),
+                "popular_demo", "--senha", "Demo2026sig", "--confirmar", "--local", stdout=cls.saida
             )
+
+    def usuario(self, nome):
+        return Usuarios.objects.get(usu_nome=nome)
+
+    def test_uma_sessao_em_cada_status_criada_pelos_servicos(self):
         contagem = Counter(Defesas.objects.values_list("def_status", flat=True))
         self.assertEqual(contagem, Counter(StatusSessao.values))
         for sessao in Defesas.objects.select_related("def_tcc__tcc_tur__tur_cur"):
@@ -428,12 +439,72 @@ class TestePopularDemo(TesteTurmas):
         self.assertEqual(realizada.def_tcc.tcc_status, StatusTCC.APROVADO)
         cancelada = Defesas.objects.get(def_status=StatusSessao.CANCELADA)
         self.assertTrue(services_defesa.tcc_elegivel(cancelada.def_tcc))
-        cursos_com_apto = set(
-            TCCs.objects.filter(tcc_status=StatusTCC.APTO_PARA_DEFESA).values_list(
-                "tcc_tur__tur_cur__cur_nome", flat=True
-            )
+
+    def test_agendada_daqui_a_3_dias_com_docente_extra_e_suplente(self):
+        agendada = Defesas.objects.get(def_status=StatusSessao.AGENDADA)
+        self.assertEqual(agendada.def_data, timezone.now().date() + timedelta(days=3))
+        self.assertEqual(agendada.def_h_inicio, time(14, 0))
+        banca = services_defesa.banca_por_papel(agendada)
+        self.assertEqual(banca[PapelBanca.PRIMEIRO_AVALIADOR], self.usuario("Beatriz Lemos Aragão"))
+        self.assertIn(PapelBanca.SUPLENTE, banca)
+        em_andamento = Defesas.objects.get(def_status=StatusSessao.EM_ANDAMENTO)
+        self.assertIn(PapelBanca.SUPLENTE, services_defesa.banca_por_papel(em_andamento))
+
+    def test_tccs_aptos_sem_sessao_para_agendar(self):
+        aptos = [
+            tcc
+            for tcc in TCCs.objects.filter(tcc_status=StatusTCC.APTO_PARA_DEFESA)
+            if services_defesa.tcc_elegivel(tcc)
+        ]
+        por_curso = Counter(tcc.tcc_tur.tur_cur.cur_nome for tcc in aptos)
+        self.assertEqual(por_curso, Counter({EC: 3, SI: 2, LC: 1}))
+        for tcc in aptos:
+            with self.subTest(aluno=tcc.tcc_alu.alu.usu_nome):
+                self.assertIsNotNone(services_orientacao.orientador_atual(tcc))
+                self.assertTrue(tcc.tcc_ari_id)
+                self.assertTrue(tcc.palavraschavetcc_set.exists())
+                self.assertTrue(services_defesa.link_do_documento(tcc))
+                if tcc.tcc_tur.tur_cur.cur_nome != LC:
+                    self.assertTrue(services_orientacao.coorientadores_ativos(tcc))
+        troca = SolicitacoesOrientacao.objects.get(
+            sol_tipo=TipoSolicitacao.TROCA_DE_ORIENTACAO,
+            sol_status=StatusSolicitacao.AGUARDANDO_RESPOSTA,
+            sol_tcc__tcc_status=StatusTCC.APTO_PARA_DEFESA,
         )
-        self.assertEqual(cursos_com_apto, {EC, SI, LC})
+        self.assertIn(troca.sol_tcc, aptos)
+
+    def test_quem_agenda_cada_tcc_e_o_nao_apto(self):
+        orientadora = self.usuario("Adriana Lopes Viana")
+        professor_si = self.usuario("Eduardo Farias Brito")
+        professor_ec = self.usuario("Fernando Costa Lima")
+        da_orientadora = services_defesa.tccs_elegiveis(orientadora)
+        self.assertEqual(da_orientadora.count(), 1)
+        nao_apto = TCCs.objects.filter(
+            tcc_status=StatusTCC.EM_ANDAMENTO,
+            orientacoes__ori_doc_id=orientadora.pk,
+            tcc_tur__tur_identificador="ECP-TCC1-2026.2",
+        )
+        self.assertTrue(nao_apto.exists())
+        self.assertFalse(set(nao_apto) & set(da_orientadora))
+        self.assertEqual(services_defesa.tccs_elegiveis(professor_si).count(), 2)
+        self.assertFalse(services_defesa.tccs_elegiveis(professor_ec).exists())
+
+    def test_membros_externos_e_contas(self):
+        self.assertEqual(self.usuario("Marcos Vinícius Teixeira").usu_status, StatusConta.ATIVA)
+        self.assertEqual(self.usuario("Helena Duarte Campos").usu_status, StatusConta.EXPIRADA)
+        for nome in ("Beatriz Lemos Aragão", "Henrique Matos Couto", "Sandra Pires Lacerda"):
+            self.assertEqual(self.usuario(nome).usu_status, StatusConta.ATIVA)
+
+    def test_imprime_o_roteiro(self):
+        texto = self.saida.getvalue()
+        for trecho in (
+            "Roteiro da spec 007",
+            "Quem pode agendar o quê",
+            "Sessões de defesa:",
+            "Beatriz Lemos Aragão",
+            "Acionar suplente",
+        ):
+            self.assertIn(trecho, texto)
 
 
 class TesteVerificarConflito(TesteTurmas):

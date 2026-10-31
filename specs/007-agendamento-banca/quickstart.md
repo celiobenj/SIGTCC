@@ -3,62 +3,82 @@
 **Feature**: [spec.md](spec.md) | **Rotas**: [contracts/rotas.md](contracts/rotas.md) |
 **Serviços**: [contracts/servicos-defesa.md](contracts/servicos-defesa.md)
 
-Roteiro para provar, num ambiente de desenvolvimento, que o agendamento, a banca, o conflito de
-horário, a confirmação/reagendamento/cancelamento e a lista com filtros funcionam como na spec.
+Roteiro manual (T056) para provar, num ambiente de desenvolvimento, que o agendamento, a banca, o
+conflito de horário, a confirmação/reagendamento/cancelamento e a lista com filtros funcionam
+como na spec. O cenário inteiro vem pronto do `popular_demo`: é só entrar com as contas abaixo.
 Não contém código de implementação.
 
 ## Pré-requisitos
 
-- Features 001 a 006 aplicadas; `python manage.py migrate` (nenhuma migração nova desta feature).
-- `.env` com `DEBUG=True`; servidor com `python manage.py runserver`.
-- Um TCC "Apto para Defesa" exige todo o ciclo anterior (Proposta → Status → Entrega do tipo
-  Documento para Defesa entregue → Apto para Defesa via US-42, spec 006). Use `popular_demo`
-  (depois de implementado, IC-05) ou monte o cenário manualmente pelas telas das specs 004 a 006.
-
-## 1. Contas e TCCs de teste
+- Features 001 a 007 aplicadas; `python manage.py migrate` (nenhuma migração nova desta feature).
+- `.env` com `DEBUG=True`.
+- **Atenção: o `popular_demo` apaga todos os dados do banco** (mantém só as cargas das migrações).
+  Use um banco local de teste.
 
 ```bash
-python manage.py criar_conta_teste --perfil docente --status ativa --email orientador1@uea.edu.br --senha Tcc@2026a --curso "Engenharia de Computação"
-python manage.py criar_conta_teste --perfil docente --status ativa --email avaliador1@uea.edu.br --senha Tcc@2026a --curso "Engenharia de Computação"
-python manage.py criar_conta_teste --perfil docente --status ativa --email avaliador2@uea.edu.br --senha Tcc@2026a --curso "Engenharia de Computação"
-python manage.py criar_conta_teste --perfil docente --status ativa --email suplente1@uea.edu.br --senha Tcc@2026a --curso "Engenharia de Computação"
+python manage.py popular_demo --senha Demo2026sig --confirmar --local
+# digite o nome do banco quando pedir
+python manage.py runserver
 ```
 
-Monte um TCC "Apto para Defesa" de `orientador1` (via Proposta, entrega do Documento para Defesa e
-US-42) antes do roteiro.
+No fim, o comando imprime três tabelas: **Roteiro da spec 007** (cada conta, curso, login e para
+que serve), **Quem pode agendar o quê** e **Sessões de defesa**. Todas as contas usam a senha
+passada em `--senha`; alunos entram com a matrícula ou o e-mail. As datas são relativas ao dia em
+que o comando rodou.
+
+## 1. O cenário pronto
+
+| Conta (nome no demo) | Papel no roteiro |
+|---|---|
+| Adriana Lopes Viana (Orientadora, Eng. Comp.) | Agenda o TCC Apto de um orientando; outro orientando dela (documento enviado, sem a indicação de Apto) **não** aparece na lista |
+| Carlos Eduardo Pinheiro (Orientador, Eng. Comp.) | Agenda o TCC Apto de um orientando; está na banca da sessão Agendada |
+| Renata Silveira Cruz (Orientadora, Eng. Comp.) | Agenda o TCC Apto com **pedido de troca de orientador pendente**; preside a sessão Agendada (Alterar banca) |
+| Fernando Costa Lima (Professor TCC 1, Eng. Comp.) | Aba Defesas da turma; não agenda TCC de Eng. Comp. |
+| Eduardo Farias Brito (Professor TCC 1, Sist. Inf.) | Agenda os 2 TCCs Aptos de Sist. Inf.; reagenda e cancela as sessões de SI |
+| Roberto Cunha Matos (Orientador, Sist. Inf.) | Não agenda em Sist. Inf. (E7 pelo endereço direto) |
+| Simone Arruda Paes (Orientadora, Sist. Inf.) | Preside a sessão Em Andamento com suplente (Acionar suplente) |
+| Beatriz Lemos Aragão (docente extra, Eng. Comp.) | Está na sessão **Agendada daqui a 3 dias às 14:00** (conflito de horário) |
+| Henrique Matos Couto (docente extra, Eng. Comp.) | Livre para compor bancas |
+| Sandra Pires Lacerda (docente extra, Sist. Inf.) | Suplente da sessão Em Andamento |
+| Marcos Vinícius Teixeira (Membro Externo, Ativa) | Suplente da sessão Agendada |
+| Helena Duarte Campos (Membro Externo, Expirada) | Aparece entre os avaliadores; ao entrar numa banca, a validade é renovada (US-06) |
+| Coordenadores e Secretarias de Eng. Comp. e Sist. Inf. | Filtro de Curso; a Secretaria reagenda e cancela; o Coordenador não abre a janela da sessão |
+
+TCCs Aptos sem sessão (todos com Proposta, Área e Palavra-Chave, orientador aceito, coorientador
+do NUCOMP aceito e Documento para Defesa enviado): 2 em Eng. Comp. (quem agenda é o Orientador),
+2 em Sist. Inf. (quem agenda é o Professor da Disciplina), 1 em Eng. Comp. com troca de orientador
+pendente e o de Lic. Comp., cuja sessão foi cancelada. Sessões existentes: uma em cada status
+(Agendada, Reagendada, Em Andamento, Realizada, Cancelada).
 
 ## 2. Roteiro manual
 
 | # | Ação | Resultado esperado |
 |---|---|---|
-| a | Como `orientador1`, "Defesas" → "Agendar defesa" | formulário com TCC pré-filtrado (só "Apto para Defesa", sem sessão ativa), nota de 15/20 minutos de apresentação (US-21, passo 4) |
-| b | Preencher Data futura, Horário 14:00, Formato Presencial, Local "Laboratório LSI" | sistema indica a reserva de 1 hora (cenário 3 da US-21) |
-| c | Na seção Banca: Orientador (Presidente) já preenchido e bloqueado; selecionar `avaliador1` como 1º Avaliador, `avaliador2` como 2º Avaliador, `suplente1` como Suplente | listas excluem quem já foi escolhido (cenário 2 da US-23) |
-| d | Acionar "Agendar" | "Defesa agendada com sucesso"; sessão "Agendada"; `avaliador1`, `avaliador2`, `suplente1` e o aluno notificados (cenário 1 da US-24) |
-| e | Agendar uma segunda sessão para `avaliador1` no mesmo intervalo, com outro TCC | sistema rejeita, identifica `avaliador1` como indisponível, nada é gravado (cenário 8 da US-22) |
-| f | Como `orientador1`, abrir a sessão criada e acionar "Alterar banca", trocar o 2º Avaliador, informar Justificativa | troca gravada; `avaliador2` e o novo 2º Avaliador notificados (cenário 5 da US-23) |
-| g | Acionar "Reagendar", nova data/horário, Justificativa | status "Reagendada"; banca e avaliações mantidas; todos notificados com os novos dados (cenário 5 da US-24) |
-| h | Pelo shell, avançar o relógio até o horário da sessão (ou aguardar, em teste manual real) | status muda automaticamente para "Em Andamento" (cenário 7 da US-24) |
-| i | Como `orientador1`, com a sessão "Em Andamento", acionar "Acionar suplente" escolhendo o 2º Avaliador como substituído | `suplente1` assume como 2º Avaliador titular; evento no histórico (cenário 7 da US-23) |
-| j | Abrir "Histórico da defesa" | linha do tempo com agendamento, alteração de banca, reagendamento, início automático e acionamento de suplente, cada um com responsável e justificativa (cenário 11 da US-40) |
-| k | Como a Secretaria do curso, abrir "Defesas" e trocar o filtro de Curso | lista recarrega em até 2 segundos com as sessões do curso escolhido (cenário 5 da US-40; RBN-CAD-14.1) |
-| l | Acionar "Cancelar sessão" com Justificativa | status "Cancelada"; Status do TCC permanece "Apto para Defesa" (cenário 6 da US-24) |
-| m | Tentar abrir a sessão como um Docente que não é da banca nem Professor da Disciplina | "Você não tem permissão para visualizar esta defesa" (cenário 9 da US-40) |
+| a | Como Adriana, "Defesas" → "Agendar defesa" | lista TCC só com o orientando Apto; o orientando não Apto não aparece; nota de 15/20 minutos (US-21) |
+| b | Preencher Data futura, Horário 14:00, Formato Presencial, Local "Laboratório LSI"; trocar o Formato para Remota e voltar | o campo do outro formato some e é limpo; dica da reserva de 1 hora (US-21 cenários 3 e 5) |
+| c | Na seção Banca: Orientador (Presidente) já preenchido e bloqueado; escolher Henrique como 1º Avaliador e conferir as listas do 2º Avaliador e do Suplente | o Presidente e o coorientador não aparecem; o já escolhido some das listas seguintes (US-23 cenários 2 e 3) |
+| d | Acionar "O Membro Externo não está na lista? Cadastrar" com o foco no Suplente, cadastrar e salvar | volta ao formulário com os campos preenchidos e o novo Membro Externo no Suplente (US-23 cenário 5) |
+| e | Escolher Beatriz como 2º Avaliador, a data da sessão Agendada (daqui a 3 dias) às 14:30, e Agendar | recusa, nomeando Beatriz (2º Avaliador), sem gravar nada (US-22) |
+| f | Trocar o horário para 16:00 e Agendar | "Defesa agendada com sucesso"; aluno e banca notificados, com o link do Documento para Defesa (US-24) |
+| g | Como Renata, agendar o TCC com troca pendente | sessão Agendada; o pedido de troca é cancelado e o aluno e o docente indicado são avisados (US-24 fluxo A) |
+| h | Como Eduardo, abrir a aba Defesas da turma SI-TCC1 e agendar um dos TCCs; como Roberto, abrir `/defesas/agendar/?tcc=<id>` de um TCC de SI | Eduardo agenda; Roberto vê "Este TCC não pode ser agendado por você" (US-21 E7) |
+| i | Como Renata, abrir a sessão Agendada (de Thaís) → "Alterar banca", trocar o 2º Avaliador, informar Justificativa | troca gravada; avisos a quem entra, a quem sai e ao aluno (US-23 C) |
+| j | Como Simone, abrir a sessão Em Andamento → "Acionar suplente", escolher o 2º Avaliador e informar Justificativa | Sandra assume como titular; evento no histórico (US-23 D) |
+| k | Como a Secretaria de Eng. Comp., abrir a sessão Reagendada → "Reagendar" para outra data, e depois "Cancelar sessão" de outra | status Reagendada/Cancelada; TCC continua Apto; avisos (US-24 B e C) |
+| l | Abrir "Histórico" de uma sessão | linha do tempo com responsável, horários anterior e novo e justificativa; "Sistema" no início automático (US-40) |
+| m | Como Coordenador e Secretaria, trocar o filtro de Curso e os atalhos de período e de Status | a lista recarrega com os filtros combinados; datas invertidas e 31/02 mostram as mensagens da US-40 |
+| n | Como Fernando (Professor de Eng. Comp.) ou um Coordenador, abrir uma sessão pelo endereço direto | "Você não tem permissão para visualizar esta defesa" (US-40 E5) |
 
-## 3. Verificação cruzada com a feat-08 (fronteira, sem implementar)
+## 3. Início automático
 
-Como a feat-08 ainda não existe, confirme pelo shell que `transicionar_status` rejeita uma
-transição fora da tabela:
+`python manage.py iniciar_sessoes` muda para "Em Andamento" as sessões cujo horário chegou (as
+telas da Defesa fazem o mesmo ao abrir). Para ver: agende uma sessão para daqui a 2 minutos,
+espere e abra a tela Defesas. O agendamento do comando no servidor é item de configuração (Q-79).
 
-```python
-from sigtcc.apps.defesa import services_defesa
-from sigtcc.apps.defesa.models import Defesas
-from sigtcc.apps.defesa.choices import StatusSessao
+## 4. Verificação automática
 
-sessao = Defesas.objects.first()
-services_defesa.transicionar_status(sessao, StatusSessao.REALIZADA, autor, justificativa=None)
-# Se sessao.def_status não for 'Em Andamento', deve levantar ValueError — nenhuma linha de
-# histórico é criada.
+```bash
+python manage.py test sigtcc.apps.defesa --noinput
 ```
 
-Isso prova a validação de transição (research C2) sem depender da feat-08 existir.
+`test_base_defesa.TestePopularDemo` confere este cenário; cada US tem o seu `test_usXX_*.py`.
