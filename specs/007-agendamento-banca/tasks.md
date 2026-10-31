@@ -374,12 +374,14 @@ perfil e verificar visibilidade e filtros
 
 **Purpose**: cobertura cruzada e validação final
 
-- [ ] T054 [P] `sigtcc/apps/defesa/tests/test_permissoes_defesa.py` — cobertura cruzada de todos os
+- [X] T054 [P] `sigtcc/apps/defesa/tests/test_permissoes_defesa.py` — cobertura cruzada de todos os
   `pode_*` (por curso e por perfil), incluindo acesso por endereço direto (SC-004)
-- [ ] T055 [P] `sigtcc/apps/defesa/tests/test_mensagens_defesa.py` — confere, caractere por
+- [X] T055 [P] `sigtcc/apps/defesa/tests/test_mensagens_defesa.py` — confere, caractere por
   caractere, os textos entre aspas das US-21, 22, 23, 24, 39 e 40 (SC-006)
 - [ ] T056 Rodar o roteiro de [quickstart.md](quickstart.md) manualmente e registrar o resultado
-- [ ] T057 `pre-commit run --all-files` (`isort`, `black -l 100`, `flake8 --max-line-length 100`)
+  *Pendente para uma pessoa da equipe (cria contas no banco local e precisa de navegador): conferir
+  em especial `alternar_formato.js` e `banca.js`, que os testes automáticos só checam pela presença.*
+- [X] T057 `pre-commit run --all-files` (`isort`, `black -l 100`, `flake8 --max-line-length 100`)
   em todos os arquivos novos/alterados desta feature
 
 ---
