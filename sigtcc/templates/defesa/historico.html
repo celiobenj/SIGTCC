@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% comment %}
+  Janela "Histórico da defesa" (somente leitura): linha do tempo dos eventos de todas as sessões
+  do TCC, inclusive as canceladas, com data e hora, evento, detalhes (status, horários anterior e
+  novo, membro substituído), responsável ("Sistema" no início automático) e justificativa.
+  Fechar volta à lista de defesas. [US-40][RBN-DEF-01.6][FR-029]
+{% endcomment %}
+{% block titulo %}Histórico da defesa · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Histórico da defesa</h2>
+<p class="pg-sub">{{ sessao.def_tcc.tcc_titulo }} · {{ sessao.def_tcc.tcc_alu.alu.usu_nome }}</p>
+<div class="tabela-wrap mt16">
+  <table class="tabela larga">
+    <thead><tr><th>Data e hora</th><th>Sessão</th><th>Evento</th><th>Detalhes</th><th>Responsável</th><th>Justificativa</th></tr></thead>
+    <tbody>
+      {% for e in eventos %}
+      <tr>
+        <td>{{ e.hdf_data_hora|date:"d/m/Y H:i" }}</td>
+        <td>{{ e.hdf_def.def_data|date:"d/m/Y" }}</td>
+        <td>{{ e.hdf_evento }}</td>
+        <td>
+          {% if e.hdf_status_anterior or e.hdf_status_novo %}Status: {{ e.hdf_status_anterior|default:"—" }} → {{ e.hdf_status_novo|default:"—" }}<br>{% endif %}
+          {% if e.hdf_data_nova %}Horário anterior: {{ e.hdf_data_anterior|date:"d/m/Y" }} às {{ e.hdf_hora_anterior|time:"H:i" }}; novo horário: {{ e.hdf_data_nova|date:"d/m/Y" }} às {{ e.hdf_hora_nova|time:"H:i" }}<br>{% endif %}
+          {% if e.hdf_membro_removido %}Saiu: {{ e.hdf_membro_removido.usu_nome }}<br>{% endif %}
+          {% if e.hdf_membro_incluido %}Entrou: {{ e.hdf_membro_incluido.usu_nome }}{% endif %}
+        </td>
+        <td>{% if e.hdf_usu %}{{ e.hdf_usu.usu_nome }}{% else %}Sistema{% endif %}</td>
+        <td>{{ e.hdf_justificativa|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="flex entre mt16">
+  <a class="btn txt" href="{% url 'defesa:defesas' %}">Fechar</a>
+  <a class="btn txt" href="{% url 'defesa:sessao' sessao.pk %}">Voltar à sessão</a>
+</div>
+{% endblock %}

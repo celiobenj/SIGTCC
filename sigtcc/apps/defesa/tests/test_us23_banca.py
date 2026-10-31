@@ -225,8 +225,10 @@ class TesteAlterarBancaEAcionarSuplente(TesteTurmas):
         self.assertContains(self.client.get(self.url_sessao), "Banca alterada com sucesso")
         banca = services_defesa.banca_por_papel(self.sessao)
         self.assertEqual(banca[PapelBanca.SEGUNDO_AVALIADOR], novo)
-        for pessoa in (novo, self.av2, self.tcc.tcc_alu.alu):
-            self.assertTrue(Notificacoes.objects.filter(not_usu=pessoa).exists())
+        for pessoa in (novo, self.tcc.tcc_alu.alu):
+            aviso = Notificacoes.objects.get(not_usu=pessoa)
+            self.assertEqual(aviso.not_link_tela, self.url_sessao)
+        self.assertIsNone(Notificacoes.objects.get(not_usu=self.av2).not_link_tela)
 
     def test_cenario_7_acionamento_justificado_do_suplente(self):
         avancar_para(self.sessao, StatusSessao.EM_ANDAMENTO)

@@ -48,5 +48,8 @@
 {% block documentos %}{% endblock %}
 {% block ouvintes %}{% endblock %}
 {% block ocorrencias %}{% endblock %}
-<div class="mt16"><a class="btn txt" href="{% url 'defesa:defesas' %}">Fechar</a></div>
+<div class="flex entre mt16">
+  <a class="btn txt" href="{% url 'defesa:defesas' %}">Fechar</a>
+  <a class="btn" href="{% url 'defesa:historico' sessao.pk %}"><span class="ms">history</span>Histórico</a>
+</div>
 {% endblock %}

@@ -18,4 +18,5 @@ urlpatterns = [
     path("defesas/<int:def_id>/suplente/", views_defesa.acionar_suplente, name="acionar_suplente"),
     path("defesas/<int:def_id>/reagendar/", views_defesa.reagendar, name="reagendar"),
     path("defesas/<int:def_id>/cancelar/", views_defesa.cancelar, name="cancelar"),
+    path("defesas/<int:def_id>/historico/", views_defesa.historico, name="historico"),
 ]

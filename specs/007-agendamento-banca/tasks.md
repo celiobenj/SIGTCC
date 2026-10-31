@@ -347,23 +347,23 @@ perfil e verificar visibilidade e filtros
   Aluno do próprio TCC; Coordenador e Coorientador fora da banca, não (Clarifications
   2026-10-31, contracts/rotas.md) — FR-030 *(feito na Fase 4, com a janela da sessão, onde ficam os
   botões Alterar banca e Acionar suplente)*
-- [ ] T048 [US5] Implementar a view `defesas` em `views_defesa.py` — lista + filtros de período
+- [X] T048 [US5] Implementar a view `defesas` em `views_defesa.py` — lista + filtros de período
   (atalhos e intervalo manual), status e, para Coordenador/Secretaria, curso (`?curso=`,
   `services_contas.filtro_de_curso`), atualizando em até 2 segundos — FR-024 a FR-028, RBN-CAD-14.1
   (depende de T020, T047)
-- [ ] T049 [US5] Implementar as views `sessao` e `historico` em `views_defesa.py` — 404 → 403
+- [X] T049 [US5] Implementar as views `sessao` e `historico` em `views_defesa.py` — 404 → 403
   (M-02) → conteúdo, nessa ordem — FR-029, FR-030 (depende de T047, T021)
   *A view `sessao` (com a E5 da US-40) e o `sessao.html` com os blocos reservados já entraram na
-  Fase 4 (US-23 cenários 15 e 17); falta o `historico`.*
-- [ ] T050 [P] [US5] Criar `sigtcc/templates/defesa/defesas.html`, `sessao.html` (com os blocos
+  Fase 4 (US-23 cenários 15 e 17); o `historico` entrou na Fase 7.*
+- [X] T050 [P] [US5] Criar `sigtcc/templates/defesa/defesas.html`, `sessao.html` (com os blocos
   reservados `{% block avaliacao %}`, `resultado`, `documentos`, `ouvintes`, `ocorrencias` do
   contrato §4 da feat-08/feat-09) e `historico.html` (protótipo de 17/10)
-- [ ] T051 [P] [US5] Criar o componente do filtro de período (`sigtcc/templates/defesa/` + função
+- [X] T051 [P] [US5] Criar o componente do filtro de período (`sigtcc/templates/defesa/` + função
   auxiliar em `services_defesa.py`, `periodo_letivo_atual` e `filtro_de_periodo`, contrato §4) reaproveitável pela feat-08/feat-09
   — contrato §4, RBN-DEF-01.5
-- [ ] T052 [P] [US5] Acrescentar em `mensagens.py` os textos exatos da US-40 e da aplicação do
+- [X] T052 [P] [US5] Acrescentar em `mensagens.py` os textos exatos da US-40 e da aplicação do
   filtro de Curso (US-39) à tela Defesas
-- [ ] T053 [US5] `sigtcc/apps/defesa/tests/test_us40_lista_filtros_historico.py` — os 9 cenários de
+- [X] T053 [US5] `sigtcc/apps/defesa/tests/test_us40_lista_filtros_historico.py` — os 9 cenários de
   aceite da User Story 5 (depende de T048, T049)
 
 **Checkpoint**: todas as 5 User Stories funcionais de forma independente.

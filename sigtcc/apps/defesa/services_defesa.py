@@ -16,6 +16,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import BooleanField, Case, Exists, OuterRef, Q, Subquery, Value, When
 from django.http import Http404
+from django.urls import reverse
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import services_contas, services_entregas, services_orientacao
@@ -478,11 +479,13 @@ def _quando(sessao):
     return f"{sessao.def_data:%d/%m/%Y} às {sessao.def_h_inicio:%H:%M}"
 
 
-def _avisar(usuario, texto, assunto):
+def _avisar(usuario, texto, assunto, sessao=None):
     """Aviso por notificação no sistema e por e-mail depois do commit (contrato da spec 004).
-    [US-23][US-24][RBN-DEF-02.4][RBN-DEF-03.2][RBN-DEF-03.3]
+    Com `sessao`, a notificação leva à janela da sessão (só para quem pode abri-la).
+    [US-23][US-24][US-38][RBN-DEF-02.4][RBN-DEF-03.2][RBN-DEF-03.3]
     """
-    notificar(usuario, texto)
+    link = reverse("defesa:sessao", args=[sessao.pk]) if sessao is not None else None
+    notificar(usuario, texto, link=link)
     enviar_email_apos_commit(usuario, assunto, TEMPLATE_AVISO, {"texto": texto})
 
 
@@ -556,7 +559,8 @@ def alterar_banca(usuario, def_id, nova_banca, justificativa):
 
 
 def _avisar_alteracao(sessao, papel, antigo, novo):
-    """MD-02 a quem entrou, MD-03 a quem saiu e MD-04 ao Aluno (US-23 C.e).
+    """MD-02 a quem entrou, MD-03 a quem saiu (sem link: já não abre a sessão) e MD-04 ao Aluno
+    (US-23 C.e).
     [US-23][RBN-DEF-02.4][FR-011]
     """
     tcc = sessao.def_tcc
@@ -564,7 +568,8 @@ def _avisar_alteracao(sessao, papel, antigo, novo):
     dados = {"aluno": aluno.usu_nome, "quando": _quando(sessao), "titulo": tcc.tcc_titulo}
     assunto = mensagens.MD04_ASSUNTO
     if novo is not None:
-        _avisar(novo, mensagens.MD02_BANCA_INCLUIDO.format(papel=_rotulo(papel), **dados), assunto)
+        texto = mensagens.MD02_BANCA_INCLUIDO.format(papel=_rotulo(papel), **dados)
+        _avisar(novo, texto, assunto, sessao)
     if antigo is not None:
         _avisar(antigo, mensagens.MD03_BANCA_REMOVIDO.format(**dados), assunto)
     texto = mensagens.MD04_BANCA_ALTERADA_ALUNO.format(
@@ -573,7 +578,7 @@ def _avisar_alteracao(sessao, papel, antigo, novo):
         papel=_rotulo(papel),
         removido=antigo.usu_nome if antigo is not None else "ninguém",
     )
-    _avisar(aluno, texto, assunto)
+    _avisar(aluno, texto, assunto, sessao)
 
 
 def acionar_suplente(usuario, def_id, papel_substituido, justificativa):
@@ -651,7 +656,7 @@ def _avisar_aluno_e_banca(sessao, texto, assunto):
     """
     destinatarios = [sessao.def_tcc.tcc_alu.alu, *banca_por_papel(sessao).values()]
     for usuario in destinatarios:
-        _avisar(usuario, texto, assunto)
+        _avisar(usuario, texto, assunto, sessao)
 
 
 def confirmar_agendamento(sessao, autor):

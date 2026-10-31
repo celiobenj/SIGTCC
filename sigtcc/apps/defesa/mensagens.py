@@ -83,3 +83,8 @@ MD12_SESSAO_CANCELADA = "Sessão cancelada com sucesso"
 # MD-13 (PROVISÓRIA): aviso do formulário Reagendar sessão de defesa (US-24 B.b descreve o aviso
 # sem aspas).
 MD13_BANCA_MANTIDA = "A banca composta e as avaliações já salvas são mantidas."
+
+# US-40 (E2 a E4). [US-40][RBN-DEF-01.4][RBN-DEF-01.5]
+NENHUMA_SESSAO = "Nenhuma sessão de defesa encontrada para o período e filtros selecionados"
+DATA_INICIAL_MAIOR = "A data inicial não pode ser superior à data final"
+DATA_INVALIDA = "Informe uma data válida no formato DD/MM/AAAA"

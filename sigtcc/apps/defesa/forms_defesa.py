@@ -15,8 +15,8 @@ from django.utils import timezone
 from sigtcc.apps.cadastro import services_contas
 from sigtcc.apps.cadastro.choices import StatusCoorientacao, StatusOrientacao
 from sigtcc.apps.cadastro.models import Coorientacoes, Orientacoes, TCCs, Usuarios
-from sigtcc.apps.defesa import mensagens
-from sigtcc.apps.defesa.choices import FormatoSessao, PapelBanca
+from sigtcc.apps.defesa import mensagens, services_defesa
+from sigtcc.apps.defesa.choices import FormatoSessao, PapelBanca, StatusSessao
 
 OBRIGATORIO = {"required": mensagens.CAMPO_OBRIGATORIO}
 
@@ -358,3 +358,76 @@ class CancelarForm(forms.Form):
     """ "Cancelar sessão" (US-24 C): Justificativa e confirmação. [US-24][RBN-DEF-03.3][FR-020]"""
 
     justificativa = JustificativaField()
+
+
+class FiltroPeriodoForm(forms.Form):
+    """Filtro de período das defesas (RBN-DEF-01.5; contrato §4): atalho (Período Letivo, o
+    padrão, Esta Semana, Este Mês, Próximos 30 Dias) ou Data Inicial e Data Final (DD/MM/AAAA);
+    as datas preenchidas valem como intervalo manual. Reaproveitável pela agenda, pelos ouvintes e
+    pelos relatórios da feat-08 e da feat-09 (`filtro()` devolve o Q sobre Defesas).
+    [US-40][RBN-DEF-01.5][FR-025]
+    """
+
+    atalho = forms.ChoiceField(
+        label="Período",
+        required=False,
+        choices=[
+            (chave, rotulo)
+            for chave, rotulo in services_defesa.ATALHOS_DE_PERIODO.items()
+            if chave != "intervalo"
+        ],
+        widget=forms.Select(attrs={"class": "inp"}),
+    )
+    data_inicial = forms.DateField(
+        label="Data Inicial",
+        required=False,
+        input_formats=["%d/%m/%Y", "%Y-%m-%d"],
+        widget=forms.DateInput(attrs={"type": "date", "class": "inp"}, format="%Y-%m-%d"),
+        error_messages={"invalid": mensagens.DATA_INVALIDA},
+    )
+    data_final = forms.DateField(
+        label="Data Final",
+        required=False,
+        input_formats=["%d/%m/%Y", "%Y-%m-%d"],
+        widget=forms.DateInput(attrs={"type": "date", "class": "inp"}, format="%Y-%m-%d"),
+        error_messages={"invalid": mensagens.DATA_INVALIDA},
+    )
+
+    def clean(self):
+        """E3 e E4 da US-40: datas válidas e Data Inicial não superior à Data Final; com só uma
+        das datas, a outra é obrigatória (E4). [US-40][RBN-DEF-01.5][FR-025]
+        """
+        dados = super().clean()
+        inicial, final = dados.get("data_inicial"), dados.get("data_final")
+        if self.errors:
+            return dados
+        if bool(inicial) != bool(final):
+            self.add_error("data_final" if inicial else "data_inicial", mensagens.DATA_INVALIDA)
+        elif inicial and final and inicial > final:
+            self.add_error(None, mensagens.DATA_INICIAL_MAIOR)
+        return dados
+
+    def filtro(self):
+        """Q do período escolhido (o Período Letivo quando nada vale), para listar_defesas e as
+        listas da feat-08 e da feat-09. [US-40][RBN-DEF-01.5][FR-025]
+        """
+        dados = self.cleaned_data if self.is_valid() else {}
+        if dados.get("data_inicial") and dados.get("data_final"):
+            return services_defesa.filtro_de_periodo(
+                "intervalo", dados["data_inicial"], dados["data_final"]
+            )
+        return services_defesa.filtro_de_periodo(dados.get("atalho") or "periodo_letivo")
+
+
+class FiltroDefesasForm(FiltroPeriodoForm):
+    """Filtros da tela Defesas (US-40): período, Status (Todos por padrão) e, para o
+    Coordenador de Curso e a Secretaria, Curso (US-39; o valor vem de
+    services_contas.filtro_de_curso). [US-40][US-39][RBN-DEF-01.4][RBN-CAD-14.1][FR-026][FR-027]
+    """
+
+    status = forms.ChoiceField(
+        label="Status",
+        required=False,
+        choices=[("", "Todos"), *StatusSessao.choices],
+        widget=forms.Select(attrs={"class": "inp"}),
+    )

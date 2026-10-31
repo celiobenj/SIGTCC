@@ -12,7 +12,7 @@ from django.utils.http import urlencode
 
 from sigtcc.apps.cadastro import mensagens as mensagens_cadastro
 from sigtcc.apps.cadastro import services_contas
-from sigtcc.apps.cadastro.models import TCCs, Turmas, Usuarios
+from sigtcc.apps.cadastro.models import Cursos, TCCs, Turmas, Usuarios
 from sigtcc.apps.cadastro.permissoes import perfil_requerido, tem_perfil
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada, turma_arquivada
 from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_defesa
@@ -23,6 +23,7 @@ from sigtcc.apps.defesa.forms_defesa import (
     AgendarForm,
     AlterarBancaForm,
     CancelarForm,
+    FiltroDefesasForm,
     ReagendarForm,
 )
 from sigtcc.apps.defesa.models import Defesas
@@ -40,15 +41,31 @@ CAMPOS_QUE_VOLTAM = ("tcc", "data", "h_inicio", "formato", "local", "link", *CAM
 
 @perfil_requerido()
 def defesas(request):
-    """Tela Defesas (US-21 passos 1 e 2; US-40): sessões do Período Letivo atual que o perfil
-    pode ver, em ordem cronológica, e o botão "Agendar defesa" para quem agenda.
-    [US-21][US-40][RBN-DEF-01.4][RBN-DEF-01.5][FR-024][FR-028]
+    """Tela Defesas (US-21 passos 1 e 2; US-40): sessões que o perfil pode ver, em ordem
+    cronológica, com os filtros de período (Período Letivo por padrão), Status e, para o
+    Coordenador de Curso e a Secretaria, Curso (US-39, com o curso do usuário por padrão); o
+    botão "Agendar defesa" para quem agenda. Filtro inválido (E3, E4): mostra a mensagem e a
+    lista do Período Letivo, sem aplicar o filtro.
+    [US-21][US-40][US-39][RBN-DEF-01.4][RBN-DEF-01.5][RBN-CAD-14.1][FR-024 a FR-028]
     """
     services_defesa.iniciar_sessoes_vencidas()
+    form = FiltroDefesasForm(request.GET or None)
+    valido = form.is_valid()
+    gestao = tem_perfil(request.user, "coordenador", "secretaria")
+    cur_id, curso = None, ""
+    if gestao:
+        cur_id, curso = services_contas.filtro_de_curso(request.user, request.GET.get("curso"))
     contexto = {
+        "form": form,
         "sessoes": services_defesa.listar_defesas(
-            request.user, periodo=services_defesa.filtro_de_periodo("periodo_letivo")
+            request.user,
+            periodo=form.filtro(),
+            status=form.cleaned_data.get("status") if valido else None,
+            cur_id=cur_id,
         ),
+        "mostra_curso": gestao,
+        "cursos": Cursos.objects.order_by("cur_nome") if gestao else [],
+        "curso": curso,
         "pode_agendar": tem_perfil(request.user, *PERFIS_QUE_AGENDAM),
         "url_agendar": reverse("defesa:agendar"),
     }
@@ -336,3 +353,16 @@ def cancelar(request, def_id):
             messages.success(request, mensagens.MD12_SESSAO_CANCELADA)
             return redirect("defesa:sessao", def_id=registro.pk)
     return render(request, "defesa/confirmar_cancelar.html", {"form": form, "sessao": registro})
+
+
+@perfil_requerido()
+def historico(request, def_id):
+    """Janela "Histórico da defesa" (US-40 passos 9 a 11): linha do tempo, somente leitura, dos
+    eventos de todas as sessões do TCC, com data, hora, responsável e justificativa; as mesmas
+    permissões da sessão (US-40 E5). [US-40][RBN-DEF-01.6][FR-029][FR-030]
+    """
+    registro = _sessao_ou_404(def_id)
+    if not permissoes_defesa.pode_ver_sessao(request.user, registro):
+        raise PermissionDenied(mensagens.SEM_PERMISSAO_SESSAO)
+    contexto = {"sessao": registro, "eventos": services_defesa.historico_da_sessao(registro)}
+    return render(request, "defesa/historico.html", contexto)
