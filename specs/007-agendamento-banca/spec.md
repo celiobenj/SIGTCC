@@ -710,3 +710,6 @@ a 006 (índice Q-124). Todos os textos entre aspas nos FR acima são cópia exat
 | MD-08 | Erro do campo Local com mais de 100 caracteres | "O Local deve ter até 100 caracteres" | US-21 E5 ("informa o limite de até 100 caracteres", sem texto exato); FR-005 | A validar |
 | MD-09 | Confirmação na tela depois de alterar a banca | "Banca alterada com sucesso" | US-23 C.e (sem texto exato); FR-011 | A validar |
 | MD-10 | Confirmação na tela depois de acionar o suplente | "Suplente acionado com sucesso" | US-23 D.e (sem texto exato); FR-013 | A validar |
+| MD-11 | Confirmação na tela depois de reagendar | "Sessão reagendada com sucesso" | US-24 B.e (sem texto exato); FR-019 | A validar |
+| MD-12 | Confirmação na tela depois de cancelar | "Sessão cancelada com sucesso" | US-24 C.d (sem texto exato); FR-020 | A validar |
+| MD-13 | Aviso no formulário Reagendar sessão de defesa, seguido dos membros da banca | "A banca composta e as avaliações já salvas são mantidas." | US-24 B.b (descreve o aviso, sem aspas); FR-019 | A validar |

@@ -19,6 +19,10 @@
     {% block acoes %}
     {% if pode_alterar_banca %}<a class="btn" href="{% url 'defesa:alterar_banca' sessao.pk %}"><span class="ms">groups</span>Alterar banca</a>{% endif %}
     {% if pode_acionar_suplente %}<a class="btn" href="{% url 'defesa:acionar_suplente' sessao.pk %}"><span class="ms">swap_horiz</span>Acionar suplente</a>{% endif %}
+    {% if pode_reagendar_ou_cancelar %}
+    <a class="btn" href="{% url 'defesa:reagendar' sessao.pk %}"><span class="ms">event_repeat</span>Reagendar</a>
+    <a class="btn perigo" href="{% url 'defesa:cancelar' sessao.pk %}"><span class="ms">event_busy</span>Cancelar sessão</a>
+    {% endif %}
     {% endblock %}
   </div>
 </div>

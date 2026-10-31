@@ -18,8 +18,15 @@ from sigtcc.apps.cadastro.services_turmas import TurmaArquivada, turma_arquivada
 from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_defesa
 from sigtcc.apps.defesa.choices import PapelBanca
 from sigtcc.apps.defesa.forms_defesa import CAMPOS_DA_BANCA as CAMPOS_DO_FORMULARIO
-from sigtcc.apps.defesa.forms_defesa import AcionarSuplenteForm, AgendarForm, AlterarBancaForm
+from sigtcc.apps.defesa.forms_defesa import (
+    AcionarSuplenteForm,
+    AgendarForm,
+    AlterarBancaForm,
+    CancelarForm,
+    ReagendarForm,
+)
 from sigtcc.apps.defesa.models import Defesas
+from sigtcc.apps.defesa.templatetags.defesa_tags import lugar
 
 # Perfis que veem o botão "Agendar defesa" (quem pode agendar em algum curso, RBN-DEF-01.3).
 PERFIS_QUE_AGENDAM = ("orientador", "professor_disciplina")
@@ -37,6 +44,7 @@ def defesas(request):
     pode ver, em ordem cronológica, e o botão "Agendar defesa" para quem agenda.
     [US-21][US-40][RBN-DEF-01.4][RBN-DEF-01.5][FR-024][FR-028]
     """
+    services_defesa.iniciar_sessoes_vencidas()
     contexto = {
         "sessoes": services_defesa.listar_defesas(
             request.user, periodo=services_defesa.filtro_de_periodo("periodo_letivo")
@@ -56,6 +64,7 @@ def turma_defesas(request, tur_id):
     turma = get_object_or_404(Turmas.objects.select_related("tur_cur"), pk=tur_id)
     if turma.tur_doc_id != request.user.pk:
         raise PermissionDenied
+    services_defesa.iniciar_sessoes_vencidas()
     contexto = {
         "turma": turma,
         "sessoes": services_defesa.listar_defesas(request.user).filter(def_tcc__tcc_tur=turma),
@@ -165,7 +174,11 @@ def _iniciais(request):
 
 
 def _sessao_ou_404(def_id):
-    """Sessão com o TCC, a turma e o aluno já carregados. [US-23][US-24][US-40]"""
+    """Sessão com o TCC, a turma e o aluno já carregados, depois do início automático das
+    sessões cujo horário chegou (US-24 D), para o status e os botões valerem já.
+    [US-23][US-24][US-40][FR-021]
+    """
+    services_defesa.iniciar_sessoes_vencidas()
     return get_object_or_404(
         Defesas.objects.select_related(
             "def_tcc__tcc_tur__tur_cur",
@@ -196,6 +209,9 @@ def sessao(request, def_id):
         "substituicoes": services_defesa.substituicoes(registro),
         "pode_alterar_banca": permissoes_defesa.pode_alterar_banca(request.user, registro),
         "pode_acionar_suplente": permissoes_defesa.pode_acionar_suplente(request.user, registro),
+        "pode_reagendar_ou_cancelar": permissoes_defesa.pode_reagendar_ou_cancelar(
+            request.user, registro
+        ),
     }
     return render(request, "defesa/sessao.html", contexto)
 
@@ -266,3 +282,57 @@ def acionar_suplente(request, def_id):
             return redirect("defesa:sessao", def_id=registro.pk)
     contexto = {"form": form, "sessao": registro, "suplente": banca[PapelBanca.SUPLENTE]}
     return render(request, "defesa/form_acionar_suplente.html", contexto)
+
+
+@perfil_requerido("docente", "secretaria")
+def reagendar(request, def_id):
+    """ "Reagendar sessão de defesa" (US-24 B): quem pode agendar o TCC ou a Secretaria do curso,
+    com a sessão Agendada, Reagendada ou Em Andamento (senão M-02, E4 e E5). Conflito (E2):
+    volta ao formulário com os dados digitados; sucesso volta à sessão com a MD-11.
+    [US-24][US-22][RBN-DEF-03.3][RBN-DEF-03.1][FR-019][FR-022]
+    """
+    registro = _sessao_ou_404(def_id)
+    if not permissoes_defesa.pode_reagendar_ou_cancelar(request.user, registro):
+        raise PermissionDenied
+    form = ReagendarForm.da_sessao(registro, lugar(registro), request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            services_defesa.reagendar(
+                request.user,
+                registro.pk,
+                form.dados_basicos(),
+                form.cleaned_data["justificativa"],
+            )
+        except services_defesa.ErroDefesa as erro:
+            _erro_no_formulario(form, erro)
+        else:
+            messages.success(request, mensagens.MD11_SESSAO_REAGENDADA)
+            return redirect("defesa:sessao", def_id=registro.pk)
+    contexto = {
+        "form": form,
+        "sessao": registro,
+        "banca": services_defesa.banca_por_papel(registro).items(),
+        "aviso_banca": mensagens.MD13_BANCA_MANTIDA,
+    }
+    return render(request, "defesa/form_reagendar.html", contexto)
+
+
+@perfil_requerido("docente", "secretaria")
+def cancelar(request, def_id):
+    """ "Cancelar sessão" (US-24 C): as mesmas permissões do reagendamento; pede a Justificativa
+    e a confirmação. O TCC continua "Apto para Defesa". Sucesso volta à sessão com a MD-12.
+    [US-24][RBN-DEF-03.3][FR-020][FR-022]
+    """
+    registro = _sessao_ou_404(def_id)
+    if not permissoes_defesa.pode_reagendar_ou_cancelar(request.user, registro):
+        raise PermissionDenied
+    form = CancelarForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            services_defesa.cancelar(request.user, registro.pk, form.cleaned_data["justificativa"])
+        except services_defesa.ErroDefesa as erro:
+            _erro_no_formulario(form, erro)
+        else:
+            messages.success(request, mensagens.MD12_SESSAO_CANCELADA)
+            return redirect("defesa:sessao", def_id=registro.pk)
+    return render(request, "defesa/confirmar_cancelar.html", {"form": form, "sessao": registro})

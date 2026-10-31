@@ -330,3 +330,31 @@ class AcionarSuplenteForm(forms.Form):
             (papel, f"{papel} — {banca[papel].usu_nome}")
             for papel in (PapelBanca.PRIMEIRO_AVALIADOR, PapelBanca.SEGUNDO_AVALIADOR)
         ]
+
+
+class ReagendarForm(DadosDaSessaoForm):
+    """ "Reagendar sessão de defesa" (US-24 B): nova Data, Horário de Início, Formato, Local ou
+    Link e Justificativa; o TCC fica bloqueado e a banca é mantida. Com conflito (E2), o
+    formulário volta com os dados digitados. [US-24][RBN-DEF-03.3][FR-019]
+    """
+
+    justificativa = JustificativaField()
+
+    @classmethod
+    def da_sessao(cls, sessao, lugar, dados=None):
+        """Formulário com os dados atuais da sessão como valores iniciais. [US-24][FR-019]"""
+        presencial = sessao.def_formato == FormatoSessao.PRESENCIAL
+        inicial = {
+            "data": sessao.def_data,
+            "h_inicio": sessao.def_h_inicio,
+            "formato": sessao.def_formato,
+            "local": lugar if presencial else "",
+            "link": "" if presencial else lugar,
+        }
+        return cls(dados, initial=inicial)
+
+
+class CancelarForm(forms.Form):
+    """ "Cancelar sessão" (US-24 C): Justificativa e confirmação. [US-24][RBN-DEF-03.3][FR-020]"""
+
+    justificativa = JustificativaField()

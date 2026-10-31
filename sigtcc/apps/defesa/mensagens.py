@@ -76,3 +76,10 @@ LINK_CADASTRAR_EXTERNO = "O Membro Externo não está na lista? Cadastrar"
 # MD-09 e MD-10 (PROVISÓRIAS): confirmação na tela (US-23 C.e e D.e, sem texto exato).
 MD09_BANCA_ALTERADA = "Banca alterada com sucesso"
 MD10_SUPLENTE_ACIONADO = "Suplente acionado com sucesso"
+
+# MD-11 e MD-12 (PROVISÓRIAS): confirmação na tela (US-24 B.e e C.d, sem texto exato).
+MD11_SESSAO_REAGENDADA = "Sessão reagendada com sucesso"
+MD12_SESSAO_CANCELADA = "Sessão cancelada com sucesso"
+# MD-13 (PROVISÓRIA): aviso do formulário Reagendar sessão de defesa (US-24 B.b descreve o aviso
+# sem aspas).
+MD13_BANCA_MANTIDA = "A banca composta e as avaliações já salvas são mantidas."

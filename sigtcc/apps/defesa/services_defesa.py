@@ -957,3 +957,26 @@ def substituicoes(sessao):
             ban_def=sessao, ban_usu_substituido__isnull=False
         )
     ]
+
+
+def iniciar_sessoes_vencidas(agora=None):
+    """Início automático (US-24 D): cada sessão "Agendada" ou "Reagendada" cujo horário marcado
+    já chegou passa a "Em Andamento", pelo serviço único, sem autor (o sistema) e com o horário
+    marcado como data e hora do evento. Trava turma → aluno → TCC → sessão e confere de novo
+    (outra tela ou o comando agendado podem ter feito a transição). Usado pelas telas da Defesa,
+    antes de mostrar ou alterar sessões, e pelo comando iniciar_sessoes (PGCS 9.4). Devolve
+    quantas sessões começaram. [US-24][RBN-DEF-01.2][FR-021][research C6]
+    """
+    agora = agora or timezone.now()
+    iniciadas = 0
+    for def_id, tcc_id in sessoes_para_iniciar(agora).values_list("pk", "def_tcc_id"):
+        with transaction.atomic():
+            _travar_tcc(tcc_id)
+            sessao = _travar_sessao(def_id)
+            inicio = datetime.combine(sessao.def_data, sessao.def_h_inicio)
+            if sessao.def_status in (StatusSessao.AGENDADA, StatusSessao.REAGENDADA) and (
+                inicio <= agora
+            ):
+                transicionar_status(sessao, StatusSessao.EM_ANDAMENTO, None, agora=inicio)
+                iniciadas += 1
+    return iniciadas

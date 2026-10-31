@@ -310,23 +310,25 @@ existente
 - [X] T040 [P] [US4] Implementar `pode_reagendar_ou_cancelar(usuario, sessao)` em
   `permissoes_defesa.py` — quem pode agendar o TCC (`pode_agendar`) ou a Secretaria do curso
   (Clarifications 2026-10-31), com sessão Agendada/Reagendada/Em Andamento — FR-022 *(feito na Fase 2b, junto com T017/T018)*
-- [ ] T041 [P] [US4] Implementar `ReagendarForm` e `CancelarForm` em `forms_defesa.py`
+- [X] T041 [P] [US4] Implementar `ReagendarForm` e `CancelarForm` em `forms_defesa.py`
   (Justificativa obrigatória até 500 caracteres) — FR-019, FR-020
-- [ ] T042 [US4] Implementar as views `reagendar` e `cancelar` em `views_defesa.py` — chamam
+- [X] T042 [US4] Implementar as views `reagendar` e `cancelar` em `views_defesa.py` — chamam
   `reagendar`/`cancelar` de `services_defesa.py` (que já usa `_travar_membros`/
   `_verificar_conflito`, Fase 2b), ocultam os botões quando Realizada/Cancelada — FR-019, FR-020,
   FR-022 (depende de T040, T041, T017, T018)
-- [ ] T043 [P] [US4] Criar `sigtcc/templates/defesa/form_reagendar.html` e
+- [X] T043 [P] [US4] Criar `sigtcc/templates/defesa/form_reagendar.html` e
   `confirmar_cancelar.html` (protótipo de 17/10)
-- [ ] T044 [P] [US4] Acrescentar em `mensagens.py` os textos exatos da US-24 (ou provisórios
+- [X] T044 [P] [US4] Acrescentar em `mensagens.py` os textos exatos da US-24 (ou provisórios
   `MD-XX`)
-- [ ] T045 [US4] `sigtcc/apps/defesa/tests/test_us24_confirmar_reagendar_cancelar.py` — os 10
+- [X] T045 [US4] `sigtcc/apps/defesa/tests/test_us24_confirmar_reagendar_cancelar.py` — os 10
   cenários de aceite da User Story 4, incluindo o cenário 10 (MT30, `services_turmas.py` **não**
   alterado) com relógio controlado para o início automático (depende de T042)
-- [ ] T046 [US4] Aplicar `sessoes_para_iniciar(agora)` na view `defesas`/`sessao` (chama
+- [X] T046 [US4] Aplicar `sessoes_para_iniciar(agora)` na view `defesas`/`sessao` (chama
   `transicionar_status` para as sessões encontradas antes de renderizar) e no comando de gestão
   agendado (PGCS 9.4, Assumptions; agendamento no GitHub Actions é item do Célio, Q-79) — FR-021
   (depende de T019, T006)
+  *Feito como `services_defesa.iniciar_sessoes_vencidas()`, chamado ao abrir as telas da Defesa
+  (lista, aba da turma, sessão e ações), e o comando `iniciar_sessoes`.*
 
 **Checkpoint**: ciclo completo de agendamento, confirmação, reagendamento, cancelamento e início
 automático funcional; User Story 3 (T039) pode ser concluída depois de T042.
