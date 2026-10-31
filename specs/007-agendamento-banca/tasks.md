@@ -242,9 +242,9 @@ seção Banca completa — ver Fase 4).
 Banca, sem depender da confirmação final da sessão
 
 - [ ] T033 [P] [US2] Implementar `pode_alterar_banca(usuario, sessao)` e
-  `pode_acionar_suplente(usuario, sessao)` em `permissoes_defesa.py` — Orientador/Professor da
-  Disciplina com sessão Agendada/Reagendada; exclusivamente Orientador com sessão Em Andamento e
-  suplente presente — FR-011, FR-013
+  `pode_acionar_suplente(usuario, sessao)` em `permissoes_defesa.py` — quem pode agendar o TCC
+  (`pode_agendar`, pelo curso; Clarifications 2026-10-31) com sessão Agendada/Reagendada;
+  exclusivamente o Orientador com sessão Em Andamento e suplente presente — FR-011, FR-013
 - [ ] T034 [P] [US2] Implementar, em `forms_defesa.py`: a seção Banca do `AgendarForm` (exclui
   orientador/coorientadores, listas excludentes entre papéis, cadastro rápido de Membro Externo
   reaproveitando o formulário da US-05), `AlterarBancaForm` e `AcionarSuplenteForm` (Justificativa
@@ -293,8 +293,8 @@ verificar a notificação e o status "Agendada"; separadamente, reagendar e canc
 existente
 
 - [ ] T040 [P] [US4] Implementar `pode_reagendar_ou_cancelar(usuario, sessao)` em
-  `permissoes_defesa.py` — Orientador, Professor da Disciplina ou Secretaria do curso, com sessão
-  Agendada/Reagendada/Em Andamento — FR-022
+  `permissoes_defesa.py` — quem pode agendar o TCC (`pode_agendar`) ou a Secretaria do curso
+  (Clarifications 2026-10-31), com sessão Agendada/Reagendada/Em Andamento — FR-022
 - [ ] T041 [P] [US4] Implementar `ReagendarForm` e `CancelarForm` em `forms_defesa.py`
   (Justificativa obrigatória até 500 caracteres) — FR-019, FR-020
 - [ ] T042 [US4] Implementar as views `reagendar` e `cancelar` em `views_defesa.py` — chamam
@@ -326,8 +326,9 @@ automático funcional; User Story 3 (T039) pode ser concluída depois de T042.
 perfil e verificar visibilidade e filtros
 
 - [ ] T047 [P] [US5] Implementar `pode_ver_sessao(usuario, sessao)` em `permissoes_defesa.py` —
-  membro da banca ou Professor da Disciplina da turma; Aluno, Coordenador e Secretaria **não**
-  acessam `sessao`/`historico` direto (decisão explícita, contracts/rotas.md) — FR-030
+  membro da banca (inclusive o Suplente), Professor da Disciplina da turma, Secretaria do curso ou
+  Aluno do próprio TCC; Coordenador e Coorientador fora da banca, não (Clarifications
+  2026-10-31, contracts/rotas.md) — FR-030
 - [ ] T048 [US5] Implementar a view `defesas` em `views_defesa.py` — lista + filtros de período
   (atalhos e intervalo manual), status e, para Coordenador/Secretaria, curso (`?curso=`,
   `services_contas.filtro_de_curso`), atualizando em até 2 segundos — FR-024 a FR-028, RBN-CAD-14.1

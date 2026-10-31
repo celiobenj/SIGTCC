@@ -159,6 +159,26 @@
   gatilho único de cada transição); FR-026/FR-028 → RBN-DEF-01.4 (lista de sessões e seu filtro de
   Status); FR-030 → RBN-DEF-01.4 (regra de visibilidade por perfil, mesmo RBN do FR-024).
 
+### Session 2026-10-31
+
+- Q: Quem pode alterar a banca, reagendar e cancelar? A spec dizia "Orientador ou Professor da
+  Disciplina", sem curso; a matriz (RBN-DEF-02.4, RBN-DEF-03.3) e as US-23 (fluxo C.a) e US-24
+  (fluxo B.a, E5) dizem "o perfil autorizado a agendar (RBN-DEF-01.3)", mais a Secretaria do curso
+  no reagendamento e no cancelamento. → A (Julia Cohen, 2026-10-31, no `/speckit-implement`):
+  **seguir a matriz**. Alterar a banca: só quem pode agendar o TCC (Orientador em Engenharia de
+  Computação; Professor da Disciplina em Sistemas de Informação e Licenciatura em Computação).
+  Reagendar e cancelar: quem pode agendar o TCC ou a Secretaria do curso. FR-011, FR-019, FR-022
+  e o cenário 9 da User Story 4 atualizados.
+- Q: Quem abre a janela "Sessão de defesa" e o "Histórico da defesa"? O FR-030 e o
+  `contracts/rotas.md` (decisão I3 do plano) liberavam só a banca e o Professor da Disciplina; a
+  US-24 (fluxos B.a e C.a) faz a Secretaria abrir a sessão para reagendar ou cancelar, e a US-40
+  (passo 8) faz "o usuário", inclusive o Aluno, abrir a janela ao clicar na linha; o E5 da US-40
+  só bloqueia o docente fora da banca que não é o Professor da Disciplina da turma. → A (Julia
+  Cohen, 2026-10-31): **membros da banca (inclusive o Suplente), Professor da Disciplina da
+  turma, Secretaria do curso e Aluno do próprio TCC**. O Coordenador de Curso e o Coorientador
+  (docentes fora da banca) ficam só com a lista, como diz o E5. FR-030 e `contracts/rotas.md`
+  atualizados.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Agendar a defesa com data, horário, formato e local ou link (Priority: P1)
@@ -341,8 +361,9 @@ cancelar uma sessão existente.
    justificativa de até 500 caracteres".
 8. **Given** a sessão já está "Realizada" ou "Cancelada", **When** o usuário a abre, **Then** os
    botões "Reagendar" e "Cancelar sessão" não aparecem.
-9. **Given** quem tenta reagendar ou cancelar não é o Orientador do TCC, o Professor da Disciplina
-   da turma, nem a Secretaria do curso, **When** aciona a ação, **Then** o sistema bloqueia e
+9. **Given** quem tenta reagendar ou cancelar não é o perfil autorizado a agendar o TCC (Orientador
+   em Engenharia de Computação, Professor da Disciplina nos demais cursos) nem a Secretaria do
+   curso, **When** aciona a ação, **Then** o sistema bloqueia e
    exibe "Você não tem permissão para esta ação".
 10. **Given** a sessão está "Agendada", "Reagendada" ou "Em Andamento", **When** o Professor da
     Disciplina tenta registrar o encerramento da participação do aluno (Desistente, Reprovado ou
@@ -485,7 +506,9 @@ outras histórias.
   Titulação, Instituição de Origem), gravando a conta "Aguardando Ativação" e deixando-a disponível
   no campo que estava sendo preenchido.
 - **FR-011** [RBN-DEF-02.4]: O sistema MUST permitir, com a sessão "Agendada" ou "Reagendada", que
-  o Orientador ou o Professor da Disciplina altere o 1º Avaliador, o 2º Avaliador ou o Suplente,
+  o perfil autorizado a agendar o TCC (FR-003: Orientador em Engenharia de Computação, Professor
+  da Disciplina em Sistemas de Informação e Licenciatura em Computação) altere o 1º Avaliador, o
+  2º Avaliador ou o Suplente,
   mediante Justificativa obrigatória (até 500 caracteres); MUST revalidar os conflitos de horário
   só dos membros novos (User Story 3) e MUST descartar as avaliações salvas pelo membro
   substituído, notificando os membros incluídos, os removidos e o Aluno.
@@ -524,8 +547,8 @@ outras histórias.
   data, horário, formato, local ou link, título do trabalho, nome do aluno e o link do documento),
   e MUST cancelar automaticamente um pedido de troca de orientador pendente para o TCC, se houver.
 - **FR-019** [RBN-DEF-03.3]: O sistema MUST permitir, com a sessão "Agendada", "Reagendada" ou "Em
-  Andamento" (antes da liberação do resultado), que o Orientador, o Professor da Disciplina ou a
-  Secretaria do curso reagende a sessão (nova Data, Horário de Início, Formato, Local ou Link e
+  Andamento" (antes da liberação do resultado), que o perfil autorizado a agendar o TCC (FR-003)
+  ou a Secretaria do curso reagende a sessão (nova Data, Horário de Início, Formato, Local ou Link e
   Justificativa obrigatória até 500 caracteres), revalidando conflitos (FR-014) e mantendo a banca
   e as avaliações já salvas; o status MUST passar a "Reagendada" e a banca e o Aluno MUST ser
   notificados com os novos dados.
@@ -540,8 +563,8 @@ outras histórias.
   aplicável tanto numa view quanto num comando de gestão agendado, research a detalhar).
 - **FR-022** [RBN-DEF-03.3]: O sistema MUST ocultar os botões "Reagendar" e "Cancelar sessão" quando a sessão
   estiver "Realizada" ou "Cancelada", e MUST bloquear essas ações (mensagem "Você não tem permissão
-  para esta ação") para quem não for o Orientador do TCC, o Professor da Disciplina da turma, nem
-  a Secretaria do curso.
+  para esta ação") para quem não for o perfil autorizado a agendar o TCC (FR-003) nem a Secretaria
+  do curso.
 - **FR-023** [RBN-DEF-01.2]: O sistema MUST expor um serviço único (`transicionar_status`) para qualquer mudança
   de `def_status`, com `registrar_evento` associado (DEF-01.6), de forma que nenhum outro ponto do
   código grave `def_status` ou crie `HistoricoDefesas` diretamente — a feat-08 usa esse serviço
@@ -575,9 +598,11 @@ outras histórias.
   defesa" (somente leitura), com a linha do tempo de todos os eventos (agendamento, reagendamento,
   cancelamento, alteração da banca, acionamento de suplente, início automático, liberação do
   resultado), cada um com data, hora, responsável e a justificativa informada quando houver.
-- **FR-030** [RBN-DEF-01.4]: O sistema MUST bloquear o acesso direto a uma sessão por quem não faz parte da banca
-  nem é o Professor da Disciplina da turma, exibindo "Você não tem permissão para visualizar esta
-  defesa".
+- **FR-030** [RBN-DEF-01.4]: O sistema MUST abrir a janela "Sessão de defesa" e o "Histórico da
+  defesa" só para os membros da banca (inclusive o Suplente), o Professor da Disciplina da turma,
+  a Secretaria do curso e o Aluno do próprio TCC, e MUST bloquear o acesso direto de qualquer
+  outro usuário (inclusive o Coordenador de Curso e o Coorientador, que veem só a lista),
+  exibindo "Você não tem permissão para visualizar esta defesa".
 
 ### Key Entities *(reaproveitadas da spec 001/Épico 2; nenhuma nova sem confirmação)*
 

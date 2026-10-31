@@ -11,11 +11,11 @@ M-02 (spec 003).
 | `defesas` | `/defesas/` | GET | Qualquer perfil autenticado, com visibilidade por perfil (FR-024) | `defesa/defesas.html` | FR-024 a FR-028 |
 | `turma_defesas` | `/turmas/<tur_id>/defesas/` | GET | Professor da Disciplina da turma | `defesa/turma_defesas.html` | FR-006, FR-024 |
 | `agendar` | `/defesas/agendar/` (aceita `?tcc=<id>` para pré-selecionar) | GET, POST | Orientador (EC) ou Professor da Disciplina (SI/LC) do TCC | `defesa/form_agendar.html` | FR-001 a FR-020 |
-| `sessao` | `/defesas/<def_id>/` | GET | Membro da banca ou Professor da Disciplina da turma | `defesa/sessao.html` | FR-030; contrato §4 |
-| `alterar_banca` | `/defesas/<def_id>/banca/` | GET, POST | Orientador (EC) ou Professor da Disciplina (SI/LC), sessão Agendada/Reagendada | `defesa/form_alterar_banca.html` | FR-011, FR-012 |
+| `sessao` | `/defesas/<def_id>/` | GET | Membro da banca (inclusive o Suplente), Professor da Disciplina da turma, Secretaria do curso ou Aluno do próprio TCC (Clarifications 2026-10-31) | `defesa/sessao.html` | FR-030; contrato §4 |
+| `alterar_banca` | `/defesas/<def_id>/banca/` | GET, POST | Quem pode agendar o TCC (Orientador em EC, Professor da Disciplina em SI/LC), sessão Agendada/Reagendada | `defesa/form_alterar_banca.html` | FR-011, FR-012 |
 | `acionar_suplente` | `/defesas/<def_id>/suplente/` | GET, POST | Exclusivamente o Orientador, sessão Em Andamento | `defesa/form_acionar_suplente.html` | FR-013 |
-| `reagendar` | `/defesas/<def_id>/reagendar/` | GET, POST | Orientador, Professor da Disciplina ou Secretaria do curso | `defesa/form_reagendar.html` | FR-019 |
-| `cancelar` | `/defesas/<def_id>/cancelar/` | GET, POST | Orientador, Professor da Disciplina ou Secretaria do curso | `defesa/confirmar_cancelar.html` | FR-020 |
+| `reagendar` | `/defesas/<def_id>/reagendar/` | GET, POST | Quem pode agendar o TCC ou a Secretaria do curso | `defesa/form_reagendar.html` | FR-019 |
+| `cancelar` | `/defesas/<def_id>/cancelar/` | GET, POST | Quem pode agendar o TCC ou a Secretaria do curso | `defesa/confirmar_cancelar.html` | FR-020 |
 | `historico` | `/defesas/<def_id>/historico/` | GET | Mesma permissão de `sessao` | `defesa/historico.html` | FR-029 |
 
 Regras gerais:
@@ -36,9 +36,9 @@ Regras gerais:
 - A "tela de orientandos" e o "painel do aluno" (US-41, futura) não são desta spec; o link
   "Histórico da defesa" que essas telas possam abrir no futuro chama a mesma rota `historico` ou a
   função `historico_da_sessao` diretamente (research C7), sem reimplementar a consulta.
-- **Decisão explícita (não é lacuna)**: Aluno, Coordenador de Curso e Secretaria **não acessam**
-  `sessao`/`historico` diretamente nesta spec — só por `defesas`/`turma_defesas` (a lista já mostra
-  ao Aluno o que ele precisa, US-24; o acesso de Coordenador/Secretaria ao detalhe fica para uma
-  spec futura, fora do escopo de US-21 a 24/39/40). Se um desses perfis tentar `/defesas/<def_id>/`
-  ou `/defesas/<def_id>/historico/` por endereço direto, a permissão (`pode_ver_sessao`) nega com
-  403/M-02, igual a qualquer outro perfil sem acesso àquela sessão.
+- **Quem abre `sessao`/`historico`** (Clarifications da spec, 2026-10-31; substitui a decisão I3
+  do plano): membros da banca (inclusive o Suplente), Professor da Disciplina da turma, Secretaria
+  do curso (que reagenda e cancela pela janela, US-24) e Aluno do próprio TCC (US-40, passo 8). O
+  Coordenador de Curso e o Coorientador, docentes fora da banca, ficam só com a lista (E5 da
+  US-40). Qualquer outro usuário recebe "Você não tem permissão para visualizar esta defesa"
+  (FR-030), também pelo endereço direto.
