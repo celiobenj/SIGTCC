@@ -53,11 +53,13 @@ Defesa" (um por curso) e uma sessão em cada um dos 5 valores de `StatusSessao`,
 `services_defesa` (nunca `Defesas.objects.create()` direto, para já nascerem com `Historico_Defesas`
 coerente). A feat-08 e a feat-09 reaproveitam esse cenário para testar sem montar os dados do zero.
 
-## 6. Serviço que esta spec consome, ainda não entregue pela feat-08
+## 6. Serviço que esta spec consome, entregue pela feat-08
 
 | Item | Uso |
 |---|---|
-| `services_avaliacoes.descartar_avaliacoes(sessao, membro=None)` | **stub** nesta spec (`services_defesa.py`), chamado no cancelamento (todas as notas), na alteração de banca (só o membro substituído) e no acionamento do suplente (só o titular ausente). Quando a feat-08 entregar a função real (gravando em `Avaliacoes`), substitui o stub sem mudar a assinatura nem os 3 pontos de chamada. |
+| `services_avaliacoes.descartar_avaliacoes(sessao, membro=None)` | era **stub** nesta spec (`services_defesa.py`); a feat-08 entrega a função real (spec 008, FR-034; Q-125) e `services_defesa.descartar_avaliacoes` passa a delegar para ela, sem mudar a assinatura. Pontos de chamada: cancelamento (todas as notas), alteração de banca (quem sai da banca ou passa a Suplente; quem troca de papel entre titulares mantém o rascunho, Q-135) e acionamento do suplente (o titular ausente). **Chamada antes do `delete()` da linha de `BancaDefesa`**, para ler o caminho da cópia da assinatura. |
+| `services_avaliacoes.voltar_envios_a_rascunho(sessao)` | chamada por `reagendar` antes de `transicionar_status` (spec 008, FR-035; D2). |
+| Funções públicas `tcc_da_sessao`, `travar_tcc`, `travar_sessao` e `views_defesa.sessao_ou_404` | acrescentadas pela feat-08 (spec 008, research A11), expondo as privadas de mesmo nome, para a feat-08 e a feat-09 seguirem a mesma ordem de trava e o início automático. |
 
 ## 7. O que esta spec explicitamente NÃO faz (fronteira com a feat-08)
 
