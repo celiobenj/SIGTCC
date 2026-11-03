@@ -247,7 +247,7 @@ envio, nota individual e "Enviada", sem liberar.
 **Independent Test**: com sessão Em Andamento e 3 envios (ou não), abrir a sessão como Orientador e
 conferir cálculo, parecer, bloqueios e liberação.
 
-- [ ] T029 [P] [US4] Criar `sigtcc/apps/defesa/tests/test_us27_liberacao.py`: cenários 4.1 a 4.15
+- [X] T029 [P] [US4] Criar `sigtcc/apps/defesa/tests/test_us27_liberacao.py`: cenários 4.1 a 4.15
   (TCC 2 Aprovado com Correções: sessão Realizada, Status do TCC, histórico e o resultado gravado
   em `Defesas` — o que o aluno vê é testado na T036, US5; `/speckit-analyze` I3; cálculo; TCC 1 7,2 → Aprovado para TCC 2; TCC 2 8,5 Aprovado; 5,4 →
   Reprovado sem Folha; Qualis A eleva a 6,0; reajuste recalcula e limpa parecer; suplente;
@@ -262,13 +262,13 @@ conferir cálculo, parecer, bloqueios e liberação.
   uma vez cada) e nenhum outro ponto de `services_avaliacoes.py` grava `def_status`,
   `tcc_status`, `HistoricoDefesas` ou `HistoricoStatusTCC` (`/speckit-analyze` C1)
   [US-27][RBN-DEF-06.2][RBN-DEF-06.3][RBN-DEF-06.4][RBN-DEF-06.6][RBN-DEF-06.7]
-- [ ] T030 [US4] Em `services_avaliacoes.py`: `apuracao(sessao)` (nota final e parecer
+- [X] T030 [US4] Em `services_avaliacoes.py`: `apuracao(sessao)` (nota final e parecer
   preliminar só com os 3 envios; Reprovado automático abaixo de 6,0, ignorando `def_parecer`
   gravado; Aprovado para TCC 2 em TCC 1 ≥ 6,0; em TCC 2 ≥ 6,0, o `def_parecer` gravado ou
   nenhum; flag de Liberar habilitado) e `registrar_parecer(usuario, def_id, parecer)` (só
   Orientador, Em Andamento, 3 envios, TCC 2 ≥ 6,0; Aprovado ou Aprovado com Correções; sem
   escolha: "Selecione o parecer da banca para continuar") [US-27][RBN-DEF-06.3][RBN-DEF-06.6]
-- [ ] T031 [US4] Em `services_avaliacoes.py`: `liberar_resultado(usuario, def_id,
+- [X] T031 [US4] Em `services_avaliacoes.py`: `liberar_resultado(usuario, def_id,
   nota_confirmada, parecer_confirmado)` numa transação com `travar_tcc` → `travar_sessao`;
   confere Orientador, "Em Andamento", 3 envios e parecer; recalcula com a homologação vigente; se
   diferir, não grava e devolve os valores novos (ou "precisa registrar parecer" em TCC 2 ≥ 6,0);
@@ -277,25 +277,25 @@ conferir cálculo, parecer, bloqueios e liberação.
   `services_turmas.atualizar_status_tcc(tcc, turma, usuario, parecer,
   GatilhoStatusTCC.LIBERACAO_DO_RESULTADO)`; nunca grava `def_status` nem `Historico_Defesas`
   direto (research A6) [US-27][RBN-DEF-06.4][RBN-DEF-06.7][RBN-DEF-01.2]
-- [ ] T032 [US4] Em `services_avaliacoes.py` (dentro de `liberar_resultado`): avisos MA-06 (Aluno),
+- [X] T032 [US4] Em `services_avaliacoes.py` (dentro de `liberar_resultado`): avisos MA-06 (Aluno),
   MA-07 (membros efetivos) e MA-08 (Secretaria do curso) por `services.notificar` e
   `services.enviar_email_apos_commit`, sem a nota no e-mail, com os templates
   `sigtcc/templates/defesa/emails/resultado_aluno.txt`, `resultado_banca.txt` e
   `resultado_secretaria.txt` (assunto "SIGTCC: resultado da defesa"); e
   `transaction.on_commit(lambda: services_documentos.ao_liberar_resultado(sessao), robust=True)`
   (FR-028, FR-030; DV-01) [US-27][RBN-DEF-06.4][RBN-DEF-08.3]
-- [ ] T033 [US4] Em `views_avaliacoes.py`: `registrar_parecer(request, def_id)` (POST) e
+- [X] T033 [US4] Em `views_avaliacoes.py`: `registrar_parecer(request, def_id)` (POST) e
   `liberar_resultado(request, def_id)` (GET: confirmação MA-05; POST: liberação; nota mudou:
   reabre a confirmação; TCC 2 ≥ 6,0 sem parecer: volta à sessão), via `sessao_ou_404`; rotas
   `defesa:registrar_parecer` e `defesa:liberar_resultado`; template
   `sigtcc/templates/defesa/confirmar_liberacao.html` [US-27][RBN-DEF-06.3][RBN-DEF-06.4]
-- [ ] T034 [US4] IC-05 (parte 2) em `views_defesa.sessao` e `sigtcc/templates/defesa/sessao.html`:
+- [X] T034 [US4] IC-05 (parte 2) em `views_defesa.sessao` e `sigtcc/templates/defesa/sessao.html`:
   contexto de `visao_da_avaliacao` e `apuracao`; parciais `sigtcc/templates/defesa/_bloco_avaliacao.html`
   (estados, Avaliar, Reabrir minha avaliação, pendentes em destaque) e `_bloco_resultado.html`
   (nota final, parecer, Registrar parecer, Liberar Resultado desabilitado quando for o caso)
   preenchendo `{% block avaliacao %}` e `{% block resultado %}`, sem reescrever o cabeçalho
   [US-27][RBN-DEF-06.6][RBN-DEF-06.8]
-- [ ] T035 [US4] IC-06 em `sigtcc/templates/defesa/historico.html` (e o contexto em
+- [X] T035 [US4] IC-06 em `sigtcc/templates/defesa/historico.html` (e o contexto em
   `views_defesa.historico`): nota final e parecer no evento "Liberação do Resultado", lidos de
   `Defesas` (D15; FR-037); teste em `test_us27_liberacao.py` [US-27][RBN-DEF-01.6]
 

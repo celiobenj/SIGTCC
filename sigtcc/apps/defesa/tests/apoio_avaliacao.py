@@ -19,7 +19,7 @@ from django.test import override_settings
 from django.utils import timezone
 from PIL import Image
 
-from sigtcc.apps.cadastro.choices import DescricaoTurma
+from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusConta
 from sigtcc.apps.cadastro.tests.apoio_turmas import EC, TesteTurmas
 from sigtcc.apps.defesa.choices import Conceito, StatusSessao
 from sigtcc.apps.defesa.models import Avaliacoes, BancaDefesa, Criterios
@@ -78,6 +78,10 @@ def sessao_com_banca(
     autor = orientador if curso_nome == EC else professor
     sessao = avancar_para(agendar_sessao_de(tcc, autor, banca), status)
     sessao.refresh_from_db()
+    # Conta do aluno ativa, para entrar no sistema nos testes de sigilo.
+    aluno = tcc.tcc_alu.alu
+    aluno.usu_status = StatusConta.ATIVA
+    aluno.save(update_fields=["usu_status"])
     return {
         "sessao": sessao,
         "tcc": tcc,

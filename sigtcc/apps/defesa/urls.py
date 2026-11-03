@@ -34,4 +34,14 @@ urlpatterns = [
         views_avaliacoes.assinatura,
         name="assinatura_avaliacao",
     ),
+    path(
+        "defesas/<int:def_id>/parecer/",
+        views_avaliacoes.registrar_parecer,
+        name="registrar_parecer",
+    ),
+    path(
+        "defesas/<int:def_id>/liberar/",
+        views_avaliacoes.liberar_resultado,
+        name="liberar_resultado",
+    ),
 ]

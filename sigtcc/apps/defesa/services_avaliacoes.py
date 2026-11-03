@@ -389,6 +389,7 @@ def visao_da_avaliacao(usuario, sessao):
         "avaliadores": [],
         "nota_final": None,
         "parecer": None,
+        "apuracao": None,
     }
     if visao["liberado"]:
         avaliadores = []
@@ -412,20 +413,25 @@ def visao_da_avaliacao(usuario, sessao):
     visao.update(
         mostra_bloco=True,
         estados=[
-            {key: item[key] for key in ("membro", "papel", "estado", "data_envio")}
+            {
+                **{key: item[key] for key in ("membro", "papel", "estado", "data_envio")},
+                "pendente": item["estado"] != ENVIADA,
+            }
             for item in avaliadores
         ],
         propria={
             "estado": proprio["estado"],
             "nota_individual": proprio["nota_individual"],
             "linhas": _com_observacoes(proprio["linhas"]),
+            # Reabrir minha avaliação: Enviada, sessão Em Andamento, sem liberação (FR-021).
+            "pode_reabrir": proprio["estado"] == ENVIADA
+            and sessao.def_status == StatusSessao.EM_ANDAMENTO,
         },
     )
     if visao["orientador"]:
-        resultado = calculo(sessao)
-        if resultado is not None:
-            visao["nota_final"] = resultado["nota_final"]
-            visao["parecer"] = parecer_automatico(sessao, resultado["nota_final"])
+        visao["apuracao"] = apuracao(sessao)
+        visao["nota_final"] = visao["apuracao"]["nota_final"]
+        visao["parecer"] = visao["apuracao"]["parecer"]
     return visao
 
 
@@ -835,3 +841,186 @@ def formulario_da_avaliacao(usuario, sessao):
         "assinatura_do_perfil": bool(assinatura_do_perfil(usuario)),
         "liberado": liberado,
     }
+
+
+# =============================================================================================
+# Apuração, parecer e liberação do resultado (research A6, A10; US-27)
+# =============================================================================================
+
+TEMPLATE_RESULTADO_ALUNO = "defesa/emails/resultado_aluno.txt"
+TEMPLATE_RESULTADO_BANCA = "defesa/emails/resultado_banca.txt"
+TEMPLATE_RESULTADO_SECRETARIA = "defesa/emails/resultado_secretaria.txt"
+
+
+class ParecerIndisponivel(ErroAvaliacao):
+    """Registrar parecer fora do caso em que ele é escolhido (TCC 2, 3 envios, nota final 6,0 ou
+    mais, sessão Em Andamento): o botão não aparece; a view só volta à sessão.
+    [US-27][RBN-DEF-06.3]
+    """
+
+    def __init__(self):
+        """Sem mensagem própria (o botão não aparece nesses casos). [US-27][RBN-DEF-06.3]"""
+        super().__init__("")
+
+
+@dataclass
+class ResultadoLiberacao:
+    """Resultado de liberar_resultado: `liberado`; senão a nota final e o parecer recalculados
+    (D10: a confirmação reabre com eles), `precisa_registrar_parecer` (TCC 2 com 6,0 ou mais e
+    sem parecer: volta à sessão; revisão I-03) e `pendente` (faltam envios).
+    [US-27][RBN-DEF-06.2][RBN-DEF-06.4]
+    """
+
+    liberado: bool
+    nota_final: Decimal = None
+    parecer: str = None
+    precisa_registrar_parecer: bool = False
+    pendente: bool = False
+
+
+def apuracao(sessao, tcc=None):
+    """Nota final e parecer preliminar da sessão (FR-023 a FR-025), calculados na hora e só com
+    os 3 envios: estados dos membros e os pendentes (em destaque), nota final, parecer
+    (automático abaixo de 6,0 e em TCC 1; o registrado em TCC 2 com 6,0 ou mais), se o
+    Orientador pode Registrar parecer e se Liberar Resultado fica habilitado (3 envios, parecer
+    definido, sessão Em Andamento e sem liberação; D1).
+    [US-27][RBN-DEF-06.2][RBN-DEF-06.3][RBN-DEF-06.4][RBN-DEF-06.6]
+    """
+    estados = estados_da_banca(sessao)
+    completos = tres_envios(estados)
+    resultado = calculo(sessao, tcc) if completos else None
+    nota = resultado["nota_final"] if resultado else None
+    parecer = parecer_automatico(sessao, nota)
+    aberta = (
+        sessao.def_status == StatusSessao.EM_ANDAMENTO
+        and sessao.def_data_liberacao_resultado is None
+    )
+    escolhe = completos and nota is not None and nota >= NOTA_MINIMA and e_tcc_2(sessao)
+    return {
+        "estados": estados,
+        "pendentes": [item["membro"] for item in estados if item["estado"] != ENVIADA],
+        "completos": completos,
+        "nota_final": nota,
+        "parecer": parecer,
+        "parecer_automatico": completos and not escolhe,
+        "elevada_pelo_qualis": bool(resultado and resultado["elevada_pelo_qualis"]),
+        "pode_registrar_parecer": aberta and escolhe,
+        "liberar_habilitado": aberta and completos and parecer is not None,
+    }
+
+
+def _travar_sessao_do_orientador(usuario, def_id, permissao):
+    """Trava turma → aluno → TCC → sessão (research A6) e confere, depois de travar, que é o
+    Orientador (Presidente) da banca (US-27 E4) e que a sessão está Em Andamento e sem
+    liberação (MA-04). Devolve (tcc, sessao). [US-27][RBN-DEF-06.4]
+    """
+    tcc = services_defesa.travar_tcc(services_defesa.tcc_da_sessao(def_id))
+    sessao = services_defesa.travar_sessao(def_id)
+    if not permissao(usuario, sessao):
+        raise ErroAvaliacao(mensagens.APENAS_O_ORIENTADOR)
+    if (
+        sessao.def_data_liberacao_resultado is not None
+        or sessao.def_status != StatusSessao.EM_ANDAMENTO
+    ):
+        raise ErroAvaliacao(mensagens.MA04_RESULTADO_LIBERADO)
+    return tcc, sessao
+
+
+def registrar_parecer(usuario, def_id, parecer):
+    """Registrar parecer (US-27, passos 6 e 7): só o Orientador (Presidente), com a sessão Em
+    Andamento, os 3 envios, TCC 2 e nota final 6,0 ou mais; grava def_parecer (preliminar: só
+    muda o Status do TCC na liberação, RBN-DEF-06.3). Sem escolha válida: "Selecione o parecer
+    da banca para continuar". [US-27][RBN-DEF-06.3][FR-025]
+    """
+    with transaction.atomic():
+        tcc, sessao = _travar_sessao_do_orientador(
+            usuario, def_id, permissoes_defesa.pode_registrar_parecer
+        )
+        if not apuracao(sessao, tcc)["pode_registrar_parecer"]:
+            raise ParecerIndisponivel()
+        if parecer not in PARECERES_DE_TCC_2:
+            raise ErroAvaliacao(mensagens.SELECIONE_O_PARECER, campo="parecer")
+        Defesas.objects.filter(pk=sessao.pk).update(def_parecer=parecer)
+    return sessao
+
+
+def _avisar_liberacao(sessao, tcc, parecer):
+    """Avisos da liberação (FR-030; D8, DV-01): MA-06 ao Aluno, MA-07 aos membros efetivos e
+    MA-08 à Secretaria do curso, pela central de notificações e por e-mail depois do commit
+    (assunto "SIGTCC: resultado da defesa"), sem a nota no texto.
+    [US-27][RBN-DEF-06.4][FR-030]
+    """
+    from django.urls import reverse
+
+    from sigtcc.apps.cadastro.choices import StatusConta
+    from sigtcc.apps.cadastro.models import Secretarios
+
+    aluno = tcc.tcc_alu.alu
+    link_sessao = reverse("defesa:sessao", args=[sessao.pk])
+    assunto = mensagens.MA06_ASSUNTO
+    texto = mensagens.MA06_RESULTADO_ALUNO
+    services.notificar(aluno, texto, link=reverse("cadastro:meu_tcc", args=[tcc.tcc_tur_id]))
+    services.enviar_email_apos_commit(aluno, assunto, TEMPLATE_RESULTADO_ALUNO, {"texto": texto})
+    dados = {"aluno": aluno.usu_nome, "titulo": tcc.tcc_titulo}
+    texto = mensagens.MA07_RESULTADO_BANCA.format(**dados)
+    for membro in services_defesa.membros_efetivos(sessao):
+        services.notificar(membro, texto, link=link_sessao)
+        services.enviar_email_apos_commit(
+            membro, assunto, TEMPLATE_RESULTADO_BANCA, {"texto": texto}
+        )
+    texto = mensagens.MA08_RESULTADO_SECRETARIA.format(parecer=parecer, **dados)
+    for secretaria in Secretarios.objects.select_related("sec").filter(
+        sec_cur_id=tcc.tcc_tur.tur_cur_id, sec__usu_status=StatusConta.ATIVA
+    ):
+        services.notificar(secretaria.sec, texto, link=link_sessao)
+        services.enviar_email_apos_commit(
+            secretaria.sec, assunto, TEMPLATE_RESULTADO_SECRETARIA, {"texto": texto}
+        )
+
+
+def liberar_resultado(usuario, def_id, nota_confirmada, parecer_confirmado):
+    """Liberar Resultado (US-27, passos 8 a 13; FR-026 a FR-030), numa transação com o TCC e a
+    sessão travados: confere o Orientador (E4), a sessão Em Andamento sem liberação (MA-04; a
+    segunda de duas liberações seguidas não grava), os 3 envios e o parecer (D1); recalcula a
+    nota final com a homologação de artigo vigente e, se a nota ou o parecer diferirem dos
+    confirmados, não grava e devolve os valores novos (D10; em TCC 2 com 6,0 ou mais sem
+    parecer, pede Registrar parecer; revisão I-03). Grava def_nota_final, def_parecer e
+    def_data_liberacao_resultado; muda a sessão para Realizada só por
+    services_defesa.transicionar_status (evento "Liberação do Resultado") e o Status do TCC só
+    por services_turmas.atualizar_status_tcc (gatilho "Liberação do resultado"); avisa o Aluno,
+    a banca e a Secretaria e registra o ponto de chamada da feat-09 depois do commit, com
+    robust=True (research A10).
+    [US-27][RBN-DEF-06.2][RBN-DEF-06.3][RBN-DEF-06.4][RBN-DEF-06.7][RBN-DEF-01.2][RBN-DEF-08.3]
+    """
+    from sigtcc.apps.cadastro import services_turmas
+    from sigtcc.apps.cadastro.choices import GatilhoStatusTCC, StatusTCC
+
+    with transaction.atomic():
+        tcc, sessao = _travar_sessao_do_orientador(usuario, def_id, permissoes_defesa.pode_liberar)
+        atual = apuracao(sessao, tcc)
+        if not atual["completos"]:
+            return ResultadoLiberacao(liberado=False, pendente=True)
+        nota, parecer = atual["nota_final"], atual["parecer"]
+        if parecer is None:
+            return ResultadoLiberacao(
+                liberado=False, nota_final=nota, precisa_registrar_parecer=True
+            )
+        if nota != nota_confirmada or parecer != parecer_confirmado:
+            return ResultadoLiberacao(liberado=False, nota_final=nota, parecer=parecer)
+        agora = timezone.now()
+        sessao.def_nota_final = nota
+        sessao.def_parecer = parecer
+        sessao.def_data_liberacao_resultado = agora
+        sessao.save(update_fields=["def_nota_final", "def_parecer", "def_data_liberacao_resultado"])
+        services_defesa.transicionar_status(sessao, StatusSessao.REALIZADA, usuario, agora=agora)
+        services_turmas.atualizar_status_tcc(
+            tcc,
+            tcc.tcc_tur,
+            usuario,
+            StatusTCC(parecer),
+            GatilhoStatusTCC.LIBERACAO_DO_RESULTADO,
+            agora=agora,
+        )
+        _avisar_liberacao(sessao, tcc, parecer)
+        transaction.on_commit(lambda: services_documentos.ao_liberar_resultado(sessao), robust=True)
+    return ResultadoLiberacao(liberado=True, nota_final=nota, parecer=parecer)

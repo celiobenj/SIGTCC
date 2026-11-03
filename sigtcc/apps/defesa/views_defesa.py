@@ -15,8 +15,9 @@ from sigtcc.apps.cadastro import services_contas
 from sigtcc.apps.cadastro.models import Cursos, TCCs, Turmas, Usuarios
 from sigtcc.apps.cadastro.permissoes import perfil_requerido, tem_perfil
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada, turma_arquivada
-from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_defesa
-from sigtcc.apps.defesa.choices import PapelBanca
+from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_avaliacoes, services_defesa
+from sigtcc.apps.defesa.choices import EventoDefesa, PapelBanca
+from sigtcc.apps.defesa.forms_avaliacoes import ParecerForm
 from sigtcc.apps.defesa.forms_defesa import CAMPOS_DA_BANCA as CAMPOS_DO_FORMULARIO
 from sigtcc.apps.defesa.forms_defesa import (
     AcionarSuplenteForm,
@@ -211,17 +212,27 @@ def sessao_ou_404(def_id):
 @perfil_requerido()
 def sessao(request, def_id):
     """Janela "Sessão de defesa" (US-40 passo 8): aluno, título, data, horário, formato, local ou
-    link, status e banca, com os botões que o perfil e o status permitem; os blocos de avaliação,
-    resultado, documentos, ouvintes e ocorrências ficam para a feat-08 e a feat-09 (contrato §3).
-    Sem permissão, também pelo endereço direto: US-40 E5.
-    [US-40][US-23][US-24][RBN-DEF-01.4][FR-030]
+    link, status e banca, com os botões que o perfil e o status permitem; os blocos de avaliação
+    e de resultado são preenchidos pela spec 008 (IC-05); documentos, ouvintes e ocorrências
+    ficam para a feat-09 (contrato §3). Sem permissão, também pelo endereço direto: US-40 E5.
+    [US-40][US-23][US-24][US-25][US-27][RBN-DEF-01.4][FR-030]
     """
     registro = sessao_ou_404(def_id)
     if not permissoes_defesa.pode_ver_sessao(request.user, registro):
         raise PermissionDenied(mensagens.SEM_PERMISSAO_SESSAO)
+    return render(request, "defesa/sessao.html", contexto_da_sessao(request, registro))
+
+
+def contexto_da_sessao(request, registro, form_parecer=None):
+    """Contexto da janela "Sessão de defesa": cabeçalho, banca e botões da spec 007 e, pela spec
+    008 (IC-05), o que a visão da avaliação permite (blocos avaliacao e resultado; sigilo em
+    services_avaliacoes.visao_da_avaliacao) e o formulário Registrar parecer. Usado também pela
+    view registrar_parecer para mostrar o erro no campo Parecer.
+    [US-40][US-23][US-24][US-25][US-27][RBN-DEF-01.4][RBN-DEF-06.6][RBN-DEF-06.8][FR-030]
+    """
     banca = services_defesa.banca_por_papel(registro)
     ordem = (*services_defesa.PAPEIS_TITULARES, PapelBanca.SUPLENTE)
-    contexto = {
+    return {
         "sessao": registro,
         "banca": [(papel, banca[papel]) for papel in ordem if papel in banca],
         "substituicoes": services_defesa.substituicoes(registro),
@@ -230,8 +241,10 @@ def sessao(request, def_id):
         "pode_reagendar_ou_cancelar": permissoes_defesa.pode_reagendar_ou_cancelar(
             request.user, registro
         ),
+        # Spec 008 (IC-05): blocos de avaliação e de resultado. [US-25][US-27][RBN-DEF-06.8]
+        "visao": services_avaliacoes.visao_da_avaliacao(request.user, registro),
+        "form_parecer": form_parecer or ParecerForm(),
     }
-    return render(request, "defesa/sessao.html", contexto)
 
 
 def _erro_no_formulario(form, erro):
@@ -365,5 +378,10 @@ def historico(request, def_id):
     registro = sessao_ou_404(def_id)
     if not permissoes_defesa.pode_ver_sessao(request.user, registro):
         raise PermissionDenied(mensagens.SEM_PERMISSAO_SESSAO)
-    contexto = {"sessao": registro, "eventos": services_defesa.historico_da_sessao(registro)}
+    contexto = {
+        "sessao": registro,
+        "eventos": services_defesa.historico_da_sessao(registro),
+        # Spec 008 (IC-06; D15): nota final e parecer no evento "Liberação do Resultado".
+        "evento_liberacao": EventoDefesa.LIBERACAO_DO_RESULTADO,
+    }
     return render(request, "defesa/historico.html", contexto)

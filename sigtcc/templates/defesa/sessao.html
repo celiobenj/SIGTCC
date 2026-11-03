@@ -6,7 +6,9 @@
   com o papel de cada membro e os suplentes acionados; os botões que o perfil e o status
   permitem. Contrato §3 da spec 007: a feat-08 e a feat-09 estendem este template e preenchem os
   blocos avaliacao, resultado, documentos, ouvintes e ocorrencias, sem reescrever o cabeçalho.
-  [US-40][US-23][US-24][RBN-DEF-01.4][RBN-DEF-02.1][FR-030]
+  Spec 008 (IC-05): os blocos avaliacao e resultado incluem _bloco_avaliacao.html e
+  _bloco_resultado.html, com o que services_avaliacoes.visao_da_avaliacao permite.
+  [US-40][US-23][US-24][RBN-DEF-01.4][RBN-DEF-02.1][FR-030][US-25][US-27][RBN-DEF-06.8]
 {% endcomment %}
 {% block titulo %}Sessão de defesa · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -43,8 +45,8 @@
   <p class="muted">Suplente acionado: {{ suplente.usu_nome }} no lugar de {{ substituido.usu_nome }}. Justificativa: {{ justificativa }}</p>
   {% endfor %}
 </section>
-{% block avaliacao %}{% endblock %}
-{% block resultado %}{% endblock %}
+{% block avaliacao %}{% include "defesa/_bloco_avaliacao.html" %}{% endblock %}
+{% block resultado %}{% include "defesa/_bloco_resultado.html" %}{% endblock %}
 {% block documentos %}{% endblock %}
 {% block ouvintes %}{% endblock %}
 {% block ocorrencias %}{% endblock %}

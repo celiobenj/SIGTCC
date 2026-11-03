@@ -15,7 +15,13 @@ from django.views.decorators.http import require_POST
 from sigtcc.apps.cadastro import services
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_avaliacoes, views_defesa
-from sigtcc.apps.defesa.forms_avaliacoes import AssinaturaForm, CriteriosFormSet
+from sigtcc.apps.defesa.forms_avaliacoes import (
+    AssinaturaForm,
+    ConfirmarLiberacaoForm,
+    CriteriosFormSet,
+    ParecerForm,
+    formatar_nota,
+)
 from sigtcc.apps.defesa.models import BancaDefesa
 
 
@@ -143,3 +149,84 @@ def assinatura(request, def_id):
         arquivo.close()
         raise Http404
     return FileResponse(arquivo, content_type=services.mime_da_assinatura(tipo))
+
+
+@perfil_requerido()
+@require_POST
+def registrar_parecer(request, def_id):
+    """ "Registrar parecer" (US-27, passos 6 e 7): só o Orientador (Presidente), com a sessão Em
+    Andamento, os 3 envios, TCC 2 e nota final 6,0 ou mais. Sem escolha: a janela da sessão com o
+    campo Parecer destacado e "Selecione o parecer da banca para continuar" (E3). Outro usuário:
+    a mensagem da US-27 E4. [US-27][RBN-DEF-06.3][RBN-DEF-06.4][FR-025][FR-026]
+    """
+    registro = views_defesa.sessao_ou_404(def_id)
+    if not permissoes_defesa.pode_registrar_parecer(request.user, registro):
+        raise PermissionDenied(mensagens.APENAS_O_ORIENTADOR)
+    form = ParecerForm(request.POST)
+    try:
+        if not form.is_valid():
+            raise services_avaliacoes.ErroAvaliacao(mensagens.SELECIONE_O_PARECER, campo="parecer")
+        services_avaliacoes.registrar_parecer(
+            request.user, registro.pk, form.cleaned_data["parecer"]
+        )
+    except services_avaliacoes.ParecerIndisponivel:
+        pass
+    except services_avaliacoes.ErroAvaliacao as erro:
+        if erro.mensagem == mensagens.APENAS_O_ORIENTADOR:
+            raise PermissionDenied(erro.mensagem)
+        if erro.campo == "parecer":
+            if not form.has_error("parecer"):
+                form.add_error("parecer", erro.mensagem)
+            registro.refresh_from_db()
+            contexto = views_defesa.contexto_da_sessao(request, registro, form_parecer=form)
+            return render(request, "defesa/sessao.html", contexto)
+        messages.error(request, erro.mensagem)
+    return redirect("defesa:sessao", def_id=registro.pk)
+
+
+def _confirmacao(request, registro, nota, parecer):
+    """Tela de confirmação com a MA-05 e os valores a confirmar (D10). [US-27][RBN-DEF-06.4]"""
+    texto = mensagens.MA05_CONFIRMAR_LIBERACAO.format(nota=formatar_nota(nota), parecer=parecer)
+    form = ConfirmarLiberacaoForm(initial={"nota": nota, "parecer": parecer})
+    contexto = {"sessao": registro, "texto": texto, "form": form}
+    return render(request, "defesa/confirmar_liberacao.html", contexto)
+
+
+@perfil_requerido()
+def liberar_resultado(request, def_id):
+    """ "Liberar Resultado" (US-27, passos 8 a 13): só o Orientador (Presidente; senão a mensagem
+    da US-27 E4, também por POST direto). GET: confirmação MA-05 com a nota final e o parecer,
+    se o botão está habilitado (senão volta à sessão, D1). POST: liberação (MA-11); se a nota
+    ou o parecer mudaram, reabre a confirmação com os novos valores (D10); em TCC 2 com 6,0 ou
+    mais sem parecer, volta à sessão para Registrar parecer (revisão I-03).
+    [US-27][RBN-DEF-06.2][RBN-DEF-06.4][FR-023][FR-026][FR-027]
+    """
+    registro = views_defesa.sessao_ou_404(def_id)
+    if not permissoes_defesa.pode_liberar(request.user, registro):
+        raise PermissionDenied(mensagens.APENAS_O_ORIENTADOR)
+    if request.method != "POST":
+        apuracao = services_avaliacoes.apuracao(registro)
+        if not apuracao["liberar_habilitado"]:
+            return redirect("defesa:sessao", def_id=registro.pk)
+        return _confirmacao(request, registro, apuracao["nota_final"], apuracao["parecer"])
+    form = ConfirmarLiberacaoForm(request.POST)
+    if not form.is_valid():
+        return redirect("defesa:sessao", def_id=registro.pk)
+    try:
+        resultado = services_avaliacoes.liberar_resultado(
+            request.user, registro.pk, form.cleaned_data["nota"], form.cleaned_data["parecer"]
+        )
+    except services_avaliacoes.ErroAvaliacao as erro:
+        if erro.mensagem == mensagens.APENAS_O_ORIENTADOR:
+            raise PermissionDenied(erro.mensagem)
+        messages.error(request, erro.mensagem)
+        return redirect("defesa:sessao", def_id=registro.pk)
+    if resultado.liberado:
+        messages.success(request, mensagens.MA11_RESULTADO_LIBERADO)
+        return redirect("defesa:sessao", def_id=registro.pk)
+    if resultado.precisa_registrar_parecer:
+        messages.error(request, mensagens.SELECIONE_O_PARECER)
+        return redirect("defesa:sessao", def_id=registro.pk)
+    if resultado.pendente:
+        return redirect("defesa:sessao", def_id=registro.pk)
+    return _confirmacao(request, registro, resultado.nota_final, resultado.parecer)
