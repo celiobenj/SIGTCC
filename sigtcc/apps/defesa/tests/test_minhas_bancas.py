@@ -124,7 +124,9 @@ class TesteMinhasBancas(TesteAvaliacao):
         self.assertTrue(linha["membro_efetivo"])
         self.assertTrue(linha["pendente"])
         self.client.force_login(cenario["suplente"])
-        self.assertContains(self.client.get(MINHAS_BANCAS), "Avaliar")
+        resposta = self.client.get(MINHAS_BANCAS)
+        self.assertContains(resposta, "Avaliar")
+        self.assertContains(resposta, reverse("defesa:avaliacao", args=[cenario["sessao"].pk]))
 
     def test_cenario_2_5_suplente_nao_acionado_sem_avaliar(self):
         cenario = sessao_com_banca(StatusSessao.EM_ANDAMENTO)

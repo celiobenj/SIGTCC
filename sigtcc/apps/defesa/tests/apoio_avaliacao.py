@@ -183,3 +183,31 @@ def assinatura_no_perfil(usuario, conteudo=None):
 def existe(caminho):
     """O arquivo existe no armazenamento padrão. [US-26][research A5]"""
     return bool(caminho) and default_storage.exists(caminho)
+
+
+def formulario(notas=None, acao="salvar", observacoes=None, conceitos=None, **extras):
+    """Dados do POST do formulário Avaliação (formset "cri" com os 9 critérios): `notas` é uma
+    nota para todos, uma lista (None = critério vazio) ou None (todos vazios); `conceitos`
+    troca o conceito calculado pela faixa; `observacoes` = {índice: texto}.
+    [US-25][US-26][RBN-DEF-05.2]
+    """
+    if notas is None or not isinstance(notas, (list, tuple)):
+        notas = [notas] * 9
+    dados = {
+        "acao": acao,
+        "cri-TOTAL_FORMS": "9",
+        "cri-INITIAL_FORMS": "9",
+        "cri-MIN_NUM_FORMS": "9",
+        "cri-MAX_NUM_FORMS": "9",
+    }
+    for indice, nota in enumerate(notas):
+        conceito = ""
+        if conceitos and indice in conceitos:
+            conceito = conceitos[indice]
+        elif nota is not None:
+            conceito = conceito_da(nota)
+        dados[f"cri-{indice}-conceito"] = conceito
+        dados[f"cri-{indice}-nota"] = "" if nota is None else str(nota).replace(".", ",")
+        dados[f"cri-{indice}-observacoes"] = (observacoes or {}).get(indice, "")
+    dados.update(extras)
+    return dados

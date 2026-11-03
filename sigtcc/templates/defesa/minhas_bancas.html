@@ -31,7 +31,7 @@
           <div class="flex flex-wrap">
             {% if b.documento %}<a class="btn txt" href="{{ b.documento }}" target="_blank" rel="noopener"><span class="ms">description</span>Documento</a>{% endif %}
             <a class="btn txt" href="{% url 'defesa:criterios' %}"><span class="ms">rule</span>Critérios de avaliação</a>
-            {% if b.membro_efetivo %}<a class="btn" href="{% url 'defesa:sessao' b.sessao.pk %}"><span class="ms">rate_review</span>Avaliar</a>{% endif %}
+            {% if b.membro_efetivo %}<a class="btn" href="{% url 'defesa:avaliacao' b.sessao.pk %}"><span class="ms">rate_review</span>Avaliar</a>{% endif %}
             {% if b.declaracao %}<a class="btn txt" href="{% url 'defesa:sessao' b.sessao.pk %}"><span class="ms">description</span>Declaração</a>{% endif %}
           </div>
         </td>

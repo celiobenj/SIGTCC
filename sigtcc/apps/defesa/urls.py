@@ -23,4 +23,15 @@ urlpatterns = [
     # Spec 008 (IC-09): Minhas bancas, critérios, avaliação e resultado.
     path("minhas-bancas/", views_avaliacoes.minhas_bancas, name="minhas_bancas"),
     path("defesas/criterios/", views_avaliacoes.criterios, name="criterios"),
+    path("defesas/<int:def_id>/avaliacao/", views_avaliacoes.avaliacao, name="avaliacao"),
+    path(
+        "defesas/<int:def_id>/avaliacao/reabrir/",
+        views_avaliacoes.reabrir,
+        name="reabrir_avaliacao",
+    ),
+    path(
+        "defesas/<int:def_id>/avaliacao/assinatura/",
+        views_avaliacoes.assinatura,
+        name="assinatura_avaliacao",
+    ),
 ]

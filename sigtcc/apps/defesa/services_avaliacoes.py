@@ -13,17 +13,29 @@ com uma casa e ROUND_HALF_UP (research A3).
 """
 
 import logging
+import secrets
+from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Subquery
+from django.utils import timezone
 
-from sigtcc.apps.cadastro import services_artigos
-from sigtcc.apps.cadastro.choices import DescricaoTurma
-from sigtcc.apps.defesa import services_defesa
-from sigtcc.apps.defesa.choices import PapelBanca, Parecer
-from sigtcc.apps.defesa.models import Avaliacoes, BancaDefesa, Defesas
+from sigtcc.apps.cadastro import services, services_artigos
+from sigtcc.apps.cadastro.choices import DescricaoTurma, TipoEntrega
+from sigtcc.apps.cadastro.models import HistoricoEnviosEntregas
+from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA
+from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_defesa, services_documentos
+from sigtcc.apps.defesa.choices import (
+    ComponenteCriterio,
+    Conceito,
+    PapelBanca,
+    Parecer,
+    StatusSessao,
+)
+from sigtcc.apps.defesa.models import Avaliacoes, BancaDefesa, Criterios, Defesas
 
 logger = logging.getLogger("sigtcc.defesa")
 
@@ -38,6 +50,7 @@ ENVIADA = "Enviada"
 UMA_CASA = Decimal("0.1")
 NOTA_MINIMA = Decimal("6.0")
 TOTAL_DE_CRITERIOS = 9
+D0 = Decimal("0")
 
 
 def arredondar(valor):
@@ -294,8 +307,6 @@ def parecer_automatico(sessao, nota):
 
 def _criterios():
     """Os 9 critérios na ordem da carga (cri_id). [US-25][RBN-DEF-04.1][RBN-DEF-04.2]"""
-    from sigtcc.apps.defesa.models import Criterios
-
     return list(Criterios.objects.order_by("cri_id"))
 
 
@@ -364,8 +375,6 @@ def visao_da_avaliacao(usuario, sessao):
     O papel efetivo na banca prevalece sobre Professor da Disciplina e Secretaria (revisão I-05).
     [US-25][US-27][RBN-DEF-06.8][RBN-DEF-06.6][FR-031][FR-032]
     """
-    from sigtcc.apps.defesa.choices import StatusSessao
-
     linha = BancaDefesa.objects.filter(ban_def=sessao, ban_usu_id=usuario.pk).first()
     papel = linha.ban_papel if linha is not None else None
     efetivo = papel in services_defesa.PAPEIS_TITULARES
@@ -430,8 +439,6 @@ def criterios_por_componente():
     (FR-002): [(componente, [critérios], soma)], total. Só leitura. [US-25][RBN-DEF-04.1]
     [RBN-DEF-04.2]
     """
-    from sigtcc.apps.defesa.choices import ComponenteCriterio
-
     todos = _criterios()
     partes = []
     for componente in ComponenteCriterio:
@@ -440,18 +447,12 @@ def criterios_por_componente():
     return partes, sum((c.cri_peso for c in todos), D0)
 
 
-D0 = Decimal("0")
-
-
 def _documento_da_sessao():
     """Subconsulta: link mais recente do Documento para Defesa do aluno na turma do TCC, pela
     mesma regra de services_defesa.link_do_documento (entrega de Data Limite mais recente, envio
     mais recente), numa consulta só para toda a lista (revisão M-12). [US-25][RBN-DEF-05.4]
     [RBN-CAD-09.2]
     """
-    from sigtcc.apps.cadastro.choices import TipoEntrega
-    from sigtcc.apps.cadastro.models import HistoricoEnviosEntregas
-
     return Subquery(
         HistoricoEnviosEntregas.objects.filter(
             hen_ent__ent_alu_id=OuterRef("ban_def__def_tcc__tcc_alu_id"),
@@ -476,10 +477,6 @@ def minhas_bancas(usuario):
     para Defesa e se a declaração existe (feat-09). Roda antes o início automático das sessões
     (research A8). Sem consulta por linha. [US-25][RBN-DEF-05.4][RBN-DEF-08.3][FR-003 a FR-006]
     """
-    from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA
-    from sigtcc.apps.defesa import services_documentos
-    from sigtcc.apps.defesa.choices import StatusSessao
-
     services_defesa.iniciar_sessoes_vencidas()
     linhas = (
         BancaDefesa.objects.filter(ban_usu_id=usuario.pk)
@@ -508,3 +505,333 @@ def minhas_bancas(usuario):
             }
         )
     return resultado
+
+
+# =============================================================================================
+# Formulário Avaliação: rascunho, envio assinado e reabertura (research A4, A5; US-25, US-26)
+# =============================================================================================
+
+# Faixa da nota de cada conceito (RBN-DEF-05.2; FR-009). [US-25][RBN-DEF-05.2]
+FAIXAS = {
+    Conceito.EXEMPLAR: (Decimal("8.0"), Decimal("10.0")),
+    Conceito.COMPETENTE: (Decimal("6.0"), Decimal("7.9")),
+    Conceito.NECESSITA_DE_TRABALHO: (Decimal("0.0"), Decimal("5.9")),
+}
+
+# Maior imagem de assinatura aceita, em pixels (MA-14; research A5, revisão I-11). [US-26]
+LARGURA_MAXIMA, ALTURA_MAXIMA = 2000, 1000
+
+# Status em que só a Parte Escrita pode ser avaliada e salva (RBN-DEF-05.1). [US-25]
+STATUS_ANTES_DA_SESSAO = (StatusSessao.AGENDADA, StatusSessao.REAGENDADA)
+
+
+class ErroAvaliacao(Exception):
+    """Ação recusada com a mensagem exata da US ou da tabela MA; `campo` aponta o que destacar
+    ("assinatura") e `pendentes`, os critérios incompletos (cri_id). Nada é gravado.
+    [US-25][US-26][US-27][RBN-DEF-05.1][RBN-DEF-05.2][RBN-DEF-06.4]
+    """
+
+    def __init__(self, mensagem, campo=None, pendentes=()):
+        """Guarda a mensagem, o campo e os critérios pendentes. [US-25][US-26][US-27]"""
+        super().__init__(mensagem)
+        self.mensagem = mensagem
+        self.campo = campo
+        self.pendentes = tuple(pendentes)
+
+
+class AcessoRestrito(ErroAvaliacao):
+    """Quem não é membro efetivo, ou sessão Cancelada (FR-007, FR-036): a view responde 403 com
+    "Acesso restrito aos membros avaliadores da banca". [US-25][US-26][RBN-DEF-05.3]
+    """
+
+    def __init__(self):
+        """Mensagem fixa da US-25 E8. [US-25][RBN-DEF-05.3]"""
+        super().__init__(mensagens.ACESSO_RESTRITO)
+
+
+@dataclass
+class Assinatura:
+    """Escolha da assinatura no envio (US-26): o arquivo anexado (já conferido pelo formulário
+    quanto ao tamanho e ao formato, com o `tipo` "png" ou "jpg"), ou a do perfil, e se a imagem
+    anexada também vai para o perfil. [US-26][RBN-DEF-05.2]
+    """
+
+    arquivo: object = None
+    tipo: str = None
+    usar_perfil: bool = False
+    salvar_no_perfil: bool = False
+
+
+def nota_na_faixa(conceito, nota):
+    """A nota está na faixa do conceito (FR-009). [US-25][RBN-DEF-05.2]"""
+    faixa = FAIXAS.get(conceito)
+    return faixa is not None and nota is not None and faixa[0] <= nota <= faixa[1]
+
+
+def criterios_liberados(sessao, criterios=None):
+    """Critérios que podem ser lançados agora (RBN-DEF-05.1): só a Parte Escrita com a sessão
+    Agendada ou Reagendada; os 9 com a sessão Em Andamento; nenhum nos demais status.
+    [US-25][US-26][RBN-DEF-05.1][FR-011][FR-012]
+    """
+    criterios = criterios if criterios is not None else _criterios()
+    if sessao.def_data_liberacao_resultado is not None:
+        return []
+    if sessao.def_status == StatusSessao.EM_ANDAMENTO:
+        return list(criterios)
+    if sessao.def_status in STATUS_ANTES_DA_SESSAO:
+        return [c for c in criterios if c.cri_componente == ComponenteCriterio.PARTE_ESCRITA]
+    return []
+
+
+def _vazio(dados):
+    """Critério sem conceito, sem nota e sem Observações. [US-25][RBN-DEF-05.1]"""
+    return not dados or (
+        not dados.get("conceito") and dados.get("nota") is None and not dados.get("observacoes")
+    )
+
+
+def _completo(dados):
+    """Critério com conceito e nota. [US-25][RBN-DEF-05.2]"""
+    return bool(dados) and bool(dados.get("conceito")) and dados.get("nota") is not None
+
+
+def _conferir_linhas(linhas, liberados):
+    """Defesa em profundidade da regra do formulário: cada critério liberado vazio ou com
+    conceito e nota (MA-01), nota na faixa do conceito (FR-009) e Observações até 500 (MA-02).
+    [US-25][RBN-DEF-05.2][FR-009][FR-010][FR-013]
+    """
+    for criterio in liberados:
+        dados = linhas.get(criterio.pk)
+        if _vazio(dados):
+            continue
+        if not _completo(dados):
+            raise ErroAvaliacao(mensagens.MA01_CONCEITO_E_NOTA, pendentes=[criterio.pk])
+        if not nota_na_faixa(dados["conceito"], dados["nota"]):
+            raise ErroAvaliacao(mensagens.NOTA_FORA_DA_FAIXA, pendentes=[criterio.pk])
+        if len(dados.get("observacoes") or "") > 500:
+            raise ErroAvaliacao(mensagens.MA02_OBSERVACOES_LONGAS, pendentes=[criterio.pk])
+
+
+def _gravar_linhas(sessao, usuario, linhas, liberados, agora):
+    """Grava os critérios liberados: insere ou atualiza os preenchidos e apaga a linha de um
+    critério liberado esvaziado. Critérios bloqueados pelo status não são lidos, nem
+    atualizados, nem apagados (revisão I-01). [US-25][RBN-DEF-05.1][RBN-DEF-05.2][FR-013]
+    """
+    for criterio in liberados:
+        dados = linhas.get(criterio.pk)
+        chave = {"ava_def": sessao, "ava_usu": usuario, "ava_cri": criterio}
+        if _vazio(dados):
+            Avaliacoes.objects.filter(**chave).delete()
+            continue
+        Avaliacoes.objects.update_or_create(
+            **chave,
+            defaults={
+                "ava_conceito": dados["conceito"],
+                "ava_nota": dados["nota"],
+                "ava_observacoes": dados.get("observacoes") or None,
+                "ava_data_hora": agora,
+            },
+        )
+
+
+def _travar_para_avaliar(usuario, def_id):
+    """Trava turma → aluno → TCC → sessão → linha de BancaDefesa do membro (mesma ordem da spec
+    007, research A4) e reconfere, depois de travar, o vínculo (AcessoRestrito) e a liberação ou
+    a sessão Realizada (MA-04). Chamar dentro de transaction.atomic().
+    [US-25][US-27][RBN-DEF-05.3][RBN-DEF-06.4][FR-007][FR-022]
+    """
+    services_defesa.travar_tcc(services_defesa.tcc_da_sessao(def_id))
+    sessao = services_defesa.travar_sessao(def_id)
+    if not permissoes_defesa.pode_avaliar(usuario, sessao):
+        raise AcessoRestrito()
+    linha = (
+        BancaDefesa.objects.select_for_update().filter(ban_def=sessao, ban_usu_id=usuario.pk).get()
+    )
+    if (
+        sessao.def_data_liberacao_resultado is not None
+        or sessao.def_status == StatusSessao.REALIZADA
+    ):
+        raise ErroAvaliacao(mensagens.MA04_RESULTADO_LIBERADO)
+    return sessao, linha
+
+
+def salvar_rascunho(usuario, def_id, linhas):
+    """Botão Salvar (FR-011 a FR-013): grava como rascunho os critérios liberados pelo status,
+    sem assinatura e sem envio. Avaliação já Enviada: MA-13 (até Reabrir); depois da
+    liberação: MA-04. `linhas` = {cri_id: {conceito, nota (Decimal), observacoes}}.
+    [US-25][RBN-DEF-05.1][RBN-DEF-05.2][FR-011][FR-012][FR-013][FR-021][FR-022]
+    """
+    with transaction.atomic():
+        sessao, linha = _travar_para_avaliar(usuario, def_id)
+        if linha.ban_data_envio is not None:
+            raise ErroAvaliacao(mensagens.MA13_AVALIACAO_JA_ENVIADA)
+        liberados = criterios_liberados(sessao)
+        if not liberados:
+            raise ErroAvaliacao(mensagens.MA04_RESULTADO_LIBERADO)
+        _conferir_linhas(linhas, liberados)
+        _gravar_linhas(sessao, usuario, linhas, liberados, timezone.now())
+    return sessao
+
+
+def _conferir_dimensoes(conteudo):
+    """Abre a imagem com o Pillow só para ler o tamanho em pixels: imagem que não abre, a
+    mensagem de formato da US-26 E3; acima de 2000 × 1000, MA-14 (sem reduzir; research A5).
+    [US-26][RBN-DEF-05.2][FR-016]
+    """
+    from PIL import Image, UnidentifiedImageError
+
+    conteudo.seek(0)
+    try:
+        with Image.open(conteudo) as imagem:
+            largura, altura = imagem.size
+    except (UnidentifiedImageError, OSError, ValueError):
+        raise ErroAvaliacao(mensagens.ASSINATURA_FORMATO, campo="assinatura")
+    finally:
+        conteudo.seek(0)
+    if largura > LARGURA_MAXIMA or altura > ALTURA_MAXIMA:
+        raise ErroAvaliacao(mensagens.MA14_ASSINATURA_GRANDE, campo="assinatura")
+
+
+def assinatura_do_perfil(usuario):
+    """Caminho da assinatura do perfil (US-38) se o arquivo ainda existe no disco; None se não
+    há ou se sumiu (deploy no Render gratuito): a opção "usar a do perfil" não aparece.
+    [US-26][US-38][RBN-DEF-05.2][FR-015][research A5]
+    """
+    caminho = services.caminho_da_assinatura(usuario)
+    return caminho if caminho and default_storage.exists(caminho) else None
+
+
+def _origem_da_assinatura(usuario, assinatura):
+    """Conteúdo e tipo da imagem a copiar para a avaliação: o arquivo anexado ou a assinatura do
+    perfil. Sem nenhuma (ou com o arquivo do perfil ausente): a mensagem da US-25 E4 / US-26 E4.
+    [US-26][RBN-DEF-05.2][FR-015][FR-016][FR-019]
+    """
+    if assinatura is not None and assinatura.arquivo is not None:
+        _conferir_dimensoes(assinatura.arquivo)
+        return assinatura.arquivo, assinatura.tipo
+    if assinatura is not None and assinatura.usar_perfil:
+        caminho = assinatura_do_perfil(usuario)
+        if caminho is not None:
+            with default_storage.open(caminho, "rb") as arquivo:
+                dados = arquivo.read()
+            tipo = services.tipo_por_bytes(dados[:8])
+            if tipo is not None:
+                conteudo = ContentFile(dados)
+                _conferir_dimensoes(conteudo)
+                return conteudo, tipo
+    raise ErroAvaliacao(mensagens.ASSINATURA_OBRIGATORIA, campo="assinatura")
+
+
+def _copiar_assinatura(sessao, usuario, conteudo, tipo):
+    """Grava a cópia da imagem usada em assinaturas_banca/<def_id>_<usu_id>_<aleatório>.<ext>,
+    no default_storage (sem URL pública; servida só ao dono). Devolve o caminho.
+    [US-26][RBN-DEF-05.2][FR-018][research A5]
+    """
+    conteudo.seek(0)
+    nome = f"assinaturas_banca/{sessao.pk}_{usuario.pk}_{secrets.token_hex(8)}.{tipo}"
+    return default_storage.save(nome, conteudo)
+
+
+def enviar_avaliacao(usuario, def_id, linhas, assinatura):
+    """Botão Enviar avaliação assinada (FR-019): só com a sessão Em Andamento (antes, MA-03);
+    os 9 critérios com conceito e nota (senão "Todos os 9 critérios devem conter conceito e
+    nota", com os pendentes); a assinatura anexada ou do perfil (senão a mensagem da US-25 E4).
+    Grava as notas, a cópia da imagem (a anterior é apagada depois do commit; a nova, se a
+    transação desfizer, revisão M-11), a data e hora do envio e, com "Salvar esta imagem no meu
+    perfil", a assinatura do perfil (services.salvar_assinatura, na mesma transação).
+    [US-25][US-26][RBN-DEF-05.1][RBN-DEF-05.2][RBN-DEF-06.1][FR-015 a FR-019]
+    """
+    copia = None
+    try:
+        with transaction.atomic():
+            sessao, linha = _travar_para_avaliar(usuario, def_id)
+            if linha.ban_data_envio is not None:
+                raise ErroAvaliacao(mensagens.MA13_AVALIACAO_JA_ENVIADA)
+            if sessao.def_status != StatusSessao.EM_ANDAMENTO:
+                raise ErroAvaliacao(mensagens.MA03_SO_PARTE_ESCRITA)
+            liberados = criterios_liberados(sessao)
+            pendentes = [c.pk for c in liberados if not _completo(linhas.get(c.pk))]
+            if pendentes:
+                raise ErroAvaliacao(mensagens.CRITERIOS_INCOMPLETOS, pendentes=pendentes)
+            _conferir_linhas(linhas, liberados)
+            conteudo, tipo = _origem_da_assinatura(usuario, assinatura)
+            agora = timezone.now()
+            _gravar_linhas(sessao, usuario, linhas, liberados, agora)
+            copia = _copiar_assinatura(sessao, usuario, conteudo, tipo)
+            if assinatura.salvar_no_perfil and assinatura.arquivo is not None:
+                assinatura.arquivo.seek(0)
+                services.salvar_assinatura(usuario, assinatura.arquivo, tipo)
+            anterior = linha.ban_assinatura_path
+            BancaDefesa.objects.filter(ban_def=sessao, ban_usu_id=usuario.pk).update(
+                ban_assinatura_path=copia, ban_data_envio=agora
+            )
+            _apagar_depois_do_commit([anterior])
+    except Exception:
+        if copia is not None:
+            default_storage.delete(copia)
+        raise
+    return sessao
+
+
+def reabrir_avaliacao(usuario, def_id):
+    """Reabrir minha avaliação (FR-021; D6): só com a sessão Em Andamento e antes da liberação
+    (senão MA-04); a avaliação volta a "Rascunho salvo" com as notas, sem data de envio e sem
+    assinatura (cópia apagada depois do commit), e o parecer escolhido é limpo (D3 revista).
+    Avaliação não enviada: nada muda. [US-25][US-27][RBN-DEF-06.1][RBN-DEF-06.4][FR-021]
+    """
+    with transaction.atomic():
+        sessao, linha = _travar_para_avaliar(usuario, def_id)
+        if sessao.def_status != StatusSessao.EM_ANDAMENTO:
+            raise ErroAvaliacao(mensagens.MA04_RESULTADO_LIBERADO)
+        if linha.ban_data_envio is None:
+            return sessao
+        _limpar_envio(BancaDefesa.objects.filter(ban_def=sessao, ban_usu_id=usuario.pk))
+        _limpar_parecer(sessao)
+    return sessao
+
+
+def formulario_da_avaliacao(usuario, sessao):
+    """Dados da tela Avaliação do membro efetivo (FR-008, FR-011 a FR-015): critérios, valores
+    gravados (iniciais do formulário), critérios liberados, estado, se é só leitura (Enviada,
+    Realizada ou liberada), se Salvar e Enviar ficam disponíveis, a nota MA-03, a nota individual,
+    o Documento para Defesa, o Orientador e a assinatura do perfil disponível.
+    [US-25][US-26][RBN-DEF-05.1][RBN-DEF-05.2][FR-008][FR-011][FR-012][FR-014][FR-015]
+    """
+    criterios = _criterios()
+    linha = BancaDefesa.objects.get(ban_def=sessao, ban_usu_id=usuario.pk)
+    gravadas = {
+        av.ava_cri_id: av for av in Avaliacoes.objects.filter(ava_def=sessao, ava_usu_id=usuario.pk)
+    }
+    iniciais = []
+    for criterio in criterios:
+        av = gravadas.get(criterio.pk)
+        iniciais.append(
+            {
+                "conceito": av.ava_conceito if av else "",
+                "nota": av.ava_nota if av else None,
+                "observacoes": (av.ava_observacoes or "") if av else "",
+            }
+        )
+    enviada = linha.ban_data_envio is not None
+    liberado = sessao.def_data_liberacao_resultado is not None
+    somente_leitura = enviada or liberado or sessao.def_status == StatusSessao.REALIZADA
+    liberados = [] if somente_leitura else criterios_liberados(sessao, criterios)
+    presidente = services_defesa.banca_por_papel(sessao).get(PapelBanca.ORIENTADOR_PRESIDENTE)
+    return {
+        "criterios": criterios,
+        "iniciais": iniciais,
+        "liberados": {criterio.pk for criterio in liberados},
+        "papel": linha.ban_papel,
+        "estado": _estado(linha.ban_data_envio, bool(gravadas)),
+        "data_envio": linha.ban_data_envio,
+        "tem_copia": bool(linha.ban_assinatura_path),
+        "somente_leitura": somente_leitura,
+        "pode_salvar": bool(liberados),
+        "pode_enviar": not somente_leitura and sessao.def_status == StatusSessao.EM_ANDAMENTO,
+        "antes_da_sessao": sessao.def_status in STATUS_ANTES_DA_SESSAO,
+        "nota_individual": nota_individual(sessao, usuario) if enviada else None,
+        "documento": services_defesa.link_do_documento(sessao.def_tcc),
+        "orientador": presidente,
+        "assinatura_do_perfil": bool(assinatura_do_perfil(usuario)),
+        "liberado": liberado,
+    }

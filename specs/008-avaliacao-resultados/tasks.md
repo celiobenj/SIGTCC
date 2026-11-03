@@ -188,7 +188,7 @@ conferir lista, destaques e botões.
 **Independent Test**: com sessão Em Andamento, lançar os 9 critérios com assinatura e conferir
 envio, nota individual e "Enviada", sem liberar.
 
-- [ ] T022 [P] [US3] Criar `sigtcc/apps/defesa/tests/test_us25_avaliacao.py`: cenários 3.1 a 3.5,
+- [X] T022 [P] [US3] Criar `sigtcc/apps/defesa/tests/test_us25_avaliacao.py`: cenários 3.1 a 3.5,
   3.9, 3.10, 3.14 a 3.19 (envio com nota individual e data; Competente 7,5 aceito e 8,5 recusado
   com a mensagem exata; Observações opcionais e 501 caracteres recusados com MA-02; rascunho da
   Parte Escrita com a sessão Agendada, Parte Oral e envio bloqueados mesmo por POST; Salvar com
@@ -197,39 +197,39 @@ envio, nota individual e "Enviada", sem liberar.
   Enviada recusa Salvar e Enviar com MA-13, revisão I-02; fora da banca, Suplente não acionado e
   sessão Cancelada com "Acesso restrito..."; Realizada só leitura; login antes; início
   automático ao abrir no horário, revisão I-04) [US-25][RBN-DEF-05.1][RBN-DEF-05.2][RBN-DEF-05.3][RBN-DEF-06.1]
-- [ ] T023 [P] [US3] Criar `sigtcc/apps/defesa/tests/test_us26_assinatura.py`: cenários 3.1
+- [X] T023 [P] [US3] Criar `sigtcc/apps/defesa/tests/test_us26_assinatura.py`: cenários 3.1
   (PNG de 500 KB, prévia e cópia com data e hora), 3.6 (assinatura do perfil sem novo arquivo),
   3.7 (Salvar esta imagem no meu perfil atualiza `doc_assinatura_path`/`mem_assinatura_path`),
   3.8 (Atualizar imagem), 3.11 (sem assinatura: mensagem exata), 3.12 (3 MB: mensagem de 2 MB,
   nada gravado), 3.13 (.pdf: mensagem de formato), imagem de 3000 × 3000 recusada com a MA-14
   (revisão I-11), perfil sem arquivo no disco esconde a opção, cópia apagada quando a transação desfaz
   (revisão M-11), rota `defesa:assinatura_avaliacao` só para o dono [US-26][RBN-DEF-05.2]
-- [ ] T024 [US3] Criar `sigtcc/apps/defesa/forms_avaliacoes.py`: formset fixo dos 9 critérios
+- [X] T024 [US3] Criar `sigtcc/apps/defesa/forms_avaliacoes.py`: formset fixo dos 9 critérios
   (Conceito em `Conceito`; Nota com vírgula e uma casa, dentro da faixa: Exemplar 8,0 a 10,0,
   Competente 6,0 a 7,9, Necessita de Trabalho 0,0 a 5,9; Observações até 500 caracteres;
   critério vazio ou completo, MA-01) e `AssinaturaForm` (arquivo PNG/JPG, `size` conferido antes
   de `services.tipo_da_assinatura` para separar as mensagens de 2 MB e de formato, revisão M-09;
   "usar a do perfil"; "Salvar esta imagem no meu perfil") [US-25][US-26][RBN-DEF-05.2]
-- [ ] T025 [US3] Em `services_avaliacoes.py`: `salvar_rascunho(usuario, def_id, linhas)`,
+- [X] T025 [US3] Em `services_avaliacoes.py`: `salvar_rascunho(usuario, def_id, linhas)`,
   `enviar_avaliacao(usuario, def_id, linhas, assinatura)` e `reabrir_avaliacao(usuario, def_id)`,
   cada um com `transaction.atomic()` e a trava `travar_tcc` → `travar_sessao` → linha
   `BancaDefesa`; reconferir status, liberação e vínculo depois de travar; só critérios liberados
   pelo status (bloqueados não lidos, nem atualizados, nem apagados); Enviada recusa Salvar e
   Enviar (MA-13); depois da liberação tudo recusado (MA-04); `reabrir` limpa envio, assinatura e
   `def_parecer` (research A4, A6) [US-25][US-27][RBN-DEF-05.1][RBN-DEF-05.2][RBN-DEF-06.1][RBN-DEF-06.4]
-- [ ] T026 [US3] Em `services_avaliacoes.py`: cópia da assinatura em
+- [X] T026 [US3] Em `services_avaliacoes.py`: cópia da assinatura em
   `assinaturas_banca/<def_id>_<usu_id>_<aleatório>.<ext>` no `default_storage`, a partir do
   arquivo anexado ou do perfil (`services.caminho_da_assinatura`); validação de dimensões até
   2000 × 1000 com o Pillow (acima disso, MA-14, sem reduzir; imagem que não abre, mensagem de
   formato da US-26 E3); cópia anterior apagada depois do
   commit; cópia nova apagada se a transação desfizer; "Salvar no perfil" chama
   `services.salvar_assinatura` na mesma transação (research A5) [US-26][RBN-DEF-05.2]
-- [ ] T027 [US3] Em `views_avaliacoes.py`: `avaliacao(request, def_id)` (GET e POST com
+- [X] T027 [US3] Em `views_avaliacoes.py`: `avaliacao(request, def_id)` (GET e POST com
   `acao=salvar`/`acao=enviar`), `reabrir(request, def_id)` e `assinatura(request, def_id)`
   (`FileResponse` só para o dono), todas via `views_defesa.sessao_ou_404`; rotas
   `defesa:avaliacao`, `defesa:reabrir_avaliacao`, `defesa:assinatura_avaliacao` (contracts/rotas.md)
   [US-25][US-26][RBN-DEF-05.3]
-- [ ] T028 [US3] Template `sigtcc/templates/defesa/avaliacao.html` (cabeçalho com título, aluno,
+- [X] T028 [US3] Template `sigtcc/templates/defesa/avaliacao.html` (cabeçalho com título, aluno,
   orientador e link do Documento; 9 linhas com peso; nota MA-03; bloco Assinatura do Membro da
   Banca com Anexar imagem, Atualizar imagem, prévia, usar a do perfil, Salvar esta imagem no meu
   perfil; botões Salvar e Enviar avaliação assinada; só leitura quando Enviada ou Realizada) e
