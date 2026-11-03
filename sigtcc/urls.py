@@ -10,6 +10,8 @@ from django.urls import include, path
 
 urlpatterns = [
     path("", include("sigtcc.apps.cadastro.urls")),
+    # Spec 007 (IC-01): Agendamento e Banca. [US-21][US-24][US-40]
+    path("", include("sigtcc.apps.defesa.urls")),
 ]
 
 # Logado sem permissão: página padrão com a M-02 (research A7). [FR-025]

@@ -41,6 +41,16 @@ ITENS = [
         "perfis": ("docente",),
         "ordem": 12,
     },
+    # Spec 007 (IC-02): tela Defesas, para todos os perfis que veem sessões (RBN-DEF-01.4; o
+    # Membro Externo como avaliador), logo depois de "Orientações", com o ícone do protótipo.
+    # [US-21][US-40][FR-024]
+    {
+        "rotulo": "Defesas",
+        "icone": "event",
+        "rota": "defesa:defesas",
+        "perfis": ("aluno", "docente", "secretaria", "membro_externo"),
+        "ordem": 13,
+    },
     # Spec 006: tela do Coordenador de Curso na seção nova "Gestão", como no protótipo de 17/10
     # (a seção aparece depois de "Cadastros", pela ordem do processador; research R19).
     # [US-20][FR-041][IC-01]
