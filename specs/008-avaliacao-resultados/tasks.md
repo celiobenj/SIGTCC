@@ -138,12 +138,12 @@ IC-03), de que todas as histórias dependem. Commits atômicos por fase, só com
 **Independent Test**: abrir `defesa:criterios` como Docente e Membro Externo e conferir critérios,
 pesos, somas e descrições, sem lançar notas.
 
-- [ ] T016 [P] [US1] Criar `sigtcc/apps/defesa/tests/test_us25_criterios.py`: cenário 1.1 (6 da
+- [X] T016 [P] [US1] Criar `sigtcc/apps/defesa/tests/test_us25_criterios.py`: cenário 1.1 (6 da
   Parte Escrita com pesos 0,5; 2,0; 1,0; 2,0; 0,5; 1,0 = 7,0; 3 da Parte Oral com 1,0; 1,5; 0,5 =
   3,0; total 10,0; descrições Exemplar 8,0–10,0, Competente 6,0–7,9, Necessita de Trabalho
   0,0–5,9) e cenário 1.2 (nenhuma rota grava `Criterios`; Coordenador não edita; Aluno e
   Secretaria recebem 403) [US-25][RBN-DEF-04.1][RBN-DEF-04.2]
-- [ ] T017 [US1] Criar `sigtcc/apps/defesa/views_avaliacoes.py` com `criterios(request)`
+- [X] T017 [US1] Criar `sigtcc/apps/defesa/views_avaliacoes.py` com `criterios(request)`
   (perfis `docente` e `membro_externo`), a rota `defesa:criterios` em
   `sigtcc/apps/defesa/urls.py` (IC-09) e o template `sigtcc/templates/defesa/criterios.html`
   (protótipo de 17/10) [US-25][RBN-DEF-04.2]
@@ -159,21 +159,21 @@ pesos, somas e descrições, sem lançar notas.
 **Independent Test**: com sessões em vários status, entrar como membro (Docente e Membro Externo) e
 conferir lista, destaques e botões.
 
-- [ ] T018 [P] [US2] Criar `sigtcc/apps/defesa/tests/test_minhas_bancas.py`: cenários 2.1 a 2.8
+- [X] T018 [P] [US2] Criar `sigtcc/apps/defesa/tests/test_minhas_bancas.py`: cenários 2.1 a 2.8
   (sem Canceladas; destaque só para membros efetivos pendentes; Membro Externo só vê as suas;
   suplente acionado com Avaliar; Suplente não acionado sem Avaliar; Declaração só com
   `declaracao_disponivel` verdadeiro; login antes; clicar abre a Sessão de defesa) e MA-12 sem
   bancas; número fixo de consultas com várias linhas (revisão M-12)
   [US-25][RBN-DEF-05.4][RBN-DEF-08.3]
-- [ ] T019 [US2] Em `services_avaliacoes.py`: `minhas_bancas(usuario)` (linhas de `BancaDefesa`
+- [X] T019 [US2] Em `services_avaliacoes.py`: `minhas_bancas(usuario)` (linhas de `BancaDefesa`
   do usuário, sem sessões "Cancelada", por data e hora, `select_related`, estados da T006, link do
   Documento por `Subquery` sobre `HistoricoEnviosEntregas`, `declaracao_disponivel`), chamando
   `services_defesa.iniciar_sessoes_vencidas()` antes (research A8) [US-25][RBN-DEF-05.4]
-- [ ] T020 [US2] Em `views_avaliacoes.py`: `minhas_bancas(request)`, rota `defesa:minhas_bancas`
+- [X] T020 [US2] Em `views_avaliacoes.py`: `minhas_bancas(request)`, rota `defesa:minhas_bancas`
   e template `sigtcc/templates/defesa/minhas_bancas.html` (papel, data, horário, aluno, título,
   status, atalhos Documento, Critérios de avaliação, Avaliar e Declaração; linha abre
   `defesa:sessao`) [US-25][RBN-DEF-05.4]
-- [ ] T021 [US2] IC-02 em `sigtcc/apps/cadastro/menu.py`: item "Minhas bancas" (perfis `docente`
+- [X] T021 [US2] IC-02 em `sigtcc/apps/cadastro/menu.py`: item "Minhas bancas" (perfis `docente`
   e `membro_externo`, rota `defesa:minhas_bancas`, ícone do protótipo), sem mexer nos demais;
   conferir `test_base_comum.py` (menu) [US-25][RBN-DEF-05.4]
 

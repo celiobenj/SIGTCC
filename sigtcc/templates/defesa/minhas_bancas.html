@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load defesa_tags %}
+{% comment %}
+  Tela "Minhas bancas" (viewBancas do protótipo de 17/10, só o visual): as sessões de que o
+  usuário é membro (inclusive Suplente), sem as Canceladas, em ordem cronológica, com papel,
+  data, horário, aluno, título e status; as avaliações pendentes em destaque (só membros
+  efetivos); os atalhos Documento, Critérios de avaliação, Avaliar e Declaração; a data abre a
+  janela Sessão de defesa. Sem regra aqui: tudo vem de services_avaliacoes.minhas_bancas.
+  [US-25][RBN-DEF-05.4][RBN-DEF-08.3][FR-003 a FR-006]
+{% endcomment %}
+{% block titulo %}Minhas bancas · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <h2 class="pg">Minhas bancas</h2>
+  <a class="btn" href="{% url 'defesa:criterios' %}"><span class="ms">rule</span>Critérios de avaliação</a>
+</div>
+<div class="tabela-wrap mt16">
+  <table class="tabela larga">
+    <thead><tr><th>Data</th><th>Horário</th><th>Papel na banca</th><th>Aluno</th><th>Título</th><th>Status</th><th>Avaliação</th><th>Ações</th></tr></thead>
+    <tbody>
+      {% for b in bancas %}
+      <tr{% if b.pendente %} class="pendente"{% endif %}>
+        <td><a href="{% url 'defesa:sessao' b.sessao.pk %}">{{ b.sessao.def_data|date:"d/m/Y" }}</a></td>
+        <td>{{ b.sessao|horario }}</td>
+        <td>{{ b.papel }}</td>
+        <td>{{ b.sessao.def_tcc.tcc_alu.alu.usu_nome }}</td>
+        <td>{{ b.sessao.def_tcc.tcc_titulo }}</td>
+        <td><span class="chip">{{ b.sessao.def_status }}</span></td>
+        <td>{% if b.pendente %}<b>Pendente</b> · {% endif %}{{ b.estado|default:"—" }}</td>
+        <td>
+          <div class="flex flex-wrap">
+            {% if b.documento %}<a class="btn txt" href="{{ b.documento }}" target="_blank" rel="noopener"><span class="ms">description</span>Documento</a>{% endif %}
+            <a class="btn txt" href="{% url 'defesa:criterios' %}"><span class="ms">rule</span>Critérios de avaliação</a>
+            {% if b.membro_efetivo %}<a class="btn" href="{% url 'defesa:sessao' b.sessao.pk %}"><span class="ms">rate_review</span>Avaliar</a>{% endif %}
+            {% if b.declaracao %}<a class="btn txt" href="{% url 'defesa:sessao' b.sessao.pk %}"><span class="ms">description</span>Declaração</a>{% endif %}
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="muted">{{ sem_bancas }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

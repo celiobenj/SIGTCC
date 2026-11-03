@@ -17,7 +17,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.files.storage import default_storage
 from django.db import transaction
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Subquery
 
 from sigtcc.apps.cadastro import services_artigos
 from sigtcc.apps.cadastro.choices import DescricaoTurma
@@ -418,3 +418,93 @@ def visao_da_avaliacao(usuario, sessao):
             visao["nota_final"] = resultado["nota_final"]
             visao["parecer"] = parecer_automatico(sessao, resultado["nota_final"])
     return visao
+
+
+# =============================================================================================
+# Critérios e Minhas bancas (research A8; RBN-DEF-04.2, RBN-DEF-05.4)
+# =============================================================================================
+
+
+def criterios_por_componente():
+    """Os 9 critérios agrupados por componente, com a soma dos pesos de cada parte e o total
+    (FR-002): [(componente, [critérios], soma)], total. Só leitura. [US-25][RBN-DEF-04.1]
+    [RBN-DEF-04.2]
+    """
+    from sigtcc.apps.defesa.choices import ComponenteCriterio
+
+    todos = _criterios()
+    partes = []
+    for componente in ComponenteCriterio:
+        da_parte = [criterio for criterio in todos if criterio.cri_componente == componente]
+        partes.append((componente.label, da_parte, sum((c.cri_peso for c in da_parte), D0)))
+    return partes, sum((c.cri_peso for c in todos), D0)
+
+
+D0 = Decimal("0")
+
+
+def _documento_da_sessao():
+    """Subconsulta: link mais recente do Documento para Defesa do aluno na turma do TCC, pela
+    mesma regra de services_defesa.link_do_documento (entrega de Data Limite mais recente, envio
+    mais recente), numa consulta só para toda a lista (revisão M-12). [US-25][RBN-DEF-05.4]
+    [RBN-CAD-09.2]
+    """
+    from sigtcc.apps.cadastro.choices import TipoEntrega
+    from sigtcc.apps.cadastro.models import HistoricoEnviosEntregas
+
+    return Subquery(
+        HistoricoEnviosEntregas.objects.filter(
+            hen_ent__ent_alu_id=OuterRef("ban_def__def_tcc__tcc_alu_id"),
+            hen_ent__ent_tma__tma_tur_id=OuterRef("ban_def__def_tcc__tcc_tur_id"),
+            hen_ent__ent_tma__tma_tipo=TipoEntrega.DOCUMENTO_PARA_DEFESA,
+        )
+        .order_by(
+            "-hen_ent__ent_tma__tma_data_limite",
+            "-hen_ent__ent_tma_id",
+            "-hen_data_envio",
+            "-hen_id",
+        )
+        .values("hen_link")[:1]
+    )
+
+
+def minhas_bancas(usuario):
+    """Tela Minhas bancas (FR-003 a FR-006): as linhas de BancaDefesa do usuário (inclusive como
+    Suplente), sem as sessões "Cancelada", em ordem cronológica, com sessão, TCC, aluno e turma
+    carregados, o estado da avaliação, o destaque de pendência (só membro efetivo, sessão
+    Agendada, Reagendada ou Em Andamento e avaliação ainda não Enviada; D11), o link do Documento
+    para Defesa e se a declaração existe (feat-09). Roda antes o início automático das sessões
+    (research A8). Sem consulta por linha. [US-25][RBN-DEF-05.4][RBN-DEF-08.3][FR-003 a FR-006]
+    """
+    from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA
+    from sigtcc.apps.defesa import services_documentos
+    from sigtcc.apps.defesa.choices import StatusSessao
+
+    services_defesa.iniciar_sessoes_vencidas()
+    linhas = (
+        BancaDefesa.objects.filter(ban_usu_id=usuario.pk)
+        .exclude(ban_def__def_status=StatusSessao.CANCELADA)
+        .select_related("ban_def__def_tcc__tcc_alu__alu", "ban_def__def_tcc__tcc_tur")
+        .annotate(tem_notas=_tem_notas(), documento=_documento_da_sessao())
+        .order_by("ban_def__def_data", "ban_def__def_h_inicio", "ban_def_id")
+    )
+    resultado = []
+    for linha in linhas:
+        sessao = linha.ban_def
+        efetivo = linha.ban_papel in services_defesa.PAPEIS_TITULARES
+        estado = _estado(linha.ban_data_envio, linha.tem_notas)
+        resultado.append(
+            {
+                "sessao": sessao,
+                "papel": linha.ban_papel,
+                "membro_efetivo": efetivo,
+                "estado": estado if efetivo else None,
+                "pendente": efetivo
+                and sessao.def_status in STATUS_SESSAO_ATIVA
+                and estado != ENVIADA,
+                "documento": linha.documento,
+                "declaracao": sessao.def_status == StatusSessao.REALIZADA
+                and services_documentos.declaracao_disponivel(sessao, usuario),
+            }
+        )
+    return resultado
