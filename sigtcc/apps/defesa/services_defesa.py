@@ -1,5 +1,5 @@
 """Regras da sessão de defesa (spec 007, research C1): status, histórico, criação da sessão,
-banca, elegibilidade e o stub do descarte de avaliações.
+banca, elegibilidade e o descarte de avaliações (delegado à spec 008, IC-01).
 
 Contrato com a feat-08 e a feat-09 em specs/007-agendamento-banca/contracts/servicos-defesa.md.
 Nenhuma função daqui trava registros por si: quem chama trava antes, dentro do mesmo
@@ -309,22 +309,21 @@ def membros_efetivos(sessao):
 
 
 # =============================================================================================
-# Serviço consumido da feat-08, ainda não entregue (contrato §6)
+# Serviço entregue pela feat-08 (contrato §6; spec 008, IC-01)
 # =============================================================================================
 
 
 def descartar_avaliacoes(sessao, membro=None):
-    """STUB até a feat-08 entregar a função real (Clarifications da spec 007): só registra em log
-    que o descarte foi pedido, sem tocar em Avaliacoes. `membro=None` = todos os membros. A
-    feat-08 troca o corpo sem mudar a assinatura nem os pontos de chamada (cancelamento,
-    alteração da banca e acionamento do suplente).
-    [US-23][US-24][RBN-DEF-02.2][RBN-DEF-02.4][RBN-DEF-03.3][FR-011][FR-013][FR-020]
+    """Delega para services_avaliacoes.descartar_avaliacoes (spec 008, contrato §1; Q-125), com
+    a mesma assinatura e nos mesmos pontos de chamada (cancelamento, alteração da banca e
+    acionamento do suplente), dentro da transação de quem chama e antes do delete() da linha de
+    BancaDefesa (revisão I-07). `membro=None` = todos os membros. Importação local: o módulo da
+    avaliação importa este. [US-23][US-24][RBN-DEF-02.2][RBN-DEF-02.4][RBN-DEF-03.3][FR-011]
+    [FR-013][FR-020][spec 008 FR-034]
     """
-    logger.info(
-        "Descarte de avaliações pedido (stub): sessão %s, membro %s",
-        sessao.pk,
-        membro.pk if membro is not None else "todos",
-    )
+    from sigtcc.apps.defesa import services_avaliacoes
+
+    services_avaliacoes.descartar_avaliacoes(sessao, membro)
 
 
 # =============================================================================================
@@ -424,6 +423,28 @@ def _travar_sessao(def_id):
     )
 
 
+def tcc_da_sessao(def_id):
+    """Versão pública de _tcc_da_sessao (spec 008, research A11; contrato §6), para a feat-08 e
+    a feat-09 seguirem a mesma ordem de trava sem importar função privada.
+    [US-25][US-27][RBN-DEF-05.1][RBN-DEF-06.4]
+    """
+    return _tcc_da_sessao(def_id)
+
+
+def travar_tcc(tcc_id):
+    """Versão pública de _travar_tcc: trava turma → aluno → TCC (spec 008, research A11).
+    Chamar dentro de transaction.atomic(). [US-25][US-27][RBN-DEF-05.1][RBN-DEF-06.4]
+    """
+    return _travar_tcc(tcc_id)
+
+
+def travar_sessao(def_id):
+    """Versão pública de _travar_sessao: trava e relê a sessão, depois do TCC (spec 008,
+    research A11). [US-25][US-27][RBN-DEF-05.1][RBN-DEF-06.4]
+    """
+    return _travar_sessao(def_id)
+
+
 def banca_por_papel(sessao):
     """{papel: Usuarios} da composição atual. [US-23][RBN-DEF-02.1]"""
     return {
@@ -499,9 +520,10 @@ def alterar_banca(usuario, def_id, nova_banca, justificativa):
     sessão "Agendada" ou "Reagendada". `nova_banca` = {papel: Usuarios ou None}; se trouxer o
     Presidente diferente do atual, recusa com a E7 (o Orientador só sai por reagendamento).
     Confere o conflito de horário só dos membros que entram na banca (US-22 E). Cada troca grava
-    um evento 'Alteração da Banca' (sem mudar def_status), descarta as avaliações do membro que
-    saiu (stub) e avisa quem entrou, quem saiu e o Aluno. Sem troca, não grava nada.
-    [US-23][RBN-DEF-02.1][RBN-DEF-02.4][FR-011][FR-012][FR-015][research C4]
+    um evento 'Alteração da Banca' (sem mudar def_status), descarta as avaliações de quem saiu
+    da banca ou passou a Suplente (quem troca de papel entre titulares mantém o rascunho; spec
+    008, D16 e Q-135) e avisa quem entrou, quem saiu e o Aluno. Sem troca, não grava nada.
+    [US-23][RBN-DEF-02.1][RBN-DEF-02.4][FR-011][FR-012][FR-015][research C4][spec 008 IC-01]
     """
     tcc_id = _tcc_da_sessao(def_id)
     with transaction.atomic():
@@ -531,18 +553,8 @@ def alterar_banca(usuario, def_id, nova_banca, justificativa):
         _conferir_contas([membro for membro, _papel in entram])
         sessao = _travar_sessao(def_id)
         _verificar_conflito(entram, sessao.def_data, sessao.def_h_inicio, excluir_sessao=sessao)
-        # Apaga antes de criar: a PK (sessão, membro) permite trocar dois membros de papel.
-        BancaDefesa.objects.filter(
-            ban_def=sessao, ban_papel__in=[papel for papel, _antigo, _novo in trocas]
-        ).delete()
-        BancaDefesa.objects.bulk_create(
-            BancaDefesa(ban_def=sessao, ban_usu=novo, ban_papel=papel)
-            for papel, _antigo, novo in trocas
-            if novo is not None
-        )
+        _recompor_banca(sessao, atual, proposta)
         for papel, antigo, novo in trocas:
-            if antigo is not None:
-                descartar_avaliacoes(sessao, antigo)
             registrar_evento(
                 sessao,
                 EventoDefesa.ALTERACAO_DA_BANCA,
@@ -556,6 +568,40 @@ def alterar_banca(usuario, def_id, nova_banca, justificativa):
             {pessoa for _papel, antigo, novo in trocas for pessoa in (antigo, novo) if pessoa}
         )
     return sessao
+
+
+def _recompor_banca(sessao, atual, proposta):
+    """Grava a nova composição dos papéis alteráveis (spec 008, IC-01; D16, Q-135; revisão I-07
+    e M-08): quem sai da banca ou passa a Suplente tem as avaliações descartadas **antes** do
+    delete() ou da troca de papel (para ler o caminho da cópia da assinatura); quem continua na
+    banca tem a linha atualizada (update de ban_papel), preservando o rascunho na troca entre
+    titulares e os dados da substituição; quem entra ganha linha nova. A PK (sessão, membro)
+    não muda para quem continua, e a FK composta de Avaliacoes, verificada no commit, segue
+    válida. `atual` = {papel: Usuarios}; `proposta` = {papel alterável: Usuarios ou None}.
+    [US-23][RBN-DEF-02.4][FR-011][spec 008 FR-034]
+    """
+    papel_novo = {membro.pk: papel for papel, membro in proposta.items() if membro is not None}
+    presidente = atual[PapelBanca.ORIENTADOR_PRESIDENTE]
+    papel_antigo = {
+        membro.pk: papel for papel, membro in atual.items() if membro.pk != presidente.pk
+    }
+    for membro_id, papel in papel_antigo.items():
+        destino = papel_novo.get(membro_id)
+        if destino == papel:
+            continue
+        if destino is None or destino == PapelBanca.SUPLENTE:
+            descartar_avaliacoes(sessao, Usuarios(pk=membro_id))
+        if destino is None:
+            BancaDefesa.objects.filter(ban_def=sessao, ban_usu_id=membro_id).delete()
+        else:
+            BancaDefesa.objects.filter(ban_def=sessao, ban_usu_id=membro_id).update(
+                ban_papel=destino
+            )
+    BancaDefesa.objects.bulk_create(
+        BancaDefesa(ban_def=sessao, ban_usu_id=membro_id, ban_papel=papel)
+        for membro_id, papel in papel_novo.items()
+        if membro_id not in papel_antigo
+    )
 
 
 def _avisar_alteracao(sessao, papel, antigo, novo):
@@ -584,10 +630,11 @@ def _avisar_alteracao(sessao, papel, antigo, novo):
 def acionar_suplente(usuario, def_id, papel_substituido, justificativa):
     """Acionar suplente (US-23 D): só o Orientador, com a sessão "Em Andamento" e Suplente na
     banca (senão PermissionDenied, M-02). O Suplente passa ao papel do titular ausente (1º ou 2º
-    Avaliador), guardando quem ele substituiu e a Justificativa; o ausente sai da banca e as
-    avaliações dele são descartadas (stub). Sem checar conflito: o suplente já passou por ele ao
-    entrar na banca (research C3). Grava 'Acionamento do Suplente' sem mudar def_status.
-    [US-23][RBN-DEF-02.2][FR-013][research C4]
+    Avaliador), guardando quem ele substituiu e a Justificativa; as avaliações do ausente são
+    descartadas antes de a linha dele sair da banca (spec 008, revisão I-07: a cópia da
+    assinatura é apagada). Sem checar conflito: o suplente já passou por ele ao entrar na banca
+    (research C3). Grava 'Acionamento do Suplente' sem mudar def_status.
+    [US-23][RBN-DEF-02.2][FR-013][research C4][spec 008 IC-01]
     """
     if papel_substituido not in (PapelBanca.PRIMEIRO_AVALIADOR, PapelBanca.SEGUNDO_AVALIADOR):
         raise ErroDefesa(mensagens.CAMPO_OBRIGATORIO, campo="papel_substituido")
@@ -601,13 +648,13 @@ def acionar_suplente(usuario, def_id, papel_substituido, justificativa):
             raise PermissionDenied
         atual = banca_por_papel(sessao)
         suplente, ausente = atual[PapelBanca.SUPLENTE], atual[papel_substituido]
+        descartar_avaliacoes(sessao, ausente)
         BancaDefesa.objects.filter(ban_def=sessao, ban_usu=ausente).delete()
         BancaDefesa.objects.filter(ban_def=sessao, ban_usu=suplente).update(
             ban_papel=papel_substituido,
             ban_usu_substituido=ausente,
             ban_justificativa_substituicao=justificativa,
         )
-        descartar_avaliacoes(sessao, ausente)
         registrar_evento(
             sessao,
             EventoDefesa.ACIONAMENTO_DO_SUPLENTE,
@@ -693,10 +740,11 @@ def _sessao_para_reagendar_ou_cancelar(usuario, def_id, justificativa):
 
 def reagendar(usuario, def_id, dados_basicos, justificativa):
     """Reagendar (US-24 B): nova data, horário, formato e local ou link, mantendo a banca e as
-    avaliações. Confere o conflito de todos os membros da banca, inclusive o Suplente, sem
-    contar a própria sessão (US-22 D); com conflito, nada muda. Status "Reagendada", com as datas
+    notas (numa sessão "Em Andamento", os envios voltam a "Rascunho salvo": spec 008, D2).
+    Confere o conflito de todos os membros da banca, inclusive o Suplente, sem contar a própria
+    sessão (US-22 D); com conflito, nada muda. Status "Reagendada", com as datas
     e horas anterior e nova no histórico; avisa o Aluno e a banca (MD-06).
-    [US-24][RBN-DEF-03.3][RBN-DEF-03.1][FR-019][research C5]
+    [US-24][RBN-DEF-03.3][RBN-DEF-03.1][FR-019][research C5][spec 008 IC-01]
     """
     with transaction.atomic():
         _sessao_para_reagendar_ou_cancelar(usuario, def_id, justificativa)
@@ -711,6 +759,10 @@ def reagendar(usuario, def_id, dados_basicos, justificativa):
         sessao.def_formato = dados_basicos["formato"]
         sessao.save(update_fields=["def_data", "def_h_inicio", "def_formato"])
         _gravar_local_ou_link(sessao, dados_basicos.get("local"), dados_basicos.get("link"))
+        # Spec 008 (IC-01; D2, FR-035): notas mantidas, envios de volta a "Rascunho salvo".
+        from sigtcc.apps.defesa import services_avaliacoes
+
+        services_avaliacoes.voltar_envios_a_rascunho(sessao)
         transicionar_status(
             sessao,
             StatusSessao.REAGENDADA,
@@ -736,7 +788,7 @@ def reagendar(usuario, def_id, dados_basicos, justificativa):
 
 
 def cancelar(usuario, def_id, justificativa):
-    """Cancelar sessão (US-24 C): status "Cancelada", descarta todas as avaliações (stub) e avisa
+    """Cancelar sessão (US-24 C): status "Cancelada", descarta todas as avaliações e avisa
     o Aluno e a banca (MD-07). O Status do TCC continua "Apto para Defesa" (esta spec nunca grava
     tcc_status), e o TCC volta a poder ser agendado. [US-24][RBN-DEF-03.3][FR-020][research C5]
     """

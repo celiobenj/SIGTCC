@@ -56,11 +56,11 @@ IC-03), de que todas as histórias dependem. Commits atômicos por fase, só com
   `http://`, `file://` e `../` sem acesso à rede; `resposta_pdf` com `Content-Disposition:
   attachment` e `Cache-Control: no-store`; falha de geração vira `ErroAoGerarPdf`. Commit
   `feat(feat-08)` com T002 (revisão M-01)
-- [ ] T004 [P] Criar `sigtcc/apps/defesa/tests/apoio_avaliacao.py` (a partir de `apoio_defesa.py`):
+- [X] T004 [P] Criar `sigtcc/apps/defesa/tests/apoio_avaliacao.py` (a partir de `apoio_defesa.py`):
   `sessao_em_andamento(...)`, `lancar(sessao, membro, notas)` (9 critérios), `enviar(sessao,
   membro)`, imagens PNG/JPG geradas em memória (500 KB, 3 MB, 3000 × 3000 px) e um `.pdf` falso;
   `MEDIA_ROOT` temporário via `override_settings` (research A13)
-- [ ] T005 [P] Acrescentar a `sigtcc/apps/defesa/mensagens.py` (IC-09) os textos exatos das US-25
+- [X] T005 [P] Acrescentar a `sigtcc/apps/defesa/mensagens.py` (IC-09) os textos exatos das US-25
   a US-27 ("A nota deve situar-se entre o valor mínimo e o máximo para o conceito selecionado
   (ex.: de 6,0 a 7,9 para Competente)", "Todos os 9 critérios devem conter conceito e nota", "A
   assinatura do membro da banca é obrigatória para finalizar a avaliação", "Acesso restrito aos
@@ -77,27 +77,27 @@ IC-03), de que todas as histórias dependem. Commits atômicos por fase, só com
 
 **Purpose**: núcleo de `services_avaliacoes.py` e as mudanças na spec 007
 
-- [ ] T006 Criar `sigtcc/apps/defesa/services_avaliacoes.py` com `estado_da_avaliacao(sessao,
+- [X] T006 Criar `sigtcc/apps/defesa/services_avaliacoes.py` com `estado_da_avaliacao(sessao,
   membro)` e `estados_da_banca(sessao)` derivados (Não avaliou: sem linhas em `Avaliacoes`;
   Rascunho salvo: com linhas e `ban_data_envio` nulo; Enviada: `ban_data_envio` preenchido), só
   para os `membros_efetivos`, numa consulta agregada (research A2; dicionário 3.6.4)
   [US-25][RBN-DEF-06.8]
-- [ ] T007 Em `services_avaliacoes.py`: `nota_individual(sessao, membro)` = Σ(`ava_nota` ×
+- [X] T007 Em `services_avaliacoes.py`: `nota_individual(sessao, membro)` = Σ(`ava_nota` ×
   `cri_peso`) / 10 e `nota_final(sessao)` = média das 3 individuais já arredondadas, tudo em
   `Decimal` com `quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)`; `nota_final` devolve `None`
   sem os 3 envios; com `services_artigos.tem_artigo_homologado_qualis_ab(tcc)`, `max(6.0,
   média)`; só `membros_efetivos` (research A3; revisão I-06) [US-27][RBN-DEF-06.1][RBN-DEF-06.2]
-- [ ] T008 [P] Criar `sigtcc/apps/defesa/tests/test_calculo_notas.py` (SC-002): soma 6,05 → 6,1;
+- [X] T008 [P] Criar `sigtcc/apps/defesa/tests/test_calculo_notas.py` (SC-002): soma 6,05 → 6,1;
   6,04 → 6,0; média de 5,9, 6,0 e 6,0 → 6,0; média 5,4 com Qualis A homologado → 6,0; 7,0 com
   Qualis B → 7,0; todas 10 → 10,0; pesos de `Criterios` somam 10,0 (7,0 + 3,0); Suplente não
   acionado com linhas antigas fora do cálculo [US-27][RBN-DEF-04.1][RBN-DEF-06.1][RBN-DEF-06.2]
-- [ ] T009 Em `services_avaliacoes.py`: `descartar_avaliacoes(sessao, membro=None)` (apaga as
+- [X] T009 Em `services_avaliacoes.py`: `descartar_avaliacoes(sessao, membro=None)` (apaga as
   linhas de `Avaliacoes` do membro ou de todos; limpa `ban_assinatura_path` e `ban_data_envio`
   quando a linha existe; apaga a cópia da imagem com `transaction.on_commit`; limpa
   `def_parecer`) e `voltar_envios_a_rascunho(sessao)` (mantém as notas; limpa envio, assinatura e
   `def_parecer`) (contrato §1; FR-034, FR-035; D2; D3 revista, Q-135)
   [US-23][US-24][US-27][RBN-DEF-02.2][RBN-DEF-02.4][RBN-DEF-03.3]
-- [ ] T010 IC-01 em `sigtcc/apps/defesa/services_defesa.py`: `descartar_avaliacoes` passa a
+- [X] T010 IC-01 em `sigtcc/apps/defesa/services_defesa.py`: `descartar_avaliacoes` passa a
   delegar para `services_avaliacoes.descartar_avaliacoes` (mesma assinatura); em
   `acionar_suplente` e `alterar_banca`, a chamada vai para **antes** do `delete()` da linha de
   `BancaDefesa` (revisão I-07); `alterar_banca` descarta quem sai da banca ou passa a Suplente,
@@ -105,25 +105,25 @@ IC-03), de que todas as histórias dependem. Commits atômicos por fase, só com
   continua (D16, Q-135, revisão M-08); `reagendar` chama `voltar_envios_a_rascunho(sessao)` antes
   de `transicionar_status` (D2); novas `tcc_da_sessao`, `travar_tcc`, `travar_sessao` públicas
   (research A11) [US-23][US-24][RBN-DEF-02.4][RBN-DEF-03.3]
-- [ ] T011 IC-05 (parte 1) em `sigtcc/apps/defesa/views_defesa.py`: `_sessao_ou_404` vira
+- [X] T011 IC-05 (parte 1) em `sigtcc/apps/defesa/views_defesa.py`: `_sessao_ou_404` vira
   `sessao_ou_404` (as chamadas existentes atualizadas), sem mudar comportamento (revisão I-04)
-- [ ] T012 IC-03 nos testes da spec 007: em `sigtcc/apps/defesa/tests/test_base_defesa.py`,
+- [X] T012 IC-03 nos testes da spec 007: em `sigtcc/apps/defesa/tests/test_base_defesa.py`,
   `TesteDescartarAvaliacoesStub` dá lugar ao teste da delegação (apaga linhas e limpa envio); em
   `test_us23_banca.py`, troca entre titulares mantém o rascunho (com
   `connection.check_constraints()`), ida a Suplente descarta, acionamento do suplente apaga a
   cópia da assinatura do ausente e preserva `ban_usu_substituido`; em
   `test_us24_confirmar_reagendar_cancelar.py`, reagendar sessão "Em Andamento" devolve envios a
   rascunho, mantém as notas e limpa o parecer; cancelar descarta tudo (revisão I-08)
-- [ ] T013 Em `services_avaliacoes.py`: `visao_da_avaliacao(usuario, sessao)` com a tabela do
+- [X] T013 Em `services_avaliacoes.py`: `visao_da_avaliacao(usuario, sessao)` com a tabela do
   research A7 (membro efetivo: própria avaliação + estados dos colegas; Orientador: também nota
   final e parecer preliminar só com os 3 envios; Professor da Disciplina, Secretaria, Aluno e
   Suplente não acionado: nada antes da liberação; depois: notas por critério e por avaliador,
   nota final e parecer; Observações só ao autor; papel na banca prevalece sobre Professor da
   Disciplina e Secretaria, revisão I-05) [US-27][RBN-DEF-06.8]
-- [ ] T014 [P] Em `sigtcc/apps/defesa/permissoes_defesa.py` (IC-09): `pode_avaliar(usuario,
+- [X] T014 [P] Em `sigtcc/apps/defesa/permissoes_defesa.py` (IC-09): `pode_avaliar(usuario,
   sessao)` (membro efetivo, sessão não Cancelada), `pode_registrar_parecer` e `pode_liberar`
   (papel "Orientador (Presidente)" na banca, revisão M-07) [US-25][US-27][RBN-DEF-05.3][RBN-DEF-06.4]
-- [ ] T015 [P] Criar `sigtcc/apps/defesa/services_documentos.py` com os stubs
+- [X] T015 [P] Criar `sigtcc/apps/defesa/services_documentos.py` com os stubs
   `ao_liberar_resultado(sessao)` (só log) e `declaracao_disponivel(sessao, usuario)` (devolve
   `False`), com a nota do contrato §2 para a feat-09 [US-27][RBN-DEF-08.3]
 

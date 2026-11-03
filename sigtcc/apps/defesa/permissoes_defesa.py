@@ -74,3 +74,52 @@ def pode_ver_sessao(usuario, sessao):
     if secretaria is not None and secretaria.sec_cur_id == tcc.tcc_tur.tur_cur_id:
         return True
     return BancaDefesa.objects.filter(ban_def=sessao, ban_usu_id=usuario.pk).exists()
+
+
+# =============================================================================================
+# Spec 008 (Avaliação e Resultados; IC-09): acréscimos, nada removido
+# =============================================================================================
+
+
+def pode_avaliar(usuario, sessao):
+    """Formulário Avaliação: só os membros efetivos (Orientador, 1º e 2º Avaliador, com o
+    suplente acionado no lugar do ausente), com a sessão não Cancelada; o Suplente não acionado
+    e quem não integra a banca, não (RBN-DEF-05.3; spec 008 FR-007, FR-036 e D12). Não confere
+    a fase da sessão nem a liberação (isso é do services_avaliacoes).
+    [US-25][US-26][RBN-DEF-05.3][RBN-DEF-05.4]
+    """
+    if sessao.def_status == StatusSessao.CANCELADA:
+        return False
+    return BancaDefesa.objects.filter(
+        ban_def=sessao,
+        ban_usu_id=usuario.pk,
+        ban_papel__in=(
+            PapelBanca.ORIENTADOR_PRESIDENTE,
+            PapelBanca.PRIMEIRO_AVALIADOR,
+            PapelBanca.SEGUNDO_AVALIADOR,
+        ),
+    ).exists()
+
+
+def _e_presidente(usuario, sessao):
+    """O usuário tem o papel "Orientador (Presidente)" na banca da sessão (revisão M-07).
+    [US-27][RBN-DEF-06.4]
+    """
+    return BancaDefesa.objects.filter(
+        ban_def=sessao, ban_usu_id=usuario.pk, ban_papel=PapelBanca.ORIENTADOR_PRESIDENTE
+    ).exists()
+
+
+def pode_registrar_parecer(usuario, sessao):
+    """Registrar parecer (US-27, passos 6 e 7): só o Orientador (Presidente da banca), pelo
+    papel na banca. Fase da sessão, envios e nota ficam no services_avaliacoes.
+    [US-27][RBN-DEF-06.3][RBN-DEF-06.4]
+    """
+    return _e_presidente(usuario, sessao)
+
+
+def pode_liberar(usuario, sessao):
+    """Liberar Resultado (US-27 E4): só o Orientador (Presidente da banca), pelo papel na
+    banca (revisão M-07). [US-27][RBN-DEF-06.4]
+    """
+    return _e_presidente(usuario, sessao)

@@ -43,7 +43,7 @@ from sigtcc.apps.cadastro.tests.apoio_turmas import (
     curso,
 )
 from sigtcc.apps.cadastro.tests.fabricas import criar_criterio
-from sigtcc.apps.defesa import permissoes_defesa, services_defesa
+from sigtcc.apps.defesa import permissoes_defesa, services_avaliacoes, services_defesa
 from sigtcc.apps.defesa.choices import (
     Conceito,
     EventoDefesa,
@@ -291,26 +291,43 @@ class TesteMembrosEfetivos(TesteTurmas):
         )
 
 
-class TesteDescartarAvaliacoesStub(TesteTurmas):
-    """Stub de descartar_avaliacoes (contrato §6). [US-24][RBN-DEF-03.3][FR-020]"""
+class TesteDescartarAvaliacoesDelegacao(TesteTurmas):
+    """descartar_avaliacoes delega para services_avaliacoes (contrato §6; spec 008, IC-01 e
+    IC-03): apaga as linhas de Avaliacoes e limpa o envio, com a mesma assinatura.
+    [US-24][RBN-DEF-03.3][FR-020][spec 008 FR-034]
+    """
 
-    def test_so_registra_em_log_sem_apagar_avaliacoes(self):
+    def test_apaga_linhas_e_limpa_o_envio(self):
         tcc, _professor, orientador = tcc_apto()
         sessao = agendar_sessao_de(tcc, orientador)
-        avaliacao = Avaliacoes.objects.create(
-            ava_def=sessao,
-            ava_usu=orientador,
-            ava_cri=criar_criterio(),
-            ava_conceito=Conceito.COMPETENTE,
-            ava_nota=Decimal("7.0"),
-            ava_data_hora=timezone.now(),
+        avaliador = services_defesa.membros_efetivos(sessao)[1]
+        criterio = criar_criterio()
+        for membro in (orientador, avaliador):
+            Avaliacoes.objects.create(
+                ava_def=sessao,
+                ava_usu=membro,
+                ava_cri=criterio,
+                ava_conceito=Conceito.COMPETENTE,
+                ava_nota=Decimal("7.0"),
+                ava_data_hora=timezone.now(),
+            )
+        BancaDefesa.objects.filter(ban_def=sessao, ban_usu=orientador).update(
+            ban_data_envio=timezone.now()
         )
-        for membro in (None, orientador):
-            with self.subTest(membro=membro):
-                with self.assertLogs("sigtcc.defesa", level="INFO") as log:
-                    self.assertIsNone(services_defesa.descartar_avaliacoes(sessao, membro))
-                self.assertIn(f"sessão {sessao.pk}", log.output[0])
-        self.assertTrue(Avaliacoes.objects.filter(pk=avaliacao.pk).exists())
+        with mock.patch(
+            "sigtcc.apps.defesa.services_avaliacoes.descartar_avaliacoes",
+            wraps=services_avaliacoes.descartar_avaliacoes,
+        ) as real:
+            with self.assertLogs("sigtcc.defesa", level="INFO") as log:
+                self.assertIsNone(services_defesa.descartar_avaliacoes(sessao, orientador))
+        real.assert_called_once_with(sessao, orientador)
+        self.assertIn(f"membro {orientador.pk}", log.output[0])
+        self.assertFalse(Avaliacoes.objects.filter(ava_def=sessao, ava_usu=orientador).exists())
+        self.assertTrue(Avaliacoes.objects.filter(ava_def=sessao, ava_usu=avaliador).exists())
+        linha = BancaDefesa.objects.get(ban_def=sessao, ban_usu=orientador)
+        self.assertIsNone(linha.ban_data_envio)
+        services_defesa.descartar_avaliacoes(sessao)
+        self.assertFalse(Avaliacoes.objects.filter(ava_def=sessao).exists())
 
 
 class TesteAvancarPara(TesteTurmas):

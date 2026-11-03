@@ -6,15 +6,18 @@ aqui só a fronteira: o serviço único aceita Em Andamento → Realizada (test_
 """
 
 from datetime import datetime, time, timedelta
+from decimal import Decimal
 from io import StringIO
 from unittest import mock
 
+from django.core.files.storage import default_storage
 from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import services_turmas
 from sigtcc.apps.cadastro.choices import (
+    DescricaoTurma,
     StatusSolicitacao,
     StatusTCC,
     TipoEntrega,
@@ -26,8 +29,16 @@ from sigtcc.apps.cadastro.tests.apoio_acesso import criar_secretaria
 from sigtcc.apps.cadastro.tests.apoio_orientacao import criar_pedido
 from sigtcc.apps.cadastro.tests.apoio_tcc import cadastrar_entrega, enviar_link
 from sigtcc.apps.cadastro.tests.apoio_turmas import SI, TesteTurmas, curso
-from sigtcc.apps.defesa.choices import EventoDefesa, FormatoSessao, StatusSessao
-from sigtcc.apps.defesa.models import Defesas, HistoricoDefesas
+from sigtcc.apps.defesa import services_avaliacoes, services_defesa
+from sigtcc.apps.defesa.choices import EventoDefesa, FormatoSessao, Parecer, StatusSessao
+from sigtcc.apps.defesa.models import Avaliacoes, Defesas, HistoricoDefesas
+from sigtcc.apps.defesa.tests.apoio_avaliacao import (
+    TesteAvaliacao,
+    enviar,
+    lancar_e_enviar,
+    png,
+    sessao_em_andamento,
+)
 from sigtcc.apps.defesa.tests.apoio_defesa import (
     agendar_sessao_de,
     avancar_para,
@@ -321,3 +332,43 @@ class TesteEncerramentoComSessaoAtiva(TesteTurmas):
             erro.exception.mensagem,
             "Não é possível encerrar a participação: há sessão de defesa ativa.",
         )
+
+
+class TesteAvaliacoesNoReagendamentoECancelamento(TesteAvaliacao):
+    """Spec 008 (IC-03; D2, D3 revista; FR-034, FR-035): reagendar uma sessão "Em Andamento"
+    devolve os envios a "Rascunho salvo", mantém as notas e limpa o parecer; cancelar descarta
+    tudo. [US-24][RBN-DEF-03.3][RBN-DEF-06.6][FR-019][FR-020]
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.cenario = sessao_em_andamento(descricao=DescricaoTurma.TCC_2)
+        self.sessao = self.cenario["sessao"]
+        self.copia = default_storage.save("assinaturas_banca/x.png", png())
+        for chave in ("orientador", "av1", "av2"):
+            lancar_e_enviar(self.sessao, self.cenario[chave], Decimal("8.0"))
+        enviar(self.sessao, self.cenario["av1"], self.copia)
+        Defesas.objects.filter(pk=self.sessao.pk).update(def_parecer=Parecer.APROVADO)
+
+    def test_reagendar_em_andamento_volta_a_rascunho(self):
+        dados = {
+            "data": daqui_a(20),
+            "h_inicio": time(10, 0),
+            "formato": FormatoSessao.REMOTA,
+            "link": "https://meet.example.org/nova",
+        }
+        with self.captureOnCommitCallbacks(execute=True):
+            services_defesa.reagendar(self.cenario["orientador"], self.sessao.pk, dados, "Falta")
+        self.sessao.refresh_from_db()
+        self.assertEqual(self.sessao.def_status, StatusSessao.REAGENDADA)
+        self.assertIsNone(self.sessao.def_parecer)
+        self.assertEqual(Avaliacoes.objects.filter(ava_def=self.sessao).count(), 27)
+        for item in services_avaliacoes.estados_da_banca(self.sessao):
+            self.assertEqual(item["estado"], "Rascunho salvo")
+        self.assertFalse(default_storage.exists(self.copia))
+
+    def test_cancelar_descarta_tudo(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            services_defesa.cancelar(self.cenario["orientador"], self.sessao.pk, "Adiada")
+        self.assertFalse(Avaliacoes.objects.filter(ava_def=self.sessao).exists())
+        self.assertFalse(default_storage.exists(self.copia))

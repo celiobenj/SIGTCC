@@ -88,3 +88,49 @@ MD13_BANCA_MANTIDA = "A banca composta e as avaliações já salvas são mantida
 NENHUMA_SESSAO = "Nenhuma sessão de defesa encontrada para o período e filtros selecionados"
 DATA_INICIAL_MAIOR = "A data inicial não pode ser superior à data final"
 DATA_INVALIDA = "Informe uma data válida no formato DD/MM/AAAA"
+
+# =============================================================================================
+# Spec 008 (Avaliação e Resultados; IC-09): textos entre aspas das US-25, US-26 e US-27 e as
+# MA-01 a MA-14 da tabela "Mensagens a validar com a PO" da spec 008, todas aprovadas (Q-129).
+# =============================================================================================
+
+# US-25 (E2, E3, E4, E8), US-26 (E2 a E4) e US-27 (E3, E4).
+# [US-25][US-26][US-27][RBN-DEF-05.2][RBN-DEF-05.3][RBN-DEF-06.3][RBN-DEF-06.4]
+NOTA_FORA_DA_FAIXA = (
+    "A nota deve situar-se entre o valor mínimo e o máximo para o conceito selecionado "
+    "(ex.: de 6,0 a 7,9 para Competente)"
+)
+CRITERIOS_INCOMPLETOS = "Todos os 9 critérios devem conter conceito e nota"
+ASSINATURA_OBRIGATORIA = "A assinatura do membro da banca é obrigatória para finalizar a avaliação"
+ACESSO_RESTRITO = "Acesso restrito aos membros avaliadores da banca"
+ASSINATURA_TAMANHO = "O arquivo de assinatura deve ter tamanho máximo de 2 MB"
+ASSINATURA_FORMATO = "Formato não suportado. Envie a assinatura em PNG ou JPG"
+SELECIONE_O_PARECER = "Selecione o parecer da banca para continuar"
+APENAS_O_ORIENTADOR = "Apenas o Orientador (Presidente da banca) pode liberar o resultado da defesa"
+
+# MA-01 a MA-14 (aprovadas, Q-129; MA-13 e MA-14 no /speckit-analyze). {nota} com vírgula.
+# [US-25][US-26][US-27][RBN-DEF-05.1][RBN-DEF-05.2][RBN-DEF-06.4][RBN-DEF-05.4]
+MA01_CONCEITO_E_NOTA = "Informe o conceito e a nota do critério, ou deixe os dois em branco"
+MA02_OBSERVACOES_LONGAS = "As observações devem ter até 500 caracteres"
+MA03_SO_PARTE_ESCRITA = "A sessão ainda não começou: só a Parte Escrita pode ser avaliada e salva."
+MA04_RESULTADO_LIBERADO = (
+    "O resultado desta defesa já foi liberado e as avaliações não podem mais ser alteradas"
+)
+MA05_CONFIRMAR_LIBERACAO = (
+    "Liberar o resultado com nota final {nota} e parecer {parecer}? Depois disso, as notas não "
+    "podem mais ser alteradas."
+)
+MA06_RESULTADO_ALUNO = (
+    "O resultado da sua defesa foi liberado. Consulte a nota final e o parecer na aba Meu TCC."
+)
+MA06_ASSUNTO = "SIGTCC: resultado da defesa"
+MA07_RESULTADO_BANCA = "O resultado da defesa de {aluno} foi liberado. TCC: {titulo}."
+MA08_RESULTADO_SECRETARIA = "Defesa de {aluno} encerrada com parecer {parecer}. TCC: {titulo}."
+MA09_RASCUNHO_SALVO = "Rascunho salvo"
+MA10_AVALIACAO_ENVIADA = "Avaliação enviada com sucesso"
+MA11_RESULTADO_LIBERADO = "Resultado liberado com sucesso"
+MA12_SEM_BANCAS = "Você não participa de nenhuma banca no momento"
+MA13_AVALIACAO_JA_ENVIADA = (
+    "Sua avaliação já foi enviada. Para alterá-la, use Reabrir minha avaliação"
+)
+MA14_ASSINATURA_GRANDE = "A imagem da assinatura deve ter no máximo 2000 × 1000 pixels"
