@@ -1,0 +1,23 @@
+{% comment %}
+  Base dos PDFs gerados sob demanda (spec 008, research A9; feat-09: Ata Final, Folha de
+  Aprovação e declarações). NÃO estende base.html, que carrega fontes do Google: usa só as
+  fontes TTF locais de static/fonts/ (Roboto, Apache 2.0), resolvidas por pdf.link_callback.
+  Autoescape ligado. Os PDFs da feat-09 estendem este template e preenchem o bloco corpo.
+  [US-27][US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-08.3]
+{% endcomment %}<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>{{ titulo|default:"SIGTCC" }}</title>
+<style>
+  @font-face { font-family: "Roboto"; src: url("static/fonts/Roboto-Regular.ttf"); }
+  @font-face { font-family: "Roboto"; src: url("static/fonts/Roboto-Bold.ttf"); font-weight: bold; }
+  @page { size: a4 portrait; margin: 2cm; }
+  body { font-family: "Roboto"; font-size: 11pt; }
+  h1 { font-size: 14pt; text-align: center; }
+</style>
+</head>
+<body>
+{% block corpo %}<h1>{{ titulo }}</h1>{% if texto %}<p>{{ texto }}</p>{% endif %}{% endblock %}
+</body>
+</html>

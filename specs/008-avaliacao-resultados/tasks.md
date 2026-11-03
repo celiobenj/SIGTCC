@@ -34,14 +34,16 @@ IC-03), de que todas as histórias dependem. Commits atômicos por fase, só com
 
 **Purpose**: dependência de PDF, utilitário de PDF em memória e apoio de testes
 
-- [ ] T001 IC-04, commit `chore(config)`: instalar o `xhtml2pdf` na `.venv`, acrescentar ao
+- [X] T001 IC-04, commit `chore(config)`: instalar o `xhtml2pdf` na `.venv`, acrescentar ao
   `requirements.txt` a versão exata do `pip freeze` e as dependências que ele trouxer (sem CVE
   conhecida), com o comentário de item de configuração (PGCS 3.7); conferir
   `pip install -r requirements.txt` num Linux limpo com Python 3.12 (contêiner
   `python:3.12-slim`) e anotar o resultado para o PR; se alguma dependência exigir biblioteca de
   sistema (ex.: cairo), fixar a versão que não exige (research A9; revisão I-13). Sem mudança no
-  `settings.py` (sem STORAGES externo)
-- [ ] T002 [P] Criar `sigtcc/apps/defesa/pdf.py` com `gerar_pdf(template, contexto) -> bytes`,
+  `settings.py` (sem STORAGES externo). **Nota da implementação**: conferência no Linux limpo
+  pendente (Docker sem o serviço em execução na estação); a árvore instalada não tem pycairo nem
+  rlPyCairo (`pip show`), ver pr-feat-08.md
+- [X] T002 [P] Criar `sigtcc/apps/defesa/pdf.py` com `gerar_pdf(template, contexto) -> bytes`,
   `resposta_pdf(nome_arquivo, template, contexto) -> HttpResponse` (`attachment`, `no-store`) e
   `ErroAoGerarPdf` (com log), importando o `xhtml2pdf` só dentro de `gerar_pdf`; `link_callback`
   que aceita só caminho relativo de `static/` ou `media/`, resolvido com `realpath` dentro de
@@ -49,7 +51,7 @@ IC-03), de que todas as histórias dependem. Commits atômicos por fase, só com
   `file:`, `data:` ou caminho que saia dessas pastas; fontes TTF locais em
   `sigtcc/static/fonts/` (Roboto, licença Apache 2.0, com o arquivo da licença na mesma pasta;
   `/speckit-analyze` U1) (contrato §3; research A9; revisão I-11, I-12)
-- [ ] T003 [P] Criar `sigtcc/apps/defesa/tests/test_pdf.py`: gera um PDF de um template de teste
+- [X] T003 [P] Criar `sigtcc/apps/defesa/tests/test_pdf.py`: gera um PDF de um template de teste
   (que não estende `base.html`) e confere que começa com `%PDF`; `link_callback` recusa
   `http://`, `file://` e `../` sem acesso à rede; `resposta_pdf` com `Content-Disposition:
   attachment` e `Cache-Control: no-store`; falha de geração vira `ErroAoGerarPdf`. Commit
