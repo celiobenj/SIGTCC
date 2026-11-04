@@ -1,0 +1,56 @@
+{% comment %}
+  Bloco "Avaliação da banca" da janela Sessão de defesa (spec 008, IC-05; contrato §3 da spec
+  007). Mostra só o que services_avaliacoes.visao_da_avaliacao permite (RBN-DEF-06.8; D7): antes
+  da liberação, ao membro efetivo, o estado de envio de cada membro (pendentes em destaque), a
+  própria avaliação, Avaliar e Reabrir minha avaliação; depois da liberação, a todos que abrem a
+  sessão, as notas por critério e por avaliador (Observações só ao autor). Sem regra aqui.
+  Uso: {% include "defesa/_bloco_avaliacao.html" %} com `visao` e `sessao` no contexto.
+  [US-25][US-27][RBN-DEF-06.6][RBN-DEF-06.8][FR-031][FR-032]
+{% endcomment %}
+{% if visao.mostra_bloco %}
+<section class="cartao mt16" data-bloco-avaliacao>
+  <header><span class="ms">rate_review</span><h3>Avaliação da banca</h3></header>
+  {% if not visao.liberado %}
+  <div class="tabela-wrap">
+    <table class="tabela">
+      <thead><tr><th>Papel</th><th>Membro</th><th>Avaliação</th></tr></thead>
+      <tbody>
+        {% for item in visao.estados %}
+        <tr{% if item.pendente %} class="pendente"{% endif %}>
+          <td>{{ item.papel }}</td><td>{{ item.membro.usu_nome }}</td>
+          <td>{{ item.estado }}{% if item.data_envio %} em {{ item.data_envio|date:"d/m/Y H:i" }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if visao.propria %}
+  <div class="dado mt16"><span>Minha avaliação</span><b>{{ visao.propria.estado }}{% if visao.propria.nota_individual is not None %} · nota individual {{ visao.propria.nota_individual|floatformat:1 }}{% endif %}</b></div>
+  <div class="flex flex-wrap mt16">
+    <a class="btn" href="{% url 'defesa:avaliacao' sessao.pk %}"><span class="ms">rate_review</span>Avaliar</a>
+    {% if visao.propria.pode_reabrir %}
+    <form method="post" action="{% url 'defesa:reabrir_avaliacao' sessao.pk %}">{% csrf_token %}<button type="submit" class="btn"><span class="ms">lock_open</span>Reabrir minha avaliação</button></form>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  {% for avaliador in visao.avaliadores %}
+  <h4 class="mt16">{{ avaliador.papel }}: {{ avaliador.membro.usu_nome }}{% if avaliador.nota_individual is not None %} · nota individual {{ avaliador.nota_individual|floatformat:1 }}{% endif %}</h4>
+  <div class="tabela-wrap">
+    <table class="tabela">
+      <thead><tr><th>Critério</th><th>Peso</th><th>Conceito</th><th>Nota</th>{% if avaliador.proprio %}<th>Observações</th>{% endif %}</tr></thead>
+      <tbody>
+        {% for criterio, nota in avaliador.linhas %}
+        <tr>
+          <td>{{ criterio.cri_nome }}</td><td>{{ criterio.cri_peso|floatformat:1 }}</td>
+          <td>{{ nota.conceito|default:"—" }}</td><td>{% if nota %}{{ nota.nota|floatformat:1 }}{% else %}—{% endif %}</td>
+          {% if avaliador.proprio %}<td>{{ nota.observacoes|default:"—" }}</td>{% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+  {% endif %}
+</section>
+{% endif %}

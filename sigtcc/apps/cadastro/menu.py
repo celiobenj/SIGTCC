@@ -51,6 +51,15 @@ ITENS = [
         "perfis": ("aluno", "docente", "secretaria", "membro_externo"),
         "ordem": 13,
     },
+    # Spec 008 (IC-02): Minhas bancas, ponto de entrada do avaliador (Docente e Membro Externo),
+    # logo depois de "Defesas", com o ícone do protótipo de 17/10. [US-25][RBN-DEF-05.4][FR-003]
+    {
+        "rotulo": "Minhas bancas",
+        "icone": "gavel",
+        "rota": "defesa:minhas_bancas",
+        "perfis": ("docente", "membro_externo"),
+        "ordem": 14,
+    },
     # Spec 006: tela do Coordenador de Curso na seção nova "Gestão", como no protótipo de 17/10
     # (a seção aparece depois de "Cadastros", pela ordem do processador; research R19).
     # [US-20][FR-041][IC-01]

@@ -195,6 +195,15 @@
   Sem turma ativa, vale o do calendário (janeiro a junho = 1, julho a dezembro = 2). FR-025 e
   contrato §4 atualizados.
 
+### Emenda da spec 008 (2026-11-03)
+
+- A feature 008 (Avaliação e Resultados) muda dois comportamentos desta spec, com decisão de Célio
+  Benjamim (spec 008, Clarifications D2, D16 e Q-135; mudança de código já mesclado aprovada na
+  Q-128): o reagendamento devolve as avaliações enviadas a rascunho (FR-019) e a alteração da
+  banca mantém o rascunho de quem troca de papel entre titulares (FR-011). O stub de
+  `descartar_avaliacoes` dá lugar à função real (contrato §6), chamada antes de apagar a linha da
+  banca.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Agendar a defesa com data, horário, formato e local ou link (Priority: P1)
@@ -527,7 +536,10 @@ outras histórias.
   2º Avaliador ou o Suplente,
   mediante Justificativa obrigatória (até 500 caracteres); MUST revalidar os conflitos de horário
   só dos membros novos (User Story 3) e MUST descartar as avaliações salvas pelo membro
-  substituído, notificando os membros incluídos, os removidos e o Aluno.
+  substituído, notificando os membros incluídos, os removidos e o Aluno. **Emenda (spec 008,
+  2026-11-03; D16 e Q-135)**: descarta as avaliações de quem sai da banca ou passa a Suplente;
+  quem só troca de papel entre titulares (1º ↔ 2º Avaliador) mantém o rascunho, e a linha de
+  quem continua na banca é atualizada, não apagada e recriada.
 - **FR-012** [RBN-DEF-02.1]: O sistema MUST bloquear a substituição do Orientador (Presidente) pela
   alteração simples de banca, exigindo o reagendamento da sessão nesse caso.
 - **FR-013** [RBN-DEF-02.2]: O sistema MUST permitir, exclusivamente ao Orientador e só com a
@@ -567,7 +579,10 @@ outras histórias.
   ou a Secretaria do curso reagende a sessão (nova Data, Horário de Início, Formato, Local ou Link e
   Justificativa obrigatória até 500 caracteres), revalidando conflitos (FR-014) e mantendo a banca
   e as avaliações já salvas; o status MUST passar a "Reagendada" e a banca e o Aluno MUST ser
-  notificados com os novos dados.
+  notificados com os novos dados. **Emenda (spec 008, 2026-11-03; D2)**: as notas são mantidas,
+  mas as avaliações já enviadas voltam a "Rascunho salvo" (sem data de envio e sem assinatura) e
+  o parecer escolhido é limpo; cada membro reenvia assinando quando a nova sessão estiver "Em
+  Andamento".
 - **FR-020** [RBN-DEF-03.3]: O sistema MUST permitir, nas mesmas condições de status e perfis do
   FR-019, o cancelamento da sessão com Justificativa obrigatória (até 500 caracteres); o status
   MUST passar a "Cancelada", as avaliações salvas MUST ser descartadas, o Status do TCC MUST

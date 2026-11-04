@@ -3,6 +3,8 @@
 [US-21][US-23][US-24][US-40][RBN-DEF-01.2][RBN-DEF-01.6][SC-003] (tasks T023)
 """
 
+import shutil
+import tempfile
 from collections import Counter
 from datetime import datetime, time, timedelta
 from decimal import Decimal
@@ -13,6 +15,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.management import call_command
 from django.db import connection
 from django.http import Http404
+from django.test import override_settings
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import services_contas, services_orientacao
@@ -43,12 +46,13 @@ from sigtcc.apps.cadastro.tests.apoio_turmas import (
     curso,
 )
 from sigtcc.apps.cadastro.tests.fabricas import criar_criterio
-from sigtcc.apps.defesa import permissoes_defesa, services_defesa
+from sigtcc.apps.defesa import permissoes_defesa, services_avaliacoes, services_defesa
 from sigtcc.apps.defesa.choices import (
     Conceito,
     EventoDefesa,
     FormatoSessao,
     PapelBanca,
+    Parecer,
     StatusSessao,
 )
 from sigtcc.apps.defesa.models import (
@@ -291,26 +295,43 @@ class TesteMembrosEfetivos(TesteTurmas):
         )
 
 
-class TesteDescartarAvaliacoesStub(TesteTurmas):
-    """Stub de descartar_avaliacoes (contrato §6). [US-24][RBN-DEF-03.3][FR-020]"""
+class TesteDescartarAvaliacoesDelegacao(TesteTurmas):
+    """descartar_avaliacoes delega para services_avaliacoes (contrato §6; spec 008, IC-01 e
+    IC-03): apaga as linhas de Avaliacoes e limpa o envio, com a mesma assinatura.
+    [US-24][RBN-DEF-03.3][FR-020][spec 008 FR-034]
+    """
 
-    def test_so_registra_em_log_sem_apagar_avaliacoes(self):
+    def test_apaga_linhas_e_limpa_o_envio(self):
         tcc, _professor, orientador = tcc_apto()
         sessao = agendar_sessao_de(tcc, orientador)
-        avaliacao = Avaliacoes.objects.create(
-            ava_def=sessao,
-            ava_usu=orientador,
-            ava_cri=criar_criterio(),
-            ava_conceito=Conceito.COMPETENTE,
-            ava_nota=Decimal("7.0"),
-            ava_data_hora=timezone.now(),
+        avaliador = services_defesa.membros_efetivos(sessao)[1]
+        criterio = criar_criterio()
+        for membro in (orientador, avaliador):
+            Avaliacoes.objects.create(
+                ava_def=sessao,
+                ava_usu=membro,
+                ava_cri=criterio,
+                ava_conceito=Conceito.COMPETENTE,
+                ava_nota=Decimal("7.0"),
+                ava_data_hora=timezone.now(),
+            )
+        BancaDefesa.objects.filter(ban_def=sessao, ban_usu=orientador).update(
+            ban_data_envio=timezone.now()
         )
-        for membro in (None, orientador):
-            with self.subTest(membro=membro):
-                with self.assertLogs("sigtcc.defesa", level="INFO") as log:
-                    self.assertIsNone(services_defesa.descartar_avaliacoes(sessao, membro))
-                self.assertIn(f"sessão {sessao.pk}", log.output[0])
-        self.assertTrue(Avaliacoes.objects.filter(pk=avaliacao.pk).exists())
+        with mock.patch(
+            "sigtcc.apps.defesa.services_avaliacoes.descartar_avaliacoes",
+            wraps=services_avaliacoes.descartar_avaliacoes,
+        ) as real:
+            with self.assertLogs("sigtcc.defesa", level="INFO") as log:
+                self.assertIsNone(services_defesa.descartar_avaliacoes(sessao, orientador))
+        real.assert_called_once_with(sessao, orientador)
+        self.assertIn(f"membro {orientador.pk}", log.output[0])
+        self.assertFalse(Avaliacoes.objects.filter(ava_def=sessao, ava_usu=orientador).exists())
+        self.assertTrue(Avaliacoes.objects.filter(ava_def=sessao, ava_usu=avaliador).exists())
+        linha = BancaDefesa.objects.get(ban_def=sessao, ban_usu=orientador)
+        self.assertIsNone(linha.ban_data_envio)
+        services_defesa.descartar_avaliacoes(sessao)
+        self.assertFalse(Avaliacoes.objects.filter(ava_def=sessao).exists())
 
 
 class TesteAvancarPara(TesteTurmas):
@@ -407,9 +428,18 @@ class TesteElegibilidade(TesteTurmas):
 
 class TestePopularDemo(TesteTurmas):
     """popular_demo com o cenário do roteiro da spec 007 (contrato §5; IC-05; T056): uma sessão
-    em cada status, criadas pelos serviços, e os TCCs Aptos sem sessão para agendar.
-    [US-21][US-22][US-23][US-24][US-40][RBN-DEF-01.2]
+    em cada status, criadas pelos serviços, e os TCCs Aptos sem sessão para agendar. Spec 008
+    (IC-08): avaliações de exemplo só pelos serviços, uma segunda sessão Em Andamento pronta para
+    liberar e dois resultados liberados; as cópias de assinatura vão para um MEDIA_ROOT
+    temporário. [US-21][US-22][US-23][US-24][US-40][RBN-DEF-01.2][US-25][US-27]
     """
+
+    @classmethod
+    def setUpClass(cls):
+        cls._midia = tempfile.mkdtemp(prefix="sigtcc_demo_")
+        cls.enterClassContext(override_settings(MEDIA_ROOT=cls._midia))
+        cls.addClassCleanup(shutil.rmtree, cls._midia, ignore_errors=True)
+        super().setUpClass()
 
     @classmethod
     def setUpTestData(cls):
@@ -425,17 +455,25 @@ class TestePopularDemo(TesteTurmas):
 
     def test_uma_sessao_em_cada_status_criada_pelos_servicos(self):
         contagem = Counter(Defesas.objects.values_list("def_status", flat=True))
-        self.assertEqual(contagem, Counter(StatusSessao.values))
+        # Spec 008 (IC-08): mais uma Em Andamento (pronta para liberar) e uma Realizada (TCC 1).
+        esperado = Counter(StatusSessao.values)
+        esperado.update([StatusSessao.EM_ANDAMENTO, StatusSessao.REALIZADA])
+        self.assertEqual(contagem, esperado)
         for sessao in Defesas.objects.select_related("def_tcc__tcc_tur__tur_cur"):
             with self.subTest(status=sessao.def_status):
                 primeiro = HistoricoDefesas.objects.filter(hdf_def=sessao).earliest("hdf_id")
                 self.assertEqual(primeiro.hdf_evento, EventoDefesa.AGENDAMENTO)
-                self.assertTrue(
-                    permissoes_defesa.pode_agendar(primeiro.hdf_usu, sessao.def_tcc),
-                    "quem agendou segue a regra do curso",
-                )
+                # A sessão do TCC 1 de 2026/1 (spec 008) é de turma já arquivada, com a
+                # orientação encerrada: a regra foi conferida pelo próprio agendar() na época.
+                if sessao.def_tcc.tcc_tur.tur_status == StatusTurma.ATIVA:
+                    self.assertTrue(
+                        permissoes_defesa.pode_agendar(primeiro.hdf_usu, sessao.def_tcc),
+                        "quem agendou segue a regra do curso",
+                    )
                 self.assertEqual(len(services_defesa.membros_efetivos(sessao)), 3)
-        realizada = Defesas.objects.get(def_status=StatusSessao.REALIZADA)
+        realizada = Defesas.objects.get(
+            def_status=StatusSessao.REALIZADA, def_parecer=Parecer.APROVADO
+        )
         self.assertEqual(realizada.def_tcc.tcc_status, StatusTCC.APROVADO)
         cancelada = Defesas.objects.get(def_status=StatusSessao.CANCELADA)
         self.assertTrue(services_defesa.tcc_elegivel(cancelada.def_tcc))
@@ -447,8 +485,10 @@ class TestePopularDemo(TesteTurmas):
         banca = services_defesa.banca_por_papel(agendada)
         self.assertEqual(banca[PapelBanca.PRIMEIRO_AVALIADOR], self.usuario("Beatriz Lemos Aragão"))
         self.assertIn(PapelBanca.SUPLENTE, banca)
-        em_andamento = Defesas.objects.get(def_status=StatusSessao.EM_ANDAMENTO)
-        self.assertIn(PapelBanca.SUPLENTE, services_defesa.banca_por_papel(em_andamento))
+        em_andamento = Defesas.objects.filter(def_status=StatusSessao.EM_ANDAMENTO)
+        self.assertTrue(
+            [s for s in em_andamento if PapelBanca.SUPLENTE in services_defesa.banca_por_papel(s)]
+        )
 
     def test_tccs_aptos_sem_sessao_para_agendar(self):
         aptos = [
@@ -495,6 +535,35 @@ class TestePopularDemo(TesteTurmas):
         for nome in ("Beatriz Lemos Aragão", "Henrique Matos Couto", "Sandra Pires Lacerda"):
             self.assertEqual(self.usuario(nome).usu_status, StatusConta.ATIVA)
 
+    def test_avaliacoes_de_demonstracao_pelos_servicos(self):
+        sessoes = Defesas.objects.filter(def_status=StatusSessao.EM_ANDAMENTO)
+        estados = sorted(
+            sorted(item["estado"] for item in services_avaliacoes.estados_da_banca(sessao))
+            for sessao in sessoes
+        )
+        self.assertEqual(
+            estados,
+            [["Enviada", "Enviada", "Enviada"], ["Enviada", "Enviada", "Rascunho salvo"]],
+        )
+        pronta = next(s for s in sessoes if services_avaliacoes.apuracao(s)["completos"])
+        apuracao = services_avaliacoes.apuracao(pronta)
+        self.assertTrue(apuracao["pode_registrar_parecer"])
+        self.assertFalse(apuracao["liberar_habilitado"])
+        liberadas = Defesas.objects.filter(def_data_liberacao_resultado__isnull=False)
+        self.assertEqual(
+            sorted(liberadas.values_list("def_parecer", flat=True)),
+            [Parecer.APROVADO, Parecer.APROVADO_PARA_TCC_2],
+        )
+        for sessao in liberadas:
+            with self.subTest(parecer=sessao.def_parecer):
+                self.assertEqual(sessao.def_status, StatusSessao.REALIZADA)
+                self.assertEqual(sessao.def_tcc.tcc_status, sessao.def_parecer)
+                evento = HistoricoDefesas.objects.filter(hdf_def=sessao).latest("hdf_id")
+                self.assertEqual(evento.hdf_evento, EventoDefesa.LIBERACAO_DO_RESULTADO)
+        copias = BancaDefesa.objects.filter(ban_assinatura_path__isnull=False)
+        self.assertEqual(copias.count(), 11)
+        self.assertTrue(all(c.ban_assinatura_path.startswith("assinaturas_banca/") for c in copias))
+
     def test_imprime_o_roteiro(self):
         texto = self.saida.getvalue()
         for trecho in (
@@ -503,6 +572,7 @@ class TestePopularDemo(TesteTurmas):
             "Sessões de defesa:",
             "Beatriz Lemos Aragão",
             "Acionar suplente",
+            "Roteiro da spec 008",
         ):
             self.assertIn(trecho, texto)
 

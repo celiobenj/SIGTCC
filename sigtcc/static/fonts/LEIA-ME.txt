@@ -1,0 +1,6 @@
+Fontes dos PDFs gerados sob demanda (spec 008, research A9; T002).
+
+Roboto-Regular.ttf e Roboto-Bold.ttf: Roboto versão 2.137 (2017), Copyright 2011 Google Inc.,
+licenciada sob a Apache License, Version 2.0 (texto completo em LICENSE-Roboto.txt, nesta pasta).
+Usadas só pelos templates de PDF (sigtcc/templates/defesa/pdf/), resolvidas por
+sigtcc/apps/defesa/pdf.py (link_callback), sem acesso à rede.

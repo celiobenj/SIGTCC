@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load static %}
+{% comment %}
+  Formulário "Avaliação" (formAvaliacao do protótipo de 17/10, só o visual; aqui em página
+  própria): cabeçalho com título, aluno, orientador, papel e link do Documento para Defesa; os 9
+  critérios com peso (Conceito, Nota e Observações), a Parte Oral desabilitada antes da sessão
+  (nota MA-03); o bloco Assinatura do Membro da Banca (Anexar imagem, Atualizar imagem, prévia,
+  usar a do perfil, Salvar esta imagem no meu perfil) e os botões Salvar e Enviar avaliação
+  assinada. Só leitura quando a avaliação foi Enviada ou a sessão está Realizada. Sem regra de
+  negócio: o que está liberado vem de services_avaliacoes.formulario_da_avaliacao.
+  [US-25][US-26][RBN-DEF-05.1][RBN-DEF-05.2][RBN-DEF-05.3][FR-008 a FR-019]
+{% endcomment %}
+{% block titulo %}Avaliação · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <div>
+    <h2 class="pg">Avaliação</h2>
+    <p class="pg-sub">{{ sessao.def_tcc.tcc_alu.alu.usu_nome }} · {{ dados.papel }}</p>
+  </div>
+  <a class="btn txt" href="{% url 'defesa:criterios' %}"><span class="ms">rule</span>Critérios de avaliação</a>
+</div>
+<section class="cartao mt16">
+  <div class="dado"><span>Título</span><b>{{ sessao.def_tcc.tcc_titulo }}</b></div>
+  <div class="dado"><span>Aluno</span><b>{{ sessao.def_tcc.tcc_alu.alu.usu_nome }}</b></div>
+  <div class="dado"><span>Orientador</span><b>{{ dados.orientador.usu_nome|default:"—" }}</b></div>
+  <div class="dado"><span>Status da sessão</span><b><span class="chip">{{ sessao.def_status }}</span></b></div>
+  <div class="dado"><span>Minha avaliação</span><b>{{ dados.estado }}{% if dados.data_envio %} em {{ dados.data_envio|date:"d/m/Y H:i" }}{% endif %}</b></div>
+  {% if dados.nota_individual is not None %}<div class="dado"><span>Nota individual</span><b>{{ dados.nota_individual|floatformat:1 }}</b></div>{% endif %}
+  {% if dados.documento %}<div class="dado"><span>Documento para Defesa</span><b><a href="{{ dados.documento }}" target="_blank" rel="noopener">{{ dados.documento }}</a></b></div>{% endif %}
+</section>
+{% if dados.antes_da_sessao and not dados.somente_leitura %}
+<div class="alerta info" role="status"><span class="ms">schedule</span><span class="texto">{{ aviso_antes_da_sessao }}</span></div>
+{% endif %}
+<form method="post" enctype="multipart/form-data" novalidate data-avaliacao>
+  {% csrf_token %}
+  {{ formset.management_form }}
+  {% for erro in formset.non_form_errors %}<div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>{% endfor %}
+  <div class="tabela-wrap">
+    <table class="tabela larga">
+      <thead><tr><th>Componente</th><th>Critério</th><th>Peso</th><th>Conceito</th><th>Nota</th><th>Observações</th></tr></thead>
+      <tbody>
+        {% for criterio, form in linhas %}
+        <tr{% if form.bloqueado and not dados.somente_leitura %} class="bloqueado"{% endif %}>
+          <td>{{ criterio.cri_componente }}</td>
+          <td><b>{{ criterio.cri_nome }}</b>
+            <details><summary class="muted">Descrições dos conceitos</summary>
+              <small><b>Exemplar (8,0 a 10,0):</b> {{ criterio.cri_desc_exemplar }}<br>
+              <b>Competente (6,0 a 7,9):</b> {{ criterio.cri_desc_competente }}<br>
+              <b>Necessita de Trabalho (0,0 a 5,9):</b> {{ criterio.cri_desc_necessita_trabalho }}</small>
+            </details>
+            {% for erro in form.non_field_errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}
+          </td>
+          <td>{{ criterio.cri_peso|floatformat:1 }}</td>
+          <td class="campo{% if form.conceito.errors %} com-erro{% endif %}">{{ form.conceito }}{% for erro in form.conceito.errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}</td>
+          <td class="campo{% if form.nota.errors %} com-erro{% endif %}">{{ form.nota }}{% for erro in form.nota.errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}</td>
+          <td class="campo{% if form.observacoes.errors %} com-erro{% endif %}">{{ form.observacoes }}{% for erro in form.observacoes.errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if dados.pode_enviar %}
+  <section class="cartao mt16{% if form_assinatura.errors %} com-erro{% endif %}" data-bloco-assinatura>
+    <header><span class="ms">draw</span><h3>Assinatura do Membro da Banca</h3></header>
+    {% for erro in form_assinatura.non_field_errors %}<div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>{% endfor %}
+    {% if dados.assinatura_do_perfil %}
+    {% include "includes/campo.html" with campo=form_assinatura.usar_perfil %}
+    <img class="assin" src="{% url 'cadastro:assinatura' %}" alt="Assinatura salva no perfil">
+    {% endif %}
+    <div class="campo{% if form_assinatura.arquivo.errors %} com-erro{% endif %}">
+      <label class="btn" for="{{ form_assinatura.arquivo.id_for_label }}"><span class="ms">upload</span><span data-rotulo-arquivo data-atualizar="Atualizar imagem">Anexar imagem</span></label>
+      <span class="dica">PNG ou JPG, até 2 MB</span>
+      <input type="file" name="{{ form_assinatura.arquivo.html_name }}" id="{{ form_assinatura.arquivo.id_for_label }}" accept="image/png,image/jpeg" hidden data-arquivo-assinatura data-limite="2097152" data-erro-tamanho="{{ erro_tamanho }}" data-erro-formato="{{ erro_formato }}">
+      <div class="msg-erro" role="alert" data-erro-assinatura>{% for erro in form_assinatura.arquivo.errors %}{{ erro }}{% endfor %}</div>
+      <div data-previa-assinatura></div>
+    </div>
+    {% include "includes/campo.html" with campo=form_assinatura.salvar_no_perfil %}
+  </section>
+  {% elif dados.tem_copia %}
+  <section class="cartao mt16">
+    <header><span class="ms">draw</span><h3>Assinatura do Membro da Banca</h3></header>
+    <img class="assin" src="{% url 'defesa:assinatura_avaliacao' sessao.pk %}" alt="Assinatura enviada">
+  </section>
+  {% endif %}
+
+  <div class="flex entre mt16">
+    <a class="btn txt" href="{% url 'defesa:sessao' sessao.pk %}">Fechar</a>
+    <div class="flex">
+      {% if dados.pode_salvar %}<button type="submit" name="acao" value="salvar" class="btn">Salvar</button>{% endif %}
+      {% if dados.pode_enviar %}<button type="submit" name="acao" value="enviar" class="btn pri">Enviar avaliação assinada</button>{% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/avaliacao.js' %}"></script>{% endblock %}

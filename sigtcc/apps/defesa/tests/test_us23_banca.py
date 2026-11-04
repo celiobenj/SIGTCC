@@ -3,9 +3,15 @@
 [US-23][RBN-DEF-02.1][RBN-DEF-02.2][RBN-DEF-02.3][RBN-DEF-02.4][FR-007 a FR-013] (tasks T038)
 """
 
+import shutil
+import tempfile
 from datetime import timedelta
+from decimal import Decimal
 from urllib.parse import urlencode
 
+from django.core.files.storage import default_storage
+from django.db import connection, transaction
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -14,9 +20,10 @@ from sigtcc.apps.cadastro.models import MembrosExternos, Notificacoes
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_membro_externo
 from sigtcc.apps.cadastro.tests.apoio_orientacao import vincular_coorientador
 from sigtcc.apps.cadastro.tests.apoio_turmas import SI, TesteTurmas
-from sigtcc.apps.defesa import services_defesa
+from sigtcc.apps.defesa import services_avaliacoes, services_defesa
 from sigtcc.apps.defesa.choices import FormatoSessao, PapelBanca, StatusSessao
-from sigtcc.apps.defesa.models import BancaDefesa, Defesas
+from sigtcc.apps.defesa.models import Avaliacoes, BancaDefesa, Defesas
+from sigtcc.apps.defesa.tests.apoio_avaliacao import criterios, enviar, lancar, png
 from sigtcc.apps.defesa.tests.apoio_defesa import (
     agendar_sessao_de,
     avancar_para,
@@ -333,3 +340,103 @@ class TesteAlterarBancaEAcionarSuplente(TesteTurmas):
         self.assertEqual(self.client.get(url).status_code, 200)
         self.client.force_login(orientador)
         self.assertEqual(self.client.get(url).status_code, 403)
+
+
+class TesteDescarteNaBanca(TesteTurmas):
+    """Spec 008 (IC-03; D16, Q-135; revisão I-07, I-08): troca entre titulares mantém o
+    rascunho, ida a Suplente descarta e o acionamento do suplente apaga a cópia da assinatura do
+    ausente, preservando ban_usu_substituido. [US-23][RBN-DEF-02.2][RBN-DEF-02.4][FR-011]
+    """
+
+    def setUp(self):
+        super().setUp()
+        midia = tempfile.mkdtemp(prefix="sigtcc_media_")
+        self.addCleanup(shutil.rmtree, midia, ignore_errors=True)
+        configuracao = override_settings(MEDIA_ROOT=midia)
+        configuracao.enable()
+        self.addCleanup(configuracao.disable)
+        self.tcc, self.professor, self.orientador = tcc_apto()
+        self.av1, self.av2, self.suplente = docente(), docente(), docente()
+        self.sessao = agendar_sessao_de(
+            self.tcc,
+            self.orientador,
+            {
+                "primeiro_avaliador": self.av1,
+                "segundo_avaliador": self.av2,
+                "suplente": self.suplente,
+            },
+        )
+        for membro in (self.av1, self.av2):
+            lancar(self.sessao, membro, Decimal("7.0"), criterios_lancados=criterios()[:6])
+
+    def banca(self, **trocas):
+        banca = {
+            PapelBanca.PRIMEIRO_AVALIADOR: self.av1,
+            PapelBanca.SEGUNDO_AVALIADOR: self.av2,
+            PapelBanca.SUPLENTE: self.suplente,
+        }
+        banca.update(trocas)
+        return banca
+
+    def notas_de(self, membro):
+        return Avaliacoes.objects.filter(ava_def=self.sessao, ava_usu=membro).count()
+
+    def test_troca_entre_titulares_mantem_o_rascunho(self):
+        with transaction.atomic():
+            services_defesa.alterar_banca(
+                self.orientador,
+                self.sessao.pk,
+                self.banca(
+                    **{
+                        PapelBanca.PRIMEIRO_AVALIADOR: self.av2,
+                        PapelBanca.SEGUNDO_AVALIADOR: self.av1,
+                    }
+                ),
+                "Troca de papéis",
+            )
+            connection.check_constraints()
+        banca = services_defesa.banca_por_papel(self.sessao)
+        self.assertEqual(banca[PapelBanca.PRIMEIRO_AVALIADOR], self.av2)
+        self.assertEqual((self.notas_de(self.av1), self.notas_de(self.av2)), (6, 6))
+
+    def test_ida_a_suplente_descarta(self):
+        services_defesa.alterar_banca(
+            self.orientador,
+            self.sessao.pk,
+            self.banca(
+                **{PapelBanca.SEGUNDO_AVALIADOR: self.suplente, PapelBanca.SUPLENTE: self.av2}
+            ),
+            "Avaliador passa a suplente",
+        )
+        self.assertEqual(
+            services_defesa.banca_por_papel(self.sessao)[PapelBanca.SUPLENTE], self.av2
+        )
+        self.assertEqual(self.notas_de(self.av2), 0)
+        self.assertEqual(self.notas_de(self.av1), 6)
+
+    def test_quem_sai_da_banca_tem_as_notas_descartadas(self):
+        services_defesa.alterar_banca(
+            self.orientador,
+            self.sessao.pk,
+            self.banca(**{PapelBanca.PRIMEIRO_AVALIADOR: docente()}),
+            "Avaliador em licença",
+        )
+        self.assertEqual(self.notas_de(self.av1), 0)
+        self.assertFalse(BancaDefesa.objects.filter(ban_def=self.sessao, ban_usu=self.av1).exists())
+
+    def test_acionamento_apaga_a_copia_do_ausente(self):
+        avancar_para(self.sessao, StatusSessao.EM_ANDAMENTO)
+        lancar(self.sessao, self.av2, Decimal("7.0"))
+        caminho = default_storage.save("assinaturas_banca/ausente.png", png())
+        enviar(self.sessao, self.av2, caminho)
+        with self.captureOnCommitCallbacks(execute=True):
+            services_defesa.acionar_suplente(
+                self.orientador, self.sessao.pk, PapelBanca.SEGUNDO_AVALIADOR, "Não compareceu"
+            )
+        self.assertFalse(default_storage.exists(caminho))
+        self.assertEqual(self.notas_de(self.av2), 0)
+        linha = BancaDefesa.objects.get(ban_def=self.sessao, ban_usu=self.suplente)
+        self.assertEqual(linha.ban_usu_substituido, self.av2)
+        self.assertEqual(
+            services_avaliacoes.estado_da_avaliacao(self.sessao, self.suplente), "Não avaliou"
+        )

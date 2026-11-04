@@ -70,6 +70,9 @@ MENSAGENS_403 = {
     mensagens.SEM_PERMISSAO_PAGINA,
     mensagens_defesa.TCC_NAO_AGENDAVEL,
     mensagens_defesa.SEM_PERMISSAO_SESSAO,
+    # Spec 008 (US-25 E8, US-26 E5 e US-27 E4).
+    mensagens_defesa.ACESSO_RESTRITO,
+    mensagens_defesa.APENAS_O_ORIENTADOR,
 }
 
 

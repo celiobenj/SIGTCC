@@ -13,7 +13,8 @@ na v0.2.1, para os diagramas do Épico 1 (Cadastro e Manutenção).
   explícito), e os diagramas usam o singular.
 
 Os diagramas da Defesa (01 a 06 e 28) e dos Relatórios (23 a 26) serão implementados nos Épicos 2
-e 3.
+e 3. A spec 008 (Avaliação e Resultados) acrescentou abaixo os participantes dos diagramas 04
+(`AvaliarCriterios`) e 28 (`LiberarResultadoDefesa`), com o código do app `defesa`.
 
 ## Telas
 
@@ -36,6 +37,8 @@ e 3.
 | `:TelaOrientacoes`, `:TelaOrientandos` | `cadastro/orientacao/orientacoes.html`, `ver_proposta.html`, `publicacao.html` | `views_orientacao.py`, `views_artigos.py` | 09, 13, 29, 31 |
 | `:TelaAtas` | `cadastro/orientacao/atas.html`, `form_ata.html` | `views_atas.py` | 32 |
 | `:TelaAproveitamentoArtigos` | `cadastro/orientacao/aproveitamento.html` | `views_artigos.py` | 30 |
+| `:TelaAvaliacao` (spec 008) | `defesa/avaliacao.html`, `defesa/criterios.html`, `defesa/minhas_bancas.html` | `defesa/views_avaliacoes.py` (`avaliacao`, `reabrir`, `assinatura`, `criterios`, `minhas_bancas`) | 04 |
+| `:TelaSessaoDefesa` (spec 008) | `defesa/sessao.html` com `_bloco_avaliacao.html` e `_bloco_resultado.html`; `defesa/confirmar_liberacao.html`; `defesa/_resultado_aluno.html` (aba Meu TCC) | `defesa/views_defesa.py` (`sessao`), `defesa/views_avaliacoes.py` (`registrar_parecer`, `liberar_resultado`) | 28 |
 
 ## Controladores e serviços
 
@@ -56,6 +59,9 @@ e 3.
 | `:ControladorArtigos` | `services_artigos.py`: `salvar_publicacao`, `artigos_para_analise`, `homologar_artigo`, `recusar_artigo` |
 | `:ControladorTarefas` | comandos `enviar_lembretes_entrega` e `expirar_membros_externos` (`management/commands/`); o agendamento automático está planejado (PGCS 9.4) |
 | `:ControladorBanca`, `:ControladorDefesa` | `services_contas.recalcular_validade` é o ponto de entrada da US-06 para o Épico 2; o restante fica no app `defesa` (planejado) |
+| `:ControladorAvaliacao` (spec 008) | `defesa/services_avaliacoes.py`: `salvar_rascunho`, `enviar_avaliacao`, `reabrir_avaliacao`, `criterios_liberados`, `nota_individual`, `estado_da_avaliacao`, `estados_da_banca`, `descartar_avaliacoes`, `voltar_envios_a_rascunho`, `minhas_bancas` |
+| `:ControladorResultado` (spec 008) | `defesa/services_avaliacoes.py`: `apuracao`, `nota_final`, `parecer_automatico`, `registrar_parecer`, `liberar_resultado`, `visao_da_avaliacao`, `resultado_da_sessao`, `resultado_para_o_aluno`; a sessão muda só por `services_defesa.transicionar_status` e o TCC por `services_turmas.atualizar_status_tcc` |
+| `:GeradorDocumentosPDF` (spec 008) | `defesa/pdf.py`: `gerar_pdf`, `resposta_pdf` (PDF sob demanda, em memória, nunca gravado); `defesa/services_documentos.py`: `ao_liberar_resultado` e `declaracao_disponivel` (stubs da feat-09) |
 
 ## Entidades
 
@@ -75,4 +81,5 @@ e 3.
 | `EquivalenciaCurso` | `EquivalenciaCursos` | `ComentarioEncontro` | `ComentariosEncontro` |
 | `Notificacao` | `Notificacoes` | `Artigo` | `Artigos` |
 | `Defesa` | `defesa.Defesas` | `BancaDefesa` | `defesa.BancaDefesa` |
-| `HistoricoDefesa` | `defesa.HistoricoDefesas` | | |
+| `HistoricoDefesa` | `defesa.HistoricoDefesas` | `Avaliacao` (spec 008) | `defesa.Avaliacoes` |
+| `Criterio` (spec 008) | `defesa.Criterios` | | |

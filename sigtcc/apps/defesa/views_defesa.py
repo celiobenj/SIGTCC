@@ -15,8 +15,9 @@ from sigtcc.apps.cadastro import services_contas
 from sigtcc.apps.cadastro.models import Cursos, TCCs, Turmas, Usuarios
 from sigtcc.apps.cadastro.permissoes import perfil_requerido, tem_perfil
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada, turma_arquivada
-from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_defesa
-from sigtcc.apps.defesa.choices import PapelBanca
+from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_avaliacoes, services_defesa
+from sigtcc.apps.defesa.choices import EventoDefesa, PapelBanca
+from sigtcc.apps.defesa.forms_avaliacoes import ParecerForm
 from sigtcc.apps.defesa.forms_defesa import CAMPOS_DA_BANCA as CAMPOS_DO_FORMULARIO
 from sigtcc.apps.defesa.forms_defesa import (
     AcionarSuplenteForm,
@@ -190,10 +191,11 @@ def _iniciais(request):
     return iniciais
 
 
-def _sessao_ou_404(def_id):
+def sessao_ou_404(def_id):
     """Sessão com o TCC, a turma e o aluno já carregados, depois do início automático das
     sessões cujo horário chegou (US-24 D), para o status e os botões valerem já.
-    [US-23][US-24][US-40][FR-021]
+    Pública desde a spec 008 (IC-05; revisão I-04): as views da avaliação usam a mesma busca.
+    [US-23][US-24][US-40][US-25][US-27][FR-021]
     """
     services_defesa.iniciar_sessoes_vencidas()
     return get_object_or_404(
@@ -210,17 +212,27 @@ def _sessao_ou_404(def_id):
 @perfil_requerido()
 def sessao(request, def_id):
     """Janela "Sessão de defesa" (US-40 passo 8): aluno, título, data, horário, formato, local ou
-    link, status e banca, com os botões que o perfil e o status permitem; os blocos de avaliação,
-    resultado, documentos, ouvintes e ocorrências ficam para a feat-08 e a feat-09 (contrato §3).
-    Sem permissão, também pelo endereço direto: US-40 E5.
-    [US-40][US-23][US-24][RBN-DEF-01.4][FR-030]
+    link, status e banca, com os botões que o perfil e o status permitem; os blocos de avaliação
+    e de resultado são preenchidos pela spec 008 (IC-05); documentos, ouvintes e ocorrências
+    ficam para a feat-09 (contrato §3). Sem permissão, também pelo endereço direto: US-40 E5.
+    [US-40][US-23][US-24][US-25][US-27][RBN-DEF-01.4][FR-030]
     """
-    registro = _sessao_ou_404(def_id)
+    registro = sessao_ou_404(def_id)
     if not permissoes_defesa.pode_ver_sessao(request.user, registro):
         raise PermissionDenied(mensagens.SEM_PERMISSAO_SESSAO)
+    return render(request, "defesa/sessao.html", contexto_da_sessao(request, registro))
+
+
+def contexto_da_sessao(request, registro, form_parecer=None):
+    """Contexto da janela "Sessão de defesa": cabeçalho, banca e botões da spec 007 e, pela spec
+    008 (IC-05), o que a visão da avaliação permite (blocos avaliacao e resultado; sigilo em
+    services_avaliacoes.visao_da_avaliacao) e o formulário Registrar parecer. Usado também pela
+    view registrar_parecer para mostrar o erro no campo Parecer.
+    [US-40][US-23][US-24][US-25][US-27][RBN-DEF-01.4][RBN-DEF-06.6][RBN-DEF-06.8][FR-030]
+    """
     banca = services_defesa.banca_por_papel(registro)
     ordem = (*services_defesa.PAPEIS_TITULARES, PapelBanca.SUPLENTE)
-    contexto = {
+    return {
         "sessao": registro,
         "banca": [(papel, banca[papel]) for papel in ordem if papel in banca],
         "substituicoes": services_defesa.substituicoes(registro),
@@ -229,8 +241,10 @@ def sessao(request, def_id):
         "pode_reagendar_ou_cancelar": permissoes_defesa.pode_reagendar_ou_cancelar(
             request.user, registro
         ),
+        # Spec 008 (IC-05): blocos de avaliação e de resultado. [US-25][US-27][RBN-DEF-06.8]
+        "visao": services_avaliacoes.visao_da_avaliacao(request.user, registro),
+        "form_parecer": form_parecer or ParecerForm(),
     }
-    return render(request, "defesa/sessao.html", contexto)
 
 
 def _erro_no_formulario(form, erro):
@@ -248,7 +262,7 @@ def alterar_banca(request, def_id):
     gravar; sucesso volta à sessão com a MD-09.
     [US-23][US-22][RBN-DEF-02.4][RBN-DEF-03.1][FR-011][FR-012][FR-015]
     """
-    registro = _sessao_ou_404(def_id)
+    registro = sessao_ou_404(def_id)
     if not permissoes_defesa.pode_alterar_banca(request.user, registro):
         raise PermissionDenied
     banca = services_defesa.banca_por_papel(registro)
@@ -279,7 +293,7 @@ def acionar_suplente(request, def_id):
     Suplente na banca (senão M-02, "Você não tem permissão para esta ação", E10). Justificativa
     vazia ou longa: não efetiva (E9). [US-23][RBN-DEF-02.2][FR-013]
     """
-    registro = _sessao_ou_404(def_id)
+    registro = sessao_ou_404(def_id)
     if not permissoes_defesa.pode_acionar_suplente(request.user, registro):
         raise PermissionDenied
     banca = services_defesa.banca_por_papel(registro)
@@ -308,7 +322,7 @@ def reagendar(request, def_id):
     volta ao formulário com os dados digitados; sucesso volta à sessão com a MD-11.
     [US-24][US-22][RBN-DEF-03.3][RBN-DEF-03.1][FR-019][FR-022]
     """
-    registro = _sessao_ou_404(def_id)
+    registro = sessao_ou_404(def_id)
     if not permissoes_defesa.pode_reagendar_ou_cancelar(request.user, registro):
         raise PermissionDenied
     form = ReagendarForm.da_sessao(registro, lugar(registro), request.POST or None)
@@ -340,7 +354,7 @@ def cancelar(request, def_id):
     e a confirmação. O TCC continua "Apto para Defesa". Sucesso volta à sessão com a MD-12.
     [US-24][RBN-DEF-03.3][FR-020][FR-022]
     """
-    registro = _sessao_ou_404(def_id)
+    registro = sessao_ou_404(def_id)
     if not permissoes_defesa.pode_reagendar_ou_cancelar(request.user, registro):
         raise PermissionDenied
     form = CancelarForm(request.POST or None)
@@ -361,8 +375,13 @@ def historico(request, def_id):
     eventos de todas as sessões do TCC, com data, hora, responsável e justificativa; as mesmas
     permissões da sessão (US-40 E5). [US-40][RBN-DEF-01.6][FR-029][FR-030]
     """
-    registro = _sessao_ou_404(def_id)
+    registro = sessao_ou_404(def_id)
     if not permissoes_defesa.pode_ver_sessao(request.user, registro):
         raise PermissionDenied(mensagens.SEM_PERMISSAO_SESSAO)
-    contexto = {"sessao": registro, "eventos": services_defesa.historico_da_sessao(registro)}
+    contexto = {
+        "sessao": registro,
+        "eventos": services_defesa.historico_da_sessao(registro),
+        # Spec 008 (IC-06; D15): nota final e parecer no evento "Liberação do Resultado".
+        "evento_liberacao": EventoDefesa.LIBERACAO_DO_RESULTADO,
+    }
     return render(request, "defesa/historico.html", contexto)

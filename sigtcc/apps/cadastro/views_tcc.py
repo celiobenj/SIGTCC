@@ -28,6 +28,7 @@ from sigtcc.apps.cadastro.forms_tcc import DadosTCCForm, PropostaForm
 from sigtcc.apps.cadastro.models import EncontroOrientacao
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import CONSULTAR, TurmaArquivada
+from sigtcc.apps.defesa import services_avaliacoes
 
 
 def _turmas_do_aluno(request, arquivadas):
@@ -175,6 +176,8 @@ def meu_tcc(request, tur_id):
             "n": EncontroOrientacao.objects.filter(enc_tcc=tcc).count(),
             "pode_registrar": services_orientacao.pode_alterar_no_tcc(tcc),
         },
+        # Spec 008 (IC-07): seção "Resultado da defesa", só depois da liberação (FR-033).
+        "resultado_defesa": services_avaliacoes.resultado_para_o_aluno(tcc),
     }
     return render(request, "cadastro/tcc/meu_tcc.html", contexto)
 

@@ -25,6 +25,23 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
     período e o template da sessão com os blocos reservados.
 - `popular_demo` com o cenário do roteiro manual da spec 007 (TCCs Aptos sem sessão, uma sessão em
   cada status, suplentes) e a tabela de contas do roteiro.
+- Avaliação e Resultados (spec 008, feat-08; US-25, US-26 e US-27), no app `defesa`, sem tabela nem
+  coluna nova:
+  - janela "Critérios de avaliação" (somente leitura) e tela "Minhas bancas" (item de menu para
+    Docente e Membro Externo), com as pendências em destaque;
+  - formulário "Avaliação" com rascunho (só a Parte Escrita antes da sessão), envio assinado
+    (imagem anexada ou do perfil, até 2 MB e 2000 × 1000 pixels, cópia sem URL pública) e "Reabrir
+    minha avaliação";
+  - cálculo em `Decimal` com uma casa e arredondamento comercial, nota mínima 6,0 com artigo Qualis
+    A ou B homologado, "Registrar parecer" e "Liberar Resultado" com confirmação (e nova
+    confirmação se a nota mudar), Status do TCC pela liberação e avisos ao Aluno, à banca e à
+    Secretaria;
+  - sigilo das notas por uma única função (`visao_da_avaliacao`) e seção "Resultado da defesa" na
+    aba Meu TCC, com a Data Limite da Versão Final em TCC 2 aprovado;
+  - `xhtml2pdf` 0.2.28 no `requirements.txt` e utilitário de PDF em memória (`defesa/pdf.py`), sem
+    acesso à rede, para a feat-09; ponto de chamada `services_documentos.ao_liberar_resultado`;
+  - `popular_demo` com avaliações de exemplo, uma sessão pronta para liberar e dois resultados
+    liberados.
 
 ### Alterado
 
@@ -33,6 +50,18 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 - Menu com o item "Defesas" (também para o Membro Externo), aba "Defesas" na turma, link "Agendar
   defesa" na tela de orientandos e as mensagens de acesso negado da US-21 E7 e da US-40 E5 (IC-01
   a IC-06; Q-123).
+- Emendas da spec 008 na spec 007: o descarte de avaliações deixa de ser stub; na alteração da
+  banca, quem só troca de papel entre titulares mantém o rascunho e quem sai ou passa a Suplente
+  perde (D16, Q-135); o reagendamento de sessão Em Andamento devolve os envios a "Rascunho salvo",
+  mantendo as notas (D2).
+- Decisão de configuração (Q-134): **sem armazenamento externo**. Os PDFs (Ata Final, Folha de
+  Aprovação e declarações) são gerados sob demanda, a cada download, e nunca gravados; as
+  assinaturas continuam no disco do serviço (risco aceito). Sai do "Planejado para a v0.3.0".
+
+### Corrigido
+
+- `popular_demo` não esvazia mais a tabela `Criterios` (carga da spec 001) e a recarrega se um
+  `popular_demo` anterior a apagou.
 
 ## [v0.2.1] - 25/10/2026 - Hotfix: nomes iguais às US v3.4 e aos diagramas
 
@@ -183,7 +212,8 @@ Render a partir da `main` e PGCS 1.2. Suíte com 1115 testes automatizados.
 
 - Gestão da Defesa (Épico 2): agendamento sem conflito, banca, avaliação, liberação do resultado
   e PDFs da Ata Final e da Folha de Aprovação (xhtml2pdf).
-- Armazenamento externo privado para assinaturas e PDFs.
+- ~~Armazenamento externo privado para assinaturas e PDFs.~~ Retirado em 03/11/2026 (spec 008,
+  Q-134): PDFs gerados sob demanda e assinaturas no disco do serviço.
 - Rotina agendada (GitHub Actions de hora em hora) para prazos, expiração e início das sessões.
 - Fluxo real do resultado da defesa nas US-29 e US-44 e seção Defesa do painel do aluno.
 
