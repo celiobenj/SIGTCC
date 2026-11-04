@@ -40,23 +40,26 @@ migração nova:
 | `5c82d38` | feat(feat-08): liberar o resultado da defesa | 15 |
 | `df65ff0` | feat(feat-08): mostrar o resultado ao aluno com sigilo | 7 |
 | `f71fd55` | feat(feat-08): popular avaliacoes de demonstracao | 6 |
-| (este) | docs(feat-08): atualizar diagramas, changelog e texto do PR | documentação |
+| `d2b7155` | docs(feat-08): atualizar diagramas, changelog e texto do PR | 8 |
+| (este) | docs(feat-08): registrar a validacao manual e a revisao do PR | documentação |
 
 **Mudanças em código e documentos de outras specs** (aprovadas na Q-128, relatadas aqui):
 
 | IC | Arquivo | O que mudou | Motivo |
 |---|---|---|---|
 | IC-01 | `defesa/services_defesa.py` (007) | `descartar_avaliacoes` delega para `services_avaliacoes`; descarte antes de apagar a linha da banca em `acionar_suplente` e `alterar_banca`; `alterar_banca` mantém o rascunho só na troca entre titulares e atualiza a linha de quem continua; `reagendar` devolve envios a rascunho; `tcc_da_sessao`, `travar_tcc` e `travar_sessao` públicas | Contrato §6 da 007 (Q-125); D16 e Q-135; D2 |
-| IC-02 | `cadastro/menu.py` | item "Minhas bancas" | FR-003 |
+| IC-02 | `cadastro/menu.py` (003) | item "Minhas bancas" | FR-003 |
 | IC-03 | `defesa/tests/test_base_defesa.py`, `test_us23_banca.py`, `test_us24_confirmar_reagendar_cancelar.py` (007) | teste do stub trocado pelo da delegação; casos da troca entre titulares, ida a Suplente, cópia apagada e reagendamento | D16, Q-135, D2, D3 |
 | IC-04 | `requirements.txt` | `xhtml2pdf` 0.2.28 e dependências (sem pycairo/rlPyCairo) | PGCS 3.7 |
 | IC-05 | `defesa/views_defesa.py`, `defesa/sessao.html` (007) | blocos `avaliacao` e `resultado`; `sessao_ou_404` pública | contrato §3 da 007 |
 | IC-06 | `defesa/historico.html` (007) | nota final e parecer no evento "Liberação do Resultado" | D15 |
 | IC-07 | `cadastro/views_tcc.py`, `cadastro/tcc/meu_tcc.html` (005) | seção "Resultado da defesa" | FR-033 |
 | IC-08 | `cadastro/management/commands/popular_demo.py` | avaliações de exemplo; deixa de esvaziar `Criterios` (Q-139) | research A12 |
-| IC-09 | `defesa/permissoes_defesa.py`, `urls.py`, `mensagens.py` (007) | acréscimos | revisão M-05 |
+| IC-09 | `defesa/permissoes_defesa.py`, `urls.py`, `mensagens.py` (007) | acréscimos: permissões, 7 rotas, textos das US-25 a US-27 e MA-01 a MA-14 | revisão M-05 |
 | IC-10 | `specs/007-agendamento-banca/spec.md` | emendas FR-011 e FR-019 | D2, D16 |
 | IC-11 | `specs/007-agendamento-banca/contracts/servicos-defesa.md` | §6 entregue, ordem do descarte, travas públicas | revisão I-09 |
+| IC-12 | `cadastro/views.py` (003) | `ACESSO_RESTRITO` e `APENAS_O_ORIENTADOR` em `MENSAGENS_403` | US-25 E5, US-26 E6, US-27 E4 |
+| IC-13 | `static/css/sigtcc.css` | classes `pendente`, `bloqueado` e `assin` | FR-004, FR-011, FR-015 |
 
 Documentos: diagrama 28 (geração no download; US-28 E2 mantida com a Q-140), rastreabilidade
 diagrama → código, rótulos dos `.drawio` de componentes e implantação e CHANGELOG.
@@ -73,27 +76,29 @@ diagrama → código, rótulos dos `.drawio` de componentes e implantação e CH
 - [x] Não há variáveis, imports ou trechos de código não utilizados (flake8 limpo).
 - [x] `makemigrations --check --dry-run`: "No changes detected" (a spec 008 não cria tabela nem coluna).
 - [x] Os arquivos `.env` e os diretórios `sigtcc/media/` e `staticfiles/` NÃO foram adicionados ao Git.
-- [ ] A interface segue a paleta e os padrões do protótipo de 17/10 (pendente da validação manual, Q-138).
-- [ ] Não há quebras de layout nem erros no console do navegador (pendente da validação manual, Q-138).
+- [x] A interface segue a paleta e os padrões de usabilidade da ISO/IEC 25010 e do protótipo de 17/10 (validação manual de 2026-11-04). Observação: em Minhas bancas, a 1280 px, a tabela precisa de rolagem horizontal e a coluna Ações fica cortada (Q-141).
+- [x] Não há quebras de layout nem erros no console do navegador com as telas da feature (validação manual de 2026-11-04; o único erro registrado foi um 403 de uma chamada feita à mão durante o teste).
 
-**Testes automatizados**: suíte inteira com 1437 testes, OK (1 falha esperada já existente, `test_us06_validade.test_cenario_03_texto_da_us06_pendente_da_q52`, Q-52), em 2026-11-03. O teste instável da Q-119 (spec 003) falhou às vezes durante a implementação, fora do escopo desta feature.
+**Testes automatizados**: suíte inteira com 1437 testes, OK (1 falha esperada já existente, `test_us06_validade.test_cenario_03_texto_da_us06_pendente_da_q52`, Q-52), em 2026-11-03; app `defesa` com 335 testes, OK, em 2026-11-04 (`revisor-pgcs`). O teste instável da Q-119 (spec 003) falhou às vezes durante a implementação, fora do escopo desta feature.
 
 **Instalação no Linux limpo** (research A9): pendente (Q-136). O Docker da estação estava parado;
 a árvore instalada no Windows não tem pycairo nem rlPyCairo.
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
-Pendente (Q-138): roteiro de 16 passos de [quickstart.md](quickstart.md), a fazer antes do merge.
+Roteiro de 16 passos de [quickstart.md](quickstart.md), em 2026-11-04, no navegador, com o
+servidor local num banco separado (`sigtcc_validacao`, populado pelo `popular_demo --local`, senha
+do roteiro), sem tocar no banco de desenvolvimento. Todos os passos conferiram (Q-138):
 
-- [ ] Cenário 1: Consultar os critérios e ver as minhas bancas (US-25 A; DEF-05.4)
-- [ ] Cenário 2: Rascunho antes da sessão, envio assinado e reabertura (US-25, US-26)
-- [ ] Cenário 3: Registrar o parecer e liberar o resultado, com a sessão Realizada e o Status do TCC (US-27)
-- [ ] Cenário 4: Sigilo por perfil antes e depois da liberação e resultado na aba Meu TCC (US-27, DEF-06.8)
+- [x] Cenário 1: Consultar os critérios e ver as minhas bancas (US-25 A; DEF-05.4) — passos 1 e 2: papel, status, atalhos e pendências; pesos e somas 7,0 + 3,0 = 10,0.
+- [x] Cenário 2: Rascunho antes da sessão, envio assinado e reabertura (US-25, US-26) — passos 3 a 5, 12 e 16: só a Parte Escrita com a sessão Agendada; Competente 8,5 recusado com a mensagem da US-25 E2; envio com assinatura anexada, nota individual 8,0 ((7,5 × 7 + 9,0 × 3) / 10 = 7,95); Reabrir volta a "Rascunho salvo"; arquivo de 3 MB e .pdf recusados com as mensagens da US-26 E2 e E3 (navegador e servidor).
+- [x] Cenário 3: Registrar o parecer e liberar o resultado, com a sessão Realizada e o Status do TCC (US-27) — passos 7, 8, 10, 11, 13 a 15: Liberar desabilitado sem parecer (D1) e com envio pendente; Registrar parecer sem escolha mostra a mensagem da E3; confirmação MA-05 com 8,0 e "Aprovado com Correções"; sessão Realizada; Reabrir depois recusado com a MA-04; Histórico com nota e parecer; suplente acionado com a avaliação e a cópia da assinatura da ausente apagadas; reagendamento de sessão Em Andamento devolve os envios a rascunho mantendo as notas.
+- [x] Cenário 4: Sigilo por perfil antes e depois da liberação e resultado na aba Meu TCC (US-27, DEF-06.8) — passos 6 e 9: Professor da Disciplina e aluna não veem nada do bloco de avaliação antes da liberação; depois, notas por critério e por avaliador (Observações só ao autor) e, na aba Meu TCC, nota 8,0, parecer e Data Limite da Versão Final.
 
 **Pendências registradas**: Q-131 (DV-01, PO), Q-132 (textos da matriz e das US-27/US-28, PO),
-Q-133 (colunas `*_path`, modelo lógico), Q-134 (PGCS no Drive), Q-136 (Linux limpo), Q-137 (PNG
-dos diagramas), Q-138 (validação manual), Q-139 (`Criterios` no banco do Render), Q-140 (US-28 E2
-na feat-09).
+Q-133 (colunas `*_path`, modelo lógico), Q-134 (PGCS no Drive), Q-136 (Linux limpo, antes do
+merge), Q-137 (PNG dos diagramas; T041 só parcial), Q-139 (`Criterios` no banco do Render), Q-140 (US-28 E2
+na feat-09), Q-141 (rolagem horizontal em Minhas bancas).
 
 ### 5. Revisão por Pares (Peer Review)
 

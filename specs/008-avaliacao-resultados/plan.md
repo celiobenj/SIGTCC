@@ -75,7 +75,7 @@ consultas agregadas, sem consulta por linha (research A2, A8).
 - e-mails e o ponto de chamada da feat-09 só depois do commit;
 - nenhum PDF gravado; nenhuma URL pública de arquivo; `link_callback` do PDF sem acesso à rede
   (research A9);
-- mensagens idênticas às US-25 a US-27, ou as MA-01 a MA-12 aprovadas (Q-129).
+- mensagens idênticas às US-25 a US-27, ou as MA-01 a MA-14 aprovadas (Q-129).
 
 **Scale/Scope**: 5 histórias (52 cenários de aceite), 37 FR, 7 rotas novas, 4 telas novas, 3
 parciais e 3 e-mails, 11 itens de configuração em código ou documento já mesclado.
@@ -141,7 +141,7 @@ sigtcc/apps/defesa/
 ├── views_defesa.py                       # IC-05: contexto da avaliação e do resultado na
 │                                         #   sessão; sessao_ou_404 pública
 ├── urls.py                               # IC-09: + 7 rotas
-├── mensagens.py                          # IC-09: + textos das US-25 a US-27 e MA-01 a MA-12
+├── mensagens.py                          # IC-09: + textos das US-25 a US-27 e MA-01 a MA-14
 └── tests/
     ├── apoio_avaliacao.py
     ├── test_us25_avaliacao.py
@@ -201,9 +201,11 @@ Aprovados pela Q-128 ("pode mexer no que for necessário, relatando"); cada um s
 | IC-06 | `defesa/historico.html` (007) | nota final e parecer no evento "Liberação do Resultado" | D15; RBN-DEF-01.6 |
 | IC-07 | `cadastro/views_tcc.py` e `cadastro/tcc/meu_tcc.html` (005) | seção "Resultado da defesa" | FR-033 |
 | IC-08 | `cadastro/management/commands/popular_demo.py` | avaliações de exemplo, só por serviços, com a assinatura estática do repositório | research A12; revisão I-15 |
-| IC-09 | `defesa/permissoes_defesa.py`, `defesa/urls.py`, `defesa/mensagens.py` (007) | acréscimos: permissões, 7 rotas, textos das US-25 a US-27 e MA-01 a MA-12; nada removido | revisão M-05 |
+| IC-09 | `defesa/permissoes_defesa.py`, `defesa/urls.py`, `defesa/mensagens.py` (007) | acréscimos: permissões, 7 rotas, textos das US-25 a US-27 e MA-01 a MA-14; nada removido | revisão M-05 |
 | IC-10 | `specs/007-agendamento-banca/spec.md` (007, já mesclada) | FR-011 (D16 e Q-135) e FR-019 (D2) e uma nota em Clarifications; feito no `/speckit-plan` desta feature | CLAUDE.md: mudança depois do merge começa pela spec; revisão I-09 |
 | IC-11 | `specs/007-agendamento-banca/contracts/servicos-defesa.md` (007) | §6 entregue, ordem do descarte, travas públicas; feito no `/speckit-plan` | revisão I-09 |
+| IC-12 | `cadastro/views.py` (003) | `ACESSO_RESTRITO` e `APENAS_O_ORIENTADOR` em `MENSAGENS_403` (handler 403); só acréscimo. *Acrescentado na revisão do `revisor-pgcs`, 2026-11-04.* | US-25 E5, US-26 E6, US-27 E4 |
+| IC-13 | `static/css/sigtcc.css` (compartilhado) | classes `pendente`, `bloqueado` e `assin`; só acréscimo. *Acrescentado na revisão do `revisor-pgcs`, 2026-11-04.* | FR-004, FR-011, FR-015 |
 
 ## Documentos a ajustar (PDFs sob demanda, sem armazenamento externo)
 
