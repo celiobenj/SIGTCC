@@ -341,21 +341,21 @@ liberação.
 - [X] T040 [P] Criar `sigtcc/apps/defesa/tests/test_mensagens_avaliacao.py`: textos das US-25 a
   US-27 conferidos, caractere por caractere, contra `docs/fonte/Historias_de_Usuario_v3_4.md`, e
   MA-01 a MA-14 contra a tabela da spec 008 (SC-007; mesmo padrão de `test_mensagens_defesa.py`)
-- [ ] T041 [P] Q-134 (documentos do repositório): diagrama 28 em
+- [X] T041 [P] Q-134 (documentos do repositório): diagrama 28 em
   `docs/diagramas/Diagramas_Sequencia_PlantUML_v2.md` (geração da Ata e da Folha no passo
   `baixarDocumento`, sem `def_*_path` na liberação); `docs/arquitetura/Componentes_SIGTCC.drawio`,
   `Implantacao_SIGTCC.drawio` e os PNG em `docs/arquitetura/imagens/` ("PDFs gerados sob
   demanda; assinaturas no disco do serviço"); `docs/diagramas/Rastreabilidade_Diagramas_Codigo.md`
   (participantes da avaliação → `services_avaliacoes`, `views_avaliacoes`); o PGCS fica com
   Célio Benjamim no Drive
-- [ ] T042 [P] `CHANGELOG.md` em "Não lançado": feature 008, a decisão de PDFs sob demanda sem
+- [X] T042 [P] `CHANGELOG.md` em "Não lançado": feature 008, a decisão de PDFs sob demanda sem
   armazenamento externo (sai do "Planejado para a v0.3.0"), o `xhtml2pdf` e as emendas D2 e D16
   da spec 007
-- [ ] T043 Rodar `.venv\Scripts\python.exe manage.py test` (suíte inteira) e
+- [X] T043 Rodar `.venv\Scripts\python.exe manage.py test` (suíte inteira) e
   `pre-commit run --all-files`; corrigir o que falhar
-- [ ] T044 Validação manual pelo roteiro de [quickstart.md](quickstart.md) (16 passos), com o
+- [ ] T044 (pendente, Q-138) Validação manual pelo roteiro de [quickstart.md](quickstart.md) (16 passos), com o
   resultado registrado em `specs/008-avaliacao-resultados/pr-feat-08.md`
-- [ ] T045 Escrever `specs/008-avaliacao-resultados/pr-feat-08.md` com o modelo do PGCS 6.3:
+- [X] T045 Escrever `specs/008-avaliacao-resultados/pr-feat-08.md` com o modelo do PGCS 6.3:
   título `[Feat-08] Avaliação e Resultados (US-25, US-26, US-27)`, IC-01 a IC-11 com arquivo e
   motivo (Q-128), resultado da instalação no Linux limpo (T001), pendências Q-131 a Q-134
 
