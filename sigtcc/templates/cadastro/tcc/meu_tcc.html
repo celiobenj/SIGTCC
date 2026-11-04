@@ -12,6 +12,9 @@
   parecer). Sem regra aqui: tudo vem de `services_entregas.secao_versao_final`.
   Spec 006 (IC-09): seções Orientação, Atas de orientação e Publicação do artigo, com id para o
   ?secao= (research R12) e o contexto dos services da 006.
+  Spec 008 (IC-07): seção "Resultado da defesa" (defesa/_resultado_aluno.html), só depois da
+  liberação: nota final, parecer e, em TCC 2 aprovado, a Data Limite da Versão Final.
+  [US-27][RBN-DEF-06.5][FR-033]
   [US-13][US-29][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][RBN-CAD-08.5][RBN-CAD-09.2]
   [FR-001][FR-004][FR-005][FR-006][FR-023][FR-024][FR-025]
 {% endcomment %}
@@ -68,6 +71,8 @@
 {% include "cadastro/tcc/_secao_orientacao.html" with o=orientacao %}
 {% include "cadastro/tcc/_secao_atas.html" %}
 {% if publicacao %}{% url 'cadastro:salvar_publicacao_aluno' turma.pk as url_publicacao %}{% include "cadastro/tcc/_secao_publicacao.html" with pub=publicacao url_acao=url_publicacao %}{% endif %}
+
+{% include "defesa/_resultado_aluno.html" with resultado=resultado_defesa %}
 
 {% if versao_final %}
 {% with vf=versao_final %}

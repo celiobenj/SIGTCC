@@ -310,7 +310,7 @@ conferir cálculo, parecer, bloqueios e liberação.
 **Independent Test**: com rascunhos e envios, abrir as telas como cada perfil, antes e depois da
 liberação.
 
-- [ ] T036 [P] [US5] Criar `sigtcc/apps/defesa/tests/test_sigilo.py`: cenários 5.1 a 5.8 por
+- [X] T036 [P] [US5] Criar `sigtcc/apps/defesa/tests/test_sigilo.py`: cenários 5.1 a 5.8 por
   perfil (membro, Orientador, Suplente não acionado, Professor da Disciplina, Secretaria, Aluno)
   e por tela (sessão, Minhas bancas, Avaliação, Defesas, Meu TCC, endereço direto), antes e
   depois da liberação; Observações só ao autor; Professor da Disciplina que é Orientador vê como
@@ -318,11 +318,11 @@ liberação.
   ausente sem a entrega Versão Final cadastrada; e a parte do cenário 4.1 que trata do aluno (vê
   nota final, parecer e Data Limite depois da liberação; `/speckit-analyze` I3)
   [US-27][RBN-DEF-06.5][RBN-DEF-06.8]
-- [ ] T037 [US5] Em `services_avaliacoes.py`: `resultado_da_sessao(sessao)` e
+- [X] T037 [US5] Em `services_avaliacoes.py`: `resultado_da_sessao(sessao)` e
   `resultado_para_o_aluno(tcc)` (última sessão Realizada; nota final, parecer e, em TCC 2 Aprovado
   ou Aprovado com Correções, `tma_data_limite` da entrega do tipo Versão Final da turma)
   [US-27][RBN-DEF-06.5]
-- [ ] T038 [US5] IC-07: `sigtcc/templates/defesa/_resultado_aluno.html` incluído em
+- [X] T038 [US5] IC-07: `sigtcc/templates/defesa/_resultado_aluno.html` incluído em
   `sigtcc/templates/cadastro/tcc/meu_tcc.html`, com o contexto em
   `sigtcc/apps/cadastro/views_tcc.py` (`meu_tcc`), só depois da liberação; conferir os testes da
   spec 005 da aba Meu TCC [US-27][RBN-DEF-06.5]

@@ -380,9 +380,11 @@ class TesteLiberacaoTcc1(BaseLiberacao):
             Path(settings.BASE_DIR) / "sigtcc" / "apps" / "defesa" / "services_avaliacoes.py"
         ).read_text(encoding="utf-8")
         for proibido in (
-            # Atribuição ou update; filtros de consulta ("ban_def__def_status=") não contam.
-            r"(?<!__)def_status\s*=(?!=)",
-            r"(?<!__)tcc_status\s*=(?!=)",
+            # Atribuição no objeto ou update(); filtros de consulta não contam.
+            r"\.def_status\s*=(?!=)",
+            r"\.tcc_status\s*=(?!=)",
+            r"update\([^)]*def_status",
+            r"update\([^)]*tcc_status",
             r"HistoricoDefesas\.objects",
             r"HistoricoStatusTCC",
             r"Defesas\.objects\.create",

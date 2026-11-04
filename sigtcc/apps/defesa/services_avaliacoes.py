@@ -25,7 +25,7 @@ from django.utils import timezone
 
 from sigtcc.apps.cadastro import services, services_artigos
 from sigtcc.apps.cadastro.choices import DescricaoTurma, TipoEntrega
-from sigtcc.apps.cadastro.models import HistoricoEnviosEntregas
+from sigtcc.apps.cadastro.models import HistoricoEnviosEntregas, TurmasMarcos
 from sigtcc.apps.cadastro.services_turmas import STATUS_SESSAO_ATIVA
 from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_defesa, services_documentos
 from sigtcc.apps.defesa.choices import (
@@ -1024,3 +1024,67 @@ def liberar_resultado(usuario, def_id, nota_confirmada, parecer_confirmado):
         _avisar_liberacao(sessao, tcc, parecer)
         transaction.on_commit(lambda: services_documentos.ao_liberar_resultado(sessao), robust=True)
     return ResultadoLiberacao(liberado=True, nota_final=nota, parecer=parecer)
+
+
+# =============================================================================================
+# Resultado da sessão e resultado para o aluno (contrato §1; RBN-DEF-06.5)
+# =============================================================================================
+
+
+def resultado_da_sessao(sessao):
+    """Resultado de uma sessão liberada (contrato §1), fonte única da Ata Final, da Folha de
+    Aprovação (feat-09) e da tela do aluno: nota final, parecer e data da liberação gravados na
+    sessão, as notas individuais e por critério dos 3 membros efetivos (com as Observações: quem
+    exibe aplica o sigilo, visao_da_avaliacao) e se um artigo Qualis A ou B elevou a nota
+    (observação da Ata, RBN-DEF-07.1). None se a sessão não foi liberada.
+    [US-27][US-28][RBN-DEF-06.1][RBN-DEF-06.2][RBN-DEF-06.5][RBN-DEF-07.1]
+    """
+    if sessao.def_data_liberacao_resultado is None:
+        return None
+    avaliadores = notas_por_avaliador(sessao)
+    individuais = [item["nota_individual"] for item in avaliadores]
+    media = _media(individuais) if individuais and None not in individuais else None
+    return {
+        "nota_final": sessao.def_nota_final,
+        "parecer": sessao.def_parecer,
+        "data_liberacao": sessao.def_data_liberacao_resultado,
+        "avaliadores": avaliadores,
+        "media": media,
+        "elevada_pelo_qualis": media is not None and sessao.def_nota_final > media,
+    }
+
+
+def resultado_para_o_aluno(tcc):
+    """Seção "Resultado da defesa" da aba Meu TCC (FR-033; RBN-DEF-06.5): da última sessão
+    Realizada e liberada do TCC, a nota final e o parecer e, só em TCC 2 com parecer Aprovado ou
+    Aprovado com Correções (Q-127), a Data Limite da entrega do tipo Versão Final da turma (sem a
+    entrega cadastrada, sem a data). None antes da liberação (sigilo, RBN-DEF-06.8).
+    [US-27][RBN-DEF-06.5][RBN-DEF-06.8][FR-033]
+    """
+    sessao = (
+        Defesas.objects.filter(
+            def_tcc=tcc,
+            def_status=StatusSessao.REALIZADA,
+            def_data_liberacao_resultado__isnull=False,
+        )
+        .order_by("-def_data_liberacao_resultado", "-def_id")
+        .first()
+    )
+    if sessao is None:
+        return None
+    data_limite = None
+    if e_tcc_2(sessao) and sessao.def_parecer in PARECERES_DE_TCC_2:
+        data_limite = (
+            TurmasMarcos.objects.filter(
+                tma_tur_id=tcc.tcc_tur_id, tma_tipo=TipoEntrega.VERSAO_FINAL
+            )
+            .order_by("-tma_data_limite", "-tma_id")
+            .values_list("tma_data_limite", flat=True)
+            .first()
+        )
+    return {
+        "sessao": sessao,
+        "nota_final": sessao.def_nota_final,
+        "parecer": sessao.def_parecer,
+        "data_limite": data_limite,
+    }
