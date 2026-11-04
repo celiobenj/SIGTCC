@@ -1,13 +1,19 @@
 """Limpa o banco e carrega dados fictícios de demonstração (ambiente de validação, deploy).
 
 Apaga todas as contas, turmas, TCCs, entregas, orientações, atas, publicações, notificações e
-sessões; mantém só as cargas das migrações (Cursos, Equivalencia_Cursos e Areas_Interesse). Depois
+sessões; mantém só as cargas das migrações (Cursos, Equivalencia_Cursos, Areas_Interesse e, desde a
+spec 008, Criterios). Depois
 monta turmas dos três cursos com alunos em todos os Status do TCC, passando pelos mesmos serviços
 das telas (matrícula, Proposta, entregas, pedidos, coorientação, atas, Apto para Defesa, Versão
 Final e aproveitamento de artigo). O resultado da defesa, que ainda não tem tela (Épico 2), é
 simulado pelo serviço único do Status com o gatilho "Liberação do resultado", como nos testes.
 As sessões de defesa (spec 007) ficam num TCC "Apto para Defesa" de cada curso, uma em cada Status
 da sessão, criadas só pelos serviços da Defesa (agendar_sessao e transicionar_status).
+Spec 008 (IC-08; research A12): avaliações de exemplo só por services_avaliacoes, com a assinatura
+estática sigtcc/static/img/assinatura_demo.png: a sessão Em Andamento com 2 avaliações enviadas e
+1 rascunho; uma segunda sessão Em Andamento (TCC 2) com os 3 envios, pronta para liberar; o
+resultado de um TCC 1 de 2026/1 e o da sessão Realizada de TCC 2 liberados pelo serviço da US-27.
+Em produção, a imagem das assinaturas de demonstração não aparece (a cópia fica no media/ local).
 
 Todas as contas ativas usam a mesma senha, informada em --senha. Os e-mails são fictícios
 (demo.nome@uea.edu.br) e nenhum e-mail é enviado durante a carga.
@@ -20,8 +26,11 @@ Exemplo (docs/deploy-render.md, Passo 4):
 
 import re
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 
 from django.apps import apps
+from django.conf import settings
+from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from django.test.utils import override_settings
@@ -68,12 +77,17 @@ from sigtcc.apps.cadastro.models import (
     TurmasMarcos,
     Usuarios,
 )
-from sigtcc.apps.defesa import services_defesa
-from sigtcc.apps.defesa.choices import FormatoSessao, PapelBanca, StatusSessao
-from sigtcc.apps.defesa.models import Defesas
+from sigtcc.apps.defesa import cargas as cargas_defesa
+from sigtcc.apps.defesa import services_avaliacoes, services_defesa
+from sigtcc.apps.defesa.choices import Conceito, FormatoSessao, PapelBanca, Parecer
+from sigtcc.apps.defesa.models import Criterios, Defesas
+
+# Imagem de assinatura das avaliações de demonstração (spec 008, research A12; revisão I-15).
+ASSINATURA_DEMO = settings.BASE_DIR / "sigtcc" / "static" / "img" / "assinatura_demo.png"
 
 # Tabelas carregadas pelas migrações, que a limpeza mantém.
-MANTER = {"Cursos", "Equivalencia_Cursos", "Areas_Interesse"}
+# Spec 008 (IC-08): "Criterios" (carga da spec 001) também é mantida; antes era esvaziada.
+MANTER = {"Cursos", "Equivalencia_Cursos", "Areas_Interesse", "Criterios"}
 
 # Código UEA de cada curso (Equivalencia_Cursos).
 CODIGO = {
@@ -278,6 +292,9 @@ class Command(BaseCommand):
         with connection.cursor() as cursor:
             cursor.execute(f"TRUNCATE {nomes} RESTART IDENTITY CASCADE")
         self.stdout.write(f"Limpeza: {len(tabelas)} tabelas esvaziadas.")
+        # Spec 008 (IC-08): recarrega os 9 critérios se um popular_demo antigo os apagou
+        # (carga idempotente da spec 001). [US-25][RBN-DEF-04.1]
+        cargas_defesa.carregar_criterios_provisorios(apps, None)
 
     # =========================================================================================
     # Contas
@@ -569,7 +586,13 @@ class Command(BaseCommand):
             self._orientador(aluno, t_ant, orientador)
             self._enviar(aluno, doc_ant)
             self._apto(orientador, tcc)
-            self._resultado(tcc, p1, StatusTCC.APROVADO_PARA_TCC_2)
+            if not aprovados:
+                # Spec 008 (IC-08): resultado do TCC 1 liberado pela sessão de defesa (US-27).
+                self.sessao_tcc1_liberada = self._sessao_liberada(
+                    tcc, orientador, (self.ori_ecp2, self.ori_ecp3), self.hoje - timedelta(days=90)
+                )
+            else:
+                self._resultado(tcc, p1, StatusTCC.APROVADO_PARA_TCC_2)
             aprovados.append(aluno)
         reprovado = self._aluno(p1, t_ant)
         tcc = self._proposta(reprovado, t_ant)
@@ -816,7 +839,8 @@ class Command(BaseCommand):
             self._apto(p2, t2tcc[i])
             if i == 3:
                 self._sessao_realizada(t2tcc[i], p2)
-            self._resultado(t2tcc[i], p2, status)
+            else:
+                self._resultado(t2tcc[i], p2, status)
             self._enviar(b[i], vf2, "versao-final")
         # b[4]: Concluído (Versão Final homologada).
         services_entregas.homologar_versao_final(p2, t2.pk, b[4].pk)
@@ -937,7 +961,11 @@ class Command(BaseCommand):
             modalidade = ModalidadeTCC.ARTIGO_CIENTIFICO if i == 4 else ModalidadeTCC.MONOGRAFIA
             tccs2[i] = self._proposta(aluno, t2, modalidade)
             self._orientador(aluno, t2, orientadores[i])
-        # 0: Em Andamento. 1 e 2: Aprovado com Correções com Versão Final enviada; 1 conferida.
+        # 0: Apto para Defesa, com sessão Em Andamento e os 3 envios (spec 008, IC-08).
+        self._enviar(alunos2[0], doc2, "monografia")
+        self._apto(orientadores[0], tccs2[0])
+        self.apto_si_tcc2 = tccs2[0]
+        # 1 e 2: Aprovado com Correções com Versão Final enviada; 1 conferida.
         for i in (1, 2):
             self._enviar(alunos2[i], doc2, "monografia")
             self._apto(orientadores[i], tccs2[i])
@@ -1016,22 +1044,69 @@ class Command(BaseCommand):
         )
 
     def _sessao_realizada(self, tcc, orientador):
-        """Sessão já realizada, antes da liberação do resultado (US-24, US-27): agendada há 5
-        dias, iniciada pelo início automático e passada a Realizada pelo serviço único de status,
-        como a feat-08 fará. [US-24][RBN-DEF-01.2][contrato §5]
+        """Sessão Realizada de TCC 2: agendada há 5 dias, iniciada pelo início automático e com o
+        resultado "Aprovado" liberado pela US-27 (spec 008, IC-08: 3 envios assinados, parecer
+        registrado e liberação pelo serviço, que muda a sessão e o Status do TCC).
+        [US-24][US-27][RBN-DEF-01.2][RBN-DEF-06.4][contrato §5]
         """
-        sessao = self._agendar(
+        self.sessao_realizada = self._sessao_liberada(
             tcc,
             orientador,
-            self.hoje - timedelta(days=5),
-            time(14, 0),
             (self.ori_ecp2, self.ori_ecp3),
+            self.hoje - timedelta(days=5),
+            parecer=Parecer.APROVADO,
             local="Bloco B, sala 14",
         )
+
+    # =========================================================================================
+    # Avaliações de demonstração (spec 008, IC-08; research A12)
+    # =========================================================================================
+
+    def _avaliar(self, sessao, membro, nota, enviar=True, so_escrita=False):
+        """Avaliação de um membro efetivo só por services_avaliacoes: rascunho (Salvar) ou envio
+        assinado com a imagem estática do repositório (revisão I-15). [US-25][US-26][IC-08]
+        """
+        criterios = Criterios.objects.order_by("cri_id")
+        if so_escrita:
+            criterios = criterios.filter(cri_componente="Parte Escrita")
+        nota = Decimal(nota)
+        conceito = Conceito.EXEMPLAR
+        if nota < Decimal("8.0"):
+            conceito = Conceito.COMPETENTE
+        if nota < Decimal("6.0"):
+            conceito = Conceito.NECESSITA_DE_TRABALHO
+        linhas = {c.pk: {"conceito": conceito, "nota": nota, "observacoes": ""} for c in criterios}
+        if not enviar:
+            services_avaliacoes.salvar_rascunho(membro, sessao.pk, linhas)
+            return
+        with open(ASSINATURA_DEMO, "rb") as imagem:
+            assinatura = services_avaliacoes.Assinatura(
+                arquivo=File(imagem, name="assinatura_demo.png"), tipo="png"
+            )
+            services_avaliacoes.enviar_avaliacao(membro, sessao.pk, linhas, assinatura)
+
+    def _sessao_liberada(self, tcc, autor, banca, dia, parecer=None, local="Bloco B, sala 12"):
+        """Sessão agendada no passado, iniciada pelo início automático, com os 3 envios e o
+        resultado liberado pelo Orientador (Presidente) pelo serviço da US-27; em TCC 2, com o
+        parecer registrado antes. [US-25][US-27][RBN-DEF-06.4][IC-08]
+        """
+        sessao = self._agendar(tcc, autor, dia, time(10, 0), banca, local=local)
         services_defesa.iniciar_sessoes_vencidas()
         sessao.refresh_from_db()
-        services_defesa.transicionar_status(sessao, StatusSessao.REALIZADA, orientador)
-        self.sessao_realizada = sessao
+        for membro, nota in zip(services_defesa.membros_efetivos(sessao), ("8.5", "8.0", "7.5")):
+            self._avaliar(sessao, membro, nota)
+        presidente = services_defesa.banca_por_papel(sessao)[PapelBanca.ORIENTADOR_PRESIDENTE]
+        if parecer is not None:
+            services_avaliacoes.registrar_parecer(presidente, sessao.pk, parecer)
+            sessao.refresh_from_db()
+        apuracao = services_avaliacoes.apuracao(sessao)
+        resultado = services_avaliacoes.liberar_resultado(
+            presidente, sessao.pk, apuracao["nota_final"], apuracao["parecer"]
+        )
+        if not resultado.liberado:
+            raise CommandError(f"Liberação de demonstração recusada: {resultado}")
+        sessao.refresh_from_db()
+        return sessao
 
     def _defesas(self):
         """Uma sessão em cada Status (a Realizada fica no TCC 2 de Eng. Comp. que recebeu o
@@ -1078,6 +1153,29 @@ class Command(BaseCommand):
             local="Bloco C, sala 5",
         )
         services_defesa.iniciar_sessoes_vencidas()
+        # Spec 008 (IC-08): 2 avaliações enviadas e 1 rascunho (só a Parte Escrita).
+        self.sessao_em_andamento.refresh_from_db()
+        efetivos = services_defesa.membros_efetivos(self.sessao_em_andamento)
+        self._avaliar(self.sessao_em_andamento, efetivos[0], "8.0")
+        self._avaliar(self.sessao_em_andamento, efetivos[1], "7.0")
+        self._avaliar(self.sessao_em_andamento, efetivos[2], "7.5", enviar=False, so_escrita=True)
+        # Segunda sessão Em Andamento (TCC 2 de Sist. Inf.), com os 3 envios: pronta para o
+        # Orientador registrar o parecer e liberar o resultado (quickstart, passos 7 e 8).
+        inicio2 = inicio - timedelta(hours=2)
+        self.sessao_pronta = self._agendar(
+            self.apto_si_tcc2,
+            self.prof_si2,
+            inicio2.date(),
+            inicio2.time(),
+            (self.prof_si1, self.ori_si2),
+            local="Bloco C, sala 7",
+        )
+        services_defesa.iniciar_sessoes_vencidas()
+        self.sessao_pronta.refresh_from_db()
+        for membro, nota in zip(
+            services_defesa.membros_efetivos(self.sessao_pronta), ("8.0", "7.5", "8.5")
+        ):
+            self._avaliar(self.sessao_pronta, membro, nota)
         sessao = self._agendar(
             self.apto_lic,
             self.prof_lic,
@@ -1246,6 +1344,14 @@ class Command(BaseCommand):
                 )
                 self.stdout.write(f"  {docente.doc.usu_nome:<28} {descricao}")
 
+        self.stdout.write(
+            "\nRoteiro da spec 008 (avaliação e resultado): Em Andamento de "
+            f"{_aluno_do(self.sessao_em_andamento.def_tcc)} com 2 avaliações enviadas e 1 "
+            f"rascunho; Em Andamento de {_aluno_do(self.sessao_pronta.def_tcc)} (TCC 2) pronta "
+            "para Registrar parecer e Liberar Resultado; resultados liberados de "
+            f"{_aluno_do(self.sessao_tcc1_liberada.def_tcc)} (TCC 1) e de "
+            f"{_aluno_do(self.sessao_realizada.def_tcc)} (TCC 2)."
+        )
         self.stdout.write("\nSessões de defesa:")
         for sessao in Defesas.objects.select_related(
             "def_tcc__tcc_alu__alu", "def_tcc__tcc_tur"

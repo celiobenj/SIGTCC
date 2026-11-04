@@ -756,6 +756,9 @@ def enviar_avaliacao(usuario, def_id, linhas, assinatura):
             if sessao.def_status != StatusSessao.EM_ANDAMENTO:
                 raise ErroAvaliacao(mensagens.MA03_SO_PARTE_ESCRITA)
             liberados = criterios_liberados(sessao)
+            if len(liberados) != TOTAL_DE_CRITERIOS:
+                # Sem os 9 critérios oficiais carregados, não há envio (RBN-DEF-04.1).
+                raise ErroAvaliacao(mensagens.CRITERIOS_INCOMPLETOS)
             pendentes = [c.pk for c in liberados if not _completo(linhas.get(c.pk))]
             if pendentes:
                 raise ErroAvaliacao(mensagens.CRITERIOS_INCOMPLETOS, pendentes=pendentes)

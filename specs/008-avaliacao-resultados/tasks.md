@@ -333,12 +333,12 @@ liberação.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T039 [P] IC-08 em `sigtcc/apps/cadastro/management/commands/popular_demo.py`: avaliações de
+- [X] T039 [P] IC-08 em `sigtcc/apps/cadastro/management/commands/popular_demo.py`: avaliações de
   exemplo só por `services_avaliacoes` (sessão Em Andamento com 2 enviadas e 1 rascunho; sessão
   de TCC 2 com 3 envios, pronta para liberar; uma sessão liberada de TCC 1), com a assinatura
   estática `sigtcc/static/img/assinatura_demo.png` (research A12; revisão I-15); conferir
   `test_base_defesa.TestePopularDemo`
-- [ ] T040 [P] Criar `sigtcc/apps/defesa/tests/test_mensagens_avaliacao.py`: textos das US-25 a
+- [X] T040 [P] Criar `sigtcc/apps/defesa/tests/test_mensagens_avaliacao.py`: textos das US-25 a
   US-27 conferidos, caractere por caractere, contra `docs/fonte/Historias_de_Usuario_v3_4.md`, e
   MA-01 a MA-14 contra a tabela da spec 008 (SC-007; mesmo padrão de `test_mensagens_defesa.py`)
 - [ ] T041 [P] Q-134 (documentos do repositório): diagrama 28 em
