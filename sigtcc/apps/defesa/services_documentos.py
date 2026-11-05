@@ -27,15 +27,16 @@ import logging
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.db import transaction
+from django.db.models import OuterRef, Subquery
 from django.urls import reverse
 from django.utils.crypto import salted_hmac
 
 from sigtcc.apps.cadastro import services
 from sigtcc.apps.cadastro.choices import StatusConta
 from sigtcc.apps.cadastro.models import Coordenadores, Secretarios
-from sigtcc.apps.cadastro.permissoes import especializacao
+from sigtcc.apps.cadastro.permissoes import especializacao, tem_perfil
 from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_avaliacoes, services_defesa
-from sigtcc.apps.defesa.choices import PapelBanca, StatusSessao
+from sigtcc.apps.defesa.choices import FormatoSessao, PapelBanca, StatusSessao
 from sigtcc.apps.defesa.models import BancaDefesa, Defesas
 
 logger = logging.getLogger("sigtcc.defesa")
@@ -459,3 +460,57 @@ def avisar_pendencia_da_ata(sessao):
     except Exception:
         logger.exception("Falha ao avisar a pendência da Ata Final da sessão %s", sessao.pk)
         return None
+
+
+# =============================================================================================
+# Agenda de defesas em PDF (US-30 F; RBN-DEF-08.1; research B12)
+# =============================================================================================
+
+# Status que entram na agenda (sessões ainda por acontecer). [US-30][RBN-DEF-08.1]
+STATUS_DA_AGENDA = (StatusSessao.AGENDADA, StatusSessao.REAGENDADA)
+
+
+def _local_ou_link(sessao):
+    """Local (Presencial) ou link da videochamada (Remota), já carregados.
+    [US-30][RBN-DEF-08.1]
+    """
+    if sessao.def_formato == FormatoSessao.PRESENCIAL:
+        return sessao.defesaspresenciais.dep_local
+    return sessao.defesasremotas.der_link
+
+
+def agenda_de_defesas(usuario, periodo, cur_id):
+    """Dias da agenda pública (FR-022 e FR-024): as sessões Agendadas e Reagendadas do período
+    (`periodo`: o Q sobre Defesas do filtro da tela Defesas), sem a visibilidade do perfil (P2);
+    o filtro de Curso só vale para o Coordenador e a Secretaria (`cur_id` None = todos). Em
+    ordem de data e horário, agrupadas por dia: [{"data": "DD/MM/AAAA", "sessoes": [{horario
+    HH:MM, titulo, aluno, orientador (Presidente), local ou link}]}], só valores simples.
+    Lista vazia quando não há sessões (a view mostra a mensagem da US-30 E6).
+    [US-30][RBN-DEF-08.1][RBN-CAD-14.1]
+    """
+    sessoes = Defesas.objects.filter(periodo, def_status__in=STATUS_DA_AGENDA)
+    if cur_id is not None and tem_perfil(usuario, "coordenador", "secretaria"):
+        sessoes = sessoes.filter(def_tcc__tcc_tur__tur_cur_id=cur_id)
+    presidente = BancaDefesa.objects.filter(
+        ban_def=OuterRef("pk"), ban_papel=PapelBanca.ORIENTADOR_PRESIDENTE
+    ).values("ban_usu__usu_nome")[:1]
+    sessoes = (
+        sessoes.select_related("def_tcc__tcc_alu__alu", "defesaspresenciais", "defesasremotas")
+        .annotate(orientador_nome=Subquery(presidente))
+        .order_by("def_data", "def_h_inicio", "def_id")
+    )
+    dias = []
+    for sessao in sessoes:
+        data = _data_curta(sessao.def_data)
+        if not dias or dias[-1]["data"] != data:
+            dias.append({"data": data, "sessoes": []})
+        dias[-1]["sessoes"].append(
+            {
+                "horario": sessao.def_h_inicio.strftime("%H:%M"),
+                "titulo": sessao.def_tcc.tcc_titulo,
+                "aluno": sessao.def_tcc.tcc_alu.alu.usu_nome,
+                "orientador": sessao.orientador_nome,
+                "local": _local_ou_link(sessao),
+            }
+        )
+    return dias

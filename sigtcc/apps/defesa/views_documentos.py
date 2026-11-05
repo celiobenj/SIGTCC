@@ -7,18 +7,31 @@ liberação, 403 com "Você não tem permissão para acessar os documentos desta
 TCC 1 ou Reprovado, E2 e falha na geração (E3) voltam à origem (janela da sessão ou aba Meu
 TCC, pelo parâmetro `origem`, com valores fixos) com a mensagem exata.
 
-[US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3]
+Spec 009 (US6): a agenda de defesas em PDF, a partir dos filtros da tela Defesas (RBN-DEF-08.1).
+
+[US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][US-30][RBN-DEF-08.1]
 """
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
+from django.urls import reverse
 
-from sigtcc.apps.cadastro.permissoes import perfil_requerido
-from sigtcc.apps.defesa import mensagens, pdf, permissoes_defesa, services_documentos, views_defesa
+from sigtcc.apps.cadastro import services_contas
+from sigtcc.apps.cadastro.permissoes import perfil_requerido, tem_perfil
+from sigtcc.apps.defesa import (
+    mensagens,
+    pdf,
+    permissoes_defesa,
+    services_defesa,
+    services_documentos,
+    views_defesa,
+)
+from sigtcc.apps.defesa.forms_defesa import FiltroDefesasForm
 
 TEMPLATE_ATA = "defesa/pdf/ata_final.html"
 TEMPLATE_FOLHA = "defesa/pdf/folha_aprovacao.html"
+TEMPLATE_AGENDA = "defesa/pdf/agenda.html"
 ORIGEM_MEU_TCC = "meu_tcc"
 
 
@@ -92,3 +105,42 @@ def folha_aprovacao(request, def_id):
         TEMPLATE_FOLHA,
         services_documentos.dados_da_folha(registro),
     )
+
+
+def _voltar_para_defesas(request, texto=None):
+    """Volta à tela Defesas com a query string original (que mostra os erros do filtro) e, se
+    houver, a mensagem. [US-30][RBN-DEF-08.1]
+    """
+    if texto:
+        messages.error(request, texto)
+    destino = reverse("defesa:defesas")
+    consulta = request.GET.urlencode()
+    return redirect(f"{destino}?{consulta}" if consulta else destino)
+
+
+@perfil_requerido("docente", "coordenador", "secretaria")
+def agenda(request):
+    """ "Agenda de defesas (PDF)" (US-30 F; FR-022 a FR-024): com os mesmos parâmetros da tela
+    Defesas, as sessões Agendadas e Reagendadas do período, de todos os cursos (P2) ou, para o
+    Coordenador e a Secretaria, do curso do filtro. Antes, o início automático das sessões
+    vencidas. Filtro inválido: volta à tela Defesas com a query string original, sem PDF; sem
+    sessões: "Não existem defesas agendadas para o período selecionado", sem arquivo; falha na
+    geração: a mensagem da US-28 E3. O Aluno e o Membro Externo recebem a M-02.
+    [US-30][RBN-DEF-08.1][RBN-DEF-01.5][RBN-CAD-14.1]
+    """
+    if not permissoes_defesa.pode_gerar_agenda(request.user):
+        raise PermissionDenied
+    services_defesa.iniciar_sessoes_vencidas()
+    form = FiltroDefesasForm(request.GET or None)
+    if form.is_bound and not form.is_valid():
+        return _voltar_para_defesas(request)
+    cur_id = None
+    if tem_perfil(request.user, "coordenador", "secretaria"):
+        cur_id, _ = services_contas.filtro_de_curso(request.user, request.GET.get("curso"))
+    dias = services_documentos.agenda_de_defesas(request.user, form.filtro(), cur_id)
+    if not dias:
+        return _voltar_para_defesas(request, mensagens.SEM_DEFESAS_AGENDADAS)
+    try:
+        return pdf.resposta_pdf("agenda_defesas.pdf", TEMPLATE_AGENDA, {"dias": dias})
+    except pdf.ErroAoGerarPdf:
+        return _voltar_para_defesas(request, mensagens.ERRO_AO_GERAR_DOCUMENTOS)

@@ -1,11 +1,11 @@
 """Rotas do módulo de Defesa (spec 007; contracts/rotas.md), incluídas em sigtcc/urls.py (IC-01),
 e as da avaliação e do resultado (spec 008, IC-09; contracts/rotas.md da spec 008).
 
-Spec 009 (IC-08): downloads da Ata Final e da Folha de Aprovação e as telas Ouvintes e
-Ouvintes das defesas (contracts/rotas.md da spec 009).
+Spec 009 (IC-08): downloads da Ata Final e da Folha de Aprovação, as telas Ouvintes e
+Ouvintes das defesas e a agenda de defesas em PDF (contracts/rotas.md da spec 009).
 
 [US-21][US-22][US-23][US-24][US-40][US-25][US-26][US-27][US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.2]
-[RBN-DEF-08.4]
+[RBN-DEF-08.4][RBN-DEF-08.1]
 """
 
 from django.urls import path
@@ -18,6 +18,9 @@ urlpatterns = [
     path("defesas/", views_defesa.defesas, name="defesas"),
     path("defesas/agendar/", views_defesa.agendar, name="agendar"),
     path("turmas/<int:tur_id>/defesas/", views_defesa.turma_defesas, name="turma_defesas"),
+    # Spec 009 (US6): agenda de defesas em PDF, antes de defesas/<int:def_id>/ para a leitura.
+    # [US-30][RBN-DEF-08.1]
+    path("defesas/agenda/", views_documentos.agenda, name="agenda"),
     path("defesas/<int:def_id>/", views_defesa.sessao, name="sessao"),
     path("defesas/<int:def_id>/banca/", views_defesa.alterar_banca, name="alterar_banca"),
     path("defesas/<int:def_id>/suplente/", views_defesa.acionar_suplente, name="acionar_suplente"),

@@ -53,8 +53,10 @@ def defesas(request):
     cronológica, com os filtros de período (Período Letivo por padrão), Status e, para o
     Coordenador de Curso e a Secretaria, Curso (US-39, com o curso do usuário por padrão); o
     botão "Agendar defesa" para quem agenda. Filtro inválido (E3, E4): mostra a mensagem e a
-    lista do Período Letivo, sem aplicar o filtro.
+    lista do Período Letivo, sem aplicar o filtro. Spec 009 (IC-06): o botão "Agenda de defesas
+    (PDF)" para quem pode gerar a agenda, com os filtros atuais.
     [US-21][US-40][US-39][RBN-DEF-01.4][RBN-DEF-01.5][RBN-CAD-14.1][FR-024 a FR-028]
+    [US-30][RBN-DEF-08.1]
     """
     services_defesa.iniciar_sessoes_vencidas()
     form = FiltroDefesasForm(request.GET or None)
@@ -76,8 +78,19 @@ def defesas(request):
         "curso": curso,
         "pode_agendar": tem_perfil(request.user, *PERFIS_QUE_AGENDAM),
         "url_agendar": reverse("defesa:agendar"),
+        # Spec 009 (IC-06): botão "Agenda de defesas (PDF)", com a query string atual.
+        # [US-30][RBN-DEF-08.1]
+        "pode_gerar_agenda": permissoes_defesa.pode_gerar_agenda(request.user),
+        "url_agenda": _com_consulta(reverse("defesa:agenda"), request.GET.urlencode()),
     }
     return render(request, "defesa/defesas.html", contexto)
+
+
+def _com_consulta(endereco, consulta):
+    """Endereço com a query string atual (os mesmos filtros da tela), se houver.
+    [US-30][RBN-DEF-08.1]
+    """
+    return f"{endereco}?{consulta}" if consulta else endereco
 
 
 @perfil_requerido("docente")

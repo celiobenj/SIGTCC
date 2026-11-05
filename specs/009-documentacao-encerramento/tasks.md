@@ -283,21 +283,21 @@ a 4.7).
 **Independent Test**: sessões em vários status, cursos e datas; gerar com filtros diferentes
 (cenários 6.1 a 6.7).
 
-- [ ] T034 [US6] [US-30][RBN-DEF-08.1][RBN-CAD-14.1] (FR-022, FR-024) Em `sigtcc/apps/defesa/services_documentos.py`: `agenda_de_defesas(usuario,
+- [X] T034 [US6] [US-30][RBN-DEF-08.1][RBN-CAD-14.1] (FR-022, FR-024) Em `sigtcc/apps/defesa/services_documentos.py`: `agenda_de_defesas(usuario,
   periodo, cur_id)` (status Agendada e Reagendada, Q do período, sem a visibilidade do perfil, P2;
   `cur_id` só para `coordenador`/`secretaria`; ordem `def_data`, `def_h_inicio`; agrupada por dia;
   linha com HH:MM, título, aluno, Presidente e `dep_local` ou link) — research B12
-- [ ] T035 [US6] [US-30][RBN-DEF-08.1][RBN-DEF-01.5] (FR-022, FR-023) Em `sigtcc/apps/defesa/views_documentos.py`: `agenda(request)` com
+- [X] T035 [US6] [US-30][RBN-DEF-08.1][RBN-DEF-01.5] (FR-022, FR-023) Em `sigtcc/apps/defesa/views_documentos.py`: `agenda(request)` com
   `perfil_requerido("docente", "coordenador", "secretaria")`, `iniciar_sessoes_vencidas()`,
   `FiltroDefesasForm` sobre `request.GET`; form inválido → redireciona a `defesa:defesas` com a
   query string original; vazia → `SEM_DEFESAS_AGENDADAS` e redireciona; `ErroAoGerarPdf` →
   `ERRO_AO_GERAR_DOCUMENTOS`; sucesso `agenda_defesas.pdf`; criar
   `sigtcc/templates/defesa/pdf/agenda.html`; rota `agenda` (`defesas/agenda/`) antes de
   `defesas/<int:def_id>/` em `urls.py`
-- [ ] T036 [US6] [US-30][RBN-DEF-08.1] (FR-022) IC-06: em `sigtcc/apps/defesa/views_defesa.py` (`defesas`) e
+- [X] T036 [US6] [US-30][RBN-DEF-08.1] (FR-022) IC-06: em `sigtcc/apps/defesa/views_defesa.py` (`defesas`) e
   `sigtcc/templates/defesa/defesas.html`, botão "Agenda de defesas (PDF)" para `pode_gerar_agenda`,
   com a query string atual
-- [ ] T037 [US6] [US-30][RBN-DEF-08.1][RBN-CAD-14.1] (FR-022 a FR-024) Testes `sigtcc/apps/defesa/tests/test_us30_agenda.py`: 6.1 a 6.7 (agrupado por dia
+- [X] T037 [US6] [US-30][RBN-DEF-08.1][RBN-CAD-14.1] (FR-022 a FR-024) Testes `sigtcc/apps/defesa/tests/test_us30_agenda.py`: 6.1 a 6.7 (agrupado por dia
   com data DD/MM/AAAA e HH:MM; filtro de Curso do Coordenador; vazia sem arquivo; Em Andamento,
   Realizada e Cancelada fora; Orientador recebe todas as sessões de todos os cursos; login; Aluno e
   Membro Externo recusados); filtro inválido redireciona sem PDF; sessão vencida já iniciada não
