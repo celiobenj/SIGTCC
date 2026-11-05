@@ -383,20 +383,20 @@ IC-15, IC-16).
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T047 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (SC-003, SC-006) Teste `sigtcc/apps/defesa/tests/test_mensagens_documentos.py`: cada texto do T004
+- [X] T047 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (SC-003, SC-006) Teste `sigtcc/apps/defesa/tests/test_mensagens_documentos.py`: cada texto do T004
   igual ao da US-28/US-30, do diagrama 05 (MX-06) ou da tabela "Mensagens a validar com a PO"
   (SC-006); nenhum PDF gravado em disco em todo o módulo de testes (SC-003)
-- [ ] T048 [US-28][US-30][RBN-DEF-07.1][RBN-CAD-13.1][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.5] IC-09: em `sigtcc/apps/cadastro/management/commands/popular_demo.py`, só por serviços:
+- [X] T048 [US-28][US-30][RBN-DEF-07.1][RBN-CAD-13.1][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.5] IC-09: em `sigtcc/apps/cadastro/management/commands/popular_demo.py`, só por serviços:
   ouvintes e ocorrências na sessão Realizada de demonstração; `static/img/assinatura_demo.png`
   copiada para o perfil do Coordenador de um curso; outro curso com Coordenador sem assinatura
   (E2); sessões Agendada e Reagendada no período para a agenda (research B14)
-- [ ] T049 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.5] IC-17: atualizar `docs/diagramas/Rastreabilidade_Diagramas_Codigo.md`
+- [X] T049 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.5] IC-17: atualizar `docs/diagramas/Rastreabilidade_Diagramas_Codigo.md`
   (`:GeradorDocumentosPDF` deixa de citar stubs; `services_ouvintes`, `views_documentos`,
   `views_ouvintes` e o participante do diagrama 05), o diagrama 28 em
   `docs/diagramas/Diagramas_Sequencia_PlantUML_v2.md` (passo da E2 na liberação, Q-144),
   `docs/arquitetura/Componentes_SIGTCC.drawio` (rótulo do componente da Defesa; PNG fica na Q-137)
   e `CHANGELOG.md` (entrada da feat-09)
-- [ ] T050 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (SC-005) Rodar `.venv\Scripts\python.exe manage.py test` (suíte inteira) e `pre-commit run
+- [X] T050 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (SC-005) Rodar `.venv\Scripts\python.exe manage.py test` (suíte inteira) e `pre-commit run
   --all-files`; corrigir o que aparecer
 - [ ] T051 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (FR-001 a FR-024) Validação manual pelo roteiro de 18 passos (1 a 17 e 13a) de [quickstart.md](quickstart.md) no banco
   `sigtcc_validacao`, no navegador; registrar o resultado no `pr-feat-09.md` (com o risco aceito do

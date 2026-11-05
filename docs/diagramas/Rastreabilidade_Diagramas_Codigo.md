@@ -14,7 +14,9 @@ na v0.2.1, para os diagramas do Épico 1 (Cadastro e Manutenção).
 
 Os diagramas da Defesa (01 a 06 e 28) e dos Relatórios (23 a 26) serão implementados nos Épicos 2
 e 3. A spec 008 (Avaliação e Resultados) acrescentou abaixo os participantes dos diagramas 04
-(`AvaliarCriterios`) e 28 (`LiberarResultadoDefesa`), com o código do app `defesa`.
+(`AvaliarCriterios`) e 28 (`LiberarResultadoDefesa`), com o código do app `defesa`. A spec 009
+(Documentação e Encerramento) acrescentou os do diagrama 05 (`RegistrarOuvintesAgenda`) e
+completou o `:GeradorDocumentosPDF` do diagrama 28.
 
 ## Telas
 
@@ -39,6 +41,8 @@ e 3. A spec 008 (Avaliação e Resultados) acrescentou abaixo os participantes d
 | `:TelaAproveitamentoArtigos` | `cadastro/orientacao/aproveitamento.html` | `views_artigos.py` | 30 |
 | `:TelaAvaliacao` (spec 008) | `defesa/avaliacao.html`, `defesa/criterios.html`, `defesa/minhas_bancas.html` | `defesa/views_avaliacoes.py` (`avaliacao`, `reabrir`, `assinatura`, `criterios`, `minhas_bancas`) | 04 |
 | `:TelaSessaoDefesa` (spec 008) | `defesa/sessao.html` com `_bloco_avaliacao.html` e `_bloco_resultado.html`; `defesa/confirmar_liberacao.html`; `defesa/_resultado_aluno.html` (aba Meu TCC) | `defesa/views_defesa.py` (`sessao`), `defesa/views_avaliacoes.py` (`registrar_parecer`, `liberar_resultado`) | 28 |
+| `:TelaSessaoDefesa` (spec 009) | blocos `_bloco_documentos.html`, `_bloco_ouvintes.html` e `_bloco_ocorrencias.html` de `defesa/sessao.html`; `defesa/_documentos_aluno.html` (aba Meu TCC); PDFs `defesa/pdf/ata_final.html`, `folha_aprovacao.html` e `declaracao.html` | `defesa/views_documentos.py` (`ata_final`, `folha_aprovacao`, `declaracao`) | 28 |
+| `:TelaDefesas` (spec 009, diagrama 05) | `defesa/form_ouvintes.html` (com `static/js/ouvintes.js`), `defesa/form_ocorrencias.html`, `defesa/ouvintes_das_defesas.html`, botão "Agenda de defesas (PDF)" de `defesa/defesas.html` e o PDF `defesa/pdf/agenda.html` | `defesa/views_ouvintes.py` (`ouvintes`, `ocorrencias`, `ouvintes_das_defesas`), `defesa/views_documentos.py` (`agenda`) | 05 |
 
 ## Controladores e serviços
 
@@ -61,7 +65,9 @@ e 3. A spec 008 (Avaliação e Resultados) acrescentou abaixo os participantes d
 | `:ControladorBanca`, `:ControladorDefesa` | `services_contas.recalcular_validade` é o ponto de entrada da US-06 para o Épico 2; o restante fica no app `defesa` (planejado) |
 | `:ControladorAvaliacao` (spec 008) | `defesa/services_avaliacoes.py`: `salvar_rascunho`, `enviar_avaliacao`, `reabrir_avaliacao`, `criterios_liberados`, `nota_individual`, `estado_da_avaliacao`, `estados_da_banca`, `descartar_avaliacoes`, `voltar_envios_a_rascunho`, `minhas_bancas` |
 | `:ControladorResultado` (spec 008) | `defesa/services_avaliacoes.py`: `apuracao`, `nota_final`, `parecer_automatico`, `registrar_parecer`, `liberar_resultado`, `visao_da_avaliacao`, `resultado_da_sessao`, `resultado_para_o_aluno`; a sessão muda só por `services_defesa.transicionar_status` e o TCC por `services_turmas.atualizar_status_tcc` |
-| `:GeradorDocumentosPDF` (spec 008) | `defesa/pdf.py`: `gerar_pdf`, `resposta_pdf` (PDF sob demanda, em memória, nunca gravado); `defesa/services_documentos.py`: `ao_liberar_resultado` e `declaracao_disponivel` (stubs da feat-09) |
+| `:ControladorResultado` (spec 009) | `defesa/services_documentos.py`: `avisar_pendencia_da_ata` (E2 da US-28 depois do commit da liberação, chamada por `views_avaliacoes.liberar_resultado`) |
+| `:GeradorDocumentosPDF` (specs 008 e 009) | `defesa/pdf.py`: `gerar_pdf` (com a trava de módulo `_TRAVA_PDF`), `resposta_pdf` (PDF sob demanda, em memória, nunca gravado); `defesa/services_documentos.py`: `situacao_da_ata`, `dados_da_ata`, `dados_da_folha`, `folha_aplicavel`, `dados_da_declaracao`, `codigo_de_validacao`, `agenda_de_defesas`, `visao_dos_documentos`, `documentos_do_aluno`, `ao_liberar_resultado` (envio das declarações por e-mail) e `declaracao_disponivel` |
+| `:ControladorEventosDefesa` (spec 009, diagrama 05) | `defesa/services_ouvintes.py`: `salvar_ouvintes`, `ouvintes_da_sessao`, `registrar_ocorrencias`, `visao_da_sessao`, `ouvintes_das_defesas`; `defesa/forms_ouvintes.py`: `OuvintesFormSet`, `OcorrenciasForm`; permissões em `defesa/permissoes_defesa.py` (`pode_editar_ouvintes`, `pode_ver_ouvintes`, `pode_editar_ocorrencias`, `pode_ver_ocorrencias`, `pode_gerar_agenda`, `pode_ver_ouvintes_das_defesas`) |
 
 ## Entidades
 
@@ -82,4 +88,4 @@ e 3. A spec 008 (Avaliação e Resultados) acrescentou abaixo os participantes d
 | `Notificacao` | `Notificacoes` | `Artigo` | `Artigos` |
 | `Defesa` | `defesa.Defesas` | `BancaDefesa` | `defesa.BancaDefesa` |
 | `HistoricoDefesa` | `defesa.HistoricoDefesas` | `Avaliacao` (spec 008) | `defesa.Avaliacoes` |
-| `Criterio` (spec 008) | `defesa.Criterios` | | |
+| `Criterio` (spec 008) | `defesa.Criterios` | `Ouvinte` (spec 009) | `defesa.Ouvintes` e `defesa.PresencaOuvintes` |
