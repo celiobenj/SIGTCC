@@ -1,15 +1,15 @@
 """Rotas do módulo de Defesa (spec 007; contracts/rotas.md), incluídas em sigtcc/urls.py (IC-01),
 e as da avaliação e do resultado (spec 008, IC-09; contracts/rotas.md da spec 008).
 
-Spec 009 (IC-08): downloads da Ata Final e da Folha de Aprovação (contracts/rotas.md da spec
-009).
+Spec 009 (IC-08): downloads da Ata Final e da Folha de Aprovação e a janela Ouvintes
+(contracts/rotas.md da spec 009).
 
-[US-21][US-22][US-23][US-24][US-40][US-25][US-26][US-27][US-28][RBN-DEF-07.3]
+[US-21][US-22][US-23][US-24][US-40][US-25][US-26][US-27][US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.2]
 """
 
 from django.urls import path
 
-from sigtcc.apps.defesa import views_avaliacoes, views_defesa, views_documentos
+from sigtcc.apps.defesa import views_avaliacoes, views_defesa, views_documentos, views_ouvintes
 
 app_name = "defesa"
 
@@ -54,4 +54,6 @@ urlpatterns = [
         views_documentos.folha_aprovacao,
         name="folha_aprovacao",
     ),
+    # Spec 009 (IC-08): janela Ouvintes da sessão. [US-30][RBN-DEF-08.2]
+    path("defesas/<int:def_id>/ouvintes/", views_ouvintes.ouvintes, name="ouvintes"),
 ]

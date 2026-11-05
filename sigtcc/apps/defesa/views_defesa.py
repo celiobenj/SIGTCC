@@ -21,6 +21,7 @@ from sigtcc.apps.defesa import (
     services_avaliacoes,
     services_defesa,
     services_documentos,
+    services_ouvintes,
 )
 from sigtcc.apps.defesa.choices import EventoDefesa, PapelBanca
 from sigtcc.apps.defesa.forms_avaliacoes import ParecerForm
@@ -234,8 +235,9 @@ def contexto_da_sessao(request, registro, form_parecer=None):
     008 (IC-05), o que a visão da avaliação permite (blocos avaliacao e resultado; sigilo em
     services_avaliacoes.visao_da_avaliacao) e o formulário Registrar parecer. Usado também pela
     view registrar_parecer para mostrar o erro no campo Parecer. Spec 009 (IC-03): a chave
-    `documentos` com os botões do bloco documentos (services_documentos.visao_dos_documentos).
-    [US-40][US-23][US-24][US-25][US-27][RBN-DEF-01.4][RBN-DEF-06.6][RBN-DEF-06.8][FR-030]
+    `documentos` com os botões do bloco documentos (services_documentos.visao_dos_documentos)
+    e `ouvintes` com o bloco ouvintes (services_ouvintes.visao_da_sessao).
+    [US-30][RBN-DEF-08.2][US-40][US-23][US-24][US-25][US-27][RBN-DEF-01.4][RBN-DEF-06.6][RBN-DEF-06.8][FR-030]
     [US-28][RBN-DEF-07.3]
     """
     banca = services_defesa.banca_por_papel(registro)
@@ -255,6 +257,9 @@ def contexto_da_sessao(request, registro, form_parecer=None):
         # Spec 009 (IC-03): bloco documentos (Ata Final, Folha de Aprovação e Declaração).
         # [US-28][RBN-DEF-07.3]
         "documentos": services_documentos.visao_dos_documentos(request.user, registro),
+        # Spec 009 (IC-03): bloco ouvintes (lista, botão Ouvintes e a mensagem da E7).
+        # [US-30][RBN-DEF-08.2]
+        "ouvintes": services_ouvintes.visao_da_sessao(request.user, registro),
     }
 
 

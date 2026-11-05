@@ -179,6 +179,13 @@ def _e_professor_da_disciplina(usuario, sessao):
     return sessao.def_tcc.tcc_tur.tur_doc_id == usuario.pk
 
 
+def e_professor_da_disciplina(usuario, sessao):
+    """Versão pública de _e_professor_da_disciplina, para a visão dos ouvintes (aviso da E7).
+    [US-30][RBN-DEF-08.2]
+    """
+    return _e_professor_da_disciplina(usuario, sessao)
+
+
 def _e_secretaria_do_curso(usuario, sessao):
     """O usuário é a Secretaria do curso da turma do TCC da sessão.
     [US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.2][RBN-DEF-08.5]

@@ -1,0 +1,112 @@
+"""Ouvintes da sessão de defesa (spec 009, US2; research B9; contrato
+specs/009-documentacao-encerramento/contracts/servicos-documentos.md §2).
+
+Grava só Presenca_Ouvintes e, na primeira presença de uma matrícula, o registro em Ouvintes, que
+nunca é alterado nem apagado por esta feature (P4). Cumpre o contrato da spec 007: nunca grava
+def_status nem Historico_Defesas e nunca cria sessão.
+
+[US-30][RBN-DEF-08.2]
+"""
+
+from django.db import transaction
+
+from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_defesa
+from sigtcc.apps.defesa.forms_ouvintes import repetidas, validar_matricula, validar_nome
+from sigtcc.apps.defesa.models import Ouvintes, PresencaOuvintes
+
+
+class ErroOuvintes(Exception):
+    """Recusa ao salvar os ouvintes: `campo` ("permissao", "nome", "matricula") e a mensagem
+    exata; nada é gravado. [US-30][RBN-DEF-08.2]
+    """
+
+    def __init__(self, campo, mensagem, linha=None):
+        """Guarda o campo, a mensagem e o índice da linha (ou None). [US-30][RBN-DEF-08.2]"""
+        super().__init__(mensagem)
+        self.campo = campo
+        self.mensagem = mensagem
+        self.linha = linha
+
+
+PERMISSAO = "permissao"
+
+
+def ouvintes_da_sessao(sessao):
+    """Ouvintes com presença na sessão, por nome. [US-30][RBN-DEF-08.2]"""
+    return Ouvintes.objects.filter(presencaouvintes__pre_def=sessao).order_by(
+        "ouv_nome", "ouv_matricula"
+    )
+
+
+def _conferir_linhas(linhas):
+    """Revalida a lista (mesmas regras do formulário; o serviço é a fonte): nome, matrícula e
+    duplicata só dentro da lista. Devolve [(nome, matrícula)] ou levanta ErroOuvintes.
+    [US-30][RBN-DEF-08.2]
+    """
+    conferidas = []
+    for indice, (nome, matricula) in enumerate(linhas):
+        nome_valido = validar_nome(nome)
+        if nome_valido is None:
+            raise ErroOuvintes("nome", mensagens.NOME_INVALIDO, indice)
+        matricula_valida = validar_matricula(matricula)
+        if matricula_valida is None:
+            raise ErroOuvintes("matricula", mensagens.MATRICULA_INVALIDA, indice)
+        conferidas.append((nome_valido, matricula_valida))
+    duplicadas = repetidas([matricula for _, matricula in conferidas])
+    if duplicadas:
+        raise ErroOuvintes("matricula", mensagens.OUVINTE_REPETIDO, duplicadas[0])
+    return conferidas
+
+
+def salvar_ouvintes(usuario, def_id, linhas):
+    """Grava a lista inteira de ouvintes da sessão (US-30 A; FR-010 a FR-012), numa transação
+    com a trava turma → aluno → TCC → sessão (travar_tcc e travar_sessao; a turma arquivada
+    levanta TurmaArquivada). Com a sessão travada, confere pode_editar_ouvintes (senão
+    ErroOuvintes de permissão); revalida as linhas; processa as matrículas novas em ordem
+    crescente (sem deadlock no índice único entre sessões; I-02) com get_or_create, que
+    reaproveita o registro existente sem mudar o nome (P4); apaga as presenças que saíram e cria
+    as novas. Nunca apaga Ouvintes. [US-30][RBN-DEF-08.2]
+    """
+    with transaction.atomic():
+        services_defesa.travar_tcc(services_defesa.tcc_da_sessao(def_id))
+        sessao = services_defesa.travar_sessao(def_id)
+        if not permissoes_defesa.pode_editar_ouvintes(usuario, sessao):
+            raise ErroOuvintes(PERMISSAO, "")
+        conferidas = _conferir_linhas(linhas)
+        nomes = {matricula: nome for nome, matricula in conferidas}
+        atuais = dict(
+            PresencaOuvintes.objects.filter(pre_def=sessao).values_list(
+                "pre_ouv__ouv_matricula", "pre_ouv_id"
+            )
+        )
+        registros = {}
+        for matricula in sorted(set(nomes) - set(atuais)):
+            registros[matricula], _ = Ouvintes.objects.get_or_create(
+                ouv_matricula=matricula, defaults={"ouv_nome": nomes[matricula]}
+            )
+        saem = [ouv_id for matricula, ouv_id in atuais.items() if matricula not in nomes]
+        if saem:
+            PresencaOuvintes.objects.filter(pre_def=sessao, pre_ouv_id__in=saem).delete()
+        PresencaOuvintes.objects.bulk_create(
+            [PresencaOuvintes(pre_def=sessao, pre_ouv=registro) for registro in registros.values()]
+        )
+    return sessao
+
+
+def visao_da_sessao(usuario, sessao):
+    """Parte de ouvintes do contexto da janela Sessão de defesa (bloco `ouvintes`; FR-009): a
+    lista (só para quem pode ver), se pode editar (botão Ouvintes) e a mensagem da E7 ao
+    Presidente e ao Professor da Disciplina quando o status não é Em Andamento nem Realizada.
+    [US-30][RBN-DEF-08.2]
+    """
+    pode_ver = permissoes_defesa.pode_ver_ouvintes(usuario, sessao)
+    responsavel = permissoes_defesa.e_presidente(
+        usuario, sessao
+    ) or permissoes_defesa.e_professor_da_disciplina(usuario, sessao)
+    fora_do_status = sessao.def_status not in permissoes_defesa.STATUS_DOS_OUVINTES
+    return {
+        "lista": list(ouvintes_da_sessao(sessao)) if pode_ver else [],
+        "pode_ver": pode_ver,
+        "pode_editar": permissoes_defesa.pode_editar_ouvintes(usuario, sessao),
+        "aviso": mensagens.OUVINTES_FORA_DO_STATUS if responsavel and fora_do_status else None,
+    }

@@ -207,33 +207,33 @@ IC-03, IC-05 relatados).
 **Independent Test**: sessões Em Andamento, Realizada, Agendada, Reagendada e Cancelada e turma
 arquivada; abrir, adicionar, remover e salvar como cada perfil (cenários 2.1 a 2.12).
 
-- [ ] T024 [P] [US2] [US-30][RBN-DEF-08.2] (FR-010, FR-011) Criar `sigtcc/apps/defesa/forms_ouvintes.py`: `OuvinteForm` (`nome` aparado,
+- [X] T024 [P] [US2] [US-30][RBN-DEF-08.2] (FR-010, FR-011) Criar `sigtcc/apps/defesa/forms_ouvintes.py`: `OuvinteForm` (`nome` aparado,
   não vazio, até 150, cada caractere `str.isalpha()` ou espaço → senão `NOME_INVALIDO`;
   `matricula` `^[0-9]{10}$` → senão `MATRICULA_INVALIDA`) e `OuvintesFormSet = formset_factory(
   OuvinteForm, extra=1, can_delete=True, max_num=200, absolute_max=200, validate_max=True)` com
   `clean()` que marca `OUVINTE_REPETIDO` na linha repetida **só dentro da lista enviada**
   (research B9; I-03); campos com erro recebem a classe `erro`
-- [ ] T025 [US2] [US-30][RBN-DEF-08.2] (FR-010 a FR-012) Criar `sigtcc/apps/defesa/services_ouvintes.py`: `ErroOuvintes(campo, mensagem)`;
+- [X] T025 [US2] [US-30][RBN-DEF-08.2] (FR-010 a FR-012) Criar `sigtcc/apps/defesa/services_ouvintes.py`: `ErroOuvintes(campo, mensagem)`;
   `ouvintes_da_sessao(sessao)` (por nome); `salvar_ouvintes(usuario, def_id, linhas)` em
   `transaction.atomic()`: `travar_tcc(tcc_da_sessao(def_id))` e `travar_sessao(def_id)`; confere
   `pode_editar_ouvintes`; revalida as linhas (mesmas regras do T024); matrículas novas em ordem
   crescente com `Ouvintes.objects.get_or_create(ouv_matricula=..., defaults={"ouv_nome": ...})`
   ("`ouv_matricula` CHAR(10) AK"; nome existente nunca alterado, P4); apaga as `PresencaOuvintes`
   que saíram e cria as novas com `bulk_create`; nunca apaga `Ouvintes`
-- [ ] T026 [US2] [US-30][RBN-DEF-08.2] (FR-009) Em `sigtcc/apps/defesa/services_ouvintes.py`: `visao_da_sessao(usuario, sessao)`
+- [X] T026 [US2] [US-30][RBN-DEF-08.2] (FR-009) Em `sigtcc/apps/defesa/services_ouvintes.py`: `visao_da_sessao(usuario, sessao)`
   (parte de ouvintes: lista, `pode_editar`, `pode_ver`, mensagem da E7 quando o status não é Em
   Andamento nem Realizada e o usuário é Presidente ou Professor da Disciplina)
-- [ ] T027 [US2] [US-30][RBN-DEF-08.2] (FR-010, FR-012) Criar `sigtcc/apps/defesa/views_ouvintes.py`: `ouvintes(request, def_id)` com
+- [X] T027 [US2] [US-30][RBN-DEF-08.2] (FR-010, FR-012) Criar `sigtcc/apps/defesa/views_ouvintes.py`: `ouvintes(request, def_id)` com
   `perfil_requerido("docente")`; GET: formset com os ouvintes gravados; POST: valida, chama
   `salvar_ouvintes`, converte `TurmaArquivada` e `ErroOuvintes` de permissão em
   `PermissionDenied` (M-02; I-01), mostra erros de campo na mesma janela; sucesso:
   `OUVINTES_SALVOS` e volta à sessão
-- [ ] T028 [US2] [US-30][RBN-DEF-08.2] (FR-009, FR-010) Criar `sigtcc/templates/defesa/form_ouvintes.html` (linhas Nome Completo e
+- [X] T028 [US2] [US-30][RBN-DEF-08.2] (FR-009, FR-010) Criar `sigtcc/templates/defesa/form_ouvintes.html` (linhas Nome Completo e
   Matrícula, Remover, Adicionar, Cancelar, Salvar) e `sigtcc/static/js/ouvintes.js` (clona o
   `empty_form` e atualiza o `TOTAL_FORMS`); criar `sigtcc/templates/defesa/_bloco_ouvintes.html` e
   preencher `{% block ouvintes %}` de `sessao.html`; `contexto_da_sessao` ganha a chave `ouvintes`
   (`services_ouvintes.visao_da_sessao`) — IC-03; rota `ouvintes` em `urls.py`
-- [ ] T029 [US2] [US-30][RBN-DEF-08.2] (FR-009 a FR-012) Testes `sigtcc/apps/defesa/tests/test_us30_ouvintes.py`, um por cenário: 2.1, 2.2,
+- [X] T029 [US2] [US-30][RBN-DEF-08.2] (FR-009 a FR-012) Testes `sigtcc/apps/defesa/tests/test_us30_ouvintes.py`, um por cenário: 2.1, 2.2,
   2.3 (remover mantém o registro em `Ouvintes`), 2.4 (12345678 e 12345abc90), 2.5 (repetido na
   lista), 2.6 ("Ana 2", vazio, e também "×"), 2.7 (Agendada, Reagendada, Cancelada), 2.8 (outro
   docente: 403 M-02), 2.9 (login), 2.10 (Secretaria só leitura, sem Adicionar/Salvar), 2.11 (nome
