@@ -398,7 +398,7 @@ IC-15, IC-16).
   e `CHANGELOG.md` (entrada da feat-09)
 - [X] T050 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (SC-005) Rodar `.venv\Scripts\python.exe manage.py test` (suíte inteira) e `pre-commit run
   --all-files`; corrigir o que aparecer
-- [ ] T051 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (FR-001 a FR-024) Validação manual pelo roteiro de 18 passos (1 a 17 e 13a) de [quickstart.md](quickstart.md) no banco
+- [X] T051 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (FR-001 a FR-024) Validação manual pelo roteiro de 18 passos (1 a 17 e 13a) de [quickstart.md](quickstart.md) no banco
   `sigtcc_validacao`, no navegador; registrar o resultado no `pr-feat-09.md` (com o risco aceito do
   código de validação e da `SECRET_KEY`, research B6)
 

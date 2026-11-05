@@ -21,11 +21,11 @@ assinatura e outro sem (E2), e sessões Agendadas e Reagendadas no período (res
 
 | # | Perfil | Ação | Resultado esperado |
 |---|---|---|---|
-| 1 | Orientador (curso com assinatura do Coordenador) | Liberar o resultado de um TCC 2 Aprovado | Sem alerta da E2; e-mail com a declaração em PDF a cada membro efetivo (console de e-mail) |
+| 1 | Orientador (curso com assinatura do Coordenador) | Sessão Realizada de Eng. Comp. já liberada pelo `popular_demo` | Sem pendência da E2 (o `popular_demo` não deixa sessão pronta para liberar nesse curso; a liberação com envio das declarações fica no passo 5) |
 | 2 | Membro efetivo | Sessão › **Ata Final (PDF)** e **Folha de Aprovação (PDF)** | Ata com notas, 3 assinaturas e Coordenador; Folha sem nenhuma nota |
 | 3 | Aluno | Aba **Meu TCC** › documentos | Botões da sessão Realizada, com a data da defesa |
 | 4 | Suplente não acionado | Endereço da Ata | "Você não tem permissão para acessar os documentos desta defesa" |
-| 5 | Orientador (curso sem assinatura do Coordenador) | Liberar o resultado | Alerta da E2 na tela; Coordenador notificado; Ata recusada no download; Folha disponível |
+| 5 | Orientador (curso sem assinatura do Coordenador) | **Registrar parecer** (TCC 2, regra D1 da spec 008) › **Liberar Resultado** | Alerta da E2 na tela; Coordenador notificado; Ata recusada no download; Folha disponível |
 | 6 | Secretaria do mesmo curso | Ata dessa sessão | MX-08 |
 | 7 | Aluno de TCC 1 | Endereço da Folha | "A Folha de Aprovação não se aplica ao TCC 1" |
 | 8 | Membro efetivo | **Minhas bancas** › **Declaração** | PDF com o mesmo código do e-mail |
