@@ -38,17 +38,17 @@ de que todas as histórias dependem. Commits atômicos por fase, só com os test
 **Purpose**: cenário de testes com sessão Realizada e liberada; nenhuma dependência nova
 (`xhtml2pdf` e `pypdf==6.21.4` já no `requirements.txt`).
 
-- [ ] T001 [US-28][RBN-DEF-07.1][RBN-CAD-13.1] (FR-006) IC-16: em `sigtcc/apps/defesa/tests/apoio_avaliacao.py`, `sessao_com_banca` passa a criar
+- [X] T001 [US-28][RBN-DEF-07.1][RBN-CAD-13.1] (FR-006) IC-16: em `sigtcc/apps/defesa/tests/apoio_avaliacao.py`, `sessao_com_banca` passa a criar
   por padrão um Coordenador (`Coordenadores`) para o curso da turma, com `doc_assinatura_path`
   apontando para uma imagem PNG gravada no `MEDIA_ROOT` temporário; parâmetro
   `com_coordenador=True` (False = curso sem Coordenador) e `assinatura_coordenador=True` (False =
   caminho nulo), para os testes da E2 (research B15)
-- [ ] T002 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.2] (FR-001, FR-010) Criar `sigtcc/apps/defesa/tests/apoio_documentos.py`: `sessao_liberada(etapa="TCC 2",
+- [X] T002 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.2] (FR-001, FR-010) Criar `sigtcc/apps/defesa/tests/apoio_documentos.py`: `sessao_liberada(etapa="TCC 2",
   parecer=Aprovado, suplente_acionado=False, **dados)` usando `apoio_avaliacao` (3 envios com
   assinatura copiada e `services_avaliacoes.liberar_resultado`); `texto_do_pdf(resposta)` com
   `pypdf.PdfReader` sobre `resposta.content`; `ouvinte(matricula, nome)`; `presenca(sessao,
   ouvinte)`
-- [ ] T003 [US-27][US-28][RBN-DEF-06.4][RBN-DEF-07.1] Rodar `.venv\Scripts\python.exe manage.py test sigtcc.apps.defesa` e confirmar que a
+- [X] T003 [US-27][US-28][RBN-DEF-06.4][RBN-DEF-07.1] Rodar `.venv\Scripts\python.exe manage.py test sigtcc.apps.defesa` e confirmar que a
   suíte da spec 008 continua verde com o Coordenador padrão do T001 (nenhum teste depende da
   ausência dele)
 

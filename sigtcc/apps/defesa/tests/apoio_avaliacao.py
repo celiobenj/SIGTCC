@@ -5,7 +5,9 @@ Monta o cenário com as fábricas da spec 007 (apoio_defesa). `lancar` e `enviar
 linhas de Avaliacoes e os campos de envio de BancaDefesa, só para montar o cenário (como
 apoio_orientacao.liberar_resultado): quem testa as regras do formulário usa o serviço ou a tela.
 
-[infraestrutura de teste da feature 008][research A13] (tasks T004)
+Spec 009 (IC-16): sessao_com_banca cria por padrão o Coordenador de Curso com assinatura.
+
+[infraestrutura de teste da feature 008][research A13] (tasks T004; spec 009 T001)
 """
 
 import shutil
@@ -20,7 +22,8 @@ from django.utils import timezone
 from PIL import Image
 
 from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusConta
-from sigtcc.apps.cadastro.tests.apoio_turmas import EC, TesteTurmas
+from sigtcc.apps.cadastro.models import Coordenadores
+from sigtcc.apps.cadastro.tests.apoio_turmas import EC, TesteTurmas, curso
 from sigtcc.apps.defesa.choices import Conceito, StatusSessao
 from sigtcc.apps.defesa.models import Avaliacoes, BancaDefesa, Criterios
 from sigtcc.apps.defesa.tests.apoio_defesa import (
@@ -62,12 +65,50 @@ def conceito_da(nota):
     return Conceito.NECESSITA_DE_TRABALHO
 
 
+def coordenador_do_curso(curso_nome=EC, com_assinatura=True):
+    """Coordenador de Curso (Coordenadores) do curso, criado se o curso ainda não tiver um (o
+    Coordenador é um só por curso, dicionário 3.3.1: a segunda sessão do mesmo curso reaproveita
+    o existente). Com `com_assinatura`, garante uma imagem PNG no MEDIA_ROOT (temporário nos
+    testes) como assinatura do perfil (doc_assinatura_path); sem ela, o caminho fica nulo (E2 da
+    US-28). Devolve o Usuarios do Coordenador.
+    [US-28][RBN-DEF-07.1][RBN-CAD-13.1] (spec 009, T001; IC-16)
+    """
+    existente = (
+        Coordenadores.objects.select_related("cor_doc__doc")
+        .filter(cor_cur=curso(curso_nome))
+        .first()
+    )
+    if existente is not None:
+        usuario, perfil = existente.cor_doc.doc, existente.cor_doc
+    else:
+        usuario = docente(curso_nome)
+        perfil = usuario.docentes
+        Coordenadores.objects.create(cor_cur=curso(curso_nome), cor_doc=perfil)
+    if com_assinatura and not perfil.doc_assinatura_path:
+        assinatura_no_perfil(usuario)
+    elif not com_assinatura and perfil.doc_assinatura_path:
+        perfil.doc_assinatura_path = None
+        perfil.save(update_fields=["doc_assinatura_path"])
+    return usuario
+
+
 def sessao_com_banca(
-    status=StatusSessao.EM_ANDAMENTO, curso_nome=EC, descricao=DescricaoTurma.TCC_1, suplente=True
+    status=StatusSessao.EM_ANDAMENTO,
+    curso_nome=EC,
+    descricao=DescricaoTurma.TCC_1,
+    suplente=True,
+    com_coordenador=True,
+    assinatura_coordenador=True,
 ):
     """Sessão no status pedido (pelo serviço único da spec 007), com Orientador, 1º e 2º
     Avaliador e, por padrão, um Suplente. Devolve um dicionário com sessao, tcc, professor,
-    orientador, av1, av2, suplente e aluno (Usuarios). [US-25][US-27][RBN-DEF-02.1]
+    orientador, av1, av2, suplente, aluno e coordenador (Usuarios).
+
+    Spec 009 (IC-16; research B15): por padrão cria também o Coordenador de Curso do curso da
+    turma com assinatura no perfil, para a liberação não cair na E2 da US-28;
+    `com_coordenador=False` deixa o curso sem Coordenador (coordenador = None) e
+    `assinatura_coordenador=False` deixa o caminho da assinatura nulo.
+    [US-25][US-27][US-28][RBN-DEF-02.1][RBN-DEF-07.1][RBN-CAD-13.1]
     """
     tcc, professor, orientador = tcc_apto(curso_nome, descricao)
     av1, av2 = docente(curso_nome), docente(curso_nome)
@@ -82,6 +123,13 @@ def sessao_com_banca(
     aluno = tcc.tcc_alu.alu
     aluno.usu_status = StatusConta.ATIVA
     aluno.save(update_fields=["usu_status"])
+    coordenador = None
+    if com_coordenador:
+        coordenador = coordenador_do_curso(curso_nome, com_assinatura=assinatura_coordenador)
+    else:
+        # Curso sem Coordenador (E2 da US-28, MX-09), mesmo que outra sessão do teste tenha
+        # criado um antes.
+        Coordenadores.objects.filter(cor_cur=curso(curso_nome)).delete()
     return {
         "sessao": sessao,
         "tcc": tcc,
@@ -91,6 +139,7 @@ def sessao_com_banca(
         "av2": av2,
         "suplente": sup,
         "aluno": tcc.tcc_alu.alu,
+        "coordenador": coordenador,
     }
 
 
