@@ -27,48 +27,98 @@ NOTA_REPROVADO = 5
 
 def copia_de_assinatura(sessao, membro):
     """Grava uma imagem PNG em assinaturas_banca/ (como a cópia do envio da spec 008) e devolve
-    o caminho. [US-26][US-28][RBN-DEF-05.2][RBN-DEF-07.1]
+    o caminho. A largura varia com o membro para cada cópia ter bytes próprios: o PDF reaproveita
+    imagens idênticas, e assim cada assinatura conta como uma imagem no PDF (spec 009, T014).
+    [US-26][US-28][RBN-DEF-05.2][RBN-DEF-07.1]
     """
     nome = f"assinaturas_banca/{sessao.pk}_{membro.pk}_teste.png"
-    return default_storage.save(nome, ContentFile(_imagem("PNG", 300, 100)))
+    largura = 300 + membro.pk % 97
+    return default_storage.save(nome, ContentFile(_imagem("PNG", largura, 100)))
 
 
-def sessao_liberada(etapa="TCC 2", parecer=Parecer.APROVADO, suplente_acionado=False, **dados):
-    """Sessão Realizada com o resultado liberado. `etapa` é "TCC 1" ou "TCC 2"; `parecer` decide
-    as notas (Reprovado: 5,0; os demais: 8,0) e, em TCC 2 aprovado, é registrado pelo
-    Orientador antes da liberação; `suplente_acionado` aciona o Suplente no lugar do 2º
-    Avaliador antes dos envios. Os demais argumentos vão para sessao_com_banca (curso_nome,
-    com_coordenador, assinatura_coordenador). Devolve o dicionário de sessao_com_banca, com a
-    sessão relida e mais `membros` (os 3 efetivos, na ordem da banca) e `ausente` (o titular
-    substituído ou None). [US-27][US-28][US-30][RBN-DEF-06.4][RBN-DEF-07.1][RBN-DEF-08.3]
+def preparar_liberacao(
+    etapa="TCC 2",
+    parecer=Parecer.APROVADO,
+    suplente_acionado=False,
+    papel_substituido=PapelBanca.SEGUNDO_AVALIADOR,
+    nota=None,
+    qualis=None,
+    **dados,
+):
+    """Sessão Em Andamento pronta para Liberar Resultado: os 3 envios com cópia de assinatura e,
+    em TCC 2 aprovado, o parecer registrado pelo Orientador. `etapa` é "TCC 1" ou "TCC 2";
+    `parecer` decide a nota de cada membro (Reprovado: 5,0; os demais: 8,0), salvo `nota`
+    informada; `qualis` (ex.: "A1") grava um artigo publicado e homologado antes do parecer;
+    `suplente_acionado` aciona o Suplente no lugar de `papel_substituido` antes dos envios. Os
+    demais argumentos vão para sessao_com_banca (curso_nome, com_coordenador,
+    assinatura_coordenador). Devolve o dicionário de sessao_com_banca com a sessão relida e mais
+    `membros` (os 3 efetivos, na ordem da banca), `ausente` (o titular substituído ou None) e
+    `apuracao` (nota final e parecer para a confirmação).
+    [US-27][US-28][US-30][RBN-DEF-06.4][RBN-DEF-07.1][RBN-DEF-08.3]
     """
+    from sigtcc.apps.cadastro.choices import Homologacao, StatusSubmissao
+    from sigtcc.apps.cadastro.tests.apoio_orientacao import salvar_artigo
+
     descricao = DescricaoTurma(etapa)
     cenario = sessao_com_banca(StatusSessao.EM_ANDAMENTO, descricao=descricao, **dados)
     sessao, orientador = cenario["sessao"], cenario["orientador"]
     cenario["ausente"] = None
     if suplente_acionado:
         services_defesa.acionar_suplente(
-            orientador, sessao.pk, PapelBanca.SEGUNDO_AVALIADOR, "Ausência do 2º Avaliador"
+            orientador, sessao.pk, papel_substituido, "Ausência do titular"
         )
-        cenario["ausente"] = cenario["av2"]
+        chave = "av1" if papel_substituido == PapelBanca.PRIMEIRO_AVALIADOR else "av2"
+        cenario["ausente"] = cenario[chave]
     membros = services_defesa.membros_efetivos(sessao)
-    nota = NOTA_REPROVADO if parecer == Parecer.REPROVADO else NOTA_APROVADO
+    if nota is None:
+        nota = NOTA_REPROVADO if parecer == Parecer.REPROVADO else NOTA_APROVADO
     for membro in membros:
         lancar(sessao, membro, nota)
         enviar(sessao, membro, copia_de_assinatura(sessao, membro))
+    if qualis:
+        salvar_artigo(
+            cenario["tcc"],
+            qualis=qualis,
+            status=StatusSubmissao.PUBLICADO,
+            art_homologacao=Homologacao.HOMOLOGADO,
+        )
     sessao.refresh_from_db()
     if descricao == DescricaoTurma.TCC_2 and parecer != Parecer.REPROVADO:
         services_avaliacoes.registrar_parecer(orientador, sessao.pk, parecer)
         sessao.refresh_from_db()
-    atual = services_avaliacoes.apuracao(sessao)
+    cenario["sessao"] = sessao
+    cenario["membros"] = membros
+    cenario["apuracao"] = services_avaliacoes.apuracao(sessao)
+    return cenario
+
+
+def liberar(cenario):
+    """Libera o resultado preparado por preparar_liberacao, pelo serviço da spec 008, e relê a
+    sessão. [US-27][RBN-DEF-06.4]
+    """
+    sessao, atual = cenario["sessao"], cenario["apuracao"]
     resultado = services_avaliacoes.liberar_resultado(
-        orientador, sessao.pk, atual["nota_final"], atual["parecer"]
+        cenario["orientador"], sessao.pk, atual["nota_final"], atual["parecer"]
     )
     assert resultado.liberado, "A liberação do cenário de teste falhou"
     sessao.refresh_from_db()
-    cenario["sessao"] = sessao
-    cenario["membros"] = membros
     return cenario
+
+
+def sessao_liberada(etapa="TCC 2", parecer=Parecer.APROVADO, suplente_acionado=False, **dados):
+    """Sessão Realizada com o resultado liberado: preparar_liberacao (mesmos argumentos) e a
+    liberação pelo serviço services_avaliacoes.liberar_resultado.
+    [US-27][US-28][US-30][RBN-DEF-06.4][RBN-DEF-07.1][RBN-DEF-08.3]
+    """
+    return liberar(preparar_liberacao(etapa, parecer, suplente_acionado, **dados))
+
+
+def numero_de_imagens(resposta):
+    """Quantas imagens o PDF da resposta tem (imagens de bytes idênticos contam uma vez).
+    [US-28][RBN-DEF-07.1][RBN-DEF-07.2]
+    """
+    leitor = PdfReader(BytesIO(resposta.content))
+    return sum(len(pagina.images) for pagina in leitor.pages)
 
 
 def texto_do_pdf(resposta):

@@ -26,14 +26,17 @@ import logging
 
 from django.conf import settings
 from django.core.files.storage import default_storage
+from django.db import transaction
+from django.urls import reverse
 from django.utils.crypto import salted_hmac
 
 from sigtcc.apps.cadastro import services
-from sigtcc.apps.cadastro.models import Coordenadores
+from sigtcc.apps.cadastro.choices import StatusConta
+from sigtcc.apps.cadastro.models import Coordenadores, Secretarios
 from sigtcc.apps.cadastro.permissoes import especializacao
-from sigtcc.apps.defesa import mensagens, services_avaliacoes, services_defesa
-from sigtcc.apps.defesa.choices import PapelBanca
-from sigtcc.apps.defesa.models import BancaDefesa
+from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_avaliacoes, services_defesa
+from sigtcc.apps.defesa.choices import PapelBanca, StatusSessao
+from sigtcc.apps.defesa.models import BancaDefesa, Defesas
 
 logger = logging.getLogger("sigtcc.defesa")
 
@@ -359,3 +362,100 @@ def dados_da_declaracao(sessao, usuario):
         "referencia": f"Defesa nº {sessao.pk}",
         "texto": mensagens.MX05_DECLARACAO.format(**dados),
     }
+
+
+# =============================================================================================
+# Botões dos documentos: janela da sessão e aba Meu TCC (research B13; FR-003; P14)
+# =============================================================================================
+
+
+def visao_dos_documentos(usuario, sessao):
+    """Bloco `documentos` da janela Sessão de defesa (FR-003): quais botões aparecem ao
+    usuário. Ata Final para quem pode baixar os documentos (com a E2 o botão continua: o download
+    mostra a mensagem); Folha de Aprovação também só quando ela existe (folha_aplicavel); a
+    Declaração aos membros efetivos (o botão entra com a rota da Phase 8, tasks T045). O botão
+    aparece se e somente se o endereço aceita (research B2).
+    [US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.3]
+    """
+    documentos = permissoes_defesa.pode_baixar_documentos(usuario, sessao)
+    return {
+        "ata": documentos,
+        "folha": documentos and folha_aplicavel(sessao) is None,
+        "declaracao": permissoes_defesa.pode_baixar_declaracao(usuario, sessao),
+    }
+
+
+def documentos_do_aluno(tcc):
+    """Documentos da aba Meu TCC (P14): as sessões Realizadas e liberadas do TCC, da mais
+    recente para a mais antiga, cada uma com a data da defesa e os botões (Ata Final sempre;
+    Folha de Aprovação só quando existe). Lista vazia antes da primeira liberação.
+    [US-28][RBN-DEF-07.3]
+    """
+    sessoes = (
+        Defesas.objects.select_related("def_tcc__tcc_tur")
+        .filter(
+            def_tcc=tcc,
+            def_status=StatusSessao.REALIZADA,
+            def_data_liberacao_resultado__isnull=False,
+        )
+        .order_by("-def_data", "-def_h_inicio", "-def_id")
+    )
+    return [
+        {
+            "def_id": sessao.pk,
+            "data_defesa": _data_curta(sessao.def_data),
+            "parecer": sessao.def_parecer,
+            "folha": folha_aplicavel(sessao) is None,
+        }
+        for sessao in sessoes
+    ]
+
+
+# =============================================================================================
+# E2 na liberação do resultado (research B5; emenda à spec 008, P1; Q-144)
+# =============================================================================================
+
+
+def _notificar_pendencia(sessao, motivo):
+    """Notificações da E2, uma vez por liberação: com SEM_ASSINATURA, o docente Coordenador com
+    a MX-03 e link para o perfil (onde cadastra a assinatura; revisão I-05); com
+    SEM_COORDENADOR, cada conta Secretaria ativa do curso com a MX-09 e link para a sessão (P15).
+    [US-28][RBN-DEF-07.1][RBN-CAD-13.1][RBN-CAD-13.2]
+    """
+    aluno = sessao.def_tcc.tcc_alu.alu.usu_nome
+    if motivo == SEM_ASSINATURA:
+        coordenador = _coordenador_do_curso(sessao).cor_doc.doc
+        texto = mensagens.MX03_COORDENADOR_SEM_ASSINATURA.format(aluno=aluno)
+        services.notificar(coordenador, texto, link=reverse("cadastro:perfil"))
+        return
+    curso = sessao.def_tcc.tcc_tur.tur_cur
+    texto = mensagens.MX09_CURSO_SEM_COORDENADOR.format(curso=curso.cur_nome, aluno=aluno)
+    link = reverse("defesa:sessao", args=[sessao.pk])
+    for secretaria in Secretarios.objects.select_related("sec").filter(
+        sec_cur=curso, sec__usu_status=StatusConta.ATIVA
+    ):
+        services.notificar(secretaria.sec, texto, link=link)
+
+
+def avisar_pendencia_da_ata(sessao):
+    """Chamada por views_avaliacoes.liberar_resultado depois do commit da liberação (emenda à
+    spec 008; FR-006). Relê a sessão pelo pk (não usa a instância lida antes da liberação;
+    revisão M-09). Com a E2, numa transação própria (as notificações entram todas ou nenhuma),
+    notifica o Coordenador (MX-03) ou a Secretaria do curso (MX-09) e devolve o texto da E2 para
+    o alerta ao Orientador; sem a E2, None. Qualquer exceção vai ao log e devolve None: a
+    liberação nunca falha por causa do aviso.
+    [US-27][US-28][RBN-DEF-06.4][RBN-DEF-07.1][RBN-CAD-13.1]
+    """
+    try:
+        registro = Defesas.objects.select_related(
+            "def_tcc__tcc_tur__tur_cur", "def_tcc__tcc_alu__alu"
+        ).get(pk=sessao.pk)
+        motivo = situacao_da_ata(registro)
+        if motivo is None:
+            return None
+        with transaction.atomic():
+            _notificar_pendencia(registro, motivo)
+        return mensagens.ATA_SEM_ASSINATURA_COORDENADOR
+    except Exception:
+        logger.exception("Falha ao avisar a pendência da Ata Final da sessão %s", sessao.pk)
+        return None

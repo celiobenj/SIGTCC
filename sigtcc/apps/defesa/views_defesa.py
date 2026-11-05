@@ -15,7 +15,13 @@ from sigtcc.apps.cadastro import services_contas
 from sigtcc.apps.cadastro.models import Cursos, TCCs, Turmas, Usuarios
 from sigtcc.apps.cadastro.permissoes import perfil_requerido, tem_perfil
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada, turma_arquivada
-from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_avaliacoes, services_defesa
+from sigtcc.apps.defesa import (
+    mensagens,
+    permissoes_defesa,
+    services_avaliacoes,
+    services_defesa,
+    services_documentos,
+)
 from sigtcc.apps.defesa.choices import EventoDefesa, PapelBanca
 from sigtcc.apps.defesa.forms_avaliacoes import ParecerForm
 from sigtcc.apps.defesa.forms_defesa import CAMPOS_DA_BANCA as CAMPOS_DO_FORMULARIO
@@ -227,8 +233,10 @@ def contexto_da_sessao(request, registro, form_parecer=None):
     """Contexto da janela "Sessão de defesa": cabeçalho, banca e botões da spec 007 e, pela spec
     008 (IC-05), o que a visão da avaliação permite (blocos avaliacao e resultado; sigilo em
     services_avaliacoes.visao_da_avaliacao) e o formulário Registrar parecer. Usado também pela
-    view registrar_parecer para mostrar o erro no campo Parecer.
+    view registrar_parecer para mostrar o erro no campo Parecer. Spec 009 (IC-03): a chave
+    `documentos` com os botões do bloco documentos (services_documentos.visao_dos_documentos).
     [US-40][US-23][US-24][US-25][US-27][RBN-DEF-01.4][RBN-DEF-06.6][RBN-DEF-06.8][FR-030]
+    [US-28][RBN-DEF-07.3]
     """
     banca = services_defesa.banca_por_papel(registro)
     ordem = (*services_defesa.PAPEIS_TITULARES, PapelBanca.SUPLENTE)
@@ -244,6 +252,9 @@ def contexto_da_sessao(request, registro, form_parecer=None):
         # Spec 008 (IC-05): blocos de avaliação e de resultado. [US-25][US-27][RBN-DEF-06.8]
         "visao": services_avaliacoes.visao_da_avaliacao(request.user, registro),
         "form_parecer": form_parecer or ParecerForm(),
+        # Spec 009 (IC-03): bloco documentos (Ata Final, Folha de Aprovação e Declaração).
+        # [US-28][RBN-DEF-07.3]
+        "documentos": services_documentos.visao_dos_documentos(request.user, registro),
     }
 
 

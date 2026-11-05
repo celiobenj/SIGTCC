@@ -144,40 +144,40 @@ IC-14 e IC-18 relatados).
 **Independent Test**: sessões Realizadas de TCC 1, TCC 2 aprovado e Reprovado; baixar cada
 documento como cada perfil e conferir conteúdo, botões e recusas (cenários 1.1 a 1.19).
 
-- [ ] T014 [P] [US1] [US-28][RBN-DEF-07.1][RBN-DEF-07.2] (FR-001, FR-002) Criar `sigtcc/templates/defesa/pdf/ata_final.html` e
+- [X] T014 [P] [US1] [US-28][RBN-DEF-07.1][RBN-DEF-07.2] (FR-001, FR-002) Criar `sigtcc/templates/defesa/pdf/ata_final.html` e
   `sigtcc/templates/defesa/pdf/folha_aprovacao.html` estendendo `defesa/pdf/base_pdf.html`
   (Roboto local, sem `base.html`): cabeçalho "Universidade do Estado do Amazonas – Escola Superior
   de Tecnologia" e curso; conteúdo do FR-001/FR-002; `<img>` só quando a assinatura não é `None`;
   a Folha não exibe nenhum número de nota; "Manaus, DD de mês de AAAA"
-- [ ] T015 [US1] [US-28][RBN-DEF-07.3] (FR-003) Em `sigtcc/apps/defesa/services_documentos.py`: `visao_dos_documentos(usuario,
+- [X] T015 [US1] [US-28][RBN-DEF-07.3] (FR-003) Em `sigtcc/apps/defesa/services_documentos.py`: `visao_dos_documentos(usuario,
   sessao)` (botões Ata, Folha e Declaração conforme permissões e `folha_aplicavel`) e
   `documentos_do_aluno(tcc)` (sessões Realizadas e liberadas do TCC, mais recente primeiro, com
   data e botões; P14)
-- [ ] T016 [US1] [US-28][RBN-DEF-07.1][RBN-CAD-13.1] (FR-006) Em `sigtcc/apps/defesa/services_documentos.py`: `avisar_pendencia_da_ata(sessao)`
+- [X] T016 [US1] [US-28][RBN-DEF-07.1][RBN-CAD-13.1] (FR-006) Em `sigtcc/apps/defesa/services_documentos.py`: `avisar_pendencia_da_ata(sessao)`
   (relê a sessão pelo `pk`; com motivo, numa `transaction.atomic()` própria, `services.notificar`
   ao docente Coordenador com a MX-03 e link `cadastro:perfil`, ou a cada Secretaria ativa do curso
   com a MX-09 e link para `defesa:sessao`; devolve `ATA_SEM_ASSINATURA_COORDENADOR`; sem motivo,
   `None`; exceção → `logger.exception` e `None`) — research B5
-- [ ] T017 [US1] [US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3] (FR-004 a FR-007) Criar `sigtcc/apps/defesa/views_documentos.py`: `ata_final(request, def_id)` e
+- [X] T017 [US1] [US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3] (FR-004 a FR-007) Criar `sigtcc/apps/defesa/views_documentos.py`: `ata_final(request, def_id)` e
   `folha_aprovacao(request, def_id)` com `perfil_requerido()`, `views_defesa.sessao_ou_404`,
   `PermissionDenied(SEM_PERMISSAO_DOCUMENTOS)` sem permissão ou antes da liberação; Folha recusada
   por `folha_aplicavel`; Ata com `situacao_da_ata` → mensagem da E2 ao Presidente ou MX-08 aos
   demais, sem notificar; `ErroAoGerarPdf` → `ERRO_AO_GERAR_DOCUMENTOS`; recusas não-403 voltam à
   origem por `origem=sessao|meu_tcc` (qualquer outro valor = `sessao`) com `messages.error`;
   sucesso: `pdf.resposta_pdf("ata_final_<def_id>.pdf", ...)` / `folha_aprovacao_<def_id>.pdf`
-- [ ] T018 [US1] [US-28][RBN-DEF-07.3] (FR-003) IC-08: em `sigtcc/apps/defesa/urls.py`, rotas `ata_final`
+- [X] T018 [US1] [US-28][RBN-DEF-07.3] (FR-003) IC-08: em `sigtcc/apps/defesa/urls.py`, rotas `ata_final`
   (`defesas/<int:def_id>/ata-final/`) e `folha_aprovacao` (`defesas/<int:def_id>/folha-aprovacao/`)
-- [ ] T019 [US1] [US-28][RBN-DEF-07.3] (FR-003) IC-03: em `sigtcc/apps/defesa/views_defesa.py`, `contexto_da_sessao` ganha a
+- [X] T019 [US1] [US-28][RBN-DEF-07.3] (FR-003) IC-03: em `sigtcc/apps/defesa/views_defesa.py`, `contexto_da_sessao` ganha a
   chave `documentos` (`visao_dos_documentos`); criar `sigtcc/templates/defesa/_bloco_documentos.html`
   e preencher `{% block documentos %}` de `sigtcc/templates/defesa/sessao.html`
-- [ ] T020 [US1] [US-28][RBN-DEF-07.3] (FR-003) IC-05: em `sigtcc/apps/cadastro/views_tcc.py`, contexto `documentos_defesa =
+- [X] T020 [US1] [US-28][RBN-DEF-07.3] (FR-003) IC-05: em `sigtcc/apps/cadastro/views_tcc.py`, contexto `documentos_defesa =
   services_documentos.documentos_do_aluno(tcc)`; criar `sigtcc/templates/defesa/_documentos_aluno.html`
   (links com `?origem=meu_tcc`) e incluí-la em `sigtcc/templates/cadastro/tcc/meu_tcc.html`;
   remover os dois botões desabilitados "Ata Final" e "Folha de Aprovação" do cartão "Defesa"
-- [ ] T021 [US1] [US-27][US-28][RBN-DEF-06.4][RBN-DEF-07.1][RBN-CAD-13.1] (FR-006) IC-02: em `sigtcc/apps/defesa/views_avaliacoes.py`, no ramo `resultado.liberado`
+- [X] T021 [US1] [US-27][US-28][RBN-DEF-06.4][RBN-DEF-07.1][RBN-CAD-13.1] (FR-006) IC-02: em `sigtcc/apps/defesa/views_avaliacoes.py`, no ramo `resultado.liberado`
   de `liberar_resultado`, depois da MA-11, `texto = services_documentos.avisar_pendencia_da_ata(registro)`
   e `messages.warning(request, texto)` se houver; docstring cita a emenda da spec 008 (Q-144)
-- [ ] T022 [US1] [US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3] (FR-001 a FR-008; SC-001 a SC-003) Testes de view em `sigtcc/apps/defesa/tests/test_us28_documentos.py`, um por
+- [X] T022 [US1] [US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3] (FR-001 a FR-008; SC-001 a SC-003) Testes de view em `sigtcc/apps/defesa/tests/test_us28_documentos.py`, um por
   cenário: 1.1 (Ata com notas e 4 assinaturas, Folha sem notas, botões para banca, Professor da
   Disciplina, Secretaria e Aluno), 1.2 (Aluno baixa a Folha pelo Meu TCC), 1.3 (TCC 1: só Ata
   "I"), 1.4 (Reprovado: só Ata), 1.5 (Aprovado com Correções: Folha liberada), 1.6 (suplente na
@@ -189,7 +189,7 @@ documento como cada perfil e conferir conteúdo, botões e recusas (cenários 1.
   1.18 (arquivo do Coordenador ausente: PDF sem a imagem, log), 1.19 (duas sessões no Meu TCC); Edge Case "Coordenador cadastra a assinatura depois da
   liberação" (o download seguinte gera a Ata, sem nova ação);
   texto do PDF por `apoio_documentos.texto_do_pdf`; `?origem=` com valor livre cai em `sessao`
-- [ ] T023 [US1] [US-27][US-28][RBN-DEF-06.4][RBN-DEF-07.1][RBN-DEF-07.3] (FR-003, FR-006) IC-16: em `sigtcc/apps/defesa/tests/test_us27_liberacao.py`, novo teste do alerta
+- [X] T023 [US1] [US-27][US-28][RBN-DEF-06.4][RBN-DEF-07.1][RBN-DEF-07.3] (FR-003, FR-006) IC-16: em `sigtcc/apps/defesa/tests/test_us27_liberacao.py`, novo teste do alerta
   da E2 depois da MA-11 (cenário `com_coordenador=False`) e ajuste nominal de
   `test_avisos_ao_aluno_banca_e_secretaria_sem_a_nota` só se a mudança do T001 exigir; novo teste
   em `sigtcc/apps/cadastro/tests/test_navegacao_tcc.py` (aba Meu TCC, spec 005) conferindo que os botões desabilitados saíram e
