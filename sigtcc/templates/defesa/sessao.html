@@ -10,9 +10,10 @@
   _bloco_resultado.html, com o que services_avaliacoes.visao_da_avaliacao permite.
   Spec 009 (IC-03): o bloco documentos inclui _bloco_documentos.html, com o que
   services_documentos.visao_dos_documentos permite; o bloco ouvintes inclui _bloco_ouvintes.html,
-  com o que services_ouvintes.visao_da_sessao permite.
+  com o que services_ouvintes.visao_da_sessao permite; o bloco ocorrencias inclui
+  _bloco_ocorrencias.html, com a parte de ocorrências da mesma visão.
   [US-40][US-23][US-24][RBN-DEF-01.4][RBN-DEF-02.1][FR-030][US-25][US-27][RBN-DEF-06.8]
-  [US-28][RBN-DEF-07.3][US-30][RBN-DEF-08.2]
+  [US-28][RBN-DEF-07.3][US-30][RBN-DEF-08.2][RBN-DEF-08.5]
 {% endcomment %}
 {% block titulo %}Sessão de defesa · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -53,7 +54,7 @@
 {% block resultado %}{% include "defesa/_bloco_resultado.html" %}{% endblock %}
 {% block documentos %}{% include "defesa/_bloco_documentos.html" %}{% endblock %}
 {% block ouvintes %}{% include "defesa/_bloco_ouvintes.html" %}{% endblock %}
-{% block ocorrencias %}{% endblock %}
+{% block ocorrencias %}{% include "defesa/_bloco_ocorrencias.html" %}{% endblock %}
 <div class="flex entre mt16">
   <a class="btn txt" href="{% url 'defesa:defesas' %}">Fechar</a>
   <a class="btn" href="{% url 'defesa:historico' sessao.pk %}"><span class="ms">history</span>Histórico</a>

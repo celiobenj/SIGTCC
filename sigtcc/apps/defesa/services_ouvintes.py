@@ -5,7 +5,9 @@ Grava só Presenca_Ouvintes e, na primeira presença de uma matrícula, o regist
 nunca é alterado nem apagado por esta feature (P4). Cumpre o contrato da spec 007: nunca grava
 def_status nem Historico_Defesas e nunca cria sessão.
 
-[US-30][RBN-DEF-08.2]
+Spec 009 (US3): ocorrências da sessão (Defesas.def_ocorrencias; RBN-DEF-08.5).
+
+[US-30][RBN-DEF-08.2][RBN-DEF-08.4][RBN-DEF-08.5]
 """
 
 from django.db import transaction
@@ -13,7 +15,13 @@ from django.db.models import OuterRef, Subquery
 
 from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_defesa
 from sigtcc.apps.defesa.choices import PapelBanca, StatusSessao
-from sigtcc.apps.defesa.forms_ouvintes import repetidas, validar_matricula, validar_nome
+from sigtcc.apps.defesa.forms_ouvintes import (
+    TAMANHO_DAS_OCORRENCIAS,
+    normalizar_ocorrencias,
+    repetidas,
+    validar_matricula,
+    validar_nome,
+)
 from sigtcc.apps.defesa.models import BancaDefesa, Defesas, Ouvintes, PresencaOuvintes
 
 
@@ -96,21 +104,30 @@ def salvar_ouvintes(usuario, def_id, linhas):
 
 
 def visao_da_sessao(usuario, sessao):
-    """Parte de ouvintes do contexto da janela Sessão de defesa (bloco `ouvintes`; FR-009): a
-    lista (só para quem pode ver), se pode editar (botão Ouvintes) e a mensagem da E7 ao
-    Presidente e ao Professor da Disciplina quando o status não é Em Andamento nem Realizada.
-    [US-30][RBN-DEF-08.2]
+    """Blocos `ouvintes` e `ocorrencias` do contexto da janela Sessão de defesa (FR-009, FR-013
+    e FR-014): a lista de ouvintes (só para quem pode ver), se pode editar (botão Ouvintes), a
+    mensagem da E7 ao Presidente e ao Professor da Disciplina quando o status não é Em Andamento
+    nem Realizada e, em `ocorrencias`, o texto (só a quem pode ver), se pode ver e se pode
+    editar (botão Ocorrências). [US-30][RBN-DEF-08.2][RBN-DEF-08.5]
     """
     pode_ver = permissoes_defesa.pode_ver_ouvintes(usuario, sessao)
     responsavel = permissoes_defesa.e_presidente(
         usuario, sessao
     ) or permissoes_defesa.e_professor_da_disciplina(usuario, sessao)
     fora_do_status = sessao.def_status not in permissoes_defesa.STATUS_DOS_OUVINTES
+    ocorrencias_visiveis = permissoes_defesa.pode_ver_ocorrencias(usuario, sessao)
     return {
         "lista": list(ouvintes_da_sessao(sessao)) if pode_ver else [],
         "pode_ver": pode_ver,
         "pode_editar": permissoes_defesa.pode_editar_ouvintes(usuario, sessao),
         "aviso": mensagens.OUVINTES_FORA_DO_STATUS if responsavel and fora_do_status else None,
+        # Spec 009 (US3): bloco ocorrencias (texto só leitura e botão Ocorrências; FR-013 e
+        # FR-014). [US-30][RBN-DEF-08.5]
+        "ocorrencias": {
+            "texto": sessao.def_ocorrencias if ocorrencias_visiveis else None,
+            "pode_ver": ocorrencias_visiveis,
+            "pode_editar": permissoes_defesa.pode_editar_ocorrencias(usuario, sessao),
+        },
     }
 
 
@@ -143,3 +160,29 @@ def ouvintes_das_defesas(periodo, cur_id):
         .annotate(orientador_nome=Subquery(presidente))
         .order_by("pre_def__def_data", "pre_def__def_tcc__tcc_titulo", "pre_ouv__ouv_nome")
     )
+
+
+# =============================================================================================
+# Ocorrências da sessão (US-30 B; RBN-DEF-08.5; research B10)
+# =============================================================================================
+
+
+def registrar_ocorrencias(usuario, def_id, texto):
+    """Grava Defesas.def_ocorrencias (US-30 B; FR-013 e FR-015), numa transação com a trava
+    turma → aluno → TCC → sessão (travar_tcc e travar_sessao; a turma arquivada levanta
+    TurmaArquivada; revisão M-14). Com a sessão travada, confere pode_editar_ocorrencias (só o
+    Presidente, Em Andamento e sem liberação; senão ErroOuvintes de permissão). Normaliza as
+    quebras de linha e confere os 2.000 caracteres (MX-01); vazio grava NULL. Grava só a coluna
+    def_ocorrencias e nunca Historico_Defesas. [US-30][RBN-DEF-08.5]
+    """
+    with transaction.atomic():
+        services_defesa.travar_tcc(services_defesa.tcc_da_sessao(def_id))
+        sessao = services_defesa.travar_sessao(def_id)
+        if not permissoes_defesa.pode_editar_ocorrencias(usuario, sessao):
+            raise ErroOuvintes(PERMISSAO, "")
+        texto = normalizar_ocorrencias(texto)
+        if len(texto) > TAMANHO_DAS_OCORRENCIAS:
+            raise ErroOuvintes("ocorrencias", mensagens.MX01_OCORRENCIAS_LONGAS)
+        sessao.def_ocorrencias = texto or None
+        sessao.save(update_fields=["def_ocorrencias"])
+    return sessao

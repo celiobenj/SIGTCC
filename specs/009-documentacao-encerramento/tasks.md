@@ -317,19 +317,19 @@ leem.
 **Independent Test**: sessão Em Andamento; salvar como Presidente e conferir a leitura por perfil;
 depois da liberação, só consulta (cenários 3.1 a 3.8).
 
-- [ ] T038 [P] [US3] [US-30][RBN-DEF-08.5] (FR-013) Em `sigtcc/apps/defesa/forms_ouvintes.py`: `OcorrenciasForm` (`Textarea`,
+- [X] T038 [P] [US3] [US-30][RBN-DEF-08.5] (FR-013) Em `sigtcc/apps/defesa/forms_ouvintes.py`: `OcorrenciasForm` (`Textarea`,
   opcional; `clean` normaliza `\r\n` → `\n` antes de conferir "VARCHAR(2000)" → MX-01; caixa com
   a classe `erro`)
-- [ ] T039 [US3] [US-30][RBN-DEF-08.5] (FR-013 a FR-015) Em `sigtcc/apps/defesa/services_ouvintes.py`: `registrar_ocorrencias(usuario,
+- [X] T039 [US3] [US-30][RBN-DEF-08.5] (FR-013 a FR-015) Em `sigtcc/apps/defesa/services_ouvintes.py`: `registrar_ocorrencias(usuario,
   def_id, texto)` (trava `travar_tcc` + `travar_sessao`; `pode_editar_ocorrencias`; vazio → `None`;
   `save(update_fields=["def_ocorrencias"])`; nunca grava `Historico_Defesas`) e a parte de
   ocorrências de `visao_da_sessao` (texto, `pode_editar`, `pode_ver`)
-- [ ] T040 [US3] [US-30][RBN-DEF-08.5] (FR-013, FR-015) Em `sigtcc/apps/defesa/views_ouvintes.py`: `ocorrencias(request, def_id)` com
+- [X] T040 [US3] [US-30][RBN-DEF-08.5] (FR-013, FR-015) Em `sigtcc/apps/defesa/views_ouvintes.py`: `ocorrencias(request, def_id)` com
   `perfil_requerido("docente")`, mesma conversão de `TurmaArquivada` em 403; sucesso MX-06 e volta à
   sessão; criar `sigtcc/templates/defesa/form_ocorrencias.html` (contador com
   `static/js/contador.js`) e `sigtcc/templates/defesa/_bloco_ocorrencias.html`; preencher
   `{% block ocorrencias %}` de `sessao.html`; rota `ocorrencias` em `urls.py`
-- [ ] T041 [US3] [US-30][RBN-DEF-08.5] (FR-013 a FR-015) Testes `sigtcc/apps/defesa/tests/test_us30_ocorrencias.py`: 3.1 a 3.8 (gravar e ler
+- [X] T041 [US3] [US-30][RBN-DEF-08.5] (FR-013 a FR-015) Testes `sigtcc/apps/defesa/tests/test_us30_ocorrencias.py`: 3.1 a 3.8 (gravar e ler
   por Secretaria e Professor da Disciplina; vazio permitido; 2.001 → MX-01 e nada gravado, e 2.000
   com quebras `\r\n` aceito; Realizada só leitura; Professor da Disciplina recusado; Avaliador,
   Suplente e Aluno não veem; login; Presidente de TCC 1 depois da matrícula no TCC 2 ainda lê, B-03;

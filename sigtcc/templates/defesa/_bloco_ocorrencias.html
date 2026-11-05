@@ -1,0 +1,19 @@
+{% comment %}
+  Bloco "Ocorrências" da janela Sessão de defesa (spec 009, US3; contrato §3 da spec 007; FR-013 e
+  FR-014): o texto gravado, só para leitura, ao Presidente da banca, ao Professor da Disciplina da
+  turma e à Secretaria do curso (P10); o botão Ocorrências só ao Presidente, com a sessão Em
+  Andamento e antes da liberação (P9). Avaliadores, Suplente e Aluno não veem o bloco. Tudo vem
+  de ouvintes.ocorrencias (services_ouvintes.visao_da_sessao); sem regra aqui.
+  [US-30][RBN-DEF-08.5]
+{% endcomment %}
+{% with oc=ouvintes.ocorrencias %}
+{% if oc.pode_ver or oc.pode_editar %}
+<section class="cartao mt16" data-bloco-ocorrencias>
+  <header><span class="ms">report</span><h3>Ocorrências</h3></header>
+  {% if oc.pode_ver %}<p data-texto-ocorrencias>{{ oc.texto|linebreaksbr }}</p>{% endif %}
+  {% if oc.pode_editar %}
+  <div class="flex mt16"><a class="btn" href="{% url 'defesa:ocorrencias' sessao.pk %}"><span class="ms">edit_note</span>Ocorrências</a></div>
+  {% endif %}
+</section>
+{% endif %}
+{% endwith %}

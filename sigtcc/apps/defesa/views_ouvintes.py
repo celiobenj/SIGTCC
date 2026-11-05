@@ -6,8 +6,9 @@ corrida entre o GET e o POST), 403 sem texto, e o handler403 mostra a M-02 "Voc�
 permissão para esta ação" (US-30 E9; revisão I-01).
 
 Spec 009 (US4): tela "Ouvintes das defesas" da Secretaria (RBN-DEF-08.4), somente leitura.
+Spec 009 (US3): janela Ocorrências do Presidente da banca (RBN-DEF-08.5).
 
-[US-30][RBN-DEF-08.2][RBN-DEF-08.4]
+[US-30][RBN-DEF-08.2][RBN-DEF-08.4][RBN-DEF-08.5]
 """
 
 from django.contrib import messages
@@ -26,7 +27,7 @@ from sigtcc.apps.defesa import (
     views_defesa,
 )
 from sigtcc.apps.defesa.forms_defesa import FiltroPeriodoForm
-from sigtcc.apps.defesa.forms_ouvintes import OuvintesFormSet
+from sigtcc.apps.defesa.forms_ouvintes import OcorrenciasForm, OuvintesFormSet
 
 PREFIXO_OUVINTES = "ouv"
 
@@ -98,3 +99,36 @@ def ouvintes_das_defesas(request):
         "vazia": mensagens.MX07_SEM_OUVINTES,
     }
     return render(request, "defesa/ouvintes_das_defesas.html", contexto)
+
+
+@perfil_requerido("docente")
+def ocorrencias(request, def_id):
+    """Janela Ocorrências (US-30 B; FR-013 e FR-015): só o Presidente da banca, com a sessão Em
+    Andamento, sem liberação e a turma não arquivada (senão M-02, inclusive ao Professor da
+    Disciplina, P9; a TurmaArquivada da trava também vira 403). GET: o texto gravado. POST:
+    grava e volta à sessão com "Ocorrências salvas com sucesso" (MX-06); acima de 2.000
+    caracteres, a MX-01 na mesma janela, com a caixa destacada e nada gravado.
+    [US-30][RBN-DEF-08.5]
+    """
+    registro = views_defesa.sessao_ou_404(def_id)
+    if not permissoes_defesa.pode_editar_ocorrencias(request.user, registro):
+        raise PermissionDenied
+    if request.method == "POST":
+        form = OcorrenciasForm(request.POST)
+        if form.is_valid():
+            try:
+                services_ouvintes.registrar_ocorrencias(
+                    request.user, registro.pk, form.cleaned_data["ocorrencias"]
+                )
+            except TurmaArquivada:
+                raise PermissionDenied
+            except services_ouvintes.ErroOuvintes as erro:
+                if erro.campo == services_ouvintes.PERMISSAO:
+                    raise PermissionDenied
+                form.add_error("ocorrencias", erro.mensagem)
+            else:
+                messages.success(request, mensagens.MX06_OCORRENCIAS_SALVAS)
+                return redirect("defesa:sessao", def_id=registro.pk)
+    else:
+        form = OcorrenciasForm(initial={"ocorrencias": registro.def_ocorrencias or ""})
+    return render(request, "defesa/form_ocorrencias.html", {"form": form, "sessao": registro})

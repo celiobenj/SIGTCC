@@ -1,11 +1,12 @@
 """Formulários dos ouvintes da sessão (spec 009, US2; research B9): uma linha por ouvinte (Nome
-Completo e Matrícula), em formset com Remover (can_delete) e a linha extra vazia ignorada.
+Completo e Matrícula), em formset com Remover (can_delete) e a linha extra vazia ignorada; e a
+janela Ocorrências (US3; research B10).
 
 A validação das linhas fica em funções (validar_nome, validar_matricula, repetidas) usadas pelo
 formulário e pelo serviço (services_ouvintes.salvar_ouvintes), que é a fonte da regra. Campos
 com erro recebem a classe `erro` (destaque em vermelho, .inp.erro do CSS).
 
-[US-30][RBN-DEF-08.2] (spec 009, tasks T024)
+[US-30][RBN-DEF-08.2][RBN-DEF-08.5] (spec 009, tasks T024 e T038)
 """
 
 import re
@@ -145,3 +146,51 @@ OuvintesFormSet = formset_factory(
     absolute_max=MAXIMO_DE_OUVINTES,
     validate_max=True,
 )
+
+
+# =============================================================================================
+# Ocorrências da sessão (US-30 B; RBN-DEF-08.5; research B10)
+# =============================================================================================
+
+# "VARCHAR(2000)" de Defesas.def_ocorrencias (dicionário 3.6.1). [US-30][RBN-DEF-08.5]
+TAMANHO_DAS_OCORRENCIAS = 2000
+
+
+def normalizar_ocorrencias(texto):
+    """Texto com as quebras de linha CRLF e CR trocadas por LF (o limite bate com o contador
+    da tela) e aparado; vazio vira "". [US-30][RBN-DEF-08.5]
+    """
+    return (texto or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+class OcorrenciasForm(forms.Form):
+    """Janela Ocorrências (US-30 B; FR-013): texto livre opcional de até 2.000 caracteres,
+    contados depois de normalizar as quebras de linha (revisão M-07); acima disso, a MX-01 e a
+    caixa destacada (classe `erro`). [US-30][RBN-DEF-08.5]
+    """
+
+    ocorrencias = forms.CharField(
+        label="Ocorrências",
+        required=False,
+        strip=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "inp",
+                "rows": 8,
+                "maxlength": TAMANHO_DAS_OCORRENCIAS,
+                "data-contador": TAMANHO_DAS_OCORRENCIAS,
+            }
+        ),
+    )
+
+    def clean_ocorrencias(self):
+        """Normaliza e confere o limite (US-30 E5; MX-01). [US-30][RBN-DEF-08.5]"""
+        texto = normalizar_ocorrencias(self.cleaned_data.get("ocorrencias"))
+        if len(texto) > TAMANHO_DAS_OCORRENCIAS:
+            raise forms.ValidationError(mensagens.MX01_OCORRENCIAS_LONGAS)
+        return texto
+
+    def full_clean(self):
+        """Validação do Django e o destaque da caixa com erro. [US-30][RBN-DEF-08.5]"""
+        super().full_clean()
+        _marcar_erros(self)
