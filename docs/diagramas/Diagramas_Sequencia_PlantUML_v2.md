@@ -858,7 +858,7 @@ end box
 
 ' Declaração das Linhas de Vida
 
-note right of Usuario : Ouvintes e ocorrências: também o Professor da Disciplina (E9). A Secretaria só consulta\nos ouvintes (fluxo C). Agenda em PDF: também Coordenador de Curso e Secretaria (fluxo G)
+note right of Usuario : Ouvintes: também o Professor da Disciplina (E9). Ocorrências: só o Orientador (RBN-DEF-08.5).\nA Secretaria só consulta os ouvintes (fluxo C). Agenda em PDF: também Coordenador de Curso e Secretaria (fluxo G)
 
 Usuario -> Tela ++ : 1: abrirModalOuvintes(def_id)
 Tela -> Ctrl ++ : 1.1: carregarOuvintesDefesa(def_id, usuario)
