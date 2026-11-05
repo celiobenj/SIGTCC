@@ -72,7 +72,7 @@ das declarações (thread, research B7).
 - mensagens idênticas às US-28 e US-30, ou as MX provisórias (Q-142).
 
 **Scale/Scope**: 6 histórias (56 cenários de aceite), 24 FR, 7 rotas novas, 6 telas ou janelas
-novas, 4 PDFs, 1 e-mail, 13 itens de configuração em código ou documento já mesclado.
+novas, 4 PDFs, 1 e-mail, 18 itens de configuração em código ou documento já mesclado.
 
 ## Constitution Check
 
@@ -139,6 +139,7 @@ sigtcc/apps/defesa/
     ├── test_us30_declaracao.py
     ├── test_us30_agenda.py
     ├── test_codigo_validacao.py
+    ├── test_permissoes_documentos.py
     └── test_mensagens_documentos.py
 sigtcc/templates/defesa/
 ├── _bloco_documentos.html, _bloco_ouvintes.html, _bloco_ocorrencias.html   # novos
@@ -154,6 +155,7 @@ sigtcc/apps/cadastro/
 ├── menu.py                               # IC-07: + "Ouvintes das defesas" (secretaria)
 ├── views.py                              # IC-11: SEM_PERMISSAO_DOCUMENTOS em MENSAGENS_403
 ├── services.py                           # IC-12: enviar_email aceita anexos (opcional)
+├── tests/test_enviar_email_anexos.py     # novo (T007)
 ├── views_tcc.py                          # IC-05: documentos do aluno na aba Meu TCC
 └── management/commands/popular_demo.py   # IC-09: ouvintes, ocorrências, assinatura do
                                           #   Coordenador (research B14)
@@ -202,7 +204,7 @@ Aprovados pela Q-128 ("pode mexer no que for necessário, relatando"); cada um s
 | IC-13 | `specs/008-avaliacao-resultados/spec.md` e `contracts/servicos-avaliacoes.md` (008, já mesclada) | Clarifications (sessão de 2026-11-04) e linha nova no §2, que passa a citar `services_documentos.avisar_pendencia_da_ata(sessao) -> str \| None`; feito no `/speckit-clarify` e na revisão do plano | CLAUDE.md: mudança depois do merge começa pela spec; revisão I-09 |
 | IC-14 | `defesa/pdf.py` (008) | `threading.Lock` de módulo em volta da renderização de `gerar_pdf`; assinatura e comportamento iguais | Revisão I-07 (estado global do xhtml2pdf/reportlab) |
 | IC-15 | `defesa/services_avaliacoes.py` (008) | Docstring de `minhas_bancas`: as sessões Realizadas fazem uma consulta a mais (Declaração) | Revisão M-11 |
-| IC-16 | `defesa/tests/apoio_avaliacao.py`, `test_us27_liberacao.py`, `test_minhas_bancas.py` (008) | Apoio cria Coordenador com assinatura por padrão; ajustes nominais do research B15 | Revisão I-06 |
+| IC-16 | `defesa/tests/apoio_avaliacao.py`, `test_us27_liberacao.py`, `test_minhas_bancas.py`, `test_pdf.py` (008); `cadastro/tests/test_navegacao_tcc.py` (004/005) | Apoio cria Coordenador com assinatura por padrão; ajustes nominais do research B15 | Revisão I-06 |
 | IC-17 | `docs/diagramas/Rastreabilidade_Diagramas_Codigo.md`, `CHANGELOG.md`, `docs/arquitetura/Componentes_SIGTCC.drawio` | Rastreabilidade: `:GeradorDocumentosPDF` deixa de ser "stubs da feat-09"; entram `services_ouvintes`, `views_documentos`, `views_ouvintes` e o participante do diagrama 05. CHANGELOG: entrada da feat-09. Componentes: rótulo do componente da Defesa com documentos e ouvintes (PNG fica na Q-137) | Revisão I-09 |
 | IC-18 | `defesa/permissoes_defesa.py` (008) | `_e_presidente` passa a delegar para a pública `e_presidente` | Revisão M-02; B-03 |
 
