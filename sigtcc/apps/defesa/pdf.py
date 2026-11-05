@@ -12,6 +12,7 @@ rede e nenhum arquivo fora dessas pastas (revisão I-12).
 
 import logging
 import os
+import threading
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -23,6 +24,13 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 
 logger = logging.getLogger("sigtcc.defesa")
+
+# Spec 009 (IC-14; research B7, revisão I-07): o xhtml2pdf e o reportlab têm estado global
+# (registro de fontes, rl_config) e não garantem execução segura em várias threads; a
+# declaração de participação é gerada numa thread na liberação enquanto um download pode estar
+# gerando outro PDF. A trava serializa só a renderização (o custo é um download esperar a
+# geração em curso, de segundos). [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.3]
+_TRAVA_PDF = threading.Lock()
 
 
 class ErroAoGerarPdf(Exception):
@@ -113,20 +121,25 @@ def gerar_pdf(template, contexto):
     """Renderiza o template (que não estende base.html e usa as fontes locais de
     static/fonts/) e devolve os bytes do PDF, gerado em memória, sem gravar arquivo.
     Falha na geração: ErroAoGerarPdf, com o motivo no log.
-    [US-27][US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-08.3]
+
+    Spec 009 (IC-14): a chamada ao pisa.CreatePDF fica dentro da trava de módulo _TRAVA_PDF,
+    porque o xhtml2pdf/reportlab guardam estado global e não são seguros em threads (a
+    declaração é gerada numa thread enquanto outro download pode estar em curso; research B7).
+    [US-27][US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-08.3]
     """
     from xhtml2pdf import pisa
 
     html = render_to_string(template, contexto)
     saida = BytesIO()
     try:
-        resultado = pisa.CreatePDF(
-            html,
-            dest=saida,
-            encoding="utf-8",
-            link_callback=link_callback,
-            resource_policy=_politica(),
-        )
+        with _TRAVA_PDF:
+            resultado = pisa.CreatePDF(
+                html,
+                dest=saida,
+                encoding="utf-8",
+                link_callback=link_callback,
+                resource_policy=_politica(),
+            )
     except Exception as erro:
         logger.exception("Falha ao gerar o PDF %s", template)
         raise ErroAoGerarPdf(str(erro)) from erro

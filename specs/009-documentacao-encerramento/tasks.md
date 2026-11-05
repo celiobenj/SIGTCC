@@ -61,7 +61,7 @@ de que todas as histórias dependem. Commits atômicos por fase, só com os test
 **Purpose**: textos, permissões, PDF seguro em paralelo, e-mail com anexo e o núcleo de
 `services_documentos`.
 
-- [ ] T004 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (FR-004 a FR-023; SC-006) IC-08: em `sigtcc/apps/defesa/mensagens.py`, acrescentar (só acréscimo), com o texto
+- [X] T004 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (FR-004 a FR-023; SC-006) IC-08: em `sigtcc/apps/defesa/mensagens.py`, acrescentar (só acréscimo), com o texto
   exato: `SEM_PERMISSAO_DOCUMENTOS` = "Você não tem permissão para acessar os documentos desta
   defesa"; `ATA_SEM_ASSINATURA_COORDENADOR` = "Não foi possível gerar a Ata Final: o Coordenador
   de Curso não possui assinatura cadastrada no perfil"; `ERRO_AO_GERAR_DOCUMENTOS` = "Erro ao gerar
@@ -77,22 +77,22 @@ de que todas as histórias dependem. Commits atômicos por fase, só com os test
   `MX03_COORDENADOR_SEM_ASSINATURA`, `MX04_ASSUNTO`, `MX04_CORPO`, `MX05_DECLARACAO`,
   `MX06_OCORRENCIAS_SALVAS` (texto exato do diagrama 05), `MX07_SEM_OUVINTES`,
   `MX08_ATA_INDISPONIVEL`, `MX09_CURSO_SEM_COORDENADOR`
-- [ ] T005 [P] [US-28][RBN-DEF-07.3] (FR-005) IC-11: em `sigtcc/apps/cadastro/views.py`, acrescentar
+- [X] T005 [P] [US-28][RBN-DEF-07.3] (FR-005) IC-11: em `sigtcc/apps/cadastro/views.py`, acrescentar
   `mensagens_defesa.SEM_PERMISSAO_DOCUMENTOS` a `MENSAGENS_403` (comentário "Spec 009 (US-28
   E6)")
-- [ ] T006 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.3] (FR-007, FR-019) IC-14: em `sigtcc/apps/defesa/pdf.py`, envolver o `pisa.CreatePDF` de `gerar_pdf`
+- [X] T006 [P] [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.3] (FR-007, FR-019) IC-14: em `sigtcc/apps/defesa/pdf.py`, envolver o `pisa.CreatePDF` de `gerar_pdf`
   num `threading.Lock` de módulo (`_TRAVA_PDF`), sem mudar assinatura nem tratamento de erro;
   docstring com o motivo (estado global do xhtml2pdf/reportlab; research B7); teste em
   `sigtcc/apps/defesa/tests/test_pdf.py`: duas threads gerando ao mesmo tempo produzem dois PDFs
   válidos
-- [ ] T007 [P] [US-30][RBN-DEF-08.3] (FR-019) IC-12: em `sigtcc/apps/cadastro/services.py`, `enviar_email(destino, assunto,
+- [X] T007 [P] [US-30][RBN-DEF-08.3] (FR-019) IC-12: em `sigtcc/apps/cadastro/services.py`, `enviar_email(destino, assunto,
   template, contexto, conta=None, anexos=None)`: sem `anexos`, a mesma chamada literal
   `send_mail(...)` de hoje (cinco testes da spec 003 a substituem por `mock.patch`); com `anexos`
   (lista de `(nome, bytes, tipo)`), `EmailMessage(...).attach(...)` e `.send(fail_silently=False)`;
   a falha registra `FALHA_ENVIO_EMAIL` igual e relança; docstring "template de e-mail"; teste novo em
   `sigtcc/apps/cadastro/tests/test_enviar_email_anexos.py`: o anexo chega em
   `mail.outbox[0].attachments` e, sem anexo, `send_mail` continua sendo a chamada usada
-- [ ] T008 [US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (FR-005, FR-009, FR-012, FR-014 a FR-016, FR-021, FR-022) IC-08/IC-18: em `sigtcc/apps/defesa/permissoes_defesa.py`, criar a pública
+- [X] T008 [US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (FR-005, FR-009, FR-012, FR-014 a FR-016, FR-021, FR-022) IC-08/IC-18: em `sigtcc/apps/defesa/permissoes_defesa.py`, criar a pública
   `e_presidente(usuario, sessao)` e fazer `_e_presidente` delegar para ela; acrescentar
   `pode_baixar_documentos`, `pode_baixar_declaracao`, `pode_editar_ouvintes`, `pode_ver_ouvintes`,
   `pode_editar_ocorrencias`, `pode_ver_ocorrencias`, `pode_gerar_agenda` e
@@ -100,13 +100,13 @@ de que todas as histórias dependem. Commits atômicos por fase, só com os test
   fora; turma arquivada por `services_turmas.turma_arquivada`; Secretaria só do curso da turma e,
   nos ouvintes, só Em Andamento ou Realizada; `pode_ver_ouvintes` sem chamar
   `pode_editar_ouvintes`)
-- [ ] T009 [US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (FR-005, FR-009, FR-012, FR-014 a FR-016, FR-021, FR-022) Teste `sigtcc/apps/defesa/tests/test_permissoes_documentos.py`: matriz perfil × status
+- [X] T009 [US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5] (FR-005, FR-009, FR-012, FR-014 a FR-016, FR-021, FR-022) Teste `sigtcc/apps/defesa/tests/test_permissoes_documentos.py`: matriz perfil × status
   para cada função do T008 (Presidente, 1º e 2º Avaliador, suplente acionado, Suplente não
   acionado, Professor da Disciplina, Secretaria do curso e de outro curso, Coordenador fora da
   banca, Aluno, Membro Externo; Agendada, Reagendada, Em Andamento, Realizada antes e depois da
   liberação, Cancelada; turma arquivada); inclui o Presidente de TCC 1 depois de
   `_copiar_tcc_aprovado` (B-03)
-- [ ] T010 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-CAD-13.1][RBN-DEF-08.3] (FR-004, FR-006, FR-020) Em `sigtcc/apps/defesa/services_documentos.py` (IC-01; manter os stubs por enquanto):
+- [X] T010 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-CAD-13.1][RBN-DEF-08.3] (FR-004, FR-006, FR-020) Em `sigtcc/apps/defesa/services_documentos.py` (IC-01; manter os stubs por enquanto):
   `SEM_COORDENADOR`/`SEM_ASSINATURA` e `situacao_da_ata(sessao)` (Coordenador do `tur_cur` da
   turma; `services.caminho_da_assinatura` vazio = `SEM_ASSINATURA`; caminho gravado com arquivo
   ausente = `None`, Q-140); `_imagem_existente(caminho)` (`default_storage.exists`; ausente →
@@ -115,7 +115,7 @@ de que todas as histórias dependem. Commits atômicos por fase, só com os test
   16 primeiros caracteres) e `codigo_formatado(codigo)` (4 grupos com espaço); `_mes_por_extenso`
   (tabela fixa em português); `folha_aplicavel(sessao)` (`None` só em TCC 2 com parecer Aprovado
   ou Aprovado com Correções; senão `FOLHA_NAO_SE_APLICA` ou `FOLHA_REPROVADO`)
-- [ ] T011 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-08.3] (FR-001, FR-002, FR-008, FR-019) Em `sigtcc/apps/defesa/services_documentos.py`: `_membros_do_documento(sessao)` (os 3 de
+- [X] T011 [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-08.3] (FR-001, FR-002, FR-008, FR-019) Em `sigtcc/apps/defesa/services_documentos.py`: `_membros_do_documento(sessao)` (os 3 de
   `membros_efetivos`, na ordem Orientador, 1º, 2º Avaliador, com papel da linha da banca, nome,
   titulação lida no momento de `doc_titulacao` ou `mem_titulacao` e a assinatura de
   `ban_assinatura_path` por `_imagem_existente`); `dados_da_ata(sessao)` e `dados_da_folha(sessao)`
@@ -125,10 +125,10 @@ de que todas as histórias dependem. Commits atômicos por fase, só com os test
   assinatura); Folha com papéis Presidente, Avaliador, Avaliador e sem nenhum campo de nota;
   `dados_da_declaracao(sessao, usuario)` (nome, titulação, papel, aluno, título, curso, data da
   defesa, "Defesa nº {def_id}", código formatado; MX-05)
-- [ ] T012 [P] [US-30][RBN-DEF-08.3] (FR-020; SC-004) Teste `sigtcc/apps/defesa/tests/test_codigo_validacao.py`: só `A-Z2-7`, 16
+- [X] T012 [P] [US-30][RBN-DEF-08.3] (FR-020; SC-004) Teste `sigtcc/apps/defesa/tests/test_codigo_validacao.py`: só `A-Z2-7`, 16
   caracteres, igual em duas chamadas (SC-004), diferente entre membros e entre sessões, muda com
   outra `SECRET_KEY` (`override_settings`)
-- [ ] T013 [P] [US-28][RBN-DEF-07.1][RBN-DEF-07.2] (FR-001, FR-002, FR-006, FR-008; SC-001) Teste `sigtcc/apps/defesa/tests/test_us28_documentos.py` (parte de serviço):
+- [X] T013 [P] [US-28][RBN-DEF-07.1][RBN-DEF-07.2] (FR-001, FR-002, FR-006, FR-008; SC-001) Teste `sigtcc/apps/defesa/tests/test_us28_documentos.py` (parte de serviço):
   `situacao_da_ata` nos 3 casos e no arquivo ausente (Q-140); `dados_da_folha` sem chave de nota;
   `dados_da_ata` com suplente na linha do titular; data = `def_data`
 
