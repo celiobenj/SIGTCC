@@ -347,24 +347,24 @@ depois da liberação, só consulta (cenários 3.1 a 3.8).
 **Independent Test**: liberar o resultado e conferir e-mails e segunda via, inclusive com suplente
 (cenários 5.1 a 5.4).
 
-- [ ] T042 [P] [US5] [US-30][RBN-DEF-08.3] (FR-019, FR-020) Criar `sigtcc/templates/defesa/pdf/declaracao.html` (MX-05, "Defesa nº
+- [X] T042 [P] [US5] [US-30][RBN-DEF-08.3] (FR-019, FR-020) Criar `sigtcc/templates/defesa/pdf/declaracao.html` (MX-05, "Defesa nº
   {def_id}", código formatado, "Este código não constitui assinatura digital") e
   `sigtcc/templates/defesa/emails/declaracao.txt` (MX-04)
-- [ ] T043 [US5] [US-30][RBN-DEF-08.3] (FR-019) Em `sigtcc/apps/defesa/services_documentos.py`: `_enviar_declaracoes(itens)` (sem
+- [X] T043 [US5] [US-30][RBN-DEF-08.3] (FR-019) Em `sigtcc/apps/defesa/services_documentos.py`: `_enviar_declaracoes(itens)` (sem
   acesso ao banco: para cada item, `pdf.gerar_pdf` e `services.enviar_email(..., anexos=[(
   "declaracao_participacao_<def_id>.pdf", bytes, "application/pdf")])`; falha de um membro não
   interrompe os demais; falha de geração só no log; `connection.close()` no `finally`) e o corpo
   real de `ao_liberar_resultado(sessao)` (relê a sessão; itens com valores simples e o `pk` da
   conta; síncrono com `SIGTCC_EMAIL_SINCRONO`, senão `threading.Thread(daemon=True)`; nunca
   levanta) — research B7
-- [ ] T044 [US5] [US-25][US-30][RBN-DEF-05.4][RBN-DEF-08.3] (FR-021) Em `sigtcc/apps/defesa/services_documentos.py`: corpo real de
+- [X] T044 [US5] [US-25][US-30][RBN-DEF-05.4][RBN-DEF-08.3] (FR-021) Em `sigtcc/apps/defesa/services_documentos.py`: corpo real de
   `declaracao_disponivel(sessao, usuario)` (= `pode_baixar_declaracao`); IC-15: corrigir o
   docstring de `services_avaliacoes.minhas_bancas` (uma consulta a mais por sessão Realizada)
-- [ ] T045 [US5] [US-30][RBN-DEF-05.4][RBN-DEF-08.3] (FR-021) Em `sigtcc/apps/defesa/views_documentos.py`: `declaracao(request, def_id)` com
+- [X] T045 [US5] [US-30][RBN-DEF-05.4][RBN-DEF-08.3] (FR-021) Em `sigtcc/apps/defesa/views_documentos.py`: `declaracao(request, def_id)` com
   `perfil_requerido()` e `PermissionDenied(SEM_PERMISSAO_DOCUMENTOS)`; rota `declaracao`
   (`defesas/<int:def_id>/declaracao/`); botão Declaração em `_bloco_documentos.html`; IC-04: link
   "Declaração" de `sigtcc/templates/defesa/minhas_bancas.html` para `defesa:declaracao`
-- [ ] T046 [US5] [US-30][RBN-DEF-08.3][RBN-DEF-08.4] (FR-018 a FR-021; SC-004) Testes `sigtcc/apps/defesa/tests/test_us30_declaracao.py`: 5.1 (3 e-mails com o
+- [X] T046 [US5] [US-30][RBN-DEF-08.3][RBN-DEF-08.4] (FR-018 a FR-021; SC-004) Testes `sigtcc/apps/defesa/tests/test_us30_declaracao.py`: 5.1 (3 e-mails com o
   anexo PDF e o código; `captureOnCommitCallbacks(execute=True)` e `SIGTCC_EMAIL_SINCRONO=True`),
   5.2 (segunda via com o mesmo código do e-mail), 5.3 (suplente recebe, titular ausente e
   Suplente não acionado não; nenhum e-mail vai a ouvinte da sessão, FR-018), 5.4 (backend que

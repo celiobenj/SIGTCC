@@ -9,12 +9,12 @@ banco (SC-003). Os dados vêm do resultado congelado na liberação
 (services_avaliacoes.resultado_da_sessao) e da data da defesa (def_data); o Coordenador e as
 titulações são lidos no momento do download (Clarifications).
 
-STUBS até as fases seguintes da feat-09 (tasks T043 e T044), sem mudar a assinatura nem o ponto
-de chamada:
+Pontos de chamada da spec 008, com o corpo real desde a feat-09 (tasks T043 e T044), sem mudar
+a assinatura nem o ponto de chamada:
 - ao_liberar_resultado(sessao): registrado por services_avaliacoes.liberar_resultado com
-  transaction.on_commit(..., robust=True), depois de gravada a liberação; enviará as
-  declarações de participação por e-mail (RBN-DEF-08.3), com o trabalho pesado numa thread e a
-  falha só no log (D9).
+  transaction.on_commit(..., robust=True), depois de gravada a liberação; envia as declarações
+  de participação por e-mail (RBN-DEF-08.3), com o trabalho pesado numa thread e a falha só no
+  log (D9; research B7).
 - declaracao_disponivel(sessao, usuario): decide o botão Declaração de Minhas bancas.
 
 [US-27][US-25][US-28][US-30][RBN-DEF-06.4][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-08.3]
@@ -23,10 +23,12 @@ de chamada:
 
 import base64
 import logging
+import threading
+from types import SimpleNamespace
 
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import OuterRef, Subquery
 from django.urls import reverse
 from django.utils.crypto import salted_hmac
@@ -42,18 +44,121 @@ from sigtcc.apps.defesa.models import BancaDefesa, Defesas
 logger = logging.getLogger("sigtcc.defesa")
 
 
+TEMPLATE_DECLARACAO = "defesa/pdf/declaracao.html"
+TEMPLATE_EMAIL_DECLARACAO = "defesa/emails/declaracao.txt"
+TIPO_PDF = "application/pdf"
+
+
+def nome_da_declaracao(sessao_pk):
+    """Nome do arquivo da declaração (sem dado pessoal, LGPD). [US-30][RBN-DEF-08.3]"""
+    return f"declaracao_participacao_{sessao_pk}.pdf"
+
+
+def _itens_das_declaracoes(sessao):
+    """Um item por membro efetivo com e-mail, só com valores simples (I-08): o contexto do PDF
+    (dados_da_declaracao), o assunto e o contexto do e-mail (MX-04), o endereço e o pk da conta
+    (nunca a instância). [US-30][RBN-DEF-08.3]
+    """
+    itens = []
+    for membro in services_defesa.membros_efetivos(sessao):
+        if not membro.usu_email:
+            continue
+        dados = dados_da_declaracao(sessao, membro)
+        corpo = mensagens.MX04_CORPO.format(
+            aluno=dados["aluno"], data=dados["data"], codigo=dados["codigo"]
+        )
+        itens.append(
+            {
+                "destino": membro.usu_email,
+                "conta_pk": membro.pk,
+                "assunto": mensagens.MX04_ASSUNTO,
+                "contexto_email": {"nome": membro.usu_nome, "texto": corpo},
+                "contexto_pdf": dados,
+                "arquivo": nome_da_declaracao(sessao.pk),
+            }
+        )
+    return itens
+
+
+def _enviar_declaracoes(itens):
+    """Função de trabalho, sem acesso ao banco (research B7; I-08): para cada item, gera o PDF
+    em memória (pdf.gerar_pdf) e envia o e-mail com o anexo (services.enviar_email). A falha de
+    um membro não interrompe os demais: falha de geração fica só no log do gerar_pdf; falha de
+    envio, no registro FALHA_ENVIO_EMAIL que enviar_email já faz (pelo pk da conta).
+    [US-30][RBN-DEF-08.3]
+    """
+    from sigtcc.apps.defesa import pdf
+
+    for item in itens:
+        try:
+            conteudo = pdf.gerar_pdf(TEMPLATE_DECLARACAO, item["contexto_pdf"])
+        except pdf.ErroAoGerarPdf:
+            continue
+        try:
+            services.enviar_email(
+                item["destino"],
+                item["assunto"],
+                TEMPLATE_EMAIL_DECLARACAO,
+                item["contexto_email"],
+                conta=SimpleNamespace(pk=item["conta_pk"]),
+                anexos=[(item["arquivo"], conteudo, TIPO_PDF)],
+            )
+        except Exception:
+            # Já registrado por enviar_email (FALHA_ENVIO_EMAIL); segue para o próximo membro.
+            continue
+
+
+def _enviar_declaracoes_na_thread(itens):
+    """Corpo da thread das declarações: o trabalho e, por defesa, connection.close() no
+    finally, para a thread não deixar conexão aberta (research B7; I-08).
+    [US-30][RBN-DEF-08.3]
+    """
+    try:
+        _enviar_declaracoes(itens)
+    finally:
+        connection.close()
+
+
+# Prefixo do nome da thread das declarações (os testes aguardam o término por ele).
+# [US-30][RBN-DEF-08.3]
+NOME_DA_THREAD = "sigtcc-declaracoes"
+
+
 def ao_liberar_resultado(sessao):
-    """STUB: só registra em log que a liberação pediu o envio das declarações (feat-09, T043).
+    """Ponto de chamada da spec 008 na liberação, depois do commit (on_commit robust): relê a
+    sessão pelo pk (revisão M-09), monta os itens das declarações dos membros efetivos (o
+    suplente acionado e o Membro Externo incluídos; o Suplente não acionado e os ouvintes, não;
+    FR-018 e FR-019) e os entrega a _enviar_declaracoes: com SIGTCC_EMAIL_SINCRONO, ali mesmo;
+    sem ele, numa threading.Thread(daemon=True), sem travar a tela. Nunca levanta: qualquer
+    falha vai ao log e a liberação continua (D9).
     [US-27][US-30][RBN-DEF-06.4][RBN-DEF-08.3]
     """
-    logger.info("Liberação do resultado: declarações pedidas (stub), sessão %s", sessao.pk)
+    try:
+        registro = Defesas.objects.select_related(
+            "def_tcc__tcc_tur__tur_cur", "def_tcc__tcc_alu__alu"
+        ).get(pk=sessao.pk)
+        itens = _itens_das_declaracoes(registro)
+        if not itens:
+            return
+        if settings.SIGTCC_EMAIL_SINCRONO:
+            _enviar_declaracoes(itens)
+        else:
+            threading.Thread(
+                target=_enviar_declaracoes_na_thread,
+                args=(itens,),
+                name=f"{NOME_DA_THREAD}-{registro.pk}",
+                daemon=True,
+            ).start()
+    except Exception:
+        logger.exception("Falha ao enviar as declarações da sessão %s", sessao.pk)
 
 
 def declaracao_disponivel(sessao, usuario):
-    """STUB: a declaração de participação ainda não existe (feat-09, T044); sempre False.
+    """Botão Declaração de Minhas bancas (FR-021): o mesmo que
+    permissoes_defesa.pode_baixar_declaracao (resultado liberado e membro efetivo).
     [US-25][US-30][RBN-DEF-05.4][RBN-DEF-08.3]
     """
-    return False
+    return permissoes_defesa.pode_baixar_declaracao(usuario, sessao)
 
 
 # =============================================================================================

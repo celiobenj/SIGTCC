@@ -2,16 +2,17 @@
   Bloco "Documentos" da janela Sessão de defesa (spec 009, IC-03; contrato §3 da spec 007): botões
   Ata Final (PDF) e, quando existe, Folha de Aprovação (PDF), depois da liberação, aos membros
   efetivos da banca, ao Professor da Disciplina da turma, à Secretaria do curso e ao Aluno (FR-003).
-  O botão Declaração entra com a rota da Phase 8 (tasks T045). Tudo vem de documentos
-  (services_documentos.visao_dos_documentos); sem regra aqui.
-  [US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3]
+  O botão Declaração, aos membros efetivos depois da liberação (segunda via; FR-021). Tudo vem de
+  documentos (services_documentos.visao_dos_documentos); sem regra aqui.
+  [US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][US-30][RBN-DEF-08.3]
 {% endcomment %}
-{% if documentos.ata or documentos.folha %}
+{% if documentos.ata or documentos.folha or documentos.declaracao %}
 <section class="cartao mt16" data-bloco-documentos>
   <header><span class="ms">description</span><h3>Documentos</h3></header>
   <div class="flex flex-wrap">
     {% if documentos.ata %}<a class="btn" href="{% url 'defesa:ata_final' sessao.pk %}"><span class="ms">picture_as_pdf</span>Ata Final (PDF)</a>{% endif %}
     {% if documentos.folha %}<a class="btn" href="{% url 'defesa:folha_aprovacao' sessao.pk %}"><span class="ms">picture_as_pdf</span>Folha de Aprovação (PDF)</a>{% endif %}
+    {% if documentos.declaracao %}<a class="btn" href="{% url 'defesa:declaracao' sessao.pk %}"><span class="ms">description</span>Declaração</a>{% endif %}
   </div>
 </section>
 {% endif %}

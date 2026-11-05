@@ -8,8 +8,9 @@ TCC 1 ou Reprovado, E2 e falha na geração (E3) voltam à origem (janela da ses
 TCC, pelo parâmetro `origem`, com valores fixos) com a mensagem exata.
 
 Spec 009 (US6): a agenda de defesas em PDF, a partir dos filtros da tela Defesas (RBN-DEF-08.1).
+Spec 009 (US5): a segunda via da declaração de participação (RBN-DEF-08.3).
 
-[US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][US-30][RBN-DEF-08.1]
+[US-28][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][US-30][RBN-DEF-08.1][RBN-DEF-08.3]
 """
 
 from django.contrib import messages
@@ -104,6 +105,26 @@ def folha_aprovacao(request, def_id):
         f"folha_aprovacao_{registro.pk}.pdf",
         TEMPLATE_FOLHA,
         services_documentos.dados_da_folha(registro),
+    )
+
+
+@perfil_requerido()
+def declaracao(request, def_id):
+    """Segunda via da declaração de participação (US-30 D; FR-020 e FR-021): só ao membro
+    efetivo e depois da liberação (senão 403 com o texto da US-28 E6, inclusive ao Suplente não
+    acionado, ao Aluno e à Secretaria; P13), com o mesmo conteúdo e o mesmo código do e-mail
+    (dados_da_declaracao). Falha na geração: a mensagem da US-28 E3, de volta à sessão.
+    [US-30][RBN-DEF-08.3][RBN-DEF-05.4]
+    """
+    registro = views_defesa.sessao_ou_404(def_id)
+    if not permissoes_defesa.pode_baixar_declaracao(request.user, registro):
+        raise PermissionDenied(mensagens.SEM_PERMISSAO_DOCUMENTOS)
+    return _baixar(
+        request,
+        registro,
+        services_documentos.nome_da_declaracao(registro.pk),
+        services_documentos.TEMPLATE_DECLARACAO,
+        services_documentos.dados_da_declaracao(registro, request.user),
     )
 
 

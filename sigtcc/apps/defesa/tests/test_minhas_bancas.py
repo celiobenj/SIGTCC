@@ -29,6 +29,7 @@ from sigtcc.apps.defesa.tests.apoio_defesa import (
     docente,
     tcc_apto,
 )
+from sigtcc.apps.defesa.tests.apoio_documentos import sessao_liberada
 
 MINHAS_BANCAS = reverse("defesa:minhas_bancas")
 
@@ -149,6 +150,26 @@ class TesteMinhasBancas(TesteAvaliacao):
         ):
             resposta = self.client.get(MINHAS_BANCAS)
         self.assertContains(resposta, "Declaração", count=1)
+        # Spec 009 (IC-04, IC-16): o atalho baixa a segunda via (defesa:declaracao).
+        self.assertContains(resposta, reverse("defesa:declaracao", args=[realizada.pk]))
+
+    def test_declaracao_real_so_depois_da_liberacao(self):
+        """Spec 009 (IC-16): declaracao_disponivel real (membro efetivo e resultado liberado);
+        a sessão Realizada sem liberação não tem o atalho. [US-25][US-30][RBN-DEF-08.3]
+        """
+        cenario = sessao_liberada()
+        sessao = cenario["sessao"]
+        for chave, esperado in (("av1", True), ("orientador", True), ("suplente", False)):
+            with self.subTest(perfil=chave):
+                [linha] = [
+                    item for item in self.linhas(cenario[chave]) if item["sessao"].pk == sessao.pk
+                ]
+                self.assertEqual(linha["declaracao"], esperado)
+        self.client.force_login(cenario["av1"])
+        resposta = self.client.get(MINHAS_BANCAS)
+        self.assertContains(resposta, reverse("defesa:declaracao", args=[sessao.pk]))
+        self.client.force_login(self.membro)
+        self.assertNotContains(self.client.get(MINHAS_BANCAS), "Declaração")
 
     def test_cenario_2_7_sem_login_vai_ao_login_e_volta(self):
         resposta = self.client.get(MINHAS_BANCAS)

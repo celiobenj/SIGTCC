@@ -329,7 +329,11 @@ class TesteLiberacaoTcc1(BaseLiberacao):
         aviso = Notificacoes.objects.get(not_usu=self.secretaria)
         self.assertIn("encerrada com parecer Aprovado para TCC 2", aviso.not_mensagem)
         assuntos = {email.subject for email in mail.outbox}
-        self.assertEqual(assuntos, {"SIGTCC: resultado da defesa"})
+        # Spec 009 (IC-16): a liberação também envia a declaração de participação (MX-04).
+        self.assertEqual(
+            assuntos,
+            {"SIGTCC: resultado da defesa", "SIGTCC: declaração de participação em banca"},
+        )
         self.assertFalse([email for email in mail.outbox if "7,3" in email.body])
 
     def test_ponto_da_feat_09_depois_do_commit_e_robusto(self):
