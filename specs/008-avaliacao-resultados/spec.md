@@ -212,6 +212,16 @@ Benjamim na mesma data (índice Q-130; a divergência do D8 fica aberta para a P
   US-26 C9 (abrir o formulário com a sessão Agendada), cenário 3.18; rótulos do estado da
   avaliação pela matriz (RBN-DEF-06.8).
 
+### Session 2026-11-04
+
+- Q (emenda pedida pela spec 009, P1): a liberação aplica a E2 da US-28 (Coordenador de Curso sem
+  assinatura no perfil)? → A (Célio Benjamim, 2026-11-04): **sim**. Depois do commit da
+  liberação, `views_avaliacoes.liberar_resultado` chama a verificação da spec 009: com a E2, o
+  Orientador vê na tela "Não foi possível gerar a Ata Final: o Coordenador de Curso não possui
+  assinatura cadastrada no perfil" e o Coordenador (ou, sem Coordenador, a Secretaria do curso) é
+  notificado. A liberação, o status, o parecer e os avisos desta spec **não mudam**. Contrato §2
+  atualizado. Índice Q-144.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Consultar os critérios oficiais de avaliação (Priority: P1)

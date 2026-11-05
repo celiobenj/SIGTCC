@@ -14,7 +14,13 @@ from django.views.decorators.http import require_POST
 
 from sigtcc.apps.cadastro import services
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
-from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_avaliacoes, views_defesa
+from sigtcc.apps.defesa import (
+    mensagens,
+    permissoes_defesa,
+    services_avaliacoes,
+    services_documentos,
+    views_defesa,
+)
 from sigtcc.apps.defesa.forms_avaliacoes import (
     AssinaturaForm,
     ConfirmarLiberacaoForm,
@@ -199,7 +205,11 @@ def liberar_resultado(request, def_id):
     se o botão está habilitado (senão volta à sessão, D1). POST: liberação (MA-11); se a nota
     ou o parecer mudaram, reabre a confirmação com os novos valores (D10); em TCC 2 com 6,0 ou
     mais sem parecer, volta à sessão para Registrar parecer (revisão I-03).
-    [US-27][RBN-DEF-06.2][RBN-DEF-06.4][FR-023][FR-026][FR-027]
+    Emenda da spec 009 à spec 008 (IC-02; P1, Q-144): depois da MA-11, com a liberação já
+    gravada, services_documentos.avisar_pendencia_da_ata aplica a E2 da US-28 (curso sem
+    Coordenador ou Coordenador sem assinatura): alerta o Orientador e notifica o Coordenador ou a
+    Secretaria do curso, sem desfazer nem bloquear a liberação.
+    [US-27][RBN-DEF-06.2][RBN-DEF-06.4][FR-023][FR-026][FR-027][US-28][RBN-DEF-07.1]
     """
     registro = views_defesa.sessao_ou_404(def_id)
     if not permissoes_defesa.pode_liberar(request.user, registro):
@@ -223,6 +233,10 @@ def liberar_resultado(request, def_id):
         return redirect("defesa:sessao", def_id=registro.pk)
     if resultado.liberado:
         messages.success(request, mensagens.MA11_RESULTADO_LIBERADO)
+        # Spec 009 (IC-02; emenda à spec 008, Q-144): E2 da US-28 depois do commit da liberação.
+        texto = services_documentos.avisar_pendencia_da_ata(registro)
+        if texto:
+            messages.warning(request, texto)
         return redirect("defesa:sessao", def_id=registro.pk)
     if resultado.precisa_registrar_parecer:
         messages.error(request, mensagens.SELECIONE_O_PARECER)

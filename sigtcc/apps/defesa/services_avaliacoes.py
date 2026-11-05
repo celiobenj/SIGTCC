@@ -481,7 +481,9 @@ def minhas_bancas(usuario):
     carregados, o estado da avaliação, o destaque de pendência (só membro efetivo, sessão
     Agendada, Reagendada ou Em Andamento e avaliação ainda não Enviada; D11), o link do Documento
     para Defesa e se a declaração existe (feat-09). Roda antes o início automático das sessões
-    (research A8). Sem consulta por linha. [US-25][RBN-DEF-05.4][RBN-DEF-08.3][FR-003 a FR-006]
+    (research A8). Uma consulta para as linhas e, para cada sessão Realizada, uma consulta a mais
+    (services_documentos.declaracao_disponivel; spec 009, IC-15).
+    [US-25][RBN-DEF-05.4][RBN-DEF-08.3][FR-003 a FR-006]
     """
     services_defesa.iniciar_sessoes_vencidas()
     linhas = (

@@ -73,6 +73,8 @@ MENSAGENS_403 = {
     # Spec 008 (US-25 E8, US-26 E5 e US-27 E4).
     mensagens_defesa.ACESSO_RESTRITO,
     mensagens_defesa.APENAS_O_ORIENTADOR,
+    # Spec 009 (US-28 E6). [US-28][RBN-DEF-07.3]
+    mensagens_defesa.SEM_PERMISSAO_DOCUMENTOS,
 }
 
 

@@ -1,0 +1,24 @@
+{% comment %}
+  Bloco "Ouvintes" da janela Sessão de defesa (spec 009, IC-03; contrato §3 da spec 007; FR-009):
+  o botão Ouvintes ao Presidente da banca e ao Professor da Disciplina da turma, com a sessão Em
+  Andamento ou Realizada e a turma não arquivada; nos demais status, a mensagem da E7 a eles; a
+  lista só para leitura a quem pode ver (Secretaria do curso, presenças gravadas fora do status,
+  turma arquivada). Tudo vem de ouvintes (services_ouvintes.visao_da_sessao); sem regra aqui.
+  [US-30][RBN-DEF-08.2]
+{% endcomment %}
+{% if ouvintes.pode_ver or ouvintes.pode_editar or ouvintes.aviso %}
+<section class="cartao mt16" data-bloco-ouvintes>
+  <header><span class="ms">how_to_reg</span><h3>Ouvintes</h3></header>
+  {% if ouvintes.aviso %}<div class="alerta info" role="status"><span class="ms">info</span><span class="texto">{{ ouvintes.aviso }}</span></div>{% endif %}
+  {% if ouvintes.pode_ver %}
+  {% for ouvinte in ouvintes.lista %}
+  <div class="dado" data-ouvinte><span>{{ ouvinte.ouv_matricula }}</span><b>{{ ouvinte.ouv_nome }}</b></div>
+  {% empty %}
+  <p class="muted">Nenhum ouvinte registrado.</p>
+  {% endfor %}
+  {% endif %}
+  {% if ouvintes.pode_editar %}
+  <div class="flex mt16"><a class="btn" href="{% url 'defesa:ouvintes' sessao.pk %}"><span class="ms">how_to_reg</span>Ouvintes</a></div>
+  {% endif %}
+</section>
+{% endif %}

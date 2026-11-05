@@ -2,12 +2,16 @@
 arquivo, entrega como download sem cache e recusa recurso de rede ou de fora das pastas do
 projeto, sem acessar a rede.
 
-[US-27][US-28][RBN-DEF-07.1][RBN-DEF-08.3][revisão I-12][revisão M-01] (tasks T003)
+Spec 009 (IC-14): duas threads gerando ao mesmo tempo produzem dois PDFs válidos.
+
+[US-27][US-28][RBN-DEF-07.1][RBN-DEF-08.3][revisão I-12][revisão M-01] (tasks T003; spec 009
+T006)
 """
 
 import os
 import socket
 import tempfile
+import threading
 from pathlib import Path
 from unittest import mock
 
@@ -108,3 +112,29 @@ class TestePdf(SimpleTestCase):
             with override_settings(MEDIA_ROOT=midia):
                 pdf.gerar_pdf(TEMPLATE, {"titulo": "Folha de Aprovação"})
             self.assertEqual(os.listdir(midia), [])
+
+    def test_duas_threads_geram_dois_pdfs_validos(self):
+        """Spec 009 (IC-14; research B7): a trava de módulo serializa a renderização e as duas
+        gerações simultâneas terminam com PDFs válidos. [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.3]
+        """
+        self.assertIsInstance(pdf._TRAVA_PDF, type(threading.Lock()))
+        resultados, erros = {}, []
+        largada = threading.Barrier(2)
+
+        def gerar(chave):
+            try:
+                largada.wait()
+                resultados[chave] = pdf.gerar_pdf(TEMPLATE, {"titulo": chave, "texto": chave})
+            except Exception as erro:  # registrado para o teste falhar com o motivo
+                erros.append(erro)
+
+        threads = [threading.Thread(target=gerar, args=(nome,)) for nome in ("Ata", "Declaração")]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=60)
+        self.assertEqual(erros, [])
+        self.assertEqual(set(resultados), {"Ata", "Declaração"})
+        for conteudo in resultados.values():
+            self.assertTrue(conteudo.startswith(b"%PDF"))
+            self.assertTrue(conteudo.rstrip().endswith(b"%%EOF"))

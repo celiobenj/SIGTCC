@@ -6,7 +6,8 @@
   data, horário, aluno, título e status; as avaliações pendentes em destaque (só membros
   efetivos); os atalhos Documento, Critérios de avaliação, Avaliar e Declaração; a data abre a
   janela Sessão de defesa. Sem regra aqui: tudo vem de services_avaliacoes.minhas_bancas.
-  [US-25][RBN-DEF-05.4][RBN-DEF-08.3][FR-003 a FR-006]
+  Spec 009 (IC-04): o atalho Declaração baixa a segunda via (defesa:declaracao).
+  [US-25][RBN-DEF-05.4][RBN-DEF-08.3][FR-003 a FR-006][US-30]
 {% endcomment %}
 {% block titulo %}Minhas bancas · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -32,7 +33,7 @@
             {% if b.documento %}<a class="btn txt" href="{{ b.documento }}" target="_blank" rel="noopener"><span class="ms">description</span>Documento</a>{% endif %}
             <a class="btn txt" href="{% url 'defesa:criterios' %}"><span class="ms">rule</span>Critérios de avaliação</a>
             {% if b.membro_efetivo %}<a class="btn" href="{% url 'defesa:avaliacao' b.sessao.pk %}"><span class="ms">rate_review</span>Avaliar</a>{% endif %}
-            {% if b.declaracao %}<a class="btn txt" href="{% url 'defesa:sessao' b.sessao.pk %}"><span class="ms">description</span>Declaração</a>{% endif %}
+            {% if b.declaracao %}<a class="btn txt" href="{% url 'defesa:declaracao' b.sessao.pk %}"><span class="ms">description</span>Declaração</a>{% endif %}
           </div>
         </td>
       </tr>

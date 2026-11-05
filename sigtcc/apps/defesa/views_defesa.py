@@ -15,7 +15,14 @@ from sigtcc.apps.cadastro import services_contas
 from sigtcc.apps.cadastro.models import Cursos, TCCs, Turmas, Usuarios
 from sigtcc.apps.cadastro.permissoes import perfil_requerido, tem_perfil
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada, turma_arquivada
-from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_avaliacoes, services_defesa
+from sigtcc.apps.defesa import (
+    mensagens,
+    permissoes_defesa,
+    services_avaliacoes,
+    services_defesa,
+    services_documentos,
+    services_ouvintes,
+)
 from sigtcc.apps.defesa.choices import EventoDefesa, PapelBanca
 from sigtcc.apps.defesa.forms_avaliacoes import ParecerForm
 from sigtcc.apps.defesa.forms_defesa import CAMPOS_DA_BANCA as CAMPOS_DO_FORMULARIO
@@ -46,8 +53,10 @@ def defesas(request):
     cronológica, com os filtros de período (Período Letivo por padrão), Status e, para o
     Coordenador de Curso e a Secretaria, Curso (US-39, com o curso do usuário por padrão); o
     botão "Agendar defesa" para quem agenda. Filtro inválido (E3, E4): mostra a mensagem e a
-    lista do Período Letivo, sem aplicar o filtro.
+    lista do Período Letivo, sem aplicar o filtro. Spec 009 (IC-06): o botão "Agenda de defesas
+    (PDF)" para quem pode gerar a agenda, com os filtros atuais.
     [US-21][US-40][US-39][RBN-DEF-01.4][RBN-DEF-01.5][RBN-CAD-14.1][FR-024 a FR-028]
+    [US-30][RBN-DEF-08.1]
     """
     services_defesa.iniciar_sessoes_vencidas()
     form = FiltroDefesasForm(request.GET or None)
@@ -69,8 +78,19 @@ def defesas(request):
         "curso": curso,
         "pode_agendar": tem_perfil(request.user, *PERFIS_QUE_AGENDAM),
         "url_agendar": reverse("defesa:agendar"),
+        # Spec 009 (IC-06): botão "Agenda de defesas (PDF)", com a query string atual.
+        # [US-30][RBN-DEF-08.1]
+        "pode_gerar_agenda": permissoes_defesa.pode_gerar_agenda(request.user),
+        "url_agenda": _com_consulta(reverse("defesa:agenda"), request.GET.urlencode()),
     }
     return render(request, "defesa/defesas.html", contexto)
+
+
+def _com_consulta(endereco, consulta):
+    """Endereço com a query string atual (os mesmos filtros da tela), se houver.
+    [US-30][RBN-DEF-08.1]
+    """
+    return f"{endereco}?{consulta}" if consulta else endereco
 
 
 @perfil_requerido("docente")
@@ -227,8 +247,11 @@ def contexto_da_sessao(request, registro, form_parecer=None):
     """Contexto da janela "Sessão de defesa": cabeçalho, banca e botões da spec 007 e, pela spec
     008 (IC-05), o que a visão da avaliação permite (blocos avaliacao e resultado; sigilo em
     services_avaliacoes.visao_da_avaliacao) e o formulário Registrar parecer. Usado também pela
-    view registrar_parecer para mostrar o erro no campo Parecer.
-    [US-40][US-23][US-24][US-25][US-27][RBN-DEF-01.4][RBN-DEF-06.6][RBN-DEF-06.8][FR-030]
+    view registrar_parecer para mostrar o erro no campo Parecer. Spec 009 (IC-03): a chave
+    `documentos` com os botões do bloco documentos (services_documentos.visao_dos_documentos)
+    e `ouvintes` com o bloco ouvintes (services_ouvintes.visao_da_sessao).
+    [US-30][RBN-DEF-08.2][US-40][US-23][US-24][US-25][US-27][RBN-DEF-01.4][RBN-DEF-06.6][RBN-DEF-06.8][FR-030]
+    [US-28][RBN-DEF-07.3]
     """
     banca = services_defesa.banca_por_papel(registro)
     ordem = (*services_defesa.PAPEIS_TITULARES, PapelBanca.SUPLENTE)
@@ -244,6 +267,12 @@ def contexto_da_sessao(request, registro, form_parecer=None):
         # Spec 008 (IC-05): blocos de avaliação e de resultado. [US-25][US-27][RBN-DEF-06.8]
         "visao": services_avaliacoes.visao_da_avaliacao(request.user, registro),
         "form_parecer": form_parecer or ParecerForm(),
+        # Spec 009 (IC-03): bloco documentos (Ata Final, Folha de Aprovação e Declaração).
+        # [US-28][RBN-DEF-07.3]
+        "documentos": services_documentos.visao_dos_documentos(request.user, registro),
+        # Spec 009 (IC-03): bloco ouvintes (lista, botão Ouvintes e a mensagem da E7).
+        # [US-30][RBN-DEF-08.2]
+        "ouvintes": services_ouvintes.visao_da_sessao(request.user, registro),
     }
 
 

@@ -1,0 +1,28 @@
+{% extends "defesa/pdf/base_pdf.html" %}
+{% comment %}
+  Folha de Aprovação em PDF (spec 009, US1; FR-002 e FR-008; research B4), só em TCC 2 com
+  parecer Aprovado ou Aprovado com Correções (a view confere folha_aplicavel), gerada sob demanda
+  sem gravar arquivo. Estende base_pdf.html (fontes Roboto locais, sem base.html). Contexto de
+  services_documentos.dados_da_folha: cabeçalho e curso, título, aluno, a frase da banca, os 3
+  membros (titulação, nome, papel Presidente/Avaliador/Avaliador e assinatura da cópia da
+  avaliação) e "Manaus, DD de mês de AAAA". Nenhuma nota nem média (SC-001). Sem regra aqui.
+  [US-28][RBN-DEF-07.2]
+{% endcomment %}
+{% block corpo %}
+<style>
+  .cabecalho { text-align: center; font-size: 10pt; }
+  .centro { text-align: center; }
+  .assinaturas td { text-align: center; padding-top: 16pt; font-size: 10pt; }
+</style>
+<p class="cabecalho"><b>{{ cabecalho }}</b><br>{{ curso }}</p>
+<h1>Folha de Aprovação</h1>
+<p class="centro"><b>{{ titulo }}</b></p>
+<p class="centro">{{ aluno }}</p>
+<p>{{ frase }}</p>
+<table class="assinaturas" width="100%">
+  {% for membro in membros %}
+  <tr><td>{% if membro.assinatura %}<img src="{{ membro.assinatura }}" width="140" height="47"><br>{% endif %}{{ membro.titulacao }} {{ membro.nome }} – {{ membro.papel }}</td></tr>
+  {% endfor %}
+</table>
+<p class="centro">{{ local_e_data }}</p>
+{% endblock %}

@@ -24,7 +24,7 @@ from django.core import signing
 from django.core.cache import caches
 from django.core.exceptions import PermissionDenied
 from django.core.files.storage import default_storage
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, send_mail
 from django.db import IntegrityError, connection, transaction
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
@@ -208,15 +208,26 @@ def enviar_email_apos_commit(usuario, assunto, template, contexto):
         transaction.on_commit(lambda: threading.Thread(target=enviar, daemon=True).start())
 
 
-def enviar_email(destino, assunto, template, contexto, conta=None):
-    """Envia um e-mail de texto a partir de um template de cadastro/emails/.
+def enviar_email(destino, assunto, template, contexto, conta=None, anexos=None):
+    """Envia um e-mail de texto a partir de um template de e-mail (cadastro/emails/ ou
+    defesa/emails/).
 
+    Sem `anexos`, a mesma chamada a send_mail de sempre (testes da spec 003 a substituem por
+    mock.patch). Com `anexos` (lista de (nome, bytes, tipo MIME)), monta um EmailMessage com os
+    anexos e envia sem silenciar falhas (spec 009, IC-12: declaração de participação em PDF).
     Em falha, registra FALHA_ENVIO_EMAIL só com o tipo da exceção (nunca a mensagem, que pode
-    trazer o endereço) e levanta a exceção de novo para quem chamou decidir. [FR-026][Q13][A5]
+    trazer o endereço) e levanta a exceção de novo para quem chamou decidir.
+    [FR-026][Q13][A5][US-30][RBN-DEF-08.3]
     """
     corpo = render_to_string(template, contexto)
     try:
-        send_mail(assunto, corpo, None, [destino], fail_silently=False)
+        if anexos:
+            email = EmailMessage(assunto, corpo, None, [destino])
+            for nome, conteudo, tipo in anexos:
+                email.attach(nome, conteudo, tipo)
+            email.send(fail_silently=False)
+        else:
+            send_mail(assunto, corpo, None, [destino], fail_silently=False)
     except Exception as erro:
         registrar_evento(EventoAcesso.FALHA_ENVIO_EMAIL, conta, detalhe=type(erro).__name__)
         raise

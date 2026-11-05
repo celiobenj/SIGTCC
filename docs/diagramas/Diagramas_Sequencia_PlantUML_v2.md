@@ -858,7 +858,7 @@ end box
 
 ' Declaração das Linhas de Vida
 
-note right of Usuario : Ouvintes e ocorrências: também o Professor da Disciplina (E9). A Secretaria só consulta\nos ouvintes (fluxo C). Agenda em PDF: também Coordenador de Curso e Secretaria (fluxo G)
+note right of Usuario : Ouvintes: também o Professor da Disciplina (E9). Ocorrências: só o Orientador (RBN-DEF-08.5).\nA Secretaria só consulta os ouvintes (fluxo C). Agenda em PDF: também Coordenador de Curso e Secretaria (fluxo G)
 
 Usuario -> Tela ++ : 1: abrirModalOuvintes(def_id)
 Tela -> Ctrl ++ : 1.1: carregarOuvintesDefesa(def_id, usuario)
@@ -4871,6 +4871,14 @@ ref over Ctrl, tcc : AlterarStatusTCC\ngrava o HistoricoStatusTCC
 Ctrl -> Gerador ++ : 3.1.8: enviarDeclaracoes(def_id)
 deactivate Gerador
 note right of Gerador : depois do commit (services_documentos.ao_liberar_resultado);\ndeclaração em PDF gerada em memória, por e-mail, com código único
+Ctrl -> coordenador ++ : 3.1.9: pendencia = verificarAssinatura(cur_id)
+coordenador -->> Ctrl -- : pendencia
+opt pendencia != vazio (US-28 E2: curso sem Coordenador ou Coordenador sem assinatura no perfil)
+    note right of Ctrl : feat-09 (P1, Q-144): depois do commit, numa transação própria, notifica\no Coordenador (MX-03, link do perfil) ou a Secretaria do curso (MX-09);\na liberação não é desfeita nem bloqueada
+    Ctrl -->> Tela : alertaE2
+    Tela -> Tela ++ : 3.3: exibirAlerta("Não foi possível gerar a Ata Final: o Coordenador de\nCurso não possui assinatura cadastrada no perfil")
+    deactivate Tela
+end
 Ctrl -->> Tela -- : resultado
 Tela -> Tela ++ : 3.5: exibirResultadoLiberado(def_nota_final, def_parecer)
 deactivate Tela
@@ -4890,8 +4898,8 @@ Ctrl -> defesa ++ : 4.1.2: dadosResultado = obterResultado(def_id)
 defesa -->> Ctrl -- : dadosResultado
 Ctrl -> coordenador ++ : 4.1.3: assinaturaCoordenador = obterAssinatura(cur_id)
 coordenador -->> Ctrl -- : assinaturaCoordenador
-note right of coordenador : o Coordenador de Curso atual no momento do download;\nsem a imagem, o PDF sai sem ela (spec 008, Clarifications)
-break assinaturaCoordenador = vazio (US-28 E2: Coordenador sem assinatura cadastrada;\ntratamento no download a definir na feat-09, Q-140)
+note right of coordenador : o Coordenador de Curso atual no momento do download;\ncaminho gravado com o arquivo ausente: o PDF sai sem a imagem (Q-140)
+break assinaturaCoordenador = vazio (US-28 E2: curso sem Coordenador ou caminho vazio no perfil;\na mensagem da E2 ao Orientador e a MX-08 aos demais, sem nova notificação, P1)
     Ctrl -->> Tela : erro
     Tela -> Tela ++ : 4.3: exibirErro(erro)
     deactivate Tela

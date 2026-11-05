@@ -134,3 +134,62 @@ MA13_AVALIACAO_JA_ENVIADA = (
     "Sua avaliação já foi enviada. Para alterá-la, use Reabrir minha avaliação"
 )
 MA14_ASSINATURA_GRANDE = "A imagem da assinatura deve ter no máximo 2000 × 1000 pixels"
+
+# =============================================================================================
+# Spec 009 (Documentação e Encerramento; IC-08): só acréscimo. Textos entre aspas das US-28 e
+# US-30 e as MX da tabela "Mensagens a validar com a PO" da spec 009.
+# =============================================================================================
+
+# US-28 (E1 a E3, E6) e US-30 (E1 a E4, E7, F).
+# [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-07.3][RBN-DEF-08.1][RBN-DEF-08.2]
+SEM_PERMISSAO_DOCUMENTOS = "Você não tem permissão para acessar os documentos desta defesa"
+ATA_SEM_ASSINATURA_COORDENADOR = (
+    "Não foi possível gerar a Ata Final: o Coordenador de Curso não possui assinatura cadastrada "
+    "no perfil"
+)
+ERRO_AO_GERAR_DOCUMENTOS = (
+    "Erro ao gerar os documentos da defesa. Tente realizar o download novamente em instantes"
+)
+FOLHA_NAO_SE_APLICA = "A Folha de Aprovação não se aplica ao TCC 1"
+FOLHA_REPROVADO = "Documento indisponível para trabalhos reprovados"
+OUVINTES_SALVOS = "Ouvintes salvos com sucesso"
+MATRICULA_INVALIDA = "A matrícula deve conter exatamente 10 dígitos numéricos"
+OUVINTE_REPETIDO = "Este aluno já foi registrado como ouvinte nesta defesa"
+NOME_INVALIDO = "O nome deve conter apenas letras, acentos e espaços e ter até 150 caracteres"
+OUVINTES_FORA_DO_STATUS = "O registro de ouvintes fica disponível apenas durante ou após a sessão"
+SEM_DEFESAS_AGENDADAS = "Não existem defesas agendadas para o período selecionado"
+
+# MX-01 a MX-09 (MX-02 removida, P4). MX-06 tem texto exato no diagrama 05
+# (RegistrarOuvintesAgenda, passo 3.4); as demais são provisórias até a PO validar (Q-142).
+# [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.3][RBN-DEF-08.4][RBN-DEF-08.5][RBN-CAD-13.1]
+MX01_OCORRENCIAS_LONGAS = "As ocorrências devem ter até 2.000 caracteres"  # PROVISÓRIO (Q-142)
+# PROVISÓRIO (Q-142)
+MX03_COORDENADOR_SEM_ASSINATURA = (
+    "Cadastre a imagem de assinatura no seu perfil: a Ata Final da defesa de {aluno} não pode ser "
+    "gerada sem ela."
+)
+MX04_ASSUNTO = "SIGTCC: declaração de participação em banca"  # PROVISÓRIO (Q-142)
+# PROVISÓRIO (Q-142)
+MX04_CORPO = (
+    "Segue em anexo a declaração da sua participação na banca da defesa de {aluno} em {data}. "
+    "Código de validação: {codigo}."
+)
+# PROVISÓRIO (Q-142)
+MX05_DECLARACAO = (
+    "Declaramos que {nome}, {titulacao}, participou como {papel} da banca examinadora da defesa "
+    'do Trabalho de Conclusão de Curso "{titulo}", de {aluno}, do curso de {curso}, realizada em '
+    "{data}. Código de validação: {codigo}. Este código não constitui assinatura digital."
+)
+MX06_OCORRENCIAS_SALVAS = "Ocorrências salvas com sucesso"
+# PROVISÓRIO (Q-142)
+MX07_SEM_OUVINTES = "Nenhum ouvinte encontrado para o período e filtros selecionados"
+# PROVISÓRIO (Q-142)
+MX08_ATA_INDISPONIVEL = (
+    "A Ata Final está indisponível: o Coordenador de Curso ainda não cadastrou a assinatura no "
+    "perfil"
+)
+# PROVISÓRIO (Q-142)
+MX09_CURSO_SEM_COORDENADOR = (
+    "O curso {curso} não tem Coordenador de Curso cadastrado: a Ata Final da defesa de {aluno} "
+    "não pode ser gerada."
+)

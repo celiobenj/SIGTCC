@@ -25,6 +25,7 @@ feature o cumpre: nunca grava `def_status` nem `Historico_Defesas` direto, nunca
 |---|---|
 | `ao_liberar_resultado(sessao)` | registrado com `transaction.on_commit(..., robust=True)` depois da liberação. **Stub** nesta feature (só log). A feat-09 troca o corpo para enviar as declarações de participação por e-mail (RBN-DEF-08.3), sem mudar a assinatura, rodando o trabalho pesado numa thread (como `enviar_email_apos_commit`) e registrando a falha só no log (D9). |
 | `declaracao_disponivel(sessao, usuario) -> bool` | decide o botão Declaração em Minhas bancas. **Stub** que devolve `False`; a feat-09 troca o corpo. |
+| `services_documentos.avisar_pendencia_da_ata(sessao) -> str \| None` (emenda de 2026-11-04, spec 009 P1; plan 009, research B5) | chamada por `views_avaliacoes.liberar_resultado` **depois do commit**, de forma síncrona, para mostrar ao Orientador o alerta da E2 e notificar o Coordenador ou a Secretaria do curso. Não grava nada da sessão, não desfaz a liberação e uma falha dela só vai para o log. |
 
 ## 3. PDF sob demanda (`pdf.py`)
 

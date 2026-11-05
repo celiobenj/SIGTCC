@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% comment %}
+  Tela "Ouvintes das defesas" da Secretaria (spec 009, US4; protótipo de 17/10, só o visual):
+  somente leitura, com o filtro de período das defesas (_filtro_periodo.html, spec 007) e o filtro
+  de Curso (US-39); colunas Nome Completo, Matrícula, Título, Aluno, Orientador, Data da defesa e
+  as horas complementares (2 horas por sessão assistida, RBN-DEF-08.4). Sem linhas, a MX-07. Tudo
+  vem de services_ouvintes.ouvintes_das_defesas; sem regra aqui.
+  [US-30][RBN-DEF-08.4][RBN-DEF-01.5][RBN-CAD-14.1]
+{% endcomment %}
+{% block titulo %}Ouvintes das defesas · SIGTCC{% endblock %}
+{% block conteudo %}
+<h2 class="pg">Ouvintes das defesas</h2>
+<form method="get" class="cartao mt16" novalidate>
+  {% for erro in form.non_field_errors %}<div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>{% endfor %}
+  <div class="blocos">
+    {% include "defesa/_filtro_periodo.html" %}
+    <div class="campo">
+      <label for="id_curso">Curso</label>
+      <select class="inp" id="id_curso" name="curso">
+        {% for c in cursos %}<option value="{{ c.pk }}"{% if curso == c.pk|stringformat:"d" %} selected{% endif %}>{{ c.cur_nome }}</option>{% endfor %}
+        <option value="todos"{% if curso == "todos" %} selected{% endif %}>Todos</option>
+      </select>
+    </div>
+  </div>
+  <div class="flex mt16"><button type="submit" class="btn"><span class="ms">filter_list</span>Filtrar</button></div>
+</form>
+<div class="tabela-wrap mt16">
+  <table class="tabela larga">
+    <thead>
+      <tr><th>Nome Completo</th><th>Matrícula</th><th>Título</th><th>Aluno</th><th>Orientador</th><th>Data da defesa</th><th>Horas complementares</th></tr>
+    </thead>
+    <tbody>
+      {% for linha in linhas %}
+      <tr data-linha-ouvinte>
+        <td>{{ linha.pre_ouv.ouv_nome }}</td>
+        <td>{{ linha.pre_ouv.ouv_matricula }}</td>
+        <td>{{ linha.pre_def.def_tcc.tcc_titulo }}</td>
+        <td>{{ linha.pre_def.def_tcc.tcc_alu.alu.usu_nome }}</td>
+        <td>{{ linha.orientador_nome }}</td>
+        <td>{{ linha.pre_def.def_data|date:"d/m/Y" }}</td>
+        <td>{{ horas }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="muted">{{ vazia }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

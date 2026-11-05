@@ -42,6 +42,28 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
     acesso à rede, para a feat-09; ponto de chamada `services_documentos.ao_liberar_resultado`;
   - `popular_demo` com avaliações de exemplo, uma sessão pronta para liberar e dois resultados
     liberados.
+- Documentação e Encerramento (spec 009, feat-09; US-28 e US-30), no app `defesa`, sem tabela nem
+  coluna nova:
+  - Ata Final e Folha de Aprovação em PDF, gerados sob demanda a cada download e nunca gravados,
+    com as notas e as assinaturas da banca (a Folha sem nenhuma nota) e a assinatura do
+    Coordenador de Curso; botões na janela "Sessão de defesa" e na aba Meu TCC (documentos de
+    cada sessão Realizada); recusas por perfil, antes da liberação, da Folha de TCC 1 e de
+    reprovado, e a E2 (Coordenador sem assinatura ou curso sem Coordenador) na liberação e em
+    todo download;
+  - janela "Ouvintes" (Presidente da banca e Professor da Disciplina, com a sessão Em Andamento ou
+    Realizada), com Adicionar, Remover e Salvar, e a lista só leitura para a Secretaria do curso;
+  - janela "Ocorrências" do Presidente da banca, até a liberação, com contador de 2.000
+    caracteres, e leitura pela Secretaria e pelo Professor da Disciplina;
+  - tela "Ouvintes das defesas" (item de menu só da Secretaria), com os filtros de período e de
+    Curso e 2 horas por sessão assistida;
+  - "Agenda de defesas (PDF)" na tela Defesas, com as sessões Agendadas e Reagendadas do período,
+    agrupadas por dia;
+  - declaração de participação em PDF, com código de validação, enviada por e-mail a cada membro
+    efetivo na liberação (numa thread, sem travar a tela) e segunda via em "Minhas bancas" e na
+    janela da sessão;
+  - `popular_demo` com ouvintes e ocorrências nas sessões Realizadas, Suplente não acionado,
+    assinatura do Coordenador de Eng. Comp. e Coordenadores de SI e LC sem assinatura (E2), e a
+    tabela de contas do roteiro da spec 009.
 
 ### Alterado
 
@@ -57,6 +79,12 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 - Decisão de configuração (Q-134): **sem armazenamento externo**. Os PDFs (Ata Final, Folha de
   Aprovação e declarações) são gerados sob demanda, a cada download, e nunca gravados; as
   assinaturas continuam no disco do serviço (risco aceito). Sai do "Planejado para a v0.3.0".
+- Emendas da spec 009 nas specs 003, 005 e 008: `enviar_email` aceita anexos (IC-12);
+  `gerar_pdf` serializa a renderização com uma trava (IC-14); a liberação do resultado mostra o
+  alerta da E2 da US-28 depois da confirmação e notifica o Coordenador ou a Secretaria do curso
+  (IC-02; Q-144); `ao_liberar_resultado` e `declaracao_disponivel` deixam de ser stubs; o atalho
+  "Declaração" de Minhas bancas baixa a segunda via (IC-04); saem os botões desabilitados "Ata
+  Final" e "Folha de Aprovação" do cartão Defesa da aba Meu TCC (IC-05).
 
 ### Corrigido
 

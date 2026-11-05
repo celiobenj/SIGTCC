@@ -23,7 +23,7 @@ from sigtcc.apps.cadastro.choices import (
     StatusSubmissao,
     StatusTCC,
 )
-from sigtcc.apps.cadastro.models import HistoricoStatusTCC, Notificacoes
+from sigtcc.apps.cadastro.models import Coordenadores, HistoricoStatusTCC, Notificacoes
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_secretaria
 from sigtcc.apps.cadastro.tests.apoio_orientacao import salvar_artigo
 from sigtcc.apps.defesa import services_avaliacoes, services_defesa
@@ -329,7 +329,11 @@ class TesteLiberacaoTcc1(BaseLiberacao):
         aviso = Notificacoes.objects.get(not_usu=self.secretaria)
         self.assertIn("encerrada com parecer Aprovado para TCC 2", aviso.not_mensagem)
         assuntos = {email.subject for email in mail.outbox}
-        self.assertEqual(assuntos, {"SIGTCC: resultado da defesa"})
+        # Spec 009 (IC-16): a liberação também envia a declaração de participação (MX-04).
+        self.assertEqual(
+            assuntos,
+            {"SIGTCC: resultado da defesa", "SIGTCC: declaração de participação em banca"},
+        )
         self.assertFalse([email for email in mail.outbox if "7,3" in email.body])
 
     def test_ponto_da_feat_09_depois_do_commit_e_robusto(self):
@@ -400,3 +404,56 @@ class TesteLiberacaoTcc1(BaseLiberacao):
         self.assertContains(pagina, "Liberação do Resultado")
         self.assertContains(pagina, "Nota final: 7,6; parecer: Aprovado para TCC 2")
         self.assertEqual(Defesas.objects.get(pk=self.sessao.pk).def_nota_final, D("7.6"))
+
+
+class TesteE2NaLiberacao(BaseLiberacao):
+    """Spec 009 (IC-16; tasks T023): emenda da E2 da US-28 à liberação (P1, Q-144). Com o curso
+    sem Coordenador de Curso, depois da MA-11 o Orientador vê o alerta da E2, a Secretaria do
+    curso recebe a MX-09 e a liberação continua gravada.
+    [US-27][US-28][RBN-DEF-06.4][RBN-DEF-07.1][RBN-DEF-07.3]
+    """
+
+    descricao = DescricaoTurma.TCC_1
+
+    def setUp(self):
+        super().setUp()
+        # Curso sem Coordenador: o mesmo que sessao_com_banca(com_coordenador=False).
+        Coordenadores.objects.filter(cor_cur=self.tcc.tcc_tur.tur_cur).delete()
+
+    def test_alerta_da_e2_depois_da_ma_11(self):
+        self.enviar_todos(D("8.0"), D("8.0"), D("8.0"))
+        self.entrar()
+        resposta = self.client.post(
+            self.url_liberar, {"nota": "8.0", "parecer": Parecer.APROVADO_PARA_TCC_2}, follow=True
+        )
+        self.assertRedirects(resposta, self.url_sessao)
+        pagina = resposta.content.decode()
+        ma11 = "Resultado liberado com sucesso"
+        e2 = (
+            "Não foi possível gerar a Ata Final: o Coordenador de Curso não possui assinatura "
+            "cadastrada no perfil"
+        )
+        self.assertIn(ma11, pagina)
+        self.assertIn(e2, pagina)
+        self.assertLess(pagina.index(ma11), pagina.index(e2))
+        self.recarregar()
+        self.assertEqual(self.sessao.def_status, StatusSessao.REALIZADA)
+        self.assertTrue(
+            Notificacoes.objects.filter(
+                not_usu=self.secretaria, not_mensagem__contains="não tem Coordenador de Curso"
+            ).exists()
+        )
+
+    def test_falha_no_aviso_nao_desfaz_a_liberacao(self):
+        self.enviar_todos(D("8.0"), D("8.0"), D("8.0"))
+        with mock.patch(
+            "sigtcc.apps.defesa.services_documentos._notificar_pendencia",
+            side_effect=RuntimeError("falhou"),
+        ):
+            with self.assertLogs("sigtcc.defesa", level="ERROR"):
+                self.confirmar("8.0", Parecer.APROVADO_PARA_TCC_2)
+        self.recarregar()
+        self.assertEqual(self.sessao.def_status, StatusSessao.REALIZADA)
+        self.assertFalse(
+            Notificacoes.objects.filter(not_mensagem__contains="não tem Coordenador").exists()
+        )

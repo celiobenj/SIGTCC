@@ -37,6 +37,7 @@ from django.test.utils import override_settings
 from django.utils import timezone
 
 from sigtcc.apps.cadastro import (
+    services,
     services_artigos,
     services_atas,
     services_entregas,
@@ -78,7 +79,7 @@ from sigtcc.apps.cadastro.models import (
     Usuarios,
 )
 from sigtcc.apps.defesa import cargas as cargas_defesa
-from sigtcc.apps.defesa import services_avaliacoes, services_defesa
+from sigtcc.apps.defesa import services_avaliacoes, services_defesa, services_ouvintes
 from sigtcc.apps.defesa.choices import Conceito, FormatoSessao, PapelBanca, Parecer
 from sigtcc.apps.defesa.models import Criterios, Defesas
 
@@ -271,6 +272,7 @@ class Command(BaseCommand):
                 self._turmas_sistemas()
                 self._turmas_licenciatura()
                 self._defesas()
+                self._assinaturas_dos_coordenadores()
                 services_entregas.marcar_nao_entregues()
         self._resumo()
         self._roteiro_defesa()
@@ -588,8 +590,13 @@ class Command(BaseCommand):
             self._apto(orientador, tcc)
             if not aprovados:
                 # Spec 008 (IC-08): resultado do TCC 1 liberado pela sessão de defesa (US-27).
+                # Spec 009 (IC-09): com ocorrências e ouvintes (B-03; quickstart, passo 13a).
                 self.sessao_tcc1_liberada = self._sessao_liberada(
-                    tcc, orientador, (self.ori_ecp2, self.ori_ecp3), self.hoje - timedelta(days=90)
+                    tcc,
+                    orientador,
+                    (self.ori_ecp2, self.ori_ecp3),
+                    self.hoje - timedelta(days=90),
+                    encerramento=True,
                 )
             else:
                 self._resultado(tcc, p1, StatusTCC.APROVADO_PARA_TCC_2)
@@ -1046,16 +1053,19 @@ class Command(BaseCommand):
     def _sessao_realizada(self, tcc, orientador):
         """Sessão Realizada de TCC 2: agendada há 5 dias, iniciada pelo início automático e com o
         resultado "Aprovado" liberado pela US-27 (spec 008, IC-08: 3 envios assinados, parecer
-        registrado e liberação pelo serviço, que muda a sessão e o Status do TCC).
+        registrado e liberação pelo serviço, que muda a sessão e o Status do TCC). Spec 009
+        (IC-09): com Suplente não acionado, ocorrências e ouvintes.
         [US-24][US-27][RBN-DEF-01.2][RBN-DEF-06.4][contrato §5]
         """
         self.sessao_realizada = self._sessao_liberada(
             tcc,
             orientador,
-            (self.ori_ecp2, self.ori_ecp3),
+            # Spec 009 (IC-09): com Suplente não acionado (US-28 cenário 15; quickstart, passo 4).
+            (self.ori_ecp2, self.ori_ecp3, self.extra_ecp2),
             self.hoje - timedelta(days=5),
             parecer=Parecer.APROVADO,
             local="Bloco B, sala 14",
+            encerramento=True,
         )
 
     # =========================================================================================
@@ -1085,10 +1095,14 @@ class Command(BaseCommand):
             )
             services_avaliacoes.enviar_avaliacao(membro, sessao.pk, linhas, assinatura)
 
-    def _sessao_liberada(self, tcc, autor, banca, dia, parecer=None, local="Bloco B, sala 12"):
+    def _sessao_liberada(
+        self, tcc, autor, banca, dia, parecer=None, local="Bloco B, sala 12", encerramento=False
+    ):
         """Sessão agendada no passado, iniciada pelo início automático, com os 3 envios e o
         resultado liberado pelo Orientador (Presidente) pelo serviço da US-27; em TCC 2, com o
-        parecer registrado antes. [US-25][US-27][RBN-DEF-06.4][IC-08]
+        parecer registrado antes. Spec 009 (IC-09): com `encerramento`, as ocorrências (só antes
+        da liberação, RBN-DEF-08.5) e os ouvintes (RBN-DEF-08.2) pelos serviços da US-30.
+        [US-25][US-27][RBN-DEF-06.4][IC-08][US-30][RBN-DEF-08.2][RBN-DEF-08.5]
         """
         sessao = self._agendar(tcc, autor, dia, time(10, 0), banca, local=local)
         services_defesa.iniciar_sessoes_vencidas()
@@ -1096,6 +1110,8 @@ class Command(BaseCommand):
         for membro, nota in zip(services_defesa.membros_efetivos(sessao), ("8.5", "8.0", "7.5")):
             self._avaliar(sessao, membro, nota)
         presidente = services_defesa.banca_por_papel(sessao)[PapelBanca.ORIENTADOR_PRESIDENTE]
+        if encerramento:
+            self._encerramento(sessao, presidente)
         if parecer is not None:
             services_avaliacoes.registrar_parecer(presidente, sessao.pk, parecer)
             sessao.refresh_from_db()
@@ -1187,6 +1203,40 @@ class Command(BaseCommand):
         self.sessao_cancelada = services_defesa.cancelar(
             self.prof_lic, sessao.pk, "Aluno pediu mais prazo para revisar o projeto."
         )
+
+    # =========================================================================================
+    # Documentação e encerramento (spec 009, IC-09; research B14)
+    # =========================================================================================
+
+    def _encerramento(self, sessao, presidente):
+        """Ocorrências e ouvintes da sessão Em Andamento, pelos serviços da US-30 (o Presidente
+        registra as duas coisas; as ocorrências só antes da liberação, RBN-DEF-08.5).
+        [US-30][RBN-DEF-08.2][RBN-DEF-08.5][IC-09]
+        """
+        services_ouvintes.registrar_ocorrencias(
+            presidente,
+            sessao.pk,
+            "Queda de energia por 10 minutos durante a arguição; a sessão foi retomada em "
+            "seguida, sem prejuízo à apresentação.",
+        )
+        self.matricula_ouvinte = getattr(self, "matricula_ouvinte", 2026900000)
+        linhas = []
+        for nome in ("Ana Clara Souza", "Bruno Henrique Lima", "Camila Nogueira Reis"):
+            self.matricula_ouvinte += 1
+            linhas.append((nome, str(self.matricula_ouvinte)))
+        services_ouvintes.salvar_ouvintes(presidente, sessao.pk, linhas)
+
+    def _assinaturas_dos_coordenadores(self):
+        """A assinatura estática do repositório (static/img/assinatura_demo.png) copiada para o
+        perfil do Coordenador de Engenharia de Computação, pelo serviço da US-38 (Ata gerável);
+        os Coordenadores de Sistemas de Informação e de Licenciatura ficam sem assinatura (E2 da
+        US-28). Em produção, a cópia some no deploy seguinte e a Ata sai sem a imagem (Q-140).
+        [US-28][US-38][RBN-DEF-07.1][RBN-CAD-13.1][IC-09]
+        """
+        with open(ASSINATURA_DEMO, "rb") as imagem:
+            services.salvar_assinatura(
+                self.coord_ecp, File(imagem, name="assinatura_demo.png"), "png"
+            )
 
     # =========================================================================================
     # Resumo
@@ -1352,6 +1402,7 @@ class Command(BaseCommand):
             f"{_aluno_do(self.sessao_tcc1_liberada.def_tcc)} (TCC 1) e de "
             f"{_aluno_do(self.sessao_realizada.def_tcc)} (TCC 2)."
         )
+        self._roteiro_documentos()
         self.stdout.write("\nSessões de defesa:")
         for sessao in Defesas.objects.select_related(
             "def_tcc__tcc_alu__alu", "def_tcc__tcc_tur"
@@ -1367,3 +1418,55 @@ class Command(BaseCommand):
                 f"  {sessao.def_status:<13} {sessao.def_data:%d/%m/%Y} {sessao.def_h_inicio:%H:%M}"
                 f"  {_aluno_do(sessao.def_tcc)} ({turma}) — {membros}"
             )
+
+    def _roteiro_documentos(self):
+        """Contas do roteiro manual da spec 009 (quickstart.md, T051): documentos, ouvintes,
+        ocorrências, declaração e agenda. [US-28][US-30][spec 009, IC-09]
+        """
+        realizada, tcc1 = self.sessao_realizada, self.sessao_tcc1_liberada
+        banca = services_defesa.banca_por_papel(realizada)
+        banca1 = services_defesa.banca_por_papel(tcc1)
+        pronta = services_defesa.banca_por_papel(self.sessao_pronta)
+        presidente = PapelBanca.ORIENTADOR_PRESIDENTE
+        self.stdout.write("\nRoteiro da spec 009 (quickstart.md) — todas com a senha informada:")
+        self._linha("Perfil", "Curso", "Login (e-mail ou matrícula)", "Uso no roteiro")
+        aluno = _aluno_do(realizada.def_tcc)
+        linhas = [
+            ("Presidente (TCC 2)", "Eng. Comp.", banca[presidente].usu_email, f"Sessão de {aluno}"),
+            (
+                "1º Avaliador",
+                "Eng. Comp.",
+                banca[PapelBanca.PRIMEIRO_AVALIADOR].usu_email,
+                "Ata, Folha e Declaração",
+            ),
+            (
+                "2º Avaliador",
+                "Eng. Comp.",
+                banca[PapelBanca.SEGUNDO_AVALIADOR].usu_email,
+                "Ata, Folha e Declaração",
+            ),
+            (
+                "Suplente não acionado",
+                "Eng. Comp.",
+                banca[PapelBanca.SUPLENTE].usu_email,
+                "Ata recusada (US-28 cenário 15)",
+            ),
+            ("Aluno (TCC 2)", "Eng. Comp.", self._login_aluno(realizada.def_tcc), "Meu TCC"),
+            (
+                "Presidente (TCC 1)",
+                "Eng. Comp.",
+                banca1[presidente].usu_email,
+                "Ocorrências e ouvintes do TCC 1 (B-03)",
+            ),
+            ("Aluno (TCC 1)", "Eng. Comp.", self._login_aluno(tcc1.def_tcc), "Folha recusada"),
+            (
+                "Orientador (sessão pronta)",
+                "Sist. Inf.",
+                pronta[presidente].usu_email,
+                "Liberar Resultado com a E2",
+            ),
+            ("Coordenador c/ assinatura", "Eng. Comp.", self.coord_ecp.usu_email, "Agenda"),
+            ("Coordenadora s/ assinatura", "Sist. Inf.", self.coord_si.usu_email, "E2 (MX-03)"),
+        ]
+        for perfil, curso, login, uso in linhas:
+            self._linha(perfil, curso, login, uso)
