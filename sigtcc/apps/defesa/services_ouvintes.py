@@ -9,10 +9,12 @@ def_status nem Historico_Defesas e nunca cria sessão.
 """
 
 from django.db import transaction
+from django.db.models import OuterRef, Subquery
 
 from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_defesa
+from sigtcc.apps.defesa.choices import PapelBanca, StatusSessao
 from sigtcc.apps.defesa.forms_ouvintes import repetidas, validar_matricula, validar_nome
-from sigtcc.apps.defesa.models import Ouvintes, PresencaOuvintes
+from sigtcc.apps.defesa.models import BancaDefesa, Defesas, Ouvintes, PresencaOuvintes
 
 
 class ErroOuvintes(Exception):
@@ -110,3 +112,34 @@ def visao_da_sessao(usuario, sessao):
         "pode_editar": permissoes_defesa.pode_editar_ouvintes(usuario, sessao),
         "aviso": mensagens.OUVINTES_FORA_DO_STATUS if responsavel and fora_do_status else None,
     }
+
+
+# =============================================================================================
+# Ouvintes das defesas (US-30 C; RBN-DEF-08.4; research B11)
+# =============================================================================================
+
+# Horas complementares por sessão assistida (RBN-DEF-08.4); valor fixo exibido, não gravado.
+# [US-30][RBN-DEF-08.4]
+HORAS_POR_SESSAO = "2 horas"
+
+
+def ouvintes_das_defesas(periodo, cur_id):
+    """Linhas da tela "Ouvintes das defesas" (FR-016 e FR-017), reaproveitáveis pelo relatório
+    RBN-REL-03.4 do Épico 3: uma por presença em sessão Realizada (o ouvinte de duas sessões
+    aparece duas vezes), com o ouvinte, o TCC, o aluno e o nome do Orientador (Presidente da
+    banca) por Subquery, numa consulta. `periodo` é o Q sobre Defesas de
+    FiltroPeriodoForm.filtro() (sem prefixo); `cur_id` é o curso ou None (todos). Ordem: data da
+    defesa, título e nome do ouvinte. [US-30][RBN-DEF-08.4][RBN-DEF-01.5][RBN-CAD-14.1]
+    """
+    sessoes = Defesas.objects.filter(periodo, def_status=StatusSessao.REALIZADA)
+    if cur_id is not None:
+        sessoes = sessoes.filter(def_tcc__tcc_tur__tur_cur_id=cur_id)
+    presidente = BancaDefesa.objects.filter(
+        ban_def=OuterRef("pre_def"), ban_papel=PapelBanca.ORIENTADOR_PRESIDENTE
+    ).values("ban_usu__usu_nome")[:1]
+    return (
+        PresencaOuvintes.objects.filter(pre_def__in=sessoes)
+        .select_related("pre_ouv", "pre_def__def_tcc__tcc_alu__alu")
+        .annotate(orientador_nome=Subquery(presidente))
+        .order_by("pre_def__def_data", "pre_def__def_tcc__tcc_titulo", "pre_ouv__ouv_nome")
+    )

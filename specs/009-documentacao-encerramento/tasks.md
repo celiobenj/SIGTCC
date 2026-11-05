@@ -253,21 +253,21 @@ arquivada; abrir, adicionar, remover e salvar como cada perfil (cenários 2.1 a 
 **Independent Test**: ouvintes em sessões Realizadas de cursos e períodos diferentes (cenários 4.1
 a 4.7).
 
-- [ ] T030 [US4] [US-30][RBN-DEF-08.4][RBN-DEF-01.5] (FR-016, FR-017) Em `sigtcc/apps/defesa/services_ouvintes.py`: `ouvintes_das_defesas(periodo,
+- [X] T030 [US4] [US-30][RBN-DEF-08.4][RBN-DEF-01.5] (FR-016, FR-017) Em `sigtcc/apps/defesa/services_ouvintes.py`: `ouvintes_das_defesas(periodo,
   cur_id)` com `periodo` = Q sobre `Defesas` de `FiltroPeriodoForm.filtro()` (sem prefixo):
   `PresencaOuvintes.objects.filter(pre_def__in=Defesas.objects.filter(periodo,
   def_status=Realizada[, def_tcc__tcc_tur__tur_cur_id=cur_id]))`, `select_related` do ouvinte, TCC
   e aluno, `orientador_nome` por `Subquery` do Presidente, ordem data, título, nome (research B11)
-- [ ] T031 [US4] [US-30][RBN-DEF-08.4][RBN-DEF-01.5][RBN-CAD-14.1] (FR-016, FR-017) Em `sigtcc/apps/defesa/views_ouvintes.py`: `ouvintes_das_defesas(request)` com
+- [X] T031 [US4] [US-30][RBN-DEF-08.4][RBN-DEF-01.5][RBN-CAD-14.1] (FR-016, FR-017) Em `sigtcc/apps/defesa/views_ouvintes.py`: `ouvintes_das_defesas(request)` com
   `perfil_requerido("secretaria")`, `iniciar_sessoes_vencidas()`, `FiltroPeriodoForm` e
   `services_contas.filtro_de_curso`; criar `sigtcc/templates/defesa/ouvintes_das_defesas.html`
   (inclui `_filtro_periodo.html` e o filtro de Curso; colunas Nome Completo, Matrícula, Título,
   Aluno, Orientador, Data da defesa, "2 horas"; vazia → MX-07); rota `ouvintes_das_defesas`
   (`ouvintes-das-defesas/`) em `urls.py`
-- [ ] T032 [US4] [US-30][RBN-DEF-08.4] (FR-016) IC-07: em `sigtcc/apps/cadastro/menu.py`, item "Ouvintes das defesas" (perfis
+- [X] T032 [US4] [US-30][RBN-DEF-08.4] (FR-016) IC-07: em `sigtcc/apps/cadastro/menu.py`, item "Ouvintes das defesas" (perfis
   `("secretaria",)`, rota `defesa:ouvintes_das_defesas`, ícone `how_to_reg`, `ordem` 15, depois de
   "Minhas bancas", na mesma seção do item "Defesas")
-- [ ] T033 [US4] [US-30][RBN-DEF-08.4][RBN-DEF-01.5][RBN-CAD-14.1] (FR-016 a FR-018) Testes `sigtcc/apps/defesa/tests/test_us30_ouvintes_das_defesas.py`: 4.1 a 4.7
+- [X] T033 [US4] [US-30][RBN-DEF-08.4][RBN-DEF-01.5][RBN-CAD-14.1] (FR-016 a FR-018) Testes `sigtcc/apps/defesa/tests/test_us30_ouvintes_das_defesas.py`: 4.1 a 4.7
   (colunas; ouvinte em duas sessões aparece duas vezes com 2 horas; Em Andamento/Cancelada fora;
   regra do filtro de Curso; MX-07; docente, Professor da Disciplina e Coordenador recusados; login);
   `assertNumQueries` constante com 1 e com 10 linhas; o menu mostra o item só à Secretaria

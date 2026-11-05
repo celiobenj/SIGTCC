@@ -5,16 +5,27 @@ Recusas: sem login, o login com next; sem permissão (inclusive a turma arquivad
 corrida entre o GET e o POST), 403 sem texto, e o handler403 mostra a M-02 "Você não tem
 permissão para esta ação" (US-30 E9; revisão I-01).
 
-[US-30][RBN-DEF-08.2]
+Spec 009 (US4): tela "Ouvintes das defesas" da Secretaria (RBN-DEF-08.4), somente leitura.
+
+[US-30][RBN-DEF-08.2][RBN-DEF-08.4]
 """
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 
+from sigtcc.apps.cadastro import services_contas
+from sigtcc.apps.cadastro.models import Cursos
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada
-from sigtcc.apps.defesa import mensagens, permissoes_defesa, services_ouvintes, views_defesa
+from sigtcc.apps.defesa import (
+    mensagens,
+    permissoes_defesa,
+    services_defesa,
+    services_ouvintes,
+    views_defesa,
+)
+from sigtcc.apps.defesa.forms_defesa import FiltroPeriodoForm
 from sigtcc.apps.defesa.forms_ouvintes import OuvintesFormSet
 
 PREFIXO_OUVINTES = "ouv"
@@ -63,3 +74,27 @@ def ouvintes(request, def_id):
         ]
         formset = OuvintesFormSet(initial=inicial, prefix=PREFIXO_OUVINTES)
     return render(request, "defesa/form_ouvintes.html", {"formset": formset, "sessao": registro})
+
+
+@perfil_requerido("secretaria")
+def ouvintes_das_defesas(request):
+    """Tela "Ouvintes das defesas" (US-30 C; FR-016 a FR-018), só da Secretaria (P8; os demais
+    perfis recebem a M-02): os ouvintes das sessões Realizadas, com o filtro de período das
+    defesas (spec 007; Período Letivo por padrão; filtro inválido mostra a mensagem e usa o
+    padrão) e o filtro de Curso (spec 002, US-39). Sem linhas: MX-07. Antes, o início automático
+    das sessões vencidas, como as demais telas da Defesa.
+    [US-30][RBN-DEF-08.4][RBN-DEF-01.5][RBN-CAD-14.1]
+    """
+    services_defesa.iniciar_sessoes_vencidas()
+    form = FiltroPeriodoForm(request.GET or None)
+    form.is_valid()
+    cur_id, curso = services_contas.filtro_de_curso(request.user, request.GET.get("curso"))
+    contexto = {
+        "form": form,
+        "linhas": services_ouvintes.ouvintes_das_defesas(form.filtro(), cur_id),
+        "cursos": Cursos.objects.order_by("cur_nome"),
+        "curso": curso,
+        "horas": services_ouvintes.HORAS_POR_SESSAO,
+        "vazia": mensagens.MX07_SEM_OUVINTES,
+    }
+    return render(request, "defesa/ouvintes_das_defesas.html", contexto)

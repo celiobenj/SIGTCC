@@ -60,6 +60,15 @@ ITENS = [
         "perfis": ("docente", "membro_externo"),
         "ordem": 14,
     },
+    # Spec 009 (IC-07): Ouvintes das defesas, só da Secretaria (P8), depois de "Minhas bancas",
+    # na mesma seção do item "Defesas". [US-30][RBN-DEF-08.4][FR-016]
+    {
+        "rotulo": "Ouvintes das defesas",
+        "icone": "how_to_reg",
+        "rota": "defesa:ouvintes_das_defesas",
+        "perfis": ("secretaria",),
+        "ordem": 15,
+    },
     # Spec 006: tela do Coordenador de Curso na seção nova "Gestão", como no protótipo de 17/10
     # (a seção aparece depois de "Cadastros", pela ordem do processador; research R19).
     # [US-20][FR-041][IC-01]
