@@ -33,13 +33,15 @@ def defesas_realizadas(usuario, filtros):
 `FiltroRelatorioForm(dados, usuario=..., registrado=...)` herda `FiltroPeriodoForm`, normaliza os dados
 antes de validar e só cria os campos que o relatório declara. Curso e Docente só existem na gestão.
 
-- `form.is_valid()` falso: `montar_relatorio` não consulta, e a view não exporta. `form.filtro()` herdado é proibido
+- `form.is_valid()` falso: `montar_relatorio` não consulta, e a view não exporta. `form.querystring()` também
+  existe com filtro inválido, para o redirecionamento. `form.filtro()` herdado é proibido
   (`NotImplementedError`); use `form.filtros()`.
 - `Filtros` tem `gestao`, `ano`, `semestre`, `inicio`, `fim`, `cur_id`, `doc_id`, `agrupar_por` e
   `abrangencia`, além de:
   - `periodo_q(prefixo="")`: usa `filtro_de_periodo`. Para sessão: `periodo_q("pre_def__")`;
   - `resumo()`: linha "Mostrando";
   - `querystring()`: forma canônica dos filtros.
+  - `aplicados`: pares (rótulo, valor) que vão para a linha "Mostrando" e para os arquivos.
 - **Invariantes**: ou `ano` e `semestre` (Período Letivo), ou `inicio` e `fim`, nunca os dois. Relatório só
   com `ano_semestre` usa `ano` e `semestre`, e `periodo_q` filtra a turma do TCC. `cur_id=None` significa
   Todos só com `gestao=True`. Fora da gestão, `doc_id = usuario.pk`, nunca `None`.
@@ -62,8 +64,9 @@ Relatorio(colunas, linhas, totais=(), kpis=(), grafico=None, como_calculado=(),
 - **Valor canônico**: `int` para contagem (`numerica=True`) e `str` já formatada para o resto, ou `Celula`
   para link. Data como `DD/MM/AAAA`. Vazio é `""`, nunca `"-"`. `bool`, `date` e `None` são recusados em
   `__post_init__`.
-- `Linha.celulas(colunas)` devolve sempre uma lista ordenada de `Celula`: é o que o template e os
-  exportadores usam, sem condição no template.
+- `Linha.celulas(colunas)` devolve sempre uma lista ordenada de `Celula`. O template e os exportadores
+  usam `Relatorio.linhas_prontas()` e `totais_prontos()`, que já trazem as células e as sub-listas
+  resolvidas, porque o template não chama método com argumento.
 - `link_seguro(valor)`, em `estrutura.py`, devolve `Celula` com `url` só para `https` com netloc. No
   template: `<a href="{{ c.url }}" target="_blank" rel="noopener noreferrer">`, com autoescape e sem
   `mark_safe`. Nas sub-listas do Painel, nenhuma célula tem `url`.

@@ -131,6 +131,9 @@ Docente "Todos" e nenhuma atividade.
 
 **Papel "Suplente"**: linha com `ban_usu_substituido` preenchido.
 
+**Sem linha Total**: a US-31 não define Total nas colunas nem no arquivo; o Painel não tem essa linha.
+A frase do relatório reaproveita a descrição da lista (MR-08), sem texto novo.
+
 ## R8. Linha expansível
 
 **Decisão**: botão real na primeira célula (`aria-expanded`, `aria-controls`) e a linha da sub-lista
