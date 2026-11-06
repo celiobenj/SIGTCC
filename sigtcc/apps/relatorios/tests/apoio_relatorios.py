@@ -60,6 +60,8 @@ def aluno_com_status(turma, status=StatusTCC.EM_ANDAMENTO, quando=None, orientad
     """
     aluno = matricular_aluno(turma, status_tcc=StatusTCC.EM_ANDAMENTO, **dados)
     tcc = tcc_de(aluno, turma)
+    if quando is not None:
+        HistoricoStatusTCC.objects.filter(hst_tcc=tcc).update(hst_data_hora=quando)
     if status == StatusTCC.SEM_PROPOSTA:
         tcc.tcc_status = status
         tcc.tcc_titulo = tcc.tcc_resumo = tcc.tcc_modalidade = None

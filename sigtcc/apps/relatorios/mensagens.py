@@ -25,3 +25,23 @@ MR11_DESCRICAO_HISTORICO = "Vinculados, defesas, artigos e desistências em cada
 MR12_DESCRICAO_PRODUCAO = "Trabalhos do período por curso, área de interesse ou modalidade"
 MR13_DESCRICAO_ARTIGOS = "TCCs na modalidade Artigo Científico, com publicação e aproveitamento"
 MR14_APROVEITAMENTO_SEM_ANALISE = "Aguardando aceite ou publicação"
+
+# MR-03 e MR-04 do Painel de atividades por docente. [US-31][RBN-REL-01.1]
+COMO_ATIVIDADES = (
+    "No período letivo, as orientações e coorientações contam pelas turmas do período. Numa troca "
+    "de orientador, os dois docentes contam.",
+    "Num intervalo de datas, conta o vínculo em vigor em algum dia do intervalo. Sem data de fim, "
+    "o vínculo termina na data do Status final do TCC.",
+    "Um intervalo que cruze a matrícula em TCC 2 conta o aluno em TCC 1 e em TCC 2. Depois da "
+    "matrícula, o aluno Aprovado para TCC 2 conta até essa data.",
+    "Cada aluno conta uma vez por coluna.",
+    "Total de Bancas conta as sessões Realizadas em que o docente atuou como Presidente, 1º "
+    "Avaliador, 2º Avaliador ou Suplente acionado.",
+)
+DEFINICAO_CURSO_LOTACAO = "Curso de Lotação do docente"
+DEFINICAO_ORIENTANDOS_TCC_1 = "Alunos orientados em turmas de TCC 1"
+DEFINICAO_ORIENTANDOS_TCC_2 = "Alunos orientados em turmas de TCC 2"
+DEFINICAO_COORIENTACOES = "Coorientações aceitas"
+DEFINICAO_BANCAS = (
+    "Sessões Realizadas como Presidente, 1º Avaliador, 2º Avaliador ou Suplente acionado"
+)
