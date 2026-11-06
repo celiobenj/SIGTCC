@@ -111,7 +111,7 @@ ver todos e filtrar; como Aluno, não ver o item.
 - [X] T024 [US1] [US-31][RBN-REL-01.1] (FR-021 a FR-027) Implementar `atividades_docente(usuario, filtros)` em `services_relatorios.py`, registrada com `periodo`, `ano_semestre`, `curso` e `docente`: três consultas, fim efetivo de R18 com `output_field`, colunas e sub-listas derivadas numa passagem, deduplicação por (TCC, papel), ordens de R7, nova conferência de `filtros.gestao`, sub-listas sem link, `rotulo_linha`, `tem_registros` próprio (research R7, R18)
 - [X] T025 [US1] [US-31] (FR-072, FR-076) KPIs do Docente e da Gestão, gráfico só com docentes com banca (sem gráfico se nenhum tiver), "Como é calculado" com a sobreposição de TCC 1 e TCC 2 e o efeito do Aprovado para TCC 2 (research R18), `definicao` das colunas
 - [X] T026 [US1] [US-31] (SC-001) Teste de N+1 em `tests/test_us31_atividades.py`, com `CaptureQueriesContext`, comparando 1 e 10 docentes (research R12)
-- [ ] T027 [US1] [US-31][RBN-REL-01.1] IC-05: em `sigtcc/apps/cadastro/management/commands/popular_demo.py`, cenário dos relatórios para a US-31 (período passado, troca de orientador, TCC Concluído antigo, suplente acionado) e tabela do roteiro
+- [X] T027 [US1] [US-31][RBN-REL-01.1] IC-05: em `sigtcc/apps/cadastro/management/commands/popular_demo.py`, cenário dos relatórios para a US-31 (período passado, troca de orientador, TCC Concluído antigo, suplente acionado) e tabela do roteiro
 
 **Checkpoint**: **base pronta para o Célio**. Avisar que a feat-11 pode partir da branch.
 

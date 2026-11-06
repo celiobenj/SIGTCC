@@ -21,6 +21,7 @@ from django.utils import timezone
 from sigtcc.apps.cadastro import services_contas, services_orientacao
 from sigtcc.apps.cadastro.choices import (
     StatusConta,
+    StatusOrientacao,
     StatusSolicitacao,
     StatusTCC,
     StatusTurma,
@@ -29,6 +30,7 @@ from sigtcc.apps.cadastro.choices import (
 )
 from sigtcc.apps.cadastro.models import (
     Notificacoes,
+    Orientacoes,
     SolicitacoesOrientacao,
     TCCs,
     Turmas,
@@ -489,6 +491,29 @@ class TestePopularDemo(TesteTurmas):
         self.assertTrue(
             [s for s in em_andamento if PapelBanca.SUPLENTE in services_defesa.banca_por_papel(s)]
         )
+
+    def test_cenario_do_painel_de_atividades(self):
+        """Spec 010 (IC-05): troca de orientador real e Suplente acionado em período passado.
+        [US-31][RBN-REL-01.1][FR-023][FR-024]
+        """
+        trocado = Orientacoes.objects.get(
+            ori_doc=self.usuario("Adriana Lopes Viana").docentes,
+            ori_tcc__tcc_tur__tur_identificador="ECP-TCC1-2026.2",
+            ori_status=StatusOrientacao.ENCERRADA,
+        )
+        self.assertIsNotNone(trocado.ori_data_fim)
+        self.assertTrue(
+            Orientacoes.objects.filter(
+                ori_tcc=trocado.ori_tcc,
+                ori_doc=self.usuario("Carlos Eduardo Pinheiro").docentes,
+                ori_status=StatusOrientacao.ATIVA,
+            ).exists()
+        )
+        acionado = BancaDefesa.objects.get(ban_usu_substituido__isnull=False)
+        self.assertEqual(acionado.ban_usu, self.usuario("Henrique Matos Couto"))
+        self.assertEqual(acionado.ban_def.def_status, StatusSessao.REALIZADA)
+        self.assertEqual(acionado.ban_def.def_tcc.tcc_tur.tur_semestre, 1)
+        self.assertIn("Roteiro da spec 010", self.saida.getvalue())
 
     def test_tccs_aptos_sem_sessao_para_agendar(self):
         aptos = [

@@ -272,6 +272,7 @@ class Command(BaseCommand):
                 self._turmas_sistemas()
                 self._turmas_licenciatura()
                 self._defesas()
+                self._cenario_relatorios()
                 self._assinaturas_dos_coordenadores()
                 services_entregas.marcar_nao_entregues()
         self._resumo()
@@ -594,9 +595,11 @@ class Command(BaseCommand):
                 self.sessao_tcc1_liberada = self._sessao_liberada(
                     tcc,
                     orientador,
-                    (self.ori_ecp2, self.ori_ecp3),
+                    # Spec 010 (IC-05): com o Suplente acionado, para o Painel de atividades.
+                    (self.ori_ecp2, self.ori_ecp3, self.extra_ecp2),
                     self.hoje - timedelta(days=90),
                     encerramento=True,
+                    acionar=PapelBanca.SEGUNDO_AVALIADOR,
                 )
             else:
                 self._resultado(tcc, p1, StatusTCC.APROVADO_PARA_TCC_2)
@@ -1096,20 +1099,33 @@ class Command(BaseCommand):
             services_avaliacoes.enviar_avaliacao(membro, sessao.pk, linhas, assinatura)
 
     def _sessao_liberada(
-        self, tcc, autor, banca, dia, parecer=None, local="Bloco B, sala 12", encerramento=False
+        self,
+        tcc,
+        autor,
+        banca,
+        dia,
+        parecer=None,
+        local="Bloco B, sala 12",
+        encerramento=False,
+        acionar=None,
     ):
         """Sessão agendada no passado, iniciada pelo início automático, com os 3 envios e o
         resultado liberado pelo Orientador (Presidente) pelo serviço da US-27; em TCC 2, com o
         parecer registrado antes. Spec 009 (IC-09): com `encerramento`, as ocorrências (só antes
-        da liberação, RBN-DEF-08.5) e os ouvintes (RBN-DEF-08.2) pelos serviços da US-30.
-        [US-25][US-27][RBN-DEF-06.4][IC-08][US-30][RBN-DEF-08.2][RBN-DEF-08.5]
+        da liberação, RBN-DEF-08.5) e os ouvintes (RBN-DEF-08.2) pelos serviços da US-30. Spec 010
+        (IC-05): com `acionar`, o Suplente assume o papel informado antes das avaliações.
+        [US-25][US-27][RBN-DEF-06.4][IC-08][US-30][RBN-DEF-08.2][RBN-DEF-08.5][US-23][RBN-DEF-02.2]
         """
         sessao = self._agendar(tcc, autor, dia, time(10, 0), banca, local=local)
         services_defesa.iniciar_sessoes_vencidas()
         sessao.refresh_from_db()
+        presidente = services_defesa.banca_por_papel(sessao)[PapelBanca.ORIENTADOR_PRESIDENTE]
+        if acionar is not None:
+            services_defesa.acionar_suplente(
+                presidente, sessao.pk, acionar, "Avaliador ausente por motivo de saúde."
+            )
         for membro, nota in zip(services_defesa.membros_efetivos(sessao), ("8.5", "8.0", "7.5")):
             self._avaliar(sessao, membro, nota)
-        presidente = services_defesa.banca_por_papel(sessao)[PapelBanca.ORIENTADOR_PRESIDENTE]
         if encerramento:
             self._encerramento(sessao, presidente)
         if parecer is not None:
@@ -1123,6 +1139,17 @@ class Command(BaseCommand):
             raise CommandError(f"Liberação de demonstração recusada: {resultado}")
         sessao.refresh_from_db()
         return sessao
+
+    def _cenario_relatorios(self):
+        """Spec 010 (IC-05): aluno com orientador trocado no semestre, pelos serviços da US-18.
+        Período passado, TCC Concluído e Suplente acionado já vêm das turmas de 2026/1.
+        [US-31][RBN-REL-01.1][FR-023]
+        """
+        turma = Turmas.objects.get(tur_identificador="ECP-TCC1-2026.2")
+        aluno = self._aluno(turma.tur_doc.doc, turma)
+        self.tcc_com_troca = self._proposta(aluno, turma)
+        self._orientador(aluno, turma, self.ori_ecp1)
+        self._orientador(aluno, turma, self.ori_ecp2)
 
     def _defesas(self):
         """Uma sessão em cada Status (a Realizada fica no TCC 2 de Eng. Comp. que recebeu o
@@ -1403,6 +1430,7 @@ class Command(BaseCommand):
             f"{_aluno_do(self.sessao_realizada.def_tcc)} (TCC 2)."
         )
         self._roteiro_documentos()
+        self._roteiro_relatorios()
         self.stdout.write("\nSessões de defesa:")
         for sessao in Defesas.objects.select_related(
             "def_tcc__tcc_alu__alu", "def_tcc__tcc_tur"
@@ -1418,6 +1446,26 @@ class Command(BaseCommand):
                 f"  {sessao.def_status:<13} {sessao.def_data:%d/%m/%Y} {sessao.def_h_inicio:%H:%M}"
                 f"  {_aluno_do(sessao.def_tcc)} ({turma}) — {membros}"
             )
+
+    def _roteiro_relatorios(self):
+        """Contas do roteiro manual da spec 010 (quickstart.md): Relatórios por perfil.
+        [US-31][RBN-REL-01.1][spec 010, IC-05]
+        """
+        aluno = self.tcc_com_troca
+        secretaria = f"demo.{_slug('Lúcia Helena Barros')}@{DOMINIO}"
+        self.stdout.write("\nRoteiro da spec 010 (quickstart.md) — todas com a senha informada:")
+        self._linha("Perfil", "Curso", "Login (e-mail ou matrícula)", "Uso no roteiro")
+        linhas = [
+            ("Docente", "Eng. Comp.", self.extra_ecp2.usu_email, "Só a própria linha; Suplente"),
+            ("Orientadora (troca)", "Eng. Comp.", self.ori_ecp1.usu_email, "Vínculo Encerrado"),
+            ("Orientador (troca)", "Eng. Comp.", self.ori_ecp2.usu_email, "Orientador atual"),
+            ("Professor", "Eng. Comp.", self.prof_ecp1.usu_email, "Lista do Docente"),
+            ("Coordenador", "Eng. Comp.", self.coord_ecp.usu_email, "Os 6 relatórios"),
+            ("Secretaria", "Eng. Comp.", secretaria, "Painel e Membros Externos"),
+            ("Aluno", "Eng. Comp.", self._login_aluno(aluno), "Sem o item Relatórios"),
+        ]
+        for perfil, curso, login, uso in linhas:
+            self._linha(perfil, curso, login, uso)
 
     def _roteiro_documentos(self):
         """Contas do roteiro manual da spec 009 (quickstart.md, T051): documentos, ouvintes,
