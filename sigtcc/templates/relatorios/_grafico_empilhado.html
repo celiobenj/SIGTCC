@@ -1,0 +1,15 @@
+{% comment %}
+  Barra 100% empilhada em HTML e CSS (spec 010; FR-072 a FR-075), com legenda sempre visível e o
+  total escrito; curso sem alunos fica sem barra. Dados de graficos.empilhado; sem regra aqui.
+  [US-32][RBN-REL-02.3]
+{% endcomment %}
+<div class="legenda">{% for item in grafico.dados.legenda %}<span><i class="cor-{{ item.cor }}"></i>{{ item.rotulo }}</span>{% endfor %}</div>
+<div class="barras" role="img" aria-label="{{ grafico.resumo }}">
+  {% for linha in grafico.dados.linhas %}
+  <div class="barra">
+    <span>{{ linha.rotulo }}</span>
+    <div class="trilho">{% for parte in linha.partes %}<div class="preench cor-{{ parte.cor }}" style="width: {{ parte.largura }}%" title="{{ parte.rotulo }}: {{ parte.valor }}"></div>{% endfor %}</div>
+    <span class="valor">{{ linha.total }}</span>
+  </div>
+  {% endfor %}
+</div>

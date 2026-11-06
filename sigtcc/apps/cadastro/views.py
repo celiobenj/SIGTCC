@@ -46,6 +46,7 @@ from sigtcc.apps.cadastro.services import (
     EstadoTroca,
 )
 from sigtcc.apps.defesa import mensagens as mensagens_defesa
+from sigtcc.apps.relatorios import mensagens as mensagens_relatorios
 
 # Texto de cada tipo de conta no painel (spec FR-010).
 _ROTULO_TIPO = {
@@ -75,6 +76,8 @@ MENSAGENS_403 = {
     mensagens_defesa.APENAS_O_ORIENTADOR,
     # Spec 009 (US-28 E6). [US-28][RBN-DEF-07.3]
     mensagens_defesa.SEM_PERMISSAO_DOCUMENTOS,
+    # Spec 010 (IC-02; MR-06). [US-31][US-47][US-32][US-33][RBN-REL-01.1]
+    mensagens_relatorios.MR06_SEM_PERMISSAO,
 }
 
 

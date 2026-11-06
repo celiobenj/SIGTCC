@@ -12,6 +12,8 @@ urlpatterns = [
     path("", include("sigtcc.apps.cadastro.urls")),
     # Spec 007 (IC-01): Agendamento e Banca. [US-21][US-24][US-40]
     path("", include("sigtcc.apps.defesa.urls")),
+    # Spec 010 (IC-01): Dashboards de Produção. [US-31][US-47][US-32][US-33]
+    path("", include("sigtcc.apps.relatorios.urls")),
 ]
 
 # Logado sem permissão: página padrão com a M-02 (research A7). [FR-025]

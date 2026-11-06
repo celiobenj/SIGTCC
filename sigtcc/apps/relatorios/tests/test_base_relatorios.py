@@ -12,12 +12,14 @@ from django.db import connection
 from django.db.models import Count, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.test import SimpleTestCase
+from django.urls import reverse
 
 from sigtcc.apps.cadastro.choices import StatusTCC
 from sigtcc.apps.cadastro.models import AlunosTurmas, HistoricoStatusTCC
+from sigtcc.apps.cadastro.tests.apoio_contas import coordenador_de, secretaria_de
 from sigtcc.apps.cadastro.tests.apoio_turmas import EC, SI, criar_turma_de, matricular_aluno
 from sigtcc.apps.defesa.tests.apoio_defesa import docente
-from sigtcc.apps.relatorios import registro
+from sigtcc.apps.relatorios import exportacao, mensagens, registro
 from sigtcc.apps.relatorios.estrutura import (
     Coluna,
     Kpi,
@@ -189,3 +191,166 @@ class TesteRegistro(SimpleTestCase):
             self._registrar()
             with self.assertRaises(ImproperlyConfigured):
                 self._registrar()
+
+
+def relatorio_de_exemplo_registrado(perfis=("coordenador",), linhas=1):
+    """Registra, só no teste, um relatório como a feat-11 fará. [FR-003][SC-007]"""
+
+    @relatorio(
+        "exemplo-base",
+        "Relatório de exemplo",
+        "Descrição curta",
+        "Uma frase.",
+        perfis,
+        ("curso",),
+        5,
+    )
+    def consulta(usuario, filtros):
+        colunas = (Coluna("nome", "Nome"), Coluna("total", "Total", numerica=True))
+        return Relatorio(
+            colunas,
+            tuple(Linha({"nome": f"Linha {n}", "total": n}) for n in range(linhas)),
+            kpis=(Kpi("Linhas", linhas),),
+        )
+
+    return consulta
+
+
+class TesteTelaDaBase(TesteRelatorios):
+    """Um relatório de exemplo percorre a tela e os arquivos sem alterar a base.
+
+    [US-31][US-47][RBN-REL-01.1][FR-001][FR-002][FR-004][FR-018][SC-004][SC-007] (tasks T020)
+    """
+
+    def setUp(self):
+        super().setUp()
+        patcher = mock.patch.dict(registro._RELATORIOS)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.coordenador = coordenador_de(EC)
+        self.url = reverse("relatorios:relatorio", args=["exemplo-base"])
+
+    def exportar(self, formato, consulta=""):
+        return self.client.get(
+            reverse("relatorios:exportar", args=["exemplo-base", formato]) + consulta
+        )
+
+    def test_relatorio_novo_na_lista_tela_e_arquivos(self):
+        """SC-007: só o registro e a consulta."""
+        relatorio_de_exemplo_registrado()
+        self.client.force_login(self.coordenador)
+        resposta = self.client.get(reverse("relatorios:lista"))
+        self.assertContains(resposta, "Relatório de exemplo")
+        self.assertContains(resposta, "Descrição curta")
+        self.assertContains(resposta, mensagens.MR05_SELECIONE)
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, "Uma frase.")
+        self.assertContains(resposta, "Linha 0")
+        self.assertContains(resposta, "Mostrando:")
+        self.assertContains(resposta, "Gerado em")
+        for formato in ("pdf", "csv", "xlsx"):
+            with self.subTest(formato=formato):
+                arquivo = self.exportar(formato)
+                self.assertEqual(arquivo.status_code, 200)
+                self.assertIn("attachment", arquivo["Content-Disposition"])
+
+    def test_item_do_menu(self):
+        """FR-001: seção Gestão para Docente e Secretaria."""
+        relatorio_de_exemplo_registrado()
+        for usuario in (docente(), secretaria_de(EC), self.coordenador):
+            with self.subTest(usuario=usuario.pk):
+                self.client.force_login(usuario)
+                resposta = self.client.get(reverse("relatorios:lista"))
+                itens = [
+                    item
+                    for item in resposta.context["menu_itens"]
+                    if item["rotulo"] == "Relatórios"
+                ]
+                self.assertEqual(itens[0]["secao"], "Gestão")
+
+    def test_perfil_sem_acesso(self):
+        """FR-004: o relatório some da lista e o endereço direto é negado, com a MR-06."""
+        relatorio_de_exemplo_registrado()
+        self.client.force_login(docente())
+        resposta = self.client.get(reverse("relatorios:lista"))
+        self.assertNotContains(resposta, "Relatório de exemplo")
+        for destino in (self.url, reverse("relatorios:exportar", args=["exemplo-base", "csv"])):
+            with self.subTest(destino=destino):
+                negado = self.client.get(destino)
+                self.assertContains(negado, mensagens.MR06_SEM_PERMISSAO, status_code=403)
+                self.assertNotContains(negado, "Linha 0", status_code=403)
+
+    def test_id_e_formato_desconhecidos(self):
+        """Contrato de rotas: 404, depois da permissão."""
+        relatorio_de_exemplo_registrado()
+        self.client.force_login(self.coordenador)
+        self.assertEqual(
+            self.client.get(reverse("relatorios:relatorio", args=["nao-existe"])).status_code, 404
+        )
+        self.assertEqual(self.exportar("doc").status_code, 404)
+        self.client.force_login(docente())
+        self.assertEqual(self.exportar("doc").status_code, 403)
+
+    def test_sem_registros_desabilita_e_nao_exporta(self):
+        """E3: mensagem exata, sugestão, botões desabilitados e nenhum arquivo por endereço."""
+        relatorio_de_exemplo_registrado(linhas=0)
+        self.client.force_login(self.coordenador)
+        resposta = self.client.get(self.url)
+        self.assertContains(resposta, "Nenhum registro encontrado para os filtros selecionados")
+        self.assertContains(resposta, mensagens.MR01_SUGESTAO_VAZIO)
+        self.assertContains(resposta, f'disabled title="{mensagens.MR02_SEM_REGISTROS_EXPORTAR}"')
+        self.assertNotContains(resposta, "/exportar/")
+        arquivo = self.exportar("csv", "?curso=todos")
+        self.assertRedirects(arquivo, f"{self.url}?curso=todos")
+
+    def test_filtro_invalido_nao_consulta_nem_exporta(self):
+        """FR-014: sem resultado de outro período e sem arquivo, com os filtros de volta."""
+
+        @relatorio("com-datas", "Com datas", "D", "F", ("coordenador",), ("periodo",), 6)
+        def consulta(usuario, filtros):
+            raise AssertionError("Não deve consultar com filtro inválido")
+
+        self.client.force_login(self.coordenador)
+        consulta_url = "?data_inicial=2026-11-30&data_final=2026-11-01"
+        resposta = self.client.get(
+            reverse("relatorios:relatorio", args=["com-datas"]) + consulta_url
+        )
+        self.assertContains(resposta, "A data inicial não pode ser superior à data final")
+        self.assertNotContains(resposta, "Mostrando:")
+        arquivo = self.client.get(
+            reverse("relatorios:exportar", args=["com-datas", "pdf"]) + consulta_url
+        )
+        self.assertEqual(arquivo.status_code, 302)
+        self.assertIn("data_inicial=2026-11-30", arquivo["Location"])
+
+    def test_falha_ao_gerar_volta_com_a_mr07(self):
+        """Edge Cases: em qualquer formato, fica na tela e nada é baixado; o log só tem ids."""
+        relatorio_de_exemplo_registrado()
+        self.client.force_login(self.coordenador)
+        for formato in ("pdf", "csv", "xlsx"):
+            with self.subTest(formato=formato):
+                with mock.patch.object(
+                    exportacao, f"_{formato}", side_effect=ValueError("segredo")
+                ), self.assertLogs("sigtcc.relatorios", "ERROR") as log:
+                    resposta = self.exportar(formato)
+                self.assertEqual(resposta.status_code, 302)
+                self.assertTrue(resposta["Location"].startswith(self.url))
+                self.assertContains(
+                    self.client.get(resposta["Location"]), mensagens.MR07_FALHA_ARQUIVO
+                )
+                self.assertIn(f"formato={formato}", log.output[0])
+                self.assertNotIn("segredo", log.output[0])
+
+    def test_login_volta_ao_relatorio_pedido(self):
+        """E1: sem sessão, vai ao login com o endereço do relatório."""
+        relatorio_de_exemplo_registrado()
+        resposta = self.client.get(self.url)
+        self.assertEqual(resposta.status_code, 302)
+        self.assertIn(f"next={self.url}", resposta["Location"])
+
+    def test_limpar_filtros_e_link_sem_query(self):
+        """Heurística 3: o padrão vem de um link limpo."""
+        relatorio_de_exemplo_registrado()
+        self.client.force_login(self.coordenador)
+        resposta = self.client.get(self.url + "?curso=todos")
+        self.assertContains(resposta, f'<a class="btn txt" href="{self.url}">Limpar filtros</a>')
