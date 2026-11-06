@@ -58,13 +58,13 @@ nova.
 
 ### Mensagens e estrutura
 
-- [ ] T003 [P] [US-31][US-47][US-32][US-33] (FR-014, FR-017; MR-01 a MR-14) Criar `mensagens.py`, só com constantes: textos exatos das US ("Nenhum registro encontrado para os filtros selecionados", "Nenhum registro") e MR-01 a MR-14; reaproveitar `DATA_INICIAL_MAIOR` e `DATA_INVALIDA` de `defesa/mensagens.py` e `SEM_ORIENTADOR` de `cadastro/mensagens.py`
-- [ ] T004 [P] [US-31][RBN-REL-01.1] (FR-018, FR-066, C3) Teste e implementação de `estrutura.py`: `Coluna`, `Celula(texto, url=None, numerica=False)`, `Linha` com `celulas(colunas)` sempre em `Celula`, `SubLista`, `Kpi`, `Grafico`, `Relatorio(colunas, linhas, totais=(), kpis=(), grafico=None, como_calculado=(), tem_registros=None, rotulo_linha="", id="", titulo="", frase="", gerado_em=None)`; `__post_init__` recusa `bool`, `date` e `None`, mais de 4 KPIs e sub-listas sem `rotulo_linha`; `tem_registros=None` deriva de `bool(linhas)`; `link_seguro(valor)` só com `https` e netloc (contrato §3)
+- [X] T003 [P] [US-31][US-47][US-32][US-33] (FR-014, FR-017; MR-01 a MR-14) Criar `mensagens.py`, só com constantes: textos exatos das US ("Nenhum registro encontrado para os filtros selecionados", "Nenhum registro") e MR-01 a MR-14; reaproveitar `DATA_INICIAL_MAIOR` e `DATA_INVALIDA` de `defesa/mensagens.py` e `SEM_ORIENTADOR` de `cadastro/mensagens.py`
+- [X] T004 [P] [US-31][RBN-REL-01.1] (FR-018, FR-066, C3) Teste e implementação de `estrutura.py`: `Coluna`, `Celula(texto, url=None, numerica=False)`, `Linha` com `celulas(colunas)` sempre em `Celula`, `SubLista`, `Kpi`, `Grafico`, `Relatorio(colunas, linhas, totais=(), kpis=(), grafico=None, como_calculado=(), tem_registros=None, rotulo_linha="", id="", titulo="", frase="", gerado_em=None)`; `__post_init__` recusa `bool`, `date` e `None`, mais de 4 KPIs e sub-listas sem `rotulo_linha`; `tem_registros=None` deriva de `bool(linhas)`; `link_seguro(valor)` só com `https` e netloc (contrato §3)
 
 ### Registro e permissões
 
-- [ ] T005 [US-31][US-47][US-32][US-33][RBN-REL-01.2] (FR-002, FR-003, FR-004, C1) Teste e implementação de `registro.py`: decorador `@relatorio(id, nome, descricao, frase, perfis, filtros, ordem)` com `ImproperlyConfigured` para perfis vazios ou fora de `TIPOS_CONTA + PAPEIS`, `id` repetido ou fora de slug e filtro desconhecido; `relatorios_do_usuario`, `obter`, `pode_abrir` e `exigir_modulo` (research R13)
-- [ ] T006 [US-31][US-47][US-32][US-33][RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2][RBN-REL-02.3][RBN-REL-02.4] IC-07: `apps.py`, `ready()` importa os módulos de consulta, sem consulta ao banco nem ciclo (research R13)
+- [X] T005 [US-31][US-47][US-32][US-33][RBN-REL-01.2] (FR-002, FR-003, FR-004, C1) Teste e implementação de `registro.py`: decorador `@relatorio(id, nome, descricao, frase, perfis, filtros, ordem)` com `ImproperlyConfigured` para perfis vazios ou fora de `TIPOS_CONTA + PAPEIS`, `id` repetido ou fora de slug e filtro desconhecido; `relatorios_do_usuario`, `obter`, `pode_abrir` e `exigir_modulo` (research R13)
+- [X] T006 [US-31][US-47][US-32][US-33][RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2][RBN-REL-02.3][RBN-REL-02.4] IC-07: `apps.py`, `ready()` importa os módulos de consulta, sem consulta ao banco nem ciclo (research R13)
 
 ### Filtros
 
