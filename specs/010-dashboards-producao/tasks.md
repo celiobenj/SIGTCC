@@ -42,8 +42,8 @@ commit (CLAUDE.md). Nenhuma migração.
 **Purpose**: provar as consultas no PostgreSQL antes de construir em cima delas; nenhuma dependência
 nova.
 
-- [ ] T001 [US-31][US-47][US-32][US-33][RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2][RBN-REL-02.3][RBN-REL-02.4] Criar `sigtcc/apps/relatorios/tests/__init__.py` e `tests/apoio_relatorios.py`, sobre `apoio_defesa.py`: `aluno_na_turma(status)`, `sessao_realizada(banca, suplente_acionado=False)`, `artigo(tcc, status, homologacao)`, `transferido()`, `aprovado_e_matriculado_em_tcc2()`, `dados_hostis()` com `=1+1`, `-x`, `@a`, `<script>`, aspas, `#REF!`, `\x0b`, link `javascript:` e link de 500 caracteres (research R15)
-- [ ] T002 [US-32][RBN-CAD-08.7] (FR-041; research R5, R6) Teste de viabilidade em `tests/test_base_relatorios.py`: a subconsulta do último registro do histórico com `Coalesce`, dentro de `Count(filter=...)` depois de `values()`, sobre `AlunosTurmas`; rodar `EXPLAIN` e anotar em research R6 se a saída alternativa (`values(curso, status)`) será usada. Se a consulta não funcionar, parar e avisar
+- [X] T001 [US-31][US-47][US-32][US-33][RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2][RBN-REL-02.3][RBN-REL-02.4] Criar `sigtcc/apps/relatorios/tests/__init__.py` e `tests/apoio_relatorios.py`, sobre `apoio_defesa.py`: `aluno_na_turma(status)`, `sessao_realizada(banca, suplente_acionado=False)`, `artigo(tcc, status, homologacao)`, `transferido()`, `aprovado_e_matriculado_em_tcc2()`, `dados_hostis()` com `=1+1`, `-x`, `@a`, `<script>`, aspas, `#REF!`, `\x0b`, link `javascript:` e link de 500 caracteres (research R15)
+- [X] T002 [US-32][RBN-CAD-08.7] (FR-041; research R5, R6) Teste de viabilidade em `tests/test_base_relatorios.py`: a subconsulta do último registro do histórico com `Coalesce`, dentro de `Count(filter=...)` depois de `values()`, sobre `AlunosTurmas`; rodar `EXPLAIN` e anotar em research R6 se a saída alternativa (`values(curso, status)`) será usada. Se a consulta não funcionar, parar e avisar
 
 **Checkpoint**: consultas viáveis no PostgreSQL 16.
 

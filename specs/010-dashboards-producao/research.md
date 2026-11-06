@@ -102,7 +102,8 @@ homologação já leva a Concluído (RBN-CAD-09.5).
 
 **Custo**: cada `Count(filter=...)` reavalia a subconsulta por linha, o que não preocupa com centenas de
 linhas. Se o `EXPLAIN` incomodar, a saída é `values(curso, status).annotate(n=Count("mat_alu"))`, com a
-tabela montada em Python. A primeira tarefa testa R5 e R6 no PostgreSQL.
+tabela montada em Python. A T002 provou R5 e R6 no PostgreSQL 16, com `EXPLAIN`: a saída alternativa não
+foi necessária.
 
 ## R7. Painel de atividades (US-31)
 
