@@ -74,9 +74,9 @@ nova.
 
 ### Exportação e gráficos
 
-- [ ] T010 [P] [US-31][RBN-REL-01.1] (FR-018 a FR-020, C4) Criar `tests/test_exportacao.py` com um `Relatorio` de exemplo: tipos, `attachment`, `no-store`, nome do arquivo; CSV com BOM, `;`, título, filtros, `gerado_em`, `totais`, bloco por sub-lista e coluna da linha-mãe; XLSX com abas, `totais`, tipo texto em toda `str`, `\x0b` removido, aba saneada e `int` numérico; PDF em paisagem, sem gráfico, sem `<a>`, com KPIs; sub-lista vazia com "Nenhum registro"; falha vira exceção tratada; `proteger()` com todos os prefixos (research R10)
-- [ ] T011 [US-31][RBN-REL-01.1] (FR-018 a FR-020, C4) Implementar `exportacao.py` e `sigtcc/templates/relatorios/pdf/relatorio.html`, que estende `defesa/pdf/base_pdf.html`: `exportar(relatorio, filtros, formato)`, helper único de resposta, `proteger()`, log só com `id`, formato e `usu_id`; se a paisagem no bloco `corpo` não funcionar, parar e registrar como novo IC (research R10)
-- [ ] T012 [P] [US-31][US-47][US-32][US-33] (FR-072 a FR-075) Teste e implementação de `graficos.py`: `barras`, `empilhado` e `linhas`, sem HTML, com números como `str` com ponto, barras da maior para a menor, curso com 0 Matriculados sem barra, resumo em texto (research R9)
+- [X] T010 [P] [US-31][RBN-REL-01.1] (FR-018 a FR-020, C4) Criar `tests/test_exportacao.py` com um `Relatorio` de exemplo: tipos, `attachment`, `no-store`, nome do arquivo; CSV com BOM, `;`, título, filtros, `gerado_em`, `totais`, bloco por sub-lista e coluna da linha-mãe; XLSX com abas, `totais`, tipo texto em toda `str`, `\x0b` removido, aba saneada e `int` numérico; PDF em paisagem, sem gráfico, sem `<a>`, com KPIs; sub-lista vazia com "Nenhum registro"; falha vira exceção tratada; `proteger()` com todos os prefixos (research R10)
+- [X] T011 [US-31][RBN-REL-01.1] (FR-018 a FR-020, C4) Implementar `exportacao.py` e `sigtcc/templates/relatorios/pdf/relatorio.html`, que estende `defesa/pdf/base_pdf.html`: `exportar(relatorio, filtros, formato)`, helper único de resposta, `proteger()`, log só com `id`, formato e `usu_id`; se a paisagem no bloco `corpo` não funcionar, parar e registrar como novo IC (research R10)
+- [X] T012 [P] [US-31][US-47][US-32][US-33] (FR-072 a FR-075) Teste e implementação de `graficos.py`: `barras`, `empilhado` e `linhas`, sem HTML, com números como `str` com ponto, barras da maior para a menor, curso com 0 Matriculados sem barra, resumo em texto (research R9)
 
 ### Layout e rotas
 
