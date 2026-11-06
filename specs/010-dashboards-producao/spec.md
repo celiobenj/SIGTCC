@@ -24,7 +24,7 @@ consulta de relatório somente leitura".
 - **Modelo de dados**: já existe (spec 001). Esta spec **não cria tabelas nem colunas** e nenhuma
   tela dela grava dados. Lê `Turmas`, `Alunos_Turmas`, `TCCs`, `Historico_Status_TCC`,
   `Orientacoes`, `Coorientacoes`, `Artigos`, `Areas_Interesse`, `Usuarios`, `Alunos`, `Docentes`,
-  `Coordenadores`, `MembrosExternos`, `Defesas`, `Banca_Defesa` e `Cursos`.
+  `Coordenadores`, `Secretarios`, `MembrosExternos`, `Defesas`, `Banca_Defesa` e `Cursos`.
 - **Contrato da spec 007** (`specs/007-agendamento-banca/contracts/servicos-defesa.md`):
   - `FiltroPeriodoForm`, `filtro_de_periodo` e `periodo_letivo_atual` (§4), estendidos com
     Ano/Semestre **sem mudar o comportamento** da tela Defesas, da agenda e da lista de ouvintes
@@ -36,8 +36,10 @@ consulta de relatório somente leitura".
   falha vira `ErroAoGerarPdf`, com log); templates de PDF com as fontes locais.
 - **Bibliotecas**: `xhtml2pdf` e `openpyxl` já estão no `requirements.txt`. Nenhuma biblioteca nova,
   nem no servidor nem no navegador.
-- **Telas e estilos existentes**: menu lateral (`cadastro/menu.py`), `sigtcc.css` (`.kpis`, `.kpi`,
-  `.rel-layout`, `.inp`, `.tabela`, que é o nome local do `.tb` citado no guia, e os tokens `--azul`, `--verde`, `--vermelho`, `--roxo`, `--texto3`).
+- **Telas e estilos existentes**: menu lateral (`cadastro/contexto.py` já lê o `menu.py` de cada app)
+  e `sigtcc.css`, com `.inp`, `.tabela` (nome local do `.tb` citado no guia) e os tokens `--azul`,
+  `--verde`, `--vermelho`, `--roxo` e `--texto3`. `.kpis`, `.kpi`, `.rel-layout`, `.rel-menu`,
+  `.barras` e `.barra` existem só no protótipo de 17/10 e entram no `sigtcc.css` por esta feature.
 - **App**: `sigtcc/apps/relatorios` já está em `INSTALLED_APPS`, ainda sem rotas.
 
 ## Contratos desta feature
@@ -52,8 +54,8 @@ A feat-11 (Apoio Operacional, Célio Benjamim) consome esta base. O detalhe téc
   o menu, as permissões e a exportação não mudam.
 - **C2. Filtros**: componente com Período (atalhos e datas), Ano/Semestre, Curso e Docente, num
   formulário próprio do módulo que herda o `FiltroPeriodoForm`. Cada relatório escolhe quais usa, e
-  os filtros ficam no endereço da página. O `filtro_de_periodo` só ganha um parâmetro opcional de
-  Ano/Semestre; a chamada atual continua igual. Filtro inválido não gera consulta nem arquivo: o
+  os filtros ficam no endereço da página. O `filtro_de_periodo` ganha um parâmetro opcional de
+  Ano/Semestre, e o cálculo das datas dos atalhos vira uma função própria; a chamada atual continua igual. Filtro inválido não gera consulta nem arquivo: o
   recuo para o Período Letivo continua só nas telas da Defesa, sem mudança para elas.
 - **C3. Estrutura do relatório**: uma estrutura única (título, filtros aplicados, colunas, linhas,
   sub-listas, KPIs, dados do gráfico e uma ou mais linhas de total com rótulo próprio) alimenta a
@@ -66,9 +68,8 @@ A feat-11 (Apoio Operacional, Célio Benjamim) consome esta base. O detalhe téc
   sub-lista vem depois da tabela principal, com título. O destaque aparece no PDF e no XLSX; no CSV,
   vale a ordem das linhas.
 - **C5. Layout**: template base do Padrão visual, com parciais de gráfico.
-- **Itens de configuração esperados** (em código de specs já mescladas, a aprovar no plan):
-  `sigtcc/urls.py`, `cadastro/menu.py`, `defesa/forms_defesa.py`, `defesa/services_defesa.py` e o
-  `popular_demo`.
+- **Itens de configuração** (em código de specs já mescladas): ver o plan, IC-01 a IC-05 (índice
+  Q-153).
 
 ## Clarifications
 
@@ -94,6 +95,14 @@ Conferência do `analista-requisitos`; decisões de Julia Cohen.
 - Q: A estrutura do relatório prevê destaque, ordenação e total de horas? → A: sim, sem regra da feat-11 na base: ordem entregue pela consulta, marca de destaque e linhas de total com rótulo próprio (C3; ponto 14; índice Q-151).
 - Q: Como as sub-listas saem nos arquivos? → A: abas no XLSX, blocos titulados num único CSV e seções no PDF, com a coluna da linha-mãe (C4; ponto 15; índice Q-151).
 - Q: Como estender o filtro de período sem quebrar a Defesa? → A: formulário próprio do módulo, herdando o `FiltroPeriodoForm`, e parâmetro opcional no `filtro_de_periodo`; filtro inválido não consulta nem exporta (C2; ponto 16; índice Q-151).
+
+### Session 2026-11-06
+
+Revisão do `arquiteto-django` no plan; decisões de Julia Cohen.
+
+- Q: Uma orientação sem data de fim, de TCC já encerrado, fica em vigor para sempre nos atalhos por data? → A: não. A data do Status final do TCC vale como fim do vínculo (FR-022; índice Q-147).
+- Q: A Secretaria com Curso Todos vê alunos de outros cursos nos relatórios? → A: sim, como mandam a RAN-REL-01 e a RBN-CAD-14.1, com ciência da PO; as sub-listas não têm link para turma nem sessão (P4; índice Q-152).
+- Q: E se o Excel converter "2026/2" em data ao abrir o CSV? → A: testar numa planilha real e aceitar: o arquivo continua igual à tela, e o XLSX é o formato fiel (Assumptions; quickstart).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -347,7 +356,8 @@ vez e que o Suplente não acionado não entra.
 - **Período atual sem turma**: aparece na lista Ano/Semestre e o relatório segue a E3.
 - **Conteúdo com aparência de fórmula** (título começando com `=`, `+`, `-` ou `@`): CSV e XLSX o
   gravam como texto, sem executar nada ao abrir na planilha.
-- **Falha ao gerar o PDF**: o usuário continua na tela, com aviso, e nada é baixado (MR-07).
+- **Falha ao gerar o arquivo**: em qualquer formato, o usuário continua na tela, com aviso, e nada é
+  baixado (MR-07).
 - **Exportação pedida com filtro inválido ou sem registros** (por endereço direto): nenhum arquivo é
   gerado; a tela mostra a mensagem correspondente.
 - **Período sem turma do curso filtrado no Histórico**: a linha do período aparece com zeros.
@@ -371,13 +381,14 @@ vez e que o Suplente não acionado não entra.
   |---|---|---|---|
   | Painel de atividades por docente | só o próprio | todos | todos |
   | Participação de Membros Externos | — | sim | sim |
-  | Formação e evasão | — | sim | — |
-  | Histórico de indicadores do NUCOMP | — | sim | — |
   | Produção de TCCs | — | sim | — |
   | Artigos | — | sim | — |
+  | Formação e evasão | — | sim | — |
+  | Histórico de indicadores do NUCOMP | — | sim | — |
 
 - **FR-003**: O registro dos relatórios MUST guardar id, nome, descrição curta e perfis, de modo que
   a feat-11 inclua relatórios sem alterar a lista, as permissões nem a exportação (C1).
+  [RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2][RBN-REL-02.3][RBN-REL-02.4]
 - **FR-004**: A tela Relatórios, toda tela de relatório e toda exportação MUST conferir o perfil no
   servidor. O acesso por endereço direto de quem não tem o perfil MUST ser negado (MR-06). O usuário
   sem sessão vai ao login (US-11) e volta ao endereço pedido; o endereço da tela Relatórios, sem
@@ -424,9 +435,9 @@ vez e que o Suplente não acionado não entra.
 - **FR-019**: O CSV MUST abrir correto em planilha (acentos e separação de colunas) e, junto com o
   XLSX, MUST gravar como texto o conteúdo que uma planilha interpretaria como fórmula. No CSV, isso
   pode acrescentar um caractere de proteção no início da célula, e essa é a única diferença permitida
-  entre o arquivo e a tela (SC-005).
+  entre o arquivo e a tela (SC-005). [RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2][RBN-REL-02.3][RBN-REL-02.4]
 - **FR-020**: O PDF MUST conter cabeçalho, filtros aplicados, KPIs em tabela simples e a tabela da US,
-  sem gráfico.
+  sem gráfico. [RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2][RBN-REL-02.3][RBN-REL-02.4]
 
 **Painel de atividades por docente (US-31)**
 
@@ -441,8 +452,10 @@ vez e que o Suplente não acionado não entra.
   [RAN-REL-01]
 - **FR-022**: Com o atalho Período Letivo, as orientações e coorientações MUST contar pelas turmas do
   Ano/Semestre selecionado, separadas em TCC 1 e TCC 2 pela turma. Com Esta Semana, Este Mês, Próximos
-  30 Dias ou datas informadas, MUST contar o vínculo em vigor em algum dia do intervalo, pelas datas de
-  início e fim, classificado pela turma do TCC. Um intervalo que cruze a matrícula no TCC 2 conta o
+  30 Dias ou datas informadas, MUST contar o vínculo em vigor em algum dia do intervalo, classificado
+  pela turma do TCC. O vínculo começa na data de início e termina na data de fim; sem data de fim, se
+  o TCC está em Status final (Concluído, Aprovado para TCC 2, Reprovado, Desistente ou Jubilado),
+  termina na data desse Status. Um intervalo que cruze a matrícula no TCC 2 conta o
   aluno em TCC 1 e em TCC 2, e o bloco "Como é calculado" MUST dizer isso.
   [US-31 passo 5, A, B, cenário 2][RBN-REL-01.1][Q-147]
 - **FR-023**: MUST contar todos os vínculos do TCC da turma, Ativa, Encerrada ou Substituída: contar só
@@ -454,7 +467,7 @@ vez e que o Suplente não acionado não entra.
 - **FR-025**: Cada linha MUST expandir, por clique ou teclado (Enter ou Espaço), nas sub-listas
   "Orientações e coorientações" (Nome do Aluno, Título do Trabalho, Papel (Orientador ou Coorientador) e
   Status do TCC) e "Bancas" (Data, Papel na banca, Nome do Aluno e Título do Trabalho). O suplente
-  acionado aparece com o papel "Suplente". Sub-lista vazia MUST exibir "Nenhum registro".
+  acionado aparece com o papel "Suplente". As sub-listas não têm link para turma nem sessão. Sub-lista vazia MUST exibir "Nenhum registro".
   [US-31 passos 6 e 7, D, E][RBN-CAD-08.3]
 - **FR-026**: A exportação MUST incluir as sub-listas. [US-31 passo 9][RBN-REL-01.1]
 - **FR-027**: O filtro Curso MUST usar o Curso de Lotação do docente e MUST NOT cortar as contagens: a
@@ -540,11 +553,12 @@ vez e que o Suplente não acionado não entra.
 **Padrão visual** (requisito de apresentação; não muda nenhuma regra das US)
 
 - **FR-070**: Os relatórios MUST usar um layout único: à esquerda, a lista de relatórios com a descrição
-  de cada um; à direita, título e [PDF][CSV][XLSX]; uma frase sobre o relatório; filtros e "Limpar
-  filtros"; a linha "Mostrando"; até 4 KPIs; um gráfico; a tabela com as colunas exatas da US e a linha
+  de cada um; à direita, título e [PDF][CSV][XLSX]; uma frase sobre o relatório; filtros, "Aplicar" e
+  "Limpar filtros"; a linha "Mostrando"; até 4 KPIs; um gráfico; a tabela com as colunas exatas da US e a linha
   Total; o bloco recolhível "Como é calculado"; e "Gerado em DD/MM/AAAA às HH:MM". A feat-11 usa o
   mesmo layout. [Padrão visual; heurística 4]
-- **FR-071**: Em 360 px, a lista MUST virar um seletor no topo, os KPIs ficam em 2 colunas e a tabela
+- **FR-071**: Em 360 px, a lista MUST virar um seletor no topo, em forma de links, para funcionar sem
+  JavaScript; os KPIs ficam em 2 colunas e a tabela
   rola na horizontal dentro do próprio bloco, sem rolagem horizontal da página.
 - **FR-072**: Cada relatório MUST seguir a tabela de KPIs e gráfico:
 
@@ -634,6 +648,9 @@ Nenhuma entidade nova. Os relatórios são consultas sobre o modelo existente.
   igualdade serve de teste cruzado entre os relatórios.
 - A meta de 2 segundos vem de RAN-REL-01 e RAN-CAD-14; a spec a estende aos 6 relatórios por
   consistência.
+- Como cada planilha interpreta o CSV ao abrir (por exemplo, "2026/2" como data) está fora do arquivo,
+  que continua igual à tela. O XLSX é o formato fiel; o quickstart confere isso numa planilha real.
+- O arquivo reflete o momento do download: nada é guardado da tela aberta antes.
 - O período letivo atual segue `periodo_letivo_atual` (turmas ativas; sem elas, o calendário).
 - O Coordenador de Curso é um Docente: enquanto Coordenador, usa a visão de gestão também no painel.
 - O detalhe do CSV (UTF-8 com BOM e separador `;`) fica no plan e em `contracts/base-relatorios.md`;
