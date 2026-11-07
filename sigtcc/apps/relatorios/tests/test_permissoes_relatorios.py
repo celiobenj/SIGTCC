@@ -1,11 +1,15 @@
-"""Permissões do módulo Relatórios: recorte do Docente, cenários 1.12 e 1.13.
+"""Permissões do módulo Relatórios: recorte do Docente, cenários 1.12 e 1.13, relatórios do
+Coordenador e a matriz completa de perfis.
 
-[US-31][RBN-REL-01.1][RAN-REL-01][FR-004][FR-016][SC-004] (tasks T023)
+[US-31][US-47][US-32][US-33][RBN-REL-01.1][RBN-REL-01.2][RAN-REL-01][FR-004][FR-005][FR-016]
+[SC-004] (tasks T023, T030, T037, T044 e T048)
 """
 
 import csv
 from io import StringIO
 
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusConta
@@ -19,7 +23,7 @@ from sigtcc.apps.cadastro.tests.apoio_contas import (
 )
 from sigtcc.apps.cadastro.tests.apoio_orientacao import vincular_coorientador
 from sigtcc.apps.cadastro.tests.apoio_turmas import EC, criar_turma_de, curso
-from sigtcc.apps.relatorios import mensagens
+from sigtcc.apps.relatorios import mensagens, registro
 from sigtcc.apps.relatorios.tests.apoio_relatorios import TesteRelatorios, aluno_com_status
 
 ID = "atividades-docente"
@@ -189,3 +193,112 @@ class TesteMembrosExternos(TesteRelatorios):
         for usuario in (secretaria_de(EC), coordenador_de(EC)):
             self.client.force_login(usuario)
             self.assertEqual(self.client.get(self.rotas()[0]).status_code, 200)
+
+
+TODOS = ("atividades-docente", "membros-externos", "producao-tccs", "artigos")
+TODOS += ("formacao-evasao", "historico-nucomp")
+SO_GESTAO = ("atividades-docente", "membros-externos")
+
+
+class TesteMatrizDePermissoes(TesteRelatorios):
+    """6 relatórios × (lista, tela e 3 formatos) × 10 perfis. [FR-004][FR-005][SC-004]"""
+
+    def setUp(self):
+        super().setUp()
+        professor = docente_de(EC)
+        turma = criar_turma_de(professor)
+        orientador, coorientador = docente_de(EC), docente_de(EC)
+        tcc = aluno_com_status(turma, orientador=orientador, status_conta=StatusConta.ATIVA)
+        vincular_coorientador(tcc, coorientador)
+        # Perfil: relatórios que abre; None é o módulo inteiro negado.
+        self.perfis = {
+            "aluno": (tcc.tcc_alu.alu, None),
+            "membro externo": (membro(), None),
+            "sem especialização": (criar_usuario(), None),
+            "docente": (docente_de(EC), ("atividades-docente",)),
+            "professor": (professor, ("atividades-docente",)),
+            "orientador": (orientador, ("atividades-docente",)),
+            "coorientador": (coorientador, ("atividades-docente",)),
+            "coordenador": (coordenador_de(EC), TODOS),
+            "secretaria": (secretaria_de(EC), SO_GESTAO),
+        }
+
+    def rotas_de(self, relatorio):
+        return [
+            reverse("relatorios:relatorio", args=[relatorio]),
+            *(
+                reverse("relatorios:exportar", args=[relatorio, formato])
+                for formato in ("pdf", "csv", "xlsx")
+            ),
+        ]
+
+    def test_seis_relatorios_registrados(self):
+        """Todo relatório do plan está registrado, e só eles."""
+        self.assertEqual(set(TODOS), set(registro._RELATORIOS))
+
+    def test_matriz(self):
+        """Quem abre recebe a tela ou o arquivo; sem registros, volta ao relatório."""
+        for nome, (usuario, permitidos) in self.perfis.items():
+            self.client.force_login(usuario)
+            lista = self.client.get(reverse("relatorios:lista"))
+            self.assertEqual(lista.status_code, 403 if permitidos is None else 200, nome)
+            if permitidos is not None:
+                self.assertEqual(
+                    {item.id for item in lista.context["lista"]}, set(permitidos), nome
+                )
+            for relatorio in TODOS:
+                for rota in self.rotas_de(relatorio):
+                    with self.subTest(perfil=nome, rota=rota):
+                        resposta = self.client.get(rota)
+                        if permitidos is not None and relatorio in permitidos:
+                            self.assertIn(resposta.status_code, (200, 302))
+                            if resposta.status_code == 302:
+                                self.assertTrue(
+                                    resposta["Location"].startswith(f"/relatorios/{relatorio}/")
+                                )
+                        else:
+                            self.assertContains(
+                                resposta, mensagens.MR06_SEM_PERMISSAO, status_code=403
+                            )
+
+    def test_anonimo_vai_ao_login(self):
+        """O décimo perfil: sem sessão, login com o endereço pedido."""
+        for relatorio in TODOS:
+            for rota in [reverse("relatorios:lista"), *self.rotas_de(relatorio)]:
+                with self.subTest(rota=rota):
+                    resposta = self.client.get(rota)
+                    self.assertEqual(resposta.status_code, 302)
+                    self.assertIn(f"next={rota}", resposta["Location"])
+
+    def test_id_e_formato_desconhecidos(self):
+        """404 para id e formato; o formato só depois da permissão."""
+        self.client.force_login(self.perfis["coordenador"][0])
+        for rota in (
+            reverse("relatorios:relatorio", args=["nao-existe"]),
+            reverse("relatorios:exportar", args=["nao-existe", "csv"]),
+            reverse("relatorios:exportar", args=["artigos", "doc"]),
+        ):
+            with self.subTest(rota=rota):
+                self.assertEqual(self.client.get(rota).status_code, 404)
+
+    def test_post_recusado(self):
+        """FR-005: só GET, nas 3 rotas."""
+        self.client.force_login(self.perfis["coordenador"][0])
+        for rota in (reverse("relatorios:lista"), *self.rotas_de("artigos")):
+            with self.subTest(rota=rota):
+                self.assertEqual(self.client.post(rota).status_code, 405)
+
+    def test_nenhuma_escrita(self):
+        """FR-005: abrir e exportar não gravam nada."""
+        self.client.force_login(self.perfis["coordenador"][0])
+        for relatorio in TODOS:
+            for rota in self.rotas_de(relatorio):
+                with self.subTest(rota=rota), CaptureQueriesContext(connection) as contexto:
+                    self.client.get(rota + "?curso=todos")
+                escritas = [
+                    consulta["sql"]
+                    for consulta in contexto
+                    if consulta["sql"].lstrip().upper().startswith(("INSERT", "UPDATE", "DELETE"))
+                    and "django_session" not in consulta["sql"]
+                ]
+                self.assertEqual(escritas, [])

@@ -15,8 +15,8 @@ from django.test import SimpleTestCase
 from django.urls import reverse
 
 from sigtcc.apps.cadastro.choices import StatusTCC
-from sigtcc.apps.cadastro.models import AlunosTurmas, HistoricoStatusTCC
-from sigtcc.apps.cadastro.tests.apoio_contas import coordenador_de, secretaria_de
+from sigtcc.apps.cadastro.models import AlunosTurmas, HistoricoStatusTCC, Usuarios
+from sigtcc.apps.cadastro.tests.apoio_contas import coordenador_de, docente_de, secretaria_de
 from sigtcc.apps.cadastro.tests.apoio_turmas import EC, SI, criar_turma_de, matricular_aluno
 from sigtcc.apps.defesa.tests.apoio_defesa import docente
 from sigtcc.apps.relatorios import exportacao, mensagens, registro
@@ -32,7 +32,10 @@ from sigtcc.apps.relatorios.registro import relatorio
 from sigtcc.apps.relatorios.tests.apoio_relatorios import (
     TesteRelatorios,
     aluno_com_status,
+    banca_de,
+    cenario_hostil,
     registrar_status,
+    sessao_realizada,
 )
 
 
@@ -354,3 +357,104 @@ class TesteTelaDaBase(TesteRelatorios):
         self.client.force_login(self.coordenador)
         resposta = self.client.get(self.url + "?curso=todos")
         self.assertContains(resposta, f'<a class="btn txt" href="{self.url}">Limpar filtros</a>')
+
+
+class TesteApresentacao(TesteRelatorios):
+    """Padrão visual nos 6 relatórios: KPIs, gráfico, escape, JavaScript e filtros no endereço.
+
+    [US-31][US-47][US-32][US-33][RBN-REL-01.1][RBN-CAD-14.1][FR-015][FR-070][FR-072][FR-075]
+    [FR-076] (tasks T050)
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(cenario_hostil())
+
+    def abrir(self, id, consulta="?curso=todos"):
+        return self.client.get(reverse("relatorios:relatorio", args=[id]) + consulta)
+
+    def test_no_maximo_4_kpis_e_1_grafico(self):
+        """Heurística 8: nos 6 relatórios, com os tipos do guia."""
+        tipos = {
+            "atividades-docente": "barras",
+            "membros-externos": "barras",
+            "producao-tccs": "barras",
+            "artigos": None,
+            "formacao-evasao": "empilhado",
+            "historico-nucomp": "linhas",
+        }
+        for id, tipo in tipos.items():
+            with self.subTest(relatorio=id):
+                resposta = self.abrir(id)
+                relatorio = resposta.context["relatorio"]
+                self.assertLessEqual(len(relatorio.kpis), 4)
+                self.assertEqual(relatorio.grafico.tipo if relatorio.grafico else None, tipo)
+                html = resposta.content.decode()
+                graficos_na_tela = html.count('role="img"')
+                self.assertEqual(graficos_na_tela, 1 if tipo else 0)
+
+    def test_layout_unico(self):
+        """Heurísticas 1, 4 e 10: mesmas peças e na mesma ordem nos 6."""
+        pecas = (
+            'class="rel-menu"',
+            "rel-acoes",
+            "rel-frase",
+            "data-filtros",
+            "Mostrando:",
+            "rel-tabela",
+            "Como é calculado",
+            "Gerado em",
+        )
+        for id in registro._RELATORIOS:
+            with self.subTest(relatorio=id):
+                html = self.abrir(id).content.decode()
+                posicoes = [html.index(peca) for peca in pecas]
+                self.assertEqual(posicoes, sorted(posicoes))
+
+    def test_numeros_com_ponto_em_css_e_svg(self):
+        """Research R9: o pt-br não troca o ponto de `width` e `points`."""
+        self.assertNotRegex(self.abrir("formacao-evasao").content.decode(), r"width: \d+,\d+%")
+        html = self.abrir("historico-nucomp").content.decode()
+        self.assertRegex(html, r'<polyline[^>]+points="\d+\.\d+,\d+\.\d+"')
+
+    def test_conteudo_hostil_escapado_nos_atributos(self):
+        """Research R9: aria-label, title e texto sempre com autoescape."""
+        usuario = docente_de(EC)
+        Usuarios.objects.filter(pk=usuario.pk).update(usu_nome='"><script>x</script>')
+        tcc = aluno_com_status(criar_turma_de(usuario))
+        sessao_realizada(tcc, banca_de(usuario, docente_de(EC), docente_de(EC)))
+        html = self.abrir("atividades-docente").content.decode()
+        self.assertNotIn("<script>x", html)
+        self.assertIn("&lt;script&gt;x", html)
+
+    def test_funciona_sem_javascript(self):
+        """Research R8: botão Aplicar e sub-listas abertas, sem `hidden` no servidor."""
+        html = self.abrir("atividades-docente").content.decode()
+        self.assertIn(">Aplicar<", html.replace('<span class="ms">filter_list</span>', ">"))
+        self.assertIn('aria-expanded="true"', html)
+        self.assertNotIn("<tr hidden", html)
+
+    def test_filtros_no_endereco(self):
+        """Heurística 3: formulário GET; os links da lista não levam filtros, e os filtros voltam
+        ao padrão ao abrir outro relatório (RBN-CAD-14.1)."""
+        html = self.abrir("artigos", "?curso=todos&ano_semestre=2026-2").content.decode()
+        self.assertIn('<form method="get"', html)
+        self.assertIn(f'href="{reverse("relatorios:relatorio", args=["formacao-evasao"])}"', html)
+        self.assertIn(f'href="{reverse("relatorios:exportar", args=["artigos", "csv"])}?', html)
+        limpo = self.abrir("formacao-evasao", "")
+        self.assertNotEqual(limpo.context["form"]["curso"].value(), "todos")
+
+    def test_limpar_filtros_volta_ao_padrao(self):
+        """Heurística 3: o link não tem query, e sem query vêm os padrões."""
+        url = reverse("relatorios:relatorio", args=["producao-tccs"])
+        html = self.abrir("producao-tccs", "?abrangencia=concluidos").content.decode()
+        self.assertIn(f'<a class="btn txt" href="{url}">Limpar filtros</a>', html)
+        self.assertEqual(
+            self.abrir("producao-tccs", "").context["form"]["abrangencia"].value(), "todos"
+        )
+
+    def test_lista_em_links_e_cabecalho_com_definicao(self):
+        """FR-071 e heurística 10."""
+        html = self.abrir("formacao-evasao").content.decode()
+        self.assertIn(f'title="{mensagens.DEFINICAO_MATRICULADOS}"', html)
+        self.assertIn('aria-current="page"', html)
