@@ -895,3 +895,78 @@ def _grafico_do_historico(linhas):
             serie("Desistências", "desistencias", "vermelho"),
         ],
     )
+
+
+# ---------------------------------------------------------------------------------------------
+# Participação de Membros Externos (US-47)
+# ---------------------------------------------------------------------------------------------
+
+_COLUNAS_MEMBROS = (
+    Coluna("descricao", "Descrição"),
+    Coluna(
+        "quantidade",
+        "Quantidade",
+        numerica=True,
+        definicao=mensagens.DEFINICAO_QUANTIDADE_PESSOAS,
+    ),
+)
+_CAMPO_INSTITUICAO = "ban_usu__membrosexternos__mem_instituicao"
+
+
+@relatorio(
+    id="membros-externos",
+    nome="Participação de Membros Externos",
+    descricao=mensagens.MR09_DESCRICAO_MEMBROS,
+    frase=mensagens.MR09_DESCRICAO_MEMBROS,
+    perfis=("coordenador", "secretaria"),
+    filtros=("periodo", "ano_semestre", "curso"),
+    ordem=20,
+)
+def membros_externos(usuario, filtros):
+    """Pessoas distintas, entre docentes do NUCOMP e Membros Externos, que atuaram como membros
+    efetivos nas sessões Realizadas do período, e as instituições dos externos. O Curso é o da
+    turma do TCC da sessão; cada grafia de instituição é uma linha (research R17).
+    [US-47][RBN-REL-01.2][RBN-DEF-01.5][RBN-CAD-05.7][RBN-CAD-14.1][FR-030][FR-031]
+    """
+    efetivos = BancaDefesa.objects.filter(
+        filtros.periodo_q("ban_def__"),
+        ban_def__def_status=StatusSessao.REALIZADA,
+        ban_papel__in=PAPEIS_TITULARES,
+    )
+    if filtros.cur_id is not None:
+        efetivos = efetivos.filter(ban_def__def_tcc__tcc_tur__tur_cur_id=filtros.cur_id)
+    pessoas = efetivos.aggregate(
+        docentes=Count("ban_usu", distinct=True, filter=Q(ban_usu__docentes__isnull=False)),
+        externos=Count("ban_usu", distinct=True, filter=Q(ban_usu__membrosexternos__isnull=False)),
+    )
+    instituicoes = [
+        (linha[_CAMPO_INSTITUICAO], linha["quantidade"])
+        for linha in efetivos.filter(ban_usu__membrosexternos__isnull=False)
+        .values(_CAMPO_INSTITUICAO)
+        .annotate(quantidade=Count("ban_usu", distinct=True))
+        .order_by("-quantidade", _CAMPO_INSTITUICAO)
+    ]
+    linhas = (
+        Linha({"descricao": mensagens.ROTULO_DOCENTES_NUCOMP, "quantidade": pessoas["docentes"]}),
+        Linha({"descricao": mensagens.ROTULO_MEMBROS_EXTERNOS, "quantidade": pessoas["externos"]}),
+        *(
+            Linha(
+                {
+                    "descricao": mensagens.ROTULO_INSTITUICAO.format(nome=nome),
+                    "quantidade": quantidade,
+                }
+            )
+            for nome, quantidade in instituicoes
+        ),
+    )
+    return Relatorio(
+        colunas=_COLUNAS_MEMBROS,
+        linhas=linhas,
+        kpis=(
+            Kpi(mensagens.ROTULO_DOCENTES_NUCOMP, pessoas["docentes"]),
+            Kpi(mensagens.ROTULO_MEMBROS_EXTERNOS, pessoas["externos"]),
+        ),
+        grafico=graficos.barras(instituicoes, cor="roxo") if instituicoes else None,
+        como_calculado=mensagens.COMO_MEMBROS,
+        tem_registros=bool(pessoas["docentes"] or pessoas["externos"]),
+    )

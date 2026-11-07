@@ -92,3 +92,15 @@ DEFINICAO_ALUNOS_VINCULADOS = "Alunos com vínculo em turmas do período"
 DEFINICAO_DEFESAS_REALIZADAS = "Sessões com status Realizada"
 DEFINICAO_ARTIGOS_PUBLICADOS = "Artigos com Status de Submissão Publicado"
 DEFINICAO_DESISTENCIAS = "Transições para Desistente no período"
+
+# MR-03 e MR-04 de Participação de Membros Externos. [US-47][RBN-REL-01.2]
+COMO_MEMBROS = (
+    "Conta pessoas distintas: quem participou de várias bancas conta uma vez.",
+    "Entram só os membros efetivos das sessões Realizadas: Presidente, 1º e 2º Avaliador e o "
+    "Suplente acionado.",
+    "Cada instituição aparece como foi escrita no cadastro do Membro Externo.",
+)
+DEFINICAO_QUANTIDADE_PESSOAS = "Pessoas distintas nas sessões Realizadas do período"
+ROTULO_DOCENTES_NUCOMP = "Docentes do NUCOMP"
+ROTULO_MEMBROS_EXTERNOS = "Membros Externos"
+ROTULO_INSTITUICAO = "Instituição de origem: {nome}"

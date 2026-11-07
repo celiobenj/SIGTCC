@@ -516,6 +516,15 @@ class TestePopularDemo(TesteTurmas):
         self.assertEqual(acionado.ban_def.def_tcc.tcc_tur.tur_semestre, 1)
         self.assertIn("Roteiro da spec 010", self.saida.getvalue())
 
+    def test_membros_externos_em_sessao_realizada(self):
+        """Spec 010 (IC-05): duas instituições na mesma sessão. [US-47][RBN-REL-01.2]"""
+        instituicoes = BancaDefesa.objects.filter(
+            ban_def__def_status=StatusSessao.REALIZADA,
+            ban_papel__in=services_defesa.PAPEIS_TITULARES,
+            ban_usu__membrosexternos__isnull=False,
+        ).values_list("ban_usu__membrosexternos__mem_instituicao", flat=True)
+        self.assertEqual(set(instituicoes), {"UFAM", "UEA"})
+
     def test_artigo_copiado_em_tres_periodos(self):
         """Spec 010 (IC-05): 3 períodos e artigo Publicado copiado na matrícula do TCC 2.
         [US-32][RBN-REL-02.4][FR-052]

@@ -161,3 +161,31 @@ class TesteRelatoriosDoCoordenador(TesteRelatorios):
                         self.assertContains(
                             self.client.get(rota), mensagens.MR06_SEM_PERMISSAO, status_code=403
                         )
+
+
+class TesteMembrosExternos(TesteRelatorios):
+    """5.10: o Docente comum não abre, por tela nem por exportação; a Secretaria abre. [FR-004]"""
+
+    def rotas(self):
+        return [
+            reverse("relatorios:relatorio", args=["membros-externos"]),
+            *(
+                reverse("relatorios:exportar", args=["membros-externos", formato])
+                for formato in ("pdf", "csv", "xlsx")
+            ),
+        ]
+
+    def test_docente_comum_negado(self):
+        """5.10."""
+        self.client.force_login(docente_de(EC))
+        for rota in self.rotas():
+            with self.subTest(rota=rota):
+                self.assertContains(
+                    self.client.get(rota), mensagens.MR06_SEM_PERMISSAO, status_code=403
+                )
+
+    def test_secretaria_e_coordenador_abrem(self):
+        """US-47 D."""
+        for usuario in (secretaria_de(EC), coordenador_de(EC)):
+            self.client.force_login(usuario)
+            self.assertEqual(self.client.get(self.rotas()[0]).status_code, 200)

@@ -382,6 +382,8 @@ class Command(BaseCommand):
                 date(2027, 6, 30),
                 "Membro externo",
             ),
+            # Spec 010 (IC-05): segunda instituição numa sessão Realizada. [US-47][RBN-REL-01.2]
+            ("Débora Nunes Aquino", "UEA", StatusConta.ATIVA, date(2027, 6, 30), None),
             ("Helena Duarte Campos", "INPA", StatusConta.EXPIRADA, date(2026, 3, 31), None),
             (
                 "Otávio Lins Barreto",
@@ -393,7 +395,8 @@ class Command(BaseCommand):
         ):
             usuario = self._usuario(nome, f"demo.{_slug(nome)}@{DOMINIO}", status, papel)
             if status == StatusConta.ATIVA:
-                self.externo = usuario
+                self.externos_ativos = [*getattr(self, "externos_ativos", []), usuario]
+                self.externo = self.externos_ativos[0]
             elif status == StatusConta.EXPIRADA:
                 self.externo_expirado = usuario
             MembrosExternos.objects.create(
@@ -1064,7 +1067,8 @@ class Command(BaseCommand):
             tcc,
             orientador,
             # Spec 009 (IC-09): com Suplente não acionado (US-28 cenário 15; quickstart, passo 4).
-            (self.ori_ecp2, self.ori_ecp3, self.extra_ecp2),
+            # Spec 010 (IC-05): dois Membros Externos, de instituições diferentes (US-47).
+            (self.externos_ativos[1], self.externo, self.extra_ecp2),
             self.hoje - timedelta(days=5),
             parecer=Parecer.APROVADO,
             local="Bloco B, sala 14",

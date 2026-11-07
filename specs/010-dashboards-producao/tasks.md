@@ -188,13 +188,13 @@ ver todos e filtrar; como Aluno, não ver o item.
 
 ### Tests for User Story 5
 
-- [ ] T043 [P] [US5] [US-47][RBN-REL-01.2] Criar `tests/test_us47_membros_externos.py` com os cenários 5.1 a 5.9: pessoas distintas; suplente; cada grafia de instituição uma linha; ordem das instituições; Curso pela turma do TCC; Secretaria com Curso Vinculado e com Todos
-- [ ] T044 [P] [US5] [US-47] (SC-004) Cenário 5.10 na matriz de `tests/test_permissoes_relatorios.py`
+- [X] T043 [P] [US5] [US-47][RBN-REL-01.2] Criar `tests/test_us47_membros_externos.py` com os cenários 5.1 a 5.9: pessoas distintas; suplente; cada grafia de instituição uma linha; ordem das instituições; Curso pela turma do TCC; Secretaria com Curso Vinculado e com Todos
+- [X] T044 [P] [US5] [US-47] (SC-004) Cenário 5.10 na matriz de `tests/test_permissoes_relatorios.py`
 
 ### Implementation for User Story 5
 
-- [ ] T045 [US5] [US-47][RBN-REL-01.2][RBN-CAD-14.1] (FR-030, FR-031) Implementar `membros_externos(usuario, filtros)`, registrada com `periodo`, `ano_semestre` e `curso`, com KPIs, barras em `--roxo` e "Como é calculado" (research R17)
-- [ ] T046 [US5] [US-47] (SC-001) Teste de N+1 e IC-05: Membros Externos de instituições diferentes no `popular_demo`
+- [X] T045 [US5] [US-47][RBN-REL-01.2][RBN-CAD-14.1] (FR-030, FR-031) Implementar `membros_externos(usuario, filtros)`, registrada com `periodo`, `ano_semestre` e `curso`, com KPIs, barras em `--roxo` e "Como é calculado" (research R17)
+- [X] T046 [US5] [US-47] (SC-001) Teste de N+1 e IC-05: Membros Externos de instituições diferentes no `popular_demo`
 
 **Checkpoint**: 6 relatórios entregues.
 
