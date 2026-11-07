@@ -91,10 +91,10 @@ esperar `<td class="nw">`, sem mudar o que verificam.
 - [x] Não há variáveis, imports ou trechos de código não utilizados (flake8 limpo).
 - [x] `makemigrations --check --dry-run`: "No changes detected"; nenhuma migração existente alterada.
 - [x] Os arquivos `.env` e os diretórios `sigtcc/media/` e `staticfiles/` NÃO foram adicionados ao Git.
-- [x] A interface segue a paleta e os padrões do protótipo de 17/10 e o Padrão visual da spec
-  (roteiro manual aprovado em 07/11/2026).
-- [x] Não há palavras partidas nas tabelas nem rolagem horizontal da página em 360, 768 e 1280 px
-  (verificação com o Playwright, seção 4).
+- [x] A interface segue a paleta e os padrões do protótipo de 17/10 e o Padrão visual da spec:
+  telas conferidas em 360, 768 e 1280 px, sem problema, e checklist de Nielsen OK (T052).
+- [x] Não há quebras de layout nem erros acusados no console do navegador com o sistema rodando
+  (T052, 07/11/2026); nenhuma palavra partida nas tabelas (verificação com o Playwright, seção 4).
 
 **Testes automatizados:** suíte completa em 07/11/2026, no commit `ba93049`
 (`manage.py test --noinput --parallel 4`): 1779 testes, todos passando, mais 1 falha esperada já
@@ -110,8 +110,10 @@ volume de demonstração é pequeno e não prova a escala de produção (achado 
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
-Roteiro manual do `quickstart.md` aprovado por Julia Cohen em 07/11/2026 (T052; seção 5 do
-quickstart).
+Roteiro manual do `quickstart.md` executado por Julia Cohen em 07/11/2026, sobre o cenário do
+`popular_demo`: **sem defeito**. Exportações em PDF, CSV e XLSX conferidas com a tela, checklist
+das 10 heurísticas de Nielsen OK, revisão visual em 360, 768 e 1280 px sem problemas e console do
+navegador sem erros. Registro na seção 5 do `quickstart.md` (T052).
 
 Verificação automática das tabelas com o Playwright em 07/11/2026, em banco separado populado pelo
 `popular_demo` e apagado depois: perfis Coordenador, Secretaria e Docente; 98 telas com tabela em 360,

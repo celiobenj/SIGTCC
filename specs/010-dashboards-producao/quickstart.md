@@ -68,7 +68,14 @@ no máximo 0,22 s (PDF do Painel). A meta é 2 segundos. O volume é menor que o
 
 ## 5. Resultado da validação manual (T052)
 
-Roteiro manual aprovado por Julia Cohen em 07/11/2026.
+Roteiro manual executado por Julia Cohen em 07/11/2026, sobre o cenário do `popular_demo`:
+**sem defeito**.
+
+- Roteiro manual (seções 2 e 3): OK.
+- Exportações em PDF, CSV e XLSX conferidas com a tela: iguais.
+- Checklist das 10 heurísticas de Nielsen (Padrão visual): OK.
+- Revisão visual em 360, 768 e 1280 px: sem problemas.
+- Console do navegador: sem erros.
 
 **Palavras inteiras nas tabelas** (commits `748c52b` e `ba93049`, `fix(core)`): verificação automática
 com o Playwright em 07/11/2026, num banco separado (`sigtcc_verificacao`, apagado depois) populado pelo
