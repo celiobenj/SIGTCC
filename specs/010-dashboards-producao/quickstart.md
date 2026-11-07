@@ -55,6 +55,17 @@ python manage.py makemigrations --check --dry-run
 pre-commit run --all-files
 ```
 
-## 4. Resultado da validação manual
+## 4. Verificação automática executada (T051)
 
-A preencher depois do roteiro.
+Em 07/11/2026, no commit `313bd55` (`manage.py test --noinput --parallel 4`): 1777 testes, todos
+passando, mais 1 falha esperada marcada como `expectedFailure` (anterior a esta spec).
+`pre-commit run --all-files` sem ocorrências; `makemigrations --check --dry-run`: "No changes detected".
+
+**SC-001**, medido no banco de teste com o `popular_demo` (58 vínculos, 58 TCCs, 20 docentes e 7 sessões),
+com Curso Todos: tela em no máximo 0,04 s nos 6 relatórios (maior tempo de 5 repetições) e arquivos em
+no máximo 0,22 s (PDF do Painel). A meta é 2 segundos. O volume é menor que o esperado em produção
+(achado U1 do `/speckit-analyze`, fora das correções), então a medição não prova a escala real.
+
+## 5. Resultado da validação manual
+
+A preencher depois do roteiro (T052).
