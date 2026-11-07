@@ -341,3 +341,43 @@ class TesteJanelaEHistorico(TesteDefesasBase):
         self.assertNotContains(self.client.get(LISTA), self.url_sessao)
         self.entrar(self.orientador)
         self.assertContains(self.client.get(LISTA), self.url_sessao)
+
+
+class TesteFiltroDePeriodoComAnoSemestre(TesteTurmas):
+    """Spec 010 (IC-03): outro período letivo, por parâmetro opcional; sem ele, nada muda.
+    [US-31][US-40][RBN-DEF-01.5][research R2]
+    """
+
+    def test_ano_semestre_escolhe_outro_periodo_letivo(self):
+        """O par informado substitui o período atual."""
+        filtro = services_defesa.filtro_de_periodo(
+            "periodo_letivo", prefixo="ban_def__", ano_semestre=(2025, 1)
+        )
+        self.assertIn(("ban_def__def_tcc__tcc_tur__tur_ano", 2025), filtro.children)
+        self.assertIn(("ban_def__def_tcc__tcc_tur__tur_semestre", 1), filtro.children)
+
+    def test_sem_o_parametro_vale_o_periodo_atual(self):
+        """Comportamento da feat-07."""
+        with mock.patch.object(
+            services_defesa, "periodo_letivo_atual", return_value=(2026, 2)
+        ) as atual:
+            filtro = services_defesa.filtro_de_periodo("periodo_letivo")
+        atual.assert_called_once()
+        self.assertIn(("def_tcc__tcc_tur__tur_ano", 2026), filtro.children)
+
+    def test_intervalo_do_atalho(self):
+        """Fonte única das datas dos atalhos."""
+        hoje = date(2026, 11, 18)
+        casos = {
+            "esta_semana": (date(2026, 11, 16), date(2026, 11, 22)),
+            "este_mes": (date(2026, 11, 1), date(2026, 11, 30)),
+            "proximos_30_dias": (hoje, date(2026, 12, 18)),
+        }
+        for atalho, esperado in casos.items():
+            with self.subTest(atalho=atalho):
+                self.assertEqual(services_defesa.intervalo_do_atalho(atalho, hoje), esperado)
+
+    def test_atalho_desconhecido(self):
+        """Mesma exceção de antes da extração."""
+        with self.assertRaises(ValueError):
+            services_defesa.filtro_de_periodo("xyz")

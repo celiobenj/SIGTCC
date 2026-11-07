@@ -64,9 +64,30 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
   - `popular_demo` com ouvintes e ocorrências nas sessões Realizadas, Suplente não acionado,
     assinatura do Coordenador de Eng. Comp. e Coordenadores de SI e LC sem assinatura (E2), e a
     tabela de contas do roteiro da spec 009.
+- Dashboards de Produção (spec 010, feat-10; US-31, US-47, US-32 e US-33), no app `relatorios`,
+  sem tabela nem coluna nova e só de leitura:
+  - tela "Relatórios" (item de menu na seção Gestão, para Docente e Secretaria), com a lista de
+    relatórios por perfil e layout único (Padrão visual com as 10 heurísticas de Nielsen);
+  - Painel de atividades por docente (o Docente vê só a própria linha), Participação de Membros
+    Externos, Formação e evasão, Histórico de indicadores do NUCOMP, Produção de TCCs e Artigos;
+  - contagens pelo último registro do histórico do TCC na turma do período, com
+    Matriculados = Sem Proposta + Ativos + Com Sucesso + Sem Sucesso e
+    Total de Trabalhos = Ativos + Com Sucesso + Sem Sucesso;
+  - filtros de período (atalhos, Ano/Semestre e datas), Curso e Docente no endereço da página;
+  - exportação em PDF, CSV (UTF-8 com BOM, `;`) e XLSX da mesma estrutura da tela, com proteção
+    contra fórmula;
+  - gráficos em HTML/CSS e SVG, sem biblioteca nova, com a tabela como fonte de verdade;
+  - base reaproveitável pela feat-11: registro de relatórios por decorador, formulário de filtros,
+    estrutura única e exportação genérica (`contracts/base-relatorios.md`).
+- `popular_demo` com o cenário dos relatórios: troca de orientador, Suplente acionado em período
+  passado, terceiro período letivo com artigo copiado e Membros Externos de duas instituições numa
+  sessão Realizada (a 1ª Avaliadora dessa sessão passa a ser um Membro Externo).
 
 ### Alterado
 
+- Emendas da spec 010 na spec 007: `filtro_de_periodo` aceita outro período letivo
+  (`ano_semestre`, opcional) e as datas dos atalhos saem de `intervalo_do_atalho`, sem mudar a tela
+  Defesas (IC-03; Q-153).
 - A Defesa passa a renovar a validade do Membro Externo nos eventos de banca e a conferir a conta
   de quem entra na banca (contrato da spec 002; Q-67).
 - Menu com o item "Defesas" (também para o Membro Externo), aba "Defesas" na turma, link "Agendar
@@ -88,6 +109,10 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 
 ### Corrigido
 
+- Tabelas de todo o sistema não partem mais palavras ("Engenhari/a de/Computaç/ão", "Adria/na"):
+  o texto só quebra entre palavras, colunas curtas, endereços e palavras com hífen ficam numa
+  linha, e a tabela rola dentro do próprio bloco (`fix(core)`, verificado com o Playwright em 360,
+  768 e 1280 px).
 - `popular_demo` não esvazia mais a tabela `Criterios` (carga da spec 001) e a recarrega se um
   `popular_demo` anterior a apagou.
 

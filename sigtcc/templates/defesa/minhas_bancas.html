@@ -21,11 +21,11 @@
     <tbody>
       {% for b in bancas %}
       <tr{% if b.pendente %} class="pendente"{% endif %}>
-        <td><a href="{% url 'defesa:sessao' b.sessao.pk %}">{{ b.sessao.def_data|date:"d/m/Y" }}</a></td>
-        <td>{{ b.sessao|horario }}</td>
+        <td class="nw"><a href="{% url 'defesa:sessao' b.sessao.pk %}">{{ b.sessao.def_data|date:"d/m/Y" }}</a></td>
+        <td class="nw">{{ b.sessao|horario }}</td>
         <td>{{ b.papel }}</td>
-        <td>{{ b.sessao.def_tcc.tcc_alu.alu.usu_nome }}</td>
-        <td>{{ b.sessao.def_tcc.tcc_titulo }}</td>
+        <td class="texto">{{ b.sessao.def_tcc.tcc_alu.alu.usu_nome }}</td>
+        <td class="texto">{{ b.sessao.def_tcc.tcc_titulo }}</td>
         <td><span class="chip">{{ b.sessao.def_status }}</span></td>
         <td>{% if b.pendente %}<b>Pendente</b> · {% endif %}{{ b.estado|default:"—" }}</td>
         <td>

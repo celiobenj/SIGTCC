@@ -15,12 +15,12 @@
     <tbody>
       {% for sessao in sessoes %}
       <tr>
-        <td>{% if sessao.pode_abrir %}<a href="{% url 'defesa:sessao' sessao.pk %}">{{ sessao.def_data|date:"d/m/Y" }}</a>{% else %}{{ sessao.def_data|date:"d/m/Y" }}{% endif %}</td>
-        <td>{{ sessao|horario }}</td>
-        <td>{{ sessao.def_tcc.tcc_alu.alu.usu_nome }}</td>
-        <td>{{ sessao.def_tcc.tcc_titulo }}</td>
-        <td>{{ sessao.orientador_nome }}</td>
-        <td>{{ sessao|lugar }}</td>
+        <td class="nw">{% if sessao.pode_abrir %}<a href="{% url 'defesa:sessao' sessao.pk %}">{{ sessao.def_data|date:"d/m/Y" }}</a>{% else %}{{ sessao.def_data|date:"d/m/Y" }}{% endif %}</td>
+        <td class="nw">{{ sessao|horario }}</td>
+        <td class="texto">{{ sessao.def_tcc.tcc_alu.alu.usu_nome }}</td>
+        <td class="texto">{{ sessao.def_tcc.tcc_titulo }}</td>
+        <td class="texto">{{ sessao.orientador_nome }}</td>
+        <td class="nw">{{ sessao|lugar }}</td>
         <td><span class="chip">{{ sessao.def_status }}</span></td>
       </tr>
       {% empty %}

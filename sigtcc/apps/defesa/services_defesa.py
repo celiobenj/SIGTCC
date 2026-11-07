@@ -851,34 +851,46 @@ def periodo_letivo_atual(hoje=None):
     return hoje.year, 1 if hoje.month <= 6 else 2
 
 
-def filtro_de_periodo(atalho, data_inicial=None, data_final=None, hoje=None, prefixo=""):
+def intervalo_do_atalho(atalho, hoje=None):
+    """(início, fim) de Esta Semana (segunda a domingo), Este Mês ou Próximos 30 Dias. Fonte única
+    das datas dos atalhos, também para os relatórios (spec 010, IC-03; research R2).
+    [US-31][US-40][RBN-DEF-01.5][FR-025]
+    """
+    hoje = hoje or timezone.now().date()
+    if atalho == "esta_semana":
+        inicio = hoje - timedelta(days=hoje.weekday())
+        return inicio, inicio + timedelta(days=6)
+    if atalho == "este_mes":
+        return hoje.replace(day=1), hoje.replace(day=calendar.monthrange(hoje.year, hoje.month)[1])
+    if atalho == "proximos_30_dias":
+        return hoje, hoje + timedelta(days=30)
+    raise ValueError(f"Atalho de período desconhecido: {atalho!r}")
+
+
+def filtro_de_periodo(
+    atalho, data_inicial=None, data_final=None, hoje=None, prefixo="", *, ano_semestre=None
+):
     """Q sobre Defesas para o filtro de período (contrato §4), reaproveitável pela agenda, pelos
     ouvintes e pelos relatórios: Período Letivo pelo ano e semestre da turma do TCC; Esta Semana
     (segunda a domingo), Este Mês, Próximos 30 Dias e o intervalo manual pela data da sessão.
     `prefixo` permite consultar a partir de outro modelo (ex.: "pre_def__"). As datas do
-    intervalo chegam já validadas (FiltroPeriodoForm). [US-40][RBN-DEF-01.5][FR-025]
+    intervalo chegam já validadas (FiltroPeriodoForm). `ano_semestre`, (ano, semestre) opcional,
+    escolhe outro período letivo; sem ele, vale o atual (spec 010, IC-03; research R2).
+    [US-31][US-40][RBN-DEF-01.5][FR-025]
     """
     hoje = hoje or timezone.now().date()
     if atalho == "periodo_letivo":
-        ano, semestre = periodo_letivo_atual(hoje)
+        ano, semestre = ano_semestre or periodo_letivo_atual(hoje)
         return Q(
             **{
                 f"{prefixo}def_tcc__tcc_tur__tur_ano": ano,
                 f"{prefixo}def_tcc__tcc_tur__tur_semestre": semestre,
             }
         )
-    if atalho == "esta_semana":
-        inicio = hoje - timedelta(days=hoje.weekday())
-        fim = inicio + timedelta(days=6)
-    elif atalho == "este_mes":
-        inicio = hoje.replace(day=1)
-        fim = hoje.replace(day=calendar.monthrange(hoje.year, hoje.month)[1])
-    elif atalho == "proximos_30_dias":
-        inicio, fim = hoje, hoje + timedelta(days=30)
-    elif atalho == "intervalo":
+    if atalho == "intervalo":
         inicio, fim = data_inicial, data_final
     else:
-        raise ValueError(f"Atalho de período desconhecido: {atalho!r}")
+        inicio, fim = intervalo_do_atalho(atalho, hoje)
     return Q(**{f"{prefixo}def_data__gte": inicio, f"{prefixo}def_data__lte": fim})
 
 

@@ -17,8 +17,8 @@
     <tbody>
       {% for e in eventos %}
       <tr>
-        <td>{{ e.hdf_data_hora|date:"d/m/Y H:i" }}</td>
-        <td>{{ e.hdf_def.def_data|date:"d/m/Y" }}</td>
+        <td class="nw">{{ e.hdf_data_hora|date:"d/m/Y H:i" }}</td>
+        <td class="nw">{{ e.hdf_def.def_data|date:"d/m/Y" }}</td>
         <td>{{ e.hdf_evento }}</td>
         <td>
           {% if e.hdf_status_anterior or e.hdf_status_novo %}Status: {{ e.hdf_status_anterior|default:"—" }} → {{ e.hdf_status_novo|default:"—" }}<br>{% endif %}
@@ -27,7 +27,7 @@
           {% if e.hdf_membro_incluido %}Entrou: {{ e.hdf_membro_incluido.usu_nome }}{% endif %}
           {% if e.hdf_evento == evento_liberacao and e.hdf_def.def_nota_final is not None %}Nota final: {{ e.hdf_def.def_nota_final|floatformat:1 }}; parecer: {{ e.hdf_def.def_parecer }}{% endif %}
         </td>
-        <td>{% if e.hdf_usu %}{{ e.hdf_usu.usu_nome }}{% else %}Sistema{% endif %}</td>
+        <td class="texto">{% if e.hdf_usu %}{{ e.hdf_usu.usu_nome }}{% else %}Sistema{% endif %}</td>
         <td>{{ e.hdf_justificativa|default:"—" }}</td>
       </tr>
       {% endfor %}

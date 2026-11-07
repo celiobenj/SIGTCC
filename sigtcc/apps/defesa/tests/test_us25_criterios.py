@@ -40,7 +40,7 @@ class TesteCriterios(TesteTurmas):
                 texto = resposta.content.decode()
                 for nome, peso in ESCRITA + ORAL:
                     self.assertIn(nome, texto)
-                    self.assertIn(f"<td>{peso}</td>", texto)
+                    self.assertIn(f'<td class="nw">{peso}</td>', texto)
                 self.assertIn("<b>7,0</b>", texto)
                 self.assertIn("<b>3,0</b>", texto)
                 self.assertIn("<b>10,0</b>", texto)

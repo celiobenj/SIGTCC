@@ -64,10 +64,10 @@
     <tbody>
       {% for o in orientandos %}
       <tr>
-        <td>{{ o.aluno }}</td>
-        <td>{{ o.curso }}</td>
-        <td>{{ o.turma.tur_descricao }} · {{ o.turma.tur_identificador }}{% if o.arquivada %}<br><span class="chip">Arquivada</span>{% endif %}</td>
-        <td>{% if o.titulo %}{{ o.titulo }}{% else %}<span class="muted">Sem Proposta</span>{% endif %}</td>
+        <td class="texto">{{ o.aluno }}</td>
+        <td class="texto">{{ o.curso }}</td>
+        <td class="nw">{{ o.turma.tur_descricao }} · {{ o.turma.tur_identificador }}{% if o.arquivada %}<br><span class="chip">Arquivada</span>{% endif %}</td>
+        <td class="texto">{% if o.titulo %}{{ o.titulo }}{% else %}<span class="muted">Sem Proposta</span>{% endif %}</td>
         <td>{{ o.tcc.tcc_modalidade|default:"—" }}</td>
         <td>{{ o.papel }}</td>
         <td><span class="chip">{{ o.tcc.tcc_status }}</span></td>
