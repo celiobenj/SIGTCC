@@ -66,6 +66,15 @@ com Curso Todos: tela em no máximo 0,04 s nos 6 relatórios (maior tempo de 5 r
 no máximo 0,22 s (PDF do Painel). A meta é 2 segundos. O volume é menor que o esperado em produção
 (achado U1 do `/speckit-analyze`, fora das correções), então a medição não prova a escala real.
 
-## 5. Resultado da validação manual
+## 5. Resultado da validação manual (T052)
 
-A preencher depois do roteiro (T052).
+Roteiro manual aprovado por Julia Cohen em 07/11/2026.
+
+**Palavras inteiras nas tabelas** (commits `748c52b` e `ba93049`, `fix(core)`): verificação automática
+com o Playwright em 07/11/2026, num banco separado (`sigtcc_verificacao`, apagado depois) populado pelo
+`popular_demo`, com login de Coordenador, Secretaria e Docente (Professor, Orientadora e membro de
+banca): 98 telas com tabela, em 360, 768 e 1280 px, com as sub-listas e os `<details>` abertos, 390
+medições. Para cada palavra de cada célula, um `Range` com `getClientRects()` em mais de uma linha
+contaria como palavra partida: **zero casos**, e nenhuma página com rolagem horizontal. Antes da
+segunda correção, a mesma verificação achou endereços partidos nas barras, "14:00–17:40" e
+"Humano-Computador".
