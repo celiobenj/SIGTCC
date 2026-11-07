@@ -9,23 +9,27 @@ from datetime import date, time
 
 from django.utils import timezone
 
-from sigtcc.apps.cadastro.choices import GatilhoStatusTCC, StatusTCC
-from sigtcc.apps.cadastro.models import HistoricoStatusTCC
+from sigtcc.apps.cadastro.choices import (
+    DescricaoTurma,
+    GatilhoStatusTCC,
+    ModalidadeTCC,
+    StatusSubmissao,
+    StatusTCC,
+)
+from sigtcc.apps.cadastro.models import HistoricoStatusTCC, TCCs, Usuarios
+from sigtcc.apps.cadastro.tests.apoio_contas import coordenador_de, docente_de, membro
 from sigtcc.apps.cadastro.tests.apoio_orientacao import salvar_artigo, vincular_orientador
-from sigtcc.apps.cadastro.tests.apoio_turmas import TesteTurmas, matricular_aluno, tcc_de
+from sigtcc.apps.cadastro.tests.apoio_turmas import (
+    EC,
+    TesteTurmas,
+    criar_turma_de,
+    matricular_aluno,
+    tcc_de,
+)
 from sigtcc.apps.defesa.choices import FormatoSessao, PapelBanca, StatusSessao
 from sigtcc.apps.defesa.models import BancaDefesa, Defesas
 
 # Conteúdo que uma planilha, o HTML ou o PDF poderiam interpretar (research R15).
-DADOS_HOSTIS = (
-    "=1+1",
-    "-x",
-    "@a",
-    "<script>alert(1)</script>",
-    'aspas "duplas"',
-    "#REF!",
-    "a\x0bb",
-)
 LINK_HOSTIL = "javascript:alert(1)"
 LINK_LONGO = "https://doi.org/" + "a" * 484
 
@@ -109,3 +113,37 @@ def banca_de(presidente, primeiro, segundo, suplente=None):
 def artigo(tcc, status=None, homologacao=None, link="https://doi.org/10.1000/teste"):
     """Artigo do TCC. [US-33][RBN-CAD-12.1][RBN-CAD-12.3]"""
     return salvar_artigo(tcc, link=link, status=status, art_homologacao=homologacao)
+
+
+def cenario_hostil():
+    """Dados para os 6 relatórios em 2026/2, com conteúdo hostil em nomes, títulos, veículo,
+    instituição e link. Devolve o Coordenador. [US-31][US-47][US-32][US-33][research R15]
+    """
+    coordenador = coordenador_de(EC)
+    orientador = docente_de(EC)
+    Usuarios.objects.filter(pk=orientador.pk).update(usu_nome="@a docente")
+    orientador.refresh_from_db()
+    avaliador = docente_de(EC)
+    externo = membro(instituicao="-x instituição")
+    turma1 = criar_turma_de(orientador, ano=2026, semestre=2)
+    turma2 = criar_turma_de(orientador, descricao=DescricaoTurma.TCC_2, ano=2026, semestre=2)
+    trabalhos = [
+        aluno_com_status(turma2, StatusTCC.APROVADO, orientador=orientador, nome=nome)
+        for nome in ("=1+1", "#REF!")
+    ]
+    TCCs.objects.filter(pk=trabalhos[0].pk).update(
+        tcc_titulo="<script>alert(1)</script>", tcc_modalidade=ModalidadeTCC.ARTIGO_CIENTIFICO
+    )
+    TCCs.objects.filter(pk=trabalhos[1].pk).update(
+        tcc_titulo='a\x0bb com aspas "duplas"', tcc_modalidade=ModalidadeTCC.ARTIGO_CIENTIFICO
+    )
+    for tcc in trabalhos:
+        tcc.refresh_from_db()
+    primeiro = artigo(trabalhos[0], status=StatusSubmissao.PUBLICADO, link=LINK_HOSTIL)
+    primeiro.art_veiculo_publicacao = "=VEICULO()"
+    primeiro.save()
+    artigo(trabalhos[1], status=StatusSubmissao.ACEITO, link=LINK_LONGO)
+    sessao_realizada(trabalhos[0], banca_de(orientador, avaliador, externo))
+    aluno_com_status(turma1, StatusTCC.SEM_PROPOSTA, nome="Sem Proposta da Silva")
+    aluno_com_status(turma1, StatusTCC.REPROVADO, orientador=avaliador, nome="<b>Negrito</b>")
+    return coordenador
