@@ -55,7 +55,9 @@ Módulo Relatórios no app `relatorios` (Épico 3), só de leitura, sem tabela, 
 | `a2f4480` | docs(feat-10): registrar verificacao automatica e medicao | 2 |
 | `748c52b` | fix(core): impedir quebra de palavras nas tabelas | 25 |
 | `ba93049` | fix(core): manter palavras inteiras nas tabelas em telas pequenas | 8 |
-| (este) | docs(feat-10): fechar o texto do pr, o changelog e a matriz | 5 |
+| `a8b2e04` | docs(feat-10): fechar o texto do pr, o changelog e a matriz | 5 |
+| `fb04452` | docs(feat-10): registrar validacao manual no pr e quickstart | 2 |
+| (este) | docs(feat-10): conferir o texto do pr com o pgcs | 2 |
 
 **Mudanças em código de outras specs** (aprovação do Célio Benjamim pendente na Q-153; todas só
 acrescentam, salvo a IC-03, que extrai uma função sem mudar o resultado):
@@ -66,7 +68,7 @@ acrescentam, salvo a IC-03, que extrai uma função sem mudar o resultado):
 | IC-02 | `cadastro/views.py` (003) | + MR-06 em `MENSAGENS_403` |
 | IC-03 | `defesa/services_defesa.py` (007) | `intervalo_do_atalho` extraída; `filtro_de_periodo(..., *, ano_semestre=None)` |
 | IC-04 | `static/css/sigtcc.css` (003) | estilos do protótipo e do Padrão visual (KPIs, layout, barras, linhas, sub-lista, destaque, cabeçalho fixo, impressão) |
-| IC-05 | `popular_demo.py` (005 a 009) | troca de orientador, Suplente acionado, turma de 2025/2 com artigo copiado, Membro Externo da UEA e banca da sessão Realizada de TCC 2 com dois Membros Externos |
+| IC-05 | `popular_demo.py` (005 a 009); `defesa/tests/test_base_defesa.py` (007) | troca de orientador, Suplente acionado, turma de 2025/2 com artigo copiado, Membro Externo da UEA e banca da sessão Realizada de TCC 2 com dois Membros Externos; testes desse cenário no `TestePopularDemo` |
 | IC-07 | `relatorios/apps.py` (001); `defesa/tests/test_us40_lista_filtros_historico.py` (007) | `ready()` carrega as consultas; teste de `ano_semestre` |
 
 A IC-06 (item do menu ativo em `/relatorios/<id>/`, T019) não foi feita: é opcional e depende da Q-153.
@@ -98,7 +100,8 @@ esperar `<td class="nw">`, sem mudar o que verificam.
 
 **Testes automatizados:** suíte completa em 07/11/2026, no commit `ba93049`
 (`manage.py test --noinput --parallel 4`): 1779 testes, todos passando, mais 1 falha esperada já
-marcada como `expectedFailure` (anterior a esta spec). Testes novos em `sigtcc/apps/relatorios/tests/`:
+marcada como `expectedFailure` (anterior a esta spec). Repetida em 07/11/2026 no commit `fb04452`,
+com o mesmo resultado; os commits depois de `ba93049` só mudam documentos. Testes novos em `sigtcc/apps/relatorios/tests/`:
 um arquivo por US (`test_us31_atividades`, `test_us47_membros_externos`, `test_us32_formacao`,
 `test_us32_historico`, `test_us33_producao`, `test_us33_artigos`), `test_filtros_relatorios`,
 `test_exportacao`, `test_igualdade_tela_arquivo` (6 relatórios × 3 formatos com dados hostis),
