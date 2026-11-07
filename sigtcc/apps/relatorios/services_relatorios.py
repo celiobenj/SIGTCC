@@ -24,6 +24,7 @@ from sigtcc.apps.cadastro.choices import (
 from sigtcc.apps.cadastro.fields import TimestampField
 from sigtcc.apps.cadastro.mensagens import SEM_ORIENTADOR
 from sigtcc.apps.cadastro.models import (
+    AlunosTurmas,
     AreasInteresse,
     Coorientacoes,
     Cursos,
@@ -432,10 +433,7 @@ def _rotulos_do_agrupamento(filtros, contagens):
         return rotulos + ([None] if None in contagens else [])
     if filtros.agrupar_por == "modalidade":
         return [ModalidadeTCC.MONOGRAFIA.value, ModalidadeTCC.ARTIGO_CIENTIFICO.value]
-    cursos = Cursos.objects.order_by("cur_nome")
-    if filtros.cur_id is not None:
-        cursos = cursos.filter(pk=filtros.cur_id)
-    return list(cursos.values_list("cur_nome", flat=True))
+    return _nomes_de_curso(filtros)
 
 
 @relatorio(
@@ -605,4 +603,125 @@ def artigos(usuario, filtros):
             ),
         ),
         como_calculado=mensagens.COMO_ARTIGOS,
+    )
+
+
+# ---------------------------------------------------------------------------------------------
+# Formação e evasão (US-32)
+# ---------------------------------------------------------------------------------------------
+
+_LEGENDA_FORMACAO = (
+    ("Sem Proposta", "cinza"),
+    ("Ativos", "azul"),
+    ("Com Sucesso", "verde"),
+    ("Sem Sucesso", "vermelho"),
+)
+
+
+def _status_do_vinculo():
+    """Status do aluno na turma do vínculo: último registro do TCC que está na turma, e, sem TCC,
+    Sem Proposta (research R5). [US-32][RBN-CAD-08.7][RBN-CAD-05.6][FR-041]
+    """
+    return Coalesce(
+        ultimo_status(hst_tcc__tcc_alu=OuterRef("mat_alu"), hst_tcc__tcc_tur=OuterRef("mat_tur")),
+        Value(StatusTCC.SEM_PROPOSTA.value),
+    )
+
+
+def _nomes_de_curso(filtros):
+    """Uma linha por curso do NUCOMP; com curso escolhido, só ele. [US-32 B][FR-042]"""
+    cursos = Cursos.objects.order_by("cur_nome")
+    if filtros.cur_id is not None:
+        cursos = cursos.filter(pk=filtros.cur_id)
+    return list(cursos.values_list("cur_nome", flat=True))
+
+
+@relatorio(
+    id="formacao-evasao",
+    nome="Formação e evasão",
+    descricao=mensagens.MR10_DESCRICAO_FORMACAO,
+    frase=mensagens.MR10_DESCRICAO_FORMACAO,
+    perfis=("coordenador",),
+    filtros=("ano_semestre", "curso"),
+    ordem=50,
+)
+def formacao_evasao(usuario, filtros):
+    """Uma linha por curso e a linha Total, com Matriculados = Sem Proposta + Ativos + Com Sucesso
+    + Sem Sucesso. Aluno excluído da turma não tem vínculo e não conta; quem desiste com Proposta
+    continua, em Sem Sucesso. A Q-02 segue aberta para o aluno sem Proposta.
+    [US-32][RBN-REL-02.3][RBN-CAD-05.4][RBN-CAD-08.3][RBN-CAD-08.7][FR-041][FR-042][FR-043][Q-02]
+    """
+    vinculos = AlunosTurmas.objects.filter(
+        mat_tur__tur_ano=filtros.ano, mat_tur__tur_semestre=filtros.semestre
+    )
+    if filtros.cur_id is not None:
+        vinculos = vinculos.filter(mat_tur__tur_cur_id=filtros.cur_id)
+    contagens = {
+        linha["mat_tur__tur_cur__cur_nome"]: linha
+        for linha in vinculos.annotate(status=_status_do_vinculo())
+        .values("mat_tur__tur_cur__cur_nome")
+        .annotate(
+            matriculados=Count("mat_alu"),
+            sem_proposta=Count("mat_alu", filter=Q(status=StatusTCC.SEM_PROPOSTA)),
+            **_contagens_por_grupo("mat_alu"),
+        )
+        .order_by()
+    }
+    linhas = []
+    for nome in _nomes_de_curso(filtros):
+        contagem = contagens.get(nome, {})
+        linhas.append(
+            Linha(
+                {
+                    "curso": nome,
+                    "matriculados": contagem.get("matriculados", 0),
+                    "sem_proposta": contagem.get("sem_proposta", 0),
+                    **_valores_de_grupo(contagem),
+                }
+            )
+        )
+    soma = {
+        chave: sum(linha.valores[chave] for linha in linhas)
+        for chave in ("matriculados", "sem_proposta", *GRUPOS_DE_STATUS)
+    }
+    barras = [
+        (
+            linha.valores["curso"],
+            (
+                linha.valores["sem_proposta"],
+                linha.valores["ativos"],
+                linha.valores["com_sucesso"],
+                linha.valores["sem_sucesso"],
+            ),
+        )
+        for linha in linhas
+    ]
+    return Relatorio(
+        colunas=(
+            Coluna("curso", "Curso"),
+            Coluna(
+                "matriculados",
+                "Matriculados",
+                numerica=True,
+                definicao=mensagens.DEFINICAO_MATRICULADOS,
+            ),
+            Coluna(
+                "sem_proposta",
+                "Sem Proposta",
+                numerica=True,
+                definicao=mensagens.DEFINICAO_SEM_PROPOSTA,
+            ),
+            *_COLUNAS_DE_GRUPO,
+        ),
+        linhas=tuple(linhas),
+        totais=(Linha({"curso": "Total", **soma}),),
+        kpis=(
+            Kpi("Matriculados", soma["matriculados"]),
+            Kpi("Ativos", soma["ativos"]),
+            Kpi("Com Sucesso", soma["com_sucesso"]),
+            Kpi("Sem Sucesso", soma["sem_sucesso"]),
+        ),
+        grafico=graficos.empilhado(barras, _LEGENDA_FORMACAO),
+        como_calculado=mensagens.COMO_FORMACAO,
+        tem_registros=soma["matriculados"] > 0,
     )

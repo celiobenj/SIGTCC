@@ -148,14 +148,14 @@ ver todos e filtrar; como Aluno, não ver o item.
 
 ### Tests for User Story 3
 
-- [ ] T035 [P] [US3] [US-32][RBN-REL-02.3] Criar `tests/test_us32_formacao.py` com os cenários 3.1 a 3.8: soma igual a Matriculados em toda linha e no Total; aprovado sem Versão Final em Ativos; período passado pelo histórico; Curso Todos com zeros
-- [ ] T036 [US3] [US-32][RBN-CAD-05.4][RBN-CAD-05.6][RBN-CAD-08.7] (FR-041, FR-042, FR-043; SC-002, SC-003) Em `tests/test_us32_formacao.py`: cenário 3.10 (transferido), vínculo sem TCC como Sem Proposta, dois vínculos no período, excluído fora, Desistente com Proposta em Sem Sucesso (Q-02), último registro igual a `tcc_status`
-- [ ] T037 [P] [US3] [US-32] (SC-004) Cenário 3.9 na matriz de `tests/test_permissoes_relatorios.py`, inclusive Secretaria
+- [X] T035 [P] [US3] [US-32][RBN-REL-02.3] Criar `tests/test_us32_formacao.py` com os cenários 3.1 a 3.8: soma igual a Matriculados em toda linha e no Total; aprovado sem Versão Final em Ativos; período passado pelo histórico; Curso Todos com zeros
+- [X] T036 [US3] [US-32][RBN-CAD-05.4][RBN-CAD-05.6][RBN-CAD-08.7] (FR-041, FR-042, FR-043; SC-002, SC-003) Em `tests/test_us32_formacao.py`: cenário 3.10 (transferido), vínculo sem TCC como Sem Proposta, dois vínculos no período, excluído fora, Desistente com Proposta em Sem Sucesso (Q-02), último registro igual a `tcc_status`
+- [X] T037 [P] [US3] [US-32] (SC-004) Cenário 3.9 na matriz de `tests/test_permissoes_relatorios.py`, inclusive Secretaria
 
 ### Implementation for User Story 3
 
-- [ ] T038 [US3] [US-32][RBN-REL-02.3] (FR-042, FR-043) Implementar `formacao_evasao(usuario, filtros)`, com base `AlunosTurmas`, linha Total, `tem_registros` próprio, KPIs, barra 100% e "Como é calculado", explicando por que os cartões não somam Matriculados
-- [ ] T039 [US3] [US-32] (SC-001) Teste de N+1 e IC-05: aluno transferido, excluído e Aprovado para TCC 2 no `popular_demo`
+- [X] T038 [US3] [US-32][RBN-REL-02.3] (FR-042, FR-043) Implementar `formacao_evasao(usuario, filtros)`, com base `AlunosTurmas`, linha Total, `tem_registros` próprio, KPIs, barra 100% e "Como é calculado", explicando por que os cartões não somam Matriculados
+- [X] T039 [US3] [US-32] (SC-001) Teste de N+1 e IC-05: aluno transferido, excluído e Aprovado para TCC 2 no `popular_demo`
 
 **Checkpoint**: US-32 completa, sem o Histórico.
 

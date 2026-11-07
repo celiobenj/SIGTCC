@@ -118,9 +118,12 @@ class TestePerfisSemModulo(TesteRelatorios):
 
 
 class TesteRelatoriosDoCoordenador(TesteRelatorios):
-    """2.9 e 2.10: quem não é Coordenador não vê na lista nem abre por endereço. [FR-004][SC-004]"""
+    """2.9, 2.10, 3.8 e 3.9: quem não é Coordenador não vê na lista nem abre por endereço.
 
-    RELATORIOS = ("producao-tccs", "artigos")
+    [FR-004][SC-004]
+    """
+
+    RELATORIOS = ("producao-tccs", "artigos", "formacao-evasao")
 
     def setUp(self):
         super().setUp()

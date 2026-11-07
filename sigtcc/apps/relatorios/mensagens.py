@@ -67,3 +67,14 @@ DEFINICAO_ATIVOS = (
 DEFINICAO_COM_SUCESSO = "Concluído e Aprovado para TCC 2"
 DEFINICAO_SEM_SUCESSO = "Reprovado, Desistente e Jubilado"
 NAO_INFORMADA = "Não informada"
+
+# MR-03 e MR-04 de Formação e evasão. [US-32][RBN-REL-02.3]
+COMO_FORMACAO = (
+    "Matriculados = Sem Proposta + Ativos + Com Sucesso + Sem Sucesso. Os cartões do topo não "
+    "mostram Sem Proposta, por isso não somam Matriculados.",
+    "Matriculados são os vínculos com as turmas do período, exceto os alunos excluídos da turma.",
+    "Aprovado sem Versão Final homologada conta como Ativo.",
+    "Cada aluno é contado pelo último Status do histórico do TCC na turma do período.",
+)
+DEFINICAO_MATRICULADOS = "Alunos vinculados às turmas do período, exceto os excluídos da turma"
+DEFINICAO_SEM_PROPOSTA = "Alunos que ainda não salvaram a Proposta"
