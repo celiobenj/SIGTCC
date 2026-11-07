@@ -11,7 +11,12 @@ from django.urls import reverse
 from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusConta
 from sigtcc.apps.cadastro.models import Usuarios
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_usuario
-from sigtcc.apps.cadastro.tests.apoio_contas import coordenador_de, docente_de, membro
+from sigtcc.apps.cadastro.tests.apoio_contas import (
+    coordenador_de,
+    docente_de,
+    membro,
+    secretaria_de,
+)
 from sigtcc.apps.cadastro.tests.apoio_orientacao import vincular_coorientador
 from sigtcc.apps.cadastro.tests.apoio_turmas import EC, criar_turma_de, curso
 from sigtcc.apps.relatorios import mensagens
@@ -110,3 +115,46 @@ class TestePerfisSemModulo(TesteRelatorios):
                 with self.subTest(perfil=nome, rota=rota):
                     resposta = self.client.get(rota)
                     self.assertContains(resposta, mensagens.MR06_SEM_PERMISSAO, status_code=403)
+
+
+class TesteRelatoriosDoCoordenador(TesteRelatorios):
+    """2.9 e 2.10: quem não é Coordenador não vê na lista nem abre por endereço. [FR-004][SC-004]"""
+
+    RELATORIOS = ("producao-tccs", "artigos")
+
+    def setUp(self):
+        super().setUp()
+        professor = docente_de(EC)
+        criar_turma_de(professor)
+        self.perfis = {
+            "docente": docente_de(EC),
+            "professor": professor,
+            "secretaria": secretaria_de(EC),
+        }
+
+    def test_fora_da_lista(self):
+        """2.9."""
+        for nome, usuario in self.perfis.items():
+            with self.subTest(perfil=nome):
+                self.client.force_login(usuario)
+                ids = [i.id for i in self.client.get(reverse("relatorios:lista")).context["lista"]]
+                for relatorio in self.RELATORIOS:
+                    self.assertNotIn(relatorio, ids)
+
+    def test_endereco_direto(self):
+        """2.10: tela e os 3 formatos."""
+        for nome, usuario in self.perfis.items():
+            self.client.force_login(usuario)
+            for relatorio in self.RELATORIOS:
+                rotas = [
+                    reverse("relatorios:relatorio", args=[relatorio]),
+                    *(
+                        reverse("relatorios:exportar", args=[relatorio, formato])
+                        for formato in ("pdf", "csv", "xlsx")
+                    ),
+                ]
+                for rota in rotas:
+                    with self.subTest(perfil=nome, rota=rota):
+                        self.assertContains(
+                            self.client.get(rota), mensagens.MR06_SEM_PERMISSAO, status_code=403
+                        )

@@ -8,19 +8,36 @@ filtros e devolve a estrutura única. Só leitura: nenhum trecho grava dados.
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from django.db.models import Case, F, OuterRef, Q, Subquery, Value, When
+from django.db.models import Case, Count, F, IntegerField, OuterRef, Q, Subquery, Value, When
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusConta, StatusTCC
+from sigtcc.apps.cadastro.choices import (
+    DescricaoTurma,
+    Homologacao,
+    ModalidadeTCC,
+    StatusConta,
+    StatusOrientacao,
+    StatusSubmissao,
+    StatusTCC,
+)
 from sigtcc.apps.cadastro.fields import TimestampField
-from sigtcc.apps.cadastro.models import Coorientacoes, Docentes, HistoricoStatusTCC, Orientacoes
+from sigtcc.apps.cadastro.mensagens import SEM_ORIENTADOR
+from sigtcc.apps.cadastro.models import (
+    AreasInteresse,
+    Coorientacoes,
+    Cursos,
+    Docentes,
+    HistoricoStatusTCC,
+    Orientacoes,
+    TCCs,
+)
 from sigtcc.apps.defesa.choices import StatusSessao
 from sigtcc.apps.defesa.models import BancaDefesa
 from sigtcc.apps.defesa.services_defesa import PAPEIS_TITULARES
 
 from . import graficos, mensagens
-from .estrutura import Coluna, Kpi, Linha, Relatorio, SubLista
+from .estrutura import Coluna, Kpi, Linha, Relatorio, SubLista, link_seguro
 from .forms import FiltroRelatorioForm
 from .registro import relatorio
 
@@ -38,6 +55,16 @@ GRUPOS_DE_STATUS = {
 }
 # Status final encerra o vínculo sem data de fim nos atalhos por data (FR-022; research R18).
 STATUS_FINAIS = GRUPOS_DE_STATUS["com_sucesso"] + GRUPOS_DE_STATUS["sem_sucesso"]
+STATUS_DOS_TRABALHOS = GRUPOS_DE_STATUS["ativos"] + STATUS_FINAIS
+ABRANGENCIAS = {
+    "aprovados": (
+        StatusTCC.APROVADO_PARA_TCC_2,
+        StatusTCC.APROVADO,
+        StatusTCC.APROVADO_COM_CORRECOES,
+        StatusTCC.CONCLUIDO,
+    ),
+    "concluidos": (StatusTCC.CONCLUIDO,),
+}
 
 
 def montar_relatorio(usuario, registrado, dados):
@@ -341,4 +368,241 @@ def atividades_docente(usuario, filtros):
         como_calculado=mensagens.COMO_ATIVIDADES,
         tem_registros=doc_id is not None or alguem_ativo,
         rotulo_linha="docente",
+    )
+
+
+# ---------------------------------------------------------------------------------------------
+# Status por período e colunas comuns (US-32 e US-33)
+# ---------------------------------------------------------------------------------------------
+
+
+def ultimo_status(**filtro):
+    """Subconsulta do último registro do histórico: a busca é pelo TCC, e não pela turma do
+    registro, porque a transferência não grava histórico na turma de destino (research R5).
+    [US-32][US-33][RBN-CAD-08.7][RAN-REL-02][FR-041]
+    """
+    return Subquery(
+        HistoricoStatusTCC.objects.filter(**filtro)
+        .order_by("-hst_data_hora", "-hst_id")
+        .values("hst_status_novo")[:1]
+    )
+
+
+def _contagens_por_grupo(campo):
+    """Contagens de Ativos, Com Sucesso e Sem Sucesso sobre a anotação `status`, numa consulta.
+    [US-32][US-33][RBN-REL-02.1][RBN-REL-02.3][FR-040]
+    """
+    return {
+        grupo: Count(campo, filter=Q(status__in=status))
+        for grupo, status in GRUPOS_DE_STATUS.items()
+    }
+
+
+_COLUNAS_DE_GRUPO = (
+    Coluna("ativos", "Ativos", numerica=True, definicao=mensagens.DEFINICAO_ATIVOS),
+    Coluna("com_sucesso", "Com Sucesso", numerica=True, definicao=mensagens.DEFINICAO_COM_SUCESSO),
+    Coluna("sem_sucesso", "Sem Sucesso", numerica=True, definicao=mensagens.DEFINICAO_SEM_SUCESSO),
+)
+
+
+def _valores_de_grupo(contagem):
+    """Colunas de grupo de uma linha, com zeros quando o valor não tem trabalho. [FR-040]"""
+    return {grupo: contagem.get(grupo, 0) for grupo in GRUPOS_DE_STATUS}
+
+
+# ---------------------------------------------------------------------------------------------
+# Produção de TCCs (US-33)
+# ---------------------------------------------------------------------------------------------
+
+_AGRUPAMENTOS = {
+    "curso": ("tcc_tur__tur_cur__cur_nome", "Curso"),
+    "area": ("tcc_ari__ari_nome", "Área de Interesse"),
+    "modalidade": ("tcc_modalidade", "Modalidade"),
+}
+
+
+def _rotulos_do_agrupamento(filtros, contagens):
+    """Valores do agrupamento, com zeros: as 10 áreas e, se houver, "Não informada"; as duas
+    modalidades; os cursos do filtro. [US-33 A, B, E][FR-061][FR-062]
+    """
+    if filtros.agrupar_por == "area":
+        rotulos = list(
+            AreasInteresse.objects.order_by("ari_nome").values_list("ari_nome", flat=True)
+        )
+        return rotulos + ([None] if None in contagens else [])
+    if filtros.agrupar_por == "modalidade":
+        return [ModalidadeTCC.MONOGRAFIA.value, ModalidadeTCC.ARTIGO_CIENTIFICO.value]
+    cursos = Cursos.objects.order_by("cur_nome")
+    if filtros.cur_id is not None:
+        cursos = cursos.filter(pk=filtros.cur_id)
+    return list(cursos.values_list("cur_nome", flat=True))
+
+
+@relatorio(
+    id="producao-tccs",
+    nome="Produção de TCCs",
+    descricao=mensagens.MR12_DESCRICAO_PRODUCAO,
+    frase=mensagens.MR12_DESCRICAO_PRODUCAO,
+    perfis=("coordenador",),
+    filtros=("ano_semestre", "agrupar_por", "abrangencia", "curso"),
+    ordem=30,
+)
+def producao_tccs(usuario, filtros):
+    """Uma linha por valor do agrupamento e a linha Total, com Total de Trabalhos = Ativos + Com
+    Sucesso + Sem Sucesso; o arquivo segue o agrupamento da tela (P3).
+    [US-33][RBN-REL-02.1][RBN-CAD-08.3][RBN-CAD-08.7][FR-060][FR-061][FR-062][FR-063][FR-064]
+    """
+    campo, rotulo_da_coluna = _AGRUPAMENTOS[filtros.agrupar_por]
+    trabalhos = TCCs.objects.filter(
+        tcc_tur__tur_ano=filtros.ano, tcc_tur__tur_semestre=filtros.semestre
+    )
+    if filtros.cur_id is not None:
+        trabalhos = trabalhos.filter(tcc_tur__tur_cur_id=filtros.cur_id)
+    status_validos = ABRANGENCIAS.get(filtros.abrangencia, STATUS_DOS_TRABALHOS)
+    linhas_do_banco = (
+        trabalhos.annotate(status=ultimo_status(hst_tcc=OuterRef("pk")))
+        .filter(status__in=status_validos)
+        .values(campo)
+        .annotate(total=Count("pk"), **_contagens_por_grupo("pk"))
+        .order_by()
+    )
+    contagens = {linha[campo]: linha for linha in linhas_do_banco}
+    linhas = []
+    for valor in _rotulos_do_agrupamento(filtros, contagens):
+        contagem = contagens.get(valor, {})
+        linhas.append(
+            Linha(
+                {
+                    "grupo": valor or mensagens.NAO_INFORMADA,
+                    "total": contagem.get("total", 0),
+                    **_valores_de_grupo(contagem),
+                }
+            )
+        )
+    soma = {
+        chave: sum(linha.valores[chave] for linha in linhas)
+        for chave in ("total", *GRUPOS_DE_STATUS)
+    }
+    itens = [
+        (linha.valores["grupo"], linha.valores["total"])
+        for linha in linhas
+        if linha.valores["total"]
+    ]
+    return Relatorio(
+        colunas=(
+            Coluna("grupo", rotulo_da_coluna),
+            Coluna(
+                "total",
+                "Total de Trabalhos",
+                numerica=True,
+                definicao=mensagens.DEFINICAO_TOTAL_TRABALHOS,
+            ),
+            *_COLUNAS_DE_GRUPO,
+        ),
+        linhas=tuple(linhas),
+        totais=(Linha({"grupo": "Total", **soma}),),
+        kpis=(
+            Kpi("Total de Trabalhos", soma["total"]),
+            Kpi("Ativos", soma["ativos"]),
+            Kpi("Com Sucesso", soma["com_sucesso"]),
+            Kpi("Sem Sucesso", soma["sem_sucesso"]),
+        ),
+        grafico=graficos.barras(itens) if itens else None,
+        como_calculado=mensagens.COMO_PRODUCAO,
+        tem_registros=soma["total"] > 0,
+    )
+
+
+# ---------------------------------------------------------------------------------------------
+# Artigos (US-33 fluxo D)
+# ---------------------------------------------------------------------------------------------
+
+_COLUNAS_ARTIGOS = (
+    Coluna("titulo", "Título do TCC"),
+    Coluna("aluno", "Aluno"),
+    Coluna("orientador", "Orientador"),
+    Coluna("veiculo", "Veículo"),
+    Coluna("qualis", "Estrato Qualis/CAPES"),
+    Coluna("status", "Status de Submissão"),
+    Coluna("aproveitamento", "Aproveitamento"),
+    Coluna("link", "Link ou DOI"),
+)
+
+
+def _nome_do_orientador():
+    """Vínculo ativo; sem ele, o mais recente, numa subconsulta (research R16). [FR-065]"""
+    return Subquery(
+        Orientacoes.objects.filter(ori_tcc=OuterRef("pk"))
+        .annotate(
+            prioridade=Case(
+                When(ori_status=StatusOrientacao.ATIVA, then=0),
+                default=1,
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("prioridade", "-ori_data_inicio", "-ori_id")
+        .values("ori_doc__doc__usu_nome")[:1]
+    )
+
+
+def _linha_de_artigo(tcc):
+    """Linha do TCC; sem registro de publicação, células vazias e a MR-14. [FR-065][FR-066]"""
+    artigo = getattr(tcc, "artigos", None)
+    return Linha(
+        {
+            "titulo": tcc.tcc_titulo or "",
+            "aluno": tcc.tcc_alu.alu.usu_nome,
+            "orientador": tcc.orientador or SEM_ORIENTADOR,
+            "veiculo": (artigo.art_veiculo_publicacao or "") if artigo else "",
+            "qualis": (artigo.art_qualis_capes or "") if artigo else "",
+            "status": (artigo.art_status_submissao or "") if artigo else "",
+            "aproveitamento": (artigo.art_homologacao if artigo else None)
+            or mensagens.MR14_APROVEITAMENTO_SEM_ANALISE,
+            "link": link_seguro(artigo.art_link_doi) if artigo else "",
+        }
+    )
+
+
+@relatorio(
+    id="artigos",
+    nome="Artigos",
+    descricao=mensagens.MR13_DESCRICAO_ARTIGOS,
+    frase=mensagens.MR13_DESCRICAO_ARTIGOS,
+    perfis=("coordenador",),
+    filtros=("ano_semestre", "curso"),
+    ordem=40,
+)
+def artigos(usuario, filtros):
+    """TCCs na modalidade Artigo Científico das turmas do período.
+    [US-33 D][RBN-REL-02.2][RBN-CAD-10.5][RBN-CAD-12.1][RBN-CAD-12.3][FR-065][FR-066]
+    """
+    trabalhos = (
+        TCCs.objects.select_related("tcc_alu__alu", "artigos")
+        .filter(
+            tcc_modalidade=ModalidadeTCC.ARTIGO_CIENTIFICO,
+            tcc_tur__tur_ano=filtros.ano,
+            tcc_tur__tur_semestre=filtros.semestre,
+        )
+        .annotate(orientador=_nome_do_orientador())
+        .order_by("tcc_alu__alu__usu_nome", "pk")
+    )
+    if filtros.cur_id is not None:
+        trabalhos = trabalhos.filter(tcc_tur__tur_cur_id=filtros.cur_id)
+    trabalhos = list(trabalhos)
+    linhas = tuple(_linha_de_artigo(tcc) for tcc in trabalhos)
+    com_artigo = [tcc.artigos for tcc in trabalhos if getattr(tcc, "artigos", None)]
+    return Relatorio(
+        colunas=_COLUNAS_ARTIGOS,
+        linhas=linhas,
+        kpis=(
+            Kpi("Artigos", len(linhas)),
+            Kpi(
+                "Publicados",
+                sum(a.art_status_submissao == StatusSubmissao.PUBLICADO for a in com_artigo),
+            ),
+            Kpi(
+                "Homologados", sum(a.art_homologacao == Homologacao.HOMOLOGADO for a in com_artigo)
+            ),
+        ),
+        como_calculado=mensagens.COMO_ARTIGOS,
     )

@@ -125,16 +125,16 @@ ver todos e filtrar; como Aluno, não ver o item.
 
 ### Tests for User Story 2
 
-- [ ] T028 [P] [US2] [US-33][RBN-REL-02.1] Criar `tests/test_us33_producao.py` com os cenários 2.1 a 2.4 e 2.6 a 2.8: Total = Ativos + Com Sucesso + Sem Sucesso em toda linha; `GRUPOS_DE_STATUS` cobre os 10 valores uma vez; Sem Proposta fora; 10 áreas e "Não informada"; arquivo no agrupamento da tela (P3); teste cruzado com Formação
-- [ ] T029 [P] [US2] [US-33][RBN-REL-02.2] Criar `tests/test_us33_artigos.py` com o cenário 2.5: colunas exatas; TCC sem linha em `Artigos`; MR-14; Orientador ativo, mais recente e "Sem orientador"; TCC que virou Monografia fora; link só `https`
-- [ ] T030 [P] [US2] [US-33] (SC-004) Cenários 2.9 e 2.10 na matriz de `tests/test_permissoes_relatorios.py`
+- [X] T028 [P] [US2] [US-33][RBN-REL-02.1] Criar `tests/test_us33_producao.py` com os cenários 2.1 a 2.4 e 2.6 a 2.8: Total = Ativos + Com Sucesso + Sem Sucesso em toda linha; `GRUPOS_DE_STATUS` cobre os 10 valores uma vez; Sem Proposta fora; 10 áreas e "Não informada"; arquivo no agrupamento da tela (P3); teste cruzado com Formação
+- [X] T029 [P] [US2] [US-33][RBN-REL-02.2] Criar `tests/test_us33_artigos.py` com o cenário 2.5: colunas exatas; TCC sem linha em `Artigos`; MR-14; Orientador ativo, mais recente e "Sem orientador"; TCC que virou Monografia fora; link só `https`
+- [X] T030 [P] [US2] [US-33] (SC-004) Cenários 2.9 e 2.10 na matriz de `tests/test_permissoes_relatorios.py`
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] [US-33][RBN-REL-02.1][RBN-CAD-08.3][RBN-CAD-08.7] (FR-041) Subconsulta do Status por período em `services_relatorios.py`, para vínculo e para TCC (research R5, R16)
-- [ ] T032 [US2] [US-33][RBN-REL-02.1] (FR-060 a FR-064) Implementar `producao_tccs(usuario, filtros)`, com base `TCCs`, agrupamentos, abrangência, linha Total, `tem_registros` próprio, KPIs, barras e "Como é calculado" (research R16)
-- [ ] T033 [US2] [US-33][RBN-REL-02.2][RBN-CAD-12.1][RBN-CAD-12.3] (FR-065, FR-066) Implementar `artigos(usuario, filtros)`, com `select_related("artigos")`, Orientador por `Subquery`, `link_seguro`, 3 KPIs e sem gráfico (research R16)
-- [ ] T034 [US2] [US-33] (SC-001) Teste de N+1 de Produção e Artigos e IC-05: trabalhos sem Área e artigos no `popular_demo`
+- [X] T031 [US2] [US-33][RBN-REL-02.1][RBN-CAD-08.3][RBN-CAD-08.7] (FR-041) Subconsulta do Status por período em `services_relatorios.py`, para vínculo e para TCC (research R5, R16)
+- [X] T032 [US2] [US-33][RBN-REL-02.1] (FR-060 a FR-064) Implementar `producao_tccs(usuario, filtros)`, com base `TCCs`, agrupamentos, abrangência, linha Total, `tem_registros` próprio, KPIs, barras e "Como é calculado" (research R16)
+- [X] T033 [US2] [US-33][RBN-REL-02.2][RBN-CAD-12.1][RBN-CAD-12.3] (FR-065, FR-066) Implementar `artigos(usuario, filtros)`, com `select_related("artigos")`, Orientador por `Subquery`, `link_seguro`, 3 KPIs e sem gráfico (research R16)
+- [X] T034 [US2] [US-33] (SC-001) Teste de N+1 de Produção e Artigos e IC-05: trabalhos sem Área e artigos no `popular_demo`
 
 **Checkpoint**: US-33 completa.
 
