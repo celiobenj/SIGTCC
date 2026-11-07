@@ -128,9 +128,14 @@ table.tabela { border-collapse: collapse; width: 100%; font-size: 13px; }
 .tabela td { padding: 10px 12px; border-bottom: 1px solid var(--borda); vertical-align: top; overflow-wrap: normal; word-break: normal; hyphens: none; }
 .tabela .nw, .tabela .chip { white-space: nowrap; }
 .tabela td.texto { min-width: 140px; }
-/* Única exceção: o Link ou DOI do relatório Artigos é endereço, não palavra, e pode ter 500
-   caracteres sem espaço; quebra em qualquer ponto para não alargar a tabela sem limite. */
-.tabela td.link { min-width: 200px; overflow-wrap: anywhere; }
+/* Segunda correção (palavras partidas em 360 e 768 px, medidas com o Playwright): o navegador
+   também quebra a linha nas barras e pontos de um endereço e no hífen ou travessão de uma palavra
+   ("Humano-Computador", "14:00–17:40"), sem precisar de "overflow-wrap: anywhere". Endereços
+   (links externos e a coluna Link ou DOI) ficam inteiros numa linha, e a tabela rola dentro da
+   .tabela-wrap; as palavras com hífen dos relatórios vêm em <span class="nw">
+   (relatorios_tags.palavras_inteiras). Não há mais exceção com quebra em qualquer ponto.
+   fix(core): manter palavras inteiras nas tabelas em telas pequenas */
+.tabela td.link, .tabela a[href^="http"] { white-space: nowrap; }
 .tabela tr:last-child td { border-bottom: 0; }
 .chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: var(--hover); color: var(--texto2); white-space: nowrap; }
 .chip.azul { background: var(--azul-claro); color: var(--azul); }

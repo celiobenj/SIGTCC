@@ -458,3 +458,30 @@ class TesteApresentacao(TesteRelatorios):
         html = self.abrir("formacao-evasao").content.decode()
         self.assertIn(f'title="{mensagens.DEFINICAO_MATRICULADOS}"', html)
         self.assertIn('aria-current="page"', html)
+
+
+class TestePalavrasInteiras(SimpleTestCase):
+    """Palavra com hífen ou travessão numa linha só, com o conteúdo escapado.
+
+    fix(core): manter palavras inteiras nas tabelas em telas pequenas [FR-070]
+    """
+
+    def test_envolve_so_a_palavra_com_hifen(self):
+        """O resto do texto continua quebrando entre palavras."""
+        from sigtcc.apps.relatorios.templatetags.relatorios_tags import palavras_inteiras
+
+        self.assertEqual(
+            palavras_inteiras("Interação Humano-Computador"),
+            'Interação <span class="nw">Humano-Computador</span>',
+        )
+        self.assertEqual(palavras_inteiras("14:00–17:40"), '<span class="nw">14:00–17:40</span>')
+        self.assertEqual(palavras_inteiras(3), "3")
+
+    def test_escapa_o_conteudo(self):
+        """Autoescape mantido, inclusive dentro do <span>."""
+        from sigtcc.apps.relatorios.templatetags.relatorios_tags import palavras_inteiras
+
+        self.assertEqual(
+            palavras_inteiras("<b>x-y</b>"),
+            '<span class="nw">&lt;b&gt;x-y&lt;/b&gt;</span>',
+        )
