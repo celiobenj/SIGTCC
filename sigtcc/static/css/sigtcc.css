@@ -119,7 +119,18 @@ p.pg-sub { color: var(--texto2); margin: 0 0 20px; }
 .tabela-wrap { overflow-x: auto; border: 1px solid var(--borda); border-radius: var(--radius); }
 table.tabela { border-collapse: collapse; width: 100%; font-size: 13px; }
 .tabela th { text-align: left; font-weight: 500; color: var(--texto2); background: var(--fundo2); padding: 10px 12px; border-bottom: 1px solid var(--borda); white-space: nowrap; }
-.tabela td { padding: 10px 12px; border-bottom: 1px solid var(--borda); vertical-align: top; overflow-wrap: anywhere; }
+/* Correção da quebra de palavras letra a letra nas tabelas ("Engenhari/a de/Computaç/ão" na tela
+   Relatórios, "Adria/na/Lope/s" na lista de docentes): com "overflow-wrap: anywhere", a coluna
+   encolhia até uma letra. O texto agora só quebra entre palavras, e a tabela que não couber rola
+   na horizontal dentro da .tabela-wrap. Colunas curtas (.nw: números, datas, Titulação, e-mails,
+   "4 / 0") não quebram linha; colunas de texto (.texto: nome, curso, título) têm largura mínima.
+   fix(core): impedir quebra de palavras nas tabelas */
+.tabela td { padding: 10px 12px; border-bottom: 1px solid var(--borda); vertical-align: top; overflow-wrap: normal; word-break: normal; hyphens: none; }
+.tabela .nw, .tabela .chip { white-space: nowrap; }
+.tabela td.texto { min-width: 140px; }
+/* Única exceção: o Link ou DOI do relatório Artigos é endereço, não palavra, e pode ter 500
+   caracteres sem espaço; quebra em qualquer ponto para não alargar a tabela sem limite. */
+.tabela td.link { min-width: 200px; overflow-wrap: anywhere; }
 .tabela tr:last-child td { border-bottom: 0; }
 .chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: var(--hover); color: var(--texto2); white-space: nowrap; }
 .chip.azul { background: var(--azul-claro); color: var(--azul); }
@@ -242,7 +253,6 @@ a.bloco:hover { border-color: var(--azul-btn); box-shadow: var(--sombra); }
 /* Tabela larga (tela de orientandos, 9 colunas): rola dentro de .tabela-wrap em vez de quebrar
    o texto letra a letra (T060). [US-18][FR-014] */
 .tabela.larga { min-width: 1080px; }
-.tabela.larga td { overflow-wrap: normal; }
 /* Spec 008: avaliação pendente em Minhas bancas e na Sessão de defesa (destaque), linha bloqueada
    do formulário Avaliação e prévia da assinatura. [US-25][US-26][US-27][RBN-DEF-05.4] */
 .tabela tr.pendente td, .pendente-destaque { background: var(--amarelo-claro); }
@@ -258,7 +268,7 @@ a.bloco:hover { border-color: var(--azul-btn); box-shadow: var(--sombra); }
    [US-31][US-47][US-32][US-33][RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2]
    [RBN-REL-02.3][RBN-REL-02.4][FR-070][FR-071][FR-073][FR-076][IC-04] (tasks T013) */
 .wrap:has(.rel-layout) { max-width: 1200px; }
-.tabela td.num, .tabela th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabela td.num, .tabela th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tabela tfoot td { font-weight: 500; background: var(--fundo2); }
 .tabela tr.destaque td { font-weight: 500; background: var(--amarelo-claro); }
 .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }

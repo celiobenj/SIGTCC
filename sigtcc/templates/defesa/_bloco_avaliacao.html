@@ -17,7 +17,7 @@
       <tbody>
         {% for item in visao.estados %}
         <tr{% if item.pendente %} class="pendente"{% endif %}>
-          <td>{{ item.papel }}</td><td>{{ item.membro.usu_nome }}</td>
+          <td>{{ item.papel }}</td><td class="texto">{{ item.membro.usu_nome }}</td>
           <td>{{ item.estado }}{% if item.data_envio %} em {{ item.data_envio|date:"d/m/Y H:i" }}{% endif %}</td>
         </tr>
         {% endfor %}
@@ -42,8 +42,8 @@
       <tbody>
         {% for criterio, nota in avaliador.linhas %}
         <tr>
-          <td>{{ criterio.cri_nome }}</td><td>{{ criterio.cri_peso|floatformat:1 }}</td>
-          <td>{{ nota.conceito|default:"—" }}</td><td>{% if nota %}{{ nota.nota|floatformat:1 }}{% else %}—{% endif %}</td>
+          <td>{{ criterio.cri_nome }}</td><td class="nw">{{ criterio.cri_peso|floatformat:1 }}</td>
+          <td>{{ nota.conceito|default:"—" }}</td><td class="nw">{% if nota %}{{ nota.nota|floatformat:1 }}{% else %}—{% endif %}</td>
           {% if avaliador.proprio %}<td>{{ nota.observacoes|default:"—" }}</td>{% endif %}
         </tr>
         {% endfor %}

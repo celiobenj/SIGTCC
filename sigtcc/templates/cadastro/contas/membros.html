@@ -20,10 +20,10 @@
         {% for linha in linhas %}
           {% with membro=linha.membro %}
           <tr>
-            <td>{{ membro.mem.usu_nome }}</td>
-            <td>{{ membro.mem.usu_email }}</td>
-            <td>{{ membro.mem_titulacao }}</td>
-            <td>{{ membro.mem_instituicao }}</td>
+            <td class="texto">{{ membro.mem.usu_nome }}</td>
+            <td class="nw">{{ membro.mem.usu_email }}</td>
+            <td class="nw">{{ membro.mem_titulacao }}</td>
+            <td class="texto">{{ membro.mem_instituicao }}</td>
             <td><span class="chip{% if linha.status == 'Ativa' %} verde{% elif linha.status == 'Expirada' %} vermelho{% else %} amarelo{% endif %}">{{ linha.status }}</span>{% if membro.mem_validade_ate %} <small>até {{ membro.mem_validade_ate|date:"d/m/Y" }}</small>{% endif %}</td>
             <td>
               <div class="flex">

@@ -16,7 +16,7 @@
           {% with numero=forloop.counter %}
           <tr{% if linha.destaque %} class="destaque"{% endif %}>
             {% for celula in linha.celulas %}
-              <td{% if celula.numerica %} class="num"{% endif %}>
+              <td class="{% if celula.numerica %}num{% elif celula.url %}link{% else %}texto{% endif %}">
                 {% if forloop.first and linha.sublistas %}<button type="button" class="linha-expande" data-expande aria-expanded="true" aria-controls="linha-sub-{{ numero }}"><span class="ms" aria-hidden="true">expand_more</span>{{ celula.texto }}</button>
                 {% elif celula.url %}<a href="{{ celula.url }}" target="_blank" rel="noopener noreferrer">{{ celula.texto }}</a>
                 {% else %}{{ celula.texto }}{% endif %}

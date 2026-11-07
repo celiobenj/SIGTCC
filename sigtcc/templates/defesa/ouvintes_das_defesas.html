@@ -32,13 +32,13 @@
     <tbody>
       {% for linha in linhas %}
       <tr data-linha-ouvinte>
-        <td>{{ linha.pre_ouv.ouv_nome }}</td>
-        <td>{{ linha.pre_ouv.ouv_matricula }}</td>
-        <td>{{ linha.pre_def.def_tcc.tcc_titulo }}</td>
-        <td>{{ linha.pre_def.def_tcc.tcc_alu.alu.usu_nome }}</td>
-        <td>{{ linha.orientador_nome }}</td>
-        <td>{{ linha.pre_def.def_data|date:"d/m/Y" }}</td>
-        <td>{{ horas }}</td>
+        <td class="texto">{{ linha.pre_ouv.ouv_nome }}</td>
+        <td class="nw">{{ linha.pre_ouv.ouv_matricula }}</td>
+        <td class="texto">{{ linha.pre_def.def_tcc.tcc_titulo }}</td>
+        <td class="texto">{{ linha.pre_def.def_tcc.tcc_alu.alu.usu_nome }}</td>
+        <td class="texto">{{ linha.orientador_nome }}</td>
+        <td class="nw">{{ linha.pre_def.def_data|date:"d/m/Y" }}</td>
+        <td class="nw">{{ horas }}</td>
       </tr>
       {% empty %}
       <tr><td colspan="7" class="muted">{{ vazia }}</td></tr>

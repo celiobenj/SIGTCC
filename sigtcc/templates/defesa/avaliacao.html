@@ -50,7 +50,7 @@
             </details>
             {% for erro in form.non_field_errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}
           </td>
-          <td>{{ criterio.cri_peso|floatformat:1 }}</td>
+          <td class="nw">{{ criterio.cri_peso|floatformat:1 }}</td>
           <td class="campo{% if form.conceito.errors %} com-erro{% endif %}">{{ form.conceito }}{% for erro in form.conceito.errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}</td>
           <td class="campo{% if form.nota.errors %} com-erro{% endif %}">{{ form.nota }}{% for erro in form.nota.errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}</td>
           <td class="campo{% if form.observacoes.errors %} com-erro{% endif %}">{{ form.observacoes }}{% for erro in form.observacoes.errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}</td>

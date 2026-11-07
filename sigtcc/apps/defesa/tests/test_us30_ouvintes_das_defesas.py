@@ -67,14 +67,14 @@ class TesteListaDaSecretaria(BaseOuvintesDasDefesas):
         self.assertContains(pagina, cenario["aluno"].usu_nome)
         self.assertContains(pagina, cenario["orientador"].usu_nome)
         self.assertContains(pagina, "20/11/2026")
-        self.assertContains(pagina, "<td>2 horas</td>", html=False)
+        self.assertContains(pagina, '<td class="nw">2 horas</td>', html=False)
 
     def test_cenario_4_2_duas_sessoes_duas_linhas(self):
         self.sessao_com_ouvintes(ouvintes=[("2022010001", "Ana Souza")])
         self.sessao_com_ouvintes(ouvintes=[("2022010001", "Ana Souza")])
         pagina = self.consultar()
         self.assertContains(pagina, "data-linha-ouvinte", count=2)
-        self.assertContains(pagina, "<td>2 horas</td>", count=2, html=False)
+        self.assertContains(pagina, '<td class="nw">2 horas</td>', count=2, html=False)
 
     def test_cenario_4_3_so_sessoes_realizadas(self):
         self.sessao_com_ouvintes(StatusSessao.EM_ANDAMENTO, ouvintes=[("2022010001", "Ana Souza")])
