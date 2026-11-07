@@ -78,3 +78,17 @@ COMO_FORMACAO = (
 )
 DEFINICAO_MATRICULADOS = "Alunos vinculados às turmas do período, exceto os excluídos da turma"
 DEFINICAO_SEM_PROPOSTA = "Alunos que ainda não salvaram a Proposta"
+
+# MR-03 e MR-04 do Histórico de indicadores do NUCOMP. [US-32 A][RBN-REL-02.4]
+COMO_HISTORICO = (
+    "Cada indicador conta pelo período letivo da turma, porque os registros não têm data de "
+    "semestre.",
+    "Alunos Vinculados usa a mesma definição de Matriculados.",
+    "Artigos Publicados conta cada artigo uma vez, no período do primeiro TCC do aluno com "
+    "Publicado; se o link for alterado depois, as cópias contam como artigos diferentes.",
+    "Desistências são as transições para Desistente no histórico das turmas do período.",
+)
+DEFINICAO_ALUNOS_VINCULADOS = "Alunos com vínculo em turmas do período"
+DEFINICAO_DEFESAS_REALIZADAS = "Sessões com status Realizada"
+DEFINICAO_ARTIGOS_PUBLICADOS = "Artigos com Status de Submissão Publicado"
+DEFINICAO_DESISTENCIAS = "Transições para Desistente no período"

@@ -29,6 +29,7 @@ from sigtcc.apps.cadastro.choices import (
     TipoSolicitacao,
 )
 from sigtcc.apps.cadastro.models import (
+    Artigos,
     Notificacoes,
     Orientacoes,
     SolicitacoesOrientacao,
@@ -514,6 +515,17 @@ class TestePopularDemo(TesteTurmas):
         self.assertEqual(acionado.ban_def.def_status, StatusSessao.REALIZADA)
         self.assertEqual(acionado.ban_def.def_tcc.tcc_tur.tur_semestre, 1)
         self.assertIn("Roteiro da spec 010", self.saida.getvalue())
+
+    def test_artigo_copiado_em_tres_periodos(self):
+        """Spec 010 (IC-05): 3 períodos e artigo Publicado copiado na matrícula do TCC 2.
+        [US-32][RBN-REL-02.4][FR-052]
+        """
+        self.assertGreaterEqual(
+            Turmas.objects.values_list("tur_ano", "tur_semestre").distinct().count(), 3
+        )
+        copias = Artigos.objects.filter(art_link_doi="https://doi.org/10.5753/demo.2025.077")
+        self.assertEqual(copias.count(), 2)
+        self.assertEqual(len({copia.art.tcc_alu_id for copia in copias}), 1)
 
     def test_tccs_aptos_sem_sessao_para_agendar(self):
         aptos = [

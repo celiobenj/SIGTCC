@@ -123,7 +123,7 @@ class TesteRelatoriosDoCoordenador(TesteRelatorios):
     [FR-004][SC-004]
     """
 
-    RELATORIOS = ("producao-tccs", "artigos", "formacao-evasao")
+    RELATORIOS = ("producao-tccs", "artigos", "formacao-evasao", "historico-nucomp")
 
     def setUp(self):
         super().setUp()

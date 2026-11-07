@@ -1150,6 +1150,62 @@ class Command(BaseCommand):
         self.tcc_com_troca = self._proposta(aluno, turma)
         self._orientador(aluno, turma, self.ori_ecp1)
         self._orientador(aluno, turma, self.ori_ecp2)
+        self._artigo_copiado()
+
+    def _artigo_copiado(self):
+        """Spec 010 (IC-05): terceiro período letivo, 2025/2, com um artigo Publicado no TCC 1, que
+        a matrícula no TCC 2 copia: o Histórico conta esse artigo uma vez.
+        [US-32 A][RBN-REL-02.4][FR-052][research R11]
+        """
+        professor = self.prof_ecp1
+        antiga = self._turma(
+            professor,
+            self.ecp,
+            "ECP-TCC1-2025.2",
+            DescricaoTurma.TCC_1,
+            2025,
+            2,
+            DiaSemana.TERCA,
+            "Bloco B, sala 12",
+        )
+        documento = self._entrega(
+            professor,
+            antiga,
+            TipoEntrega.DOCUMENTO_PARA_DEFESA,
+            "Artigo para a banca",
+            self.hoje + timedelta(days=5),
+        )
+        aluno = self._aluno(professor, antiga)
+        tcc = self._proposta(aluno, antiga, modalidade=ModalidadeTCC.ARTIGO_CIENTIFICO)
+        self._orientador(aluno, antiga, self.ori_ecp3)
+        services_artigos.salvar_publicacao(
+            aluno.alu,
+            tcc.pk,
+            {
+                "veiculo": "Revista Amazônica de Computação",
+                "link": "https://doi.org/10.5753/demo.2025.077",
+                "qualis": "A2",
+                "status": "Publicado",
+            },
+        )
+        self._enviar(aluno, documento)
+        self._apto(self.ori_ecp3, tcc)
+        self._resultado(tcc, professor, StatusTCC.APROVADO_PARA_TCC_2)
+        self._prazo_passado(documento, 200)
+        services_turmas.arquivar_turma(professor, antiga.pk)
+        turma2 = Turmas.objects.filter(
+            tur_cur=self.ecp,
+            tur_descricao=DescricaoTurma.TCC_2,
+            tur_ano=2026,
+            tur_semestre=2,
+        ).first()
+        services_turmas.matricular_individual(
+            turma2.tur_doc.doc,
+            turma2.pk,
+            aluno.alu_matricula,
+            aluno.alu.usu_nome,
+            CODIGO[self.ecp.cur_nome],
+        )
 
     def _defesas(self):
         """Uma sessão em cada Status (a Realizada fica no TCC 2 de Eng. Comp. que recebeu o

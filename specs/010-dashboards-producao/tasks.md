@@ -169,12 +169,12 @@ ver todos e filtrar; como Aluno, não ver o item.
 
 ### Tests for User Story 4
 
-- [ ] T040 [P] [US4] [US-32][RBN-REL-02.4] Criar `tests/test_us32_historico.py` com os cenários 4.1 e 4.2: ordem; só filtro Curso; período sem turma do curso com zeros; sem período, E2; Alunos Vinculados igual a Matriculados; Defesas pela turma; Desistências pelo histórico; artigo copiado conta uma vez, no primeiro período com Publicado; link editado conta 2; Monografia fora
+- [X] T040 [P] [US4] [US-32][RBN-REL-02.4] Criar `tests/test_us32_historico.py` com os cenários 4.1 e 4.2: ordem; só filtro Curso; período sem turma do curso com zeros; sem período, E2; Alunos Vinculados igual a Matriculados; Defesas pela turma; Desistências pelo histórico; artigo copiado conta uma vez, no primeiro período com Publicado; link editado conta 2; Monografia fora
 
 ### Implementation for User Story 4
 
-- [ ] T041 [US4] [US-32][RBN-REL-02.4] (FR-050 a FR-052) Implementar `historico_nucomp(usuario, filtros)`, com consultas por período, Artigos Publicados de R11, KPIs do último período, gráfico de linhas e "Como é calculado" (research R11, R9)
-- [ ] T042 [US4] [US-32] (SC-001) Teste de N+1 e IC-05: artigo copiado e três períodos no `popular_demo`
+- [X] T041 [US4] [US-32][RBN-REL-02.4] (FR-050 a FR-052) Implementar `historico_nucomp(usuario, filtros)`, com consultas por período, Artigos Publicados de R11, KPIs do último período, gráfico de linhas e "Como é calculado" (research R11, R9)
+- [X] T042 [US4] [US-32] (SC-001) Teste de N+1 e IC-05: artigo copiado e três períodos no `popular_demo`
 
 **Checkpoint**: US-32 completa.
 

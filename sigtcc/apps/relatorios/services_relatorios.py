@@ -5,10 +5,21 @@ filtros e devolve a estrutura única. Só leitura: nenhum trecho grava dados.
 [RBN-REL-02.3][RBN-REL-02.4][FR-005]
 """
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
-from django.db.models import Case, Count, F, IntegerField, OuterRef, Q, Subquery, Value, When
+from django.db.models import (
+    Case,
+    Count,
+    F,
+    IntegerField,
+    Min,
+    OuterRef,
+    Q,
+    Subquery,
+    Value,
+    When,
+)
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
@@ -26,15 +37,17 @@ from sigtcc.apps.cadastro.mensagens import SEM_ORIENTADOR
 from sigtcc.apps.cadastro.models import (
     AlunosTurmas,
     AreasInteresse,
+    Artigos,
     Coorientacoes,
     Cursos,
     Docentes,
     HistoricoStatusTCC,
     Orientacoes,
     TCCs,
+    Turmas,
 )
 from sigtcc.apps.defesa.choices import StatusSessao
-from sigtcc.apps.defesa.models import BancaDefesa
+from sigtcc.apps.defesa.models import BancaDefesa, Defesas
 from sigtcc.apps.defesa.services_defesa import PAPEIS_TITULARES
 
 from . import graficos, mensagens
@@ -724,4 +737,161 @@ def formacao_evasao(usuario, filtros):
         grafico=graficos.empilhado(barras, _LEGENDA_FORMACAO),
         como_calculado=mensagens.COMO_FORMACAO,
         tem_registros=soma["matriculados"] > 0,
+    )
+
+
+# ---------------------------------------------------------------------------------------------
+# Histórico de indicadores do NUCOMP (US-32 fluxo A)
+# ---------------------------------------------------------------------------------------------
+
+_COLUNAS_HISTORICO = (
+    Coluna("periodo", "Período letivo"),
+    Coluna(
+        "vinculados",
+        "Alunos Vinculados",
+        numerica=True,
+        definicao=mensagens.DEFINICAO_ALUNOS_VINCULADOS,
+    ),
+    Coluna(
+        "defesas",
+        "Defesas Realizadas",
+        numerica=True,
+        definicao=mensagens.DEFINICAO_DEFESAS_REALIZADAS,
+    ),
+    Coluna(
+        "artigos",
+        "Artigos Publicados",
+        numerica=True,
+        definicao=mensagens.DEFINICAO_ARTIGOS_PUBLICADOS,
+    ),
+    Coluna(
+        "desistencias",
+        "Desistências",
+        numerica=True,
+        definicao=mensagens.DEFINICAO_DESISTENCIAS,
+    ),
+)
+
+
+def _por_periodo(consulta, turma):
+    """Contagem por (ano, semestre) da turma, numa consulta. [FR-051]"""
+    ano, semestre = f"{turma}__tur_ano", f"{turma}__tur_semestre"
+    linhas = consulta.values(ano, semestre).annotate(quantidade=Count("pk")).order_by()
+    return {(linha[ano], linha[semestre]): linha["quantidade"] for linha in linhas}
+
+
+def _artigos_publicados_por_periodo(cur_id):
+    """Cada artigo conta uma vez, no primeiro período do aluno com Publicado: o par aluno e link
+    identifica o artigo e as suas cópias, e `Artigos` não tem data de publicação (research R11).
+    [US-32 A][RBN-REL-02.4][RBN-CAD-12.1][FR-052][Q-149]
+    """
+    artigos_publicados = Artigos.objects.filter(
+        art_status_submissao=StatusSubmissao.PUBLICADO,
+        art__tcc_modalidade=ModalidadeTCC.ARTIGO_CIENTIFICO,
+    )
+    if cur_id is not None:
+        artigos_publicados = artigos_publicados.filter(art__tcc_tur__tur_cur_id=cur_id)
+    primeiros = (
+        artigos_publicados.values("art__tcc_alu", "art_link_doi")
+        .annotate(primeiro=Min(F("art__tcc_tur__tur_ano") * 10 + F("art__tcc_tur__tur_semestre")))
+        .order_by()
+    )
+    return Counter(divmod(linha["primeiro"], 10) for linha in primeiros)
+
+
+@relatorio(
+    id="historico-nucomp",
+    nome="Histórico de indicadores do NUCOMP",
+    descricao=mensagens.MR11_DESCRICAO_HISTORICO,
+    frase=mensagens.MR11_DESCRICAO_HISTORICO,
+    perfis=("coordenador",),
+    filtros=("curso",),
+    ordem=60,
+)
+def historico_nucomp(usuario, filtros):
+    """Uma linha por período letivo cadastrado, do mais antigo ao mais recente, só com o filtro
+    Curso; período sem turma do curso aparece com zeros.
+    [US-32 A][RBN-REL-02.4][RBN-CAD-08.7][FR-050][FR-051][FR-052]
+    """
+    vinculos = AlunosTurmas.objects.all()
+    sessoes = Defesas.objects.filter(def_status=StatusSessao.REALIZADA)
+    desistencias = HistoricoStatusTCC.objects.filter(hst_status_novo=StatusTCC.DESISTENTE)
+    if filtros.cur_id is not None:
+        vinculos = vinculos.filter(mat_tur__tur_cur_id=filtros.cur_id)
+        sessoes = sessoes.filter(def_tcc__tcc_tur__tur_cur_id=filtros.cur_id)
+        desistencias = desistencias.filter(hst_tur__tur_cur_id=filtros.cur_id)
+    por_vinculo = (
+        vinculos.values("mat_tur__tur_ano", "mat_tur__tur_semestre")
+        .annotate(quantidade=Count("mat_alu"))
+        .order_by()
+    )
+    vinculados = {
+        (linha["mat_tur__tur_ano"], linha["mat_tur__tur_semestre"]): linha["quantidade"]
+        for linha in por_vinculo
+    }
+    defesas = _por_periodo(sessoes, "def_tcc__tcc_tur")
+    saidas = _por_periodo(desistencias, "hst_tur")
+    publicados = _artigos_publicados_por_periodo(filtros.cur_id)
+    periodos = (
+        Turmas.objects.values_list("tur_ano", "tur_semestre")
+        .distinct()
+        .order_by("tur_ano", "tur_semestre")
+    )
+    linhas = tuple(
+        Linha(
+            {
+                "periodo": f"{ano}/{semestre}",
+                "vinculados": vinculados.get((ano, semestre), 0),
+                "defesas": defesas.get((ano, semestre), 0),
+                "artigos": publicados.get((ano, semestre), 0),
+                "desistencias": saidas.get((ano, semestre), 0),
+            }
+        )
+        for ano, semestre in periodos
+    )
+    return Relatorio(
+        colunas=_COLUNAS_HISTORICO,
+        linhas=linhas,
+        kpis=_kpis_do_ultimo_periodo(linhas),
+        grafico=_grafico_do_historico(linhas),
+        como_calculado=mensagens.COMO_HISTORICO,
+    )
+
+
+def _kpis_do_ultimo_periodo(linhas):
+    """KPIs do período mais recente. [US-32 A][FR-072]"""
+    if not linhas:
+        return ()
+    ultimo = linhas[-1].valores
+    return (
+        Kpi("Vinculados", ultimo["vinculados"]),
+        Kpi("Defesas", ultimo["defesas"]),
+        Kpi("Artigos", ultimo["artigos"]),
+        Kpi("Desistências", ultimo["desistencias"]),
+    )
+
+
+def _grafico_do_historico(linhas):
+    """Linhas por período; Artigos em `--teal` tracejado, porque `--roxo` é de Membros Externos
+    (research R9). [US-32 A][FR-072][FR-073]
+    """
+    if not linhas:
+        return None
+
+    def serie(rotulo, chave, cor, tracejada=False):
+        return {
+            "rotulo": rotulo,
+            "valores": [linha.valores[chave] for linha in linhas],
+            "cor": cor,
+            "tracejada": tracejada,
+        }
+
+    return graficos.linhas(
+        [linha.valores["periodo"] for linha in linhas],
+        [
+            serie("Alunos Vinculados", "vinculados", "azul"),
+            serie("Defesas Realizadas", "defesas", "verde"),
+            serie("Artigos Publicados", "artigos", "teal", tracejada=True),
+            serie("Desistências", "desistencias", "vermelho"),
+        ],
     )
