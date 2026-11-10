@@ -184,7 +184,11 @@ a matriz de 17/10 e o modelo lógico.
 - Q9: Na recusa do pedido de orientação, a RBN-CAD-10.2 diz que "o resultado é comunicado … ao
   Professor da Disciplina"; a US-18 D só avisa o Aluno. Quem é avisado? → A: **Seguir a US**: na
   recusa, só o Aluno; o Professor da Disciplina é avisado no aceite (FR-010 e FR-011). A PO deve
-  conferir a RBN-CAD-10.2 (índice Q-99).
+  conferir a RBN-CAD-10.2 (índice Q-99). **Revisão (Julia Cohen, 2026-11-10; Q-99 respondida, opção
+  A)**: vale a matriz (RBN-CAD-10.2), que tem precedência sobre a US. Na recusa do pedido (de
+  orientação ou de troca), o Professor da Disciplina também é avisado, no sistema e por e-mail,
+  com a MO-27 e o link do painel do aluno, como no aceite (FR-011). Na recusa do convite de
+  coorientação, continua só o Aluno (MO-11; FR-032).
 - Q10 (`/speckit-clarify`): Depois da troca de orientador, o ex-orientador continua vendo as atas do
   aluno? → A: **Não**: perde o acesso, como o coorientador removido (RBN-CAD-10.7; US-36 D). Só o
   vínculo ativo dá acesso às atas (FR-023). Confirma a D4.
@@ -373,7 +377,8 @@ conferir o vínculo, as notificações e a linha do aluno na tela de orientandos
    mostra "Proposta ainda não registrada", sem o botão "Ver proposta".
 6. **Given** o pedido pendente, **When** o docente aciona "Recusar", **Then** a recusa é registrada,
    aparece "Pedido recusado" e o pedido sai da seção; **and** o Aluno é notificado e pode indicar
-   outro orientador.
+   outro orientador; **and** o Professor da Disciplina é notificado no sistema e por e-mail
+   (MO-27; Clarifications Q9, revisão de 2026-11-10).
 7. **Given** o aluno com o orientador X e pedido de troca para Y, **When** Y aceita, **Then** Y vira
    Orientador, X é notificado, a troca vai para o histórico e o aluno sai da tela de orientandos de X.
 8. **Given** o docente já com 5 orientandos, **When** aceita mais um, **Then** a listagem de docentes
@@ -783,8 +788,10 @@ Pontos de contato acrescentados na revisão (Clarifications Q16, que substitui a
   troca, MUST encerrar o vínculo anterior (histórico), notificar o orientador anterior (MO-05) e
   encerrar a coorientação de quem aceita, se houver.
 - **FR-011** [RBN-CAD-10.2]: "Recusar" MUST registrar a recusa com o docente, a data e a hora,
-  notificar o Aluno (MO-03), liberar a lista "Indicar orientador" e exibir "Pedido recusado"; no
-  pedido de troca, o orientador atual MUST ser mantido.
+  notificar o Aluno no sistema (MO-03) e o Professor da Disciplina no sistema e por e-mail (MO-27,
+  com o link do painel do aluno; Clarifications Q9, revisão de 2026-11-10), liberar a lista
+  "Indicar orientador" e exibir "Pedido recusado"; no pedido de troca, o orientador atual MUST ser
+  mantido.
 - **FR-012** [RBN-CAD-10.1; RBN-CAD-10.6; Clarifications Q7, D1]: O link do pedido (e-mail e
   notificação) MUST abrir a tela Orientações com o pedido destacado. Quando o pedido não pode mais
   ser respondido, a tela MUST mostrar no topo, como aviso, o estado do pedido, sem "Aceitar" e
@@ -1036,7 +1043,7 @@ Pontos de contato acrescentados na revisão (Clarifications Q16, que substitui a
   convidado (MO-01, MO-07, MO-16), à tela Orientações com o pedido ou convite (FR-012); ao
   Orientador e aos demais docentes avisados (MO-05, MO-06, MO-08, MO-09, MO-10, MO-18), à tela
   Orientações; ao docente do pedido ou convite cancelado pelo arquivamento (MO-26), à tela
-  Orientações com esse pedido ou convite (FR-012, FR-033); ao Professor da Disciplina (MO-04), ao painel do aluno. O encerramento da
+  Orientações com esse pedido ou convite (FR-012, FR-033); ao Professor da Disciplina (MO-04, MO-27), ao painel do aluno. O encerramento da
   participação e a transferência continuam avisando os docentes pelas notificações da spec 004
   (MT-31 e MT-22); a MO-12 e a MO-17 são só o texto exibido pelo link do pedido ou convite cancelado.
 - **FR-053** [RBN-CAD-04.5; Clarifications Q17]: Ao arquivar a turma (spec 004, US-07), o sistema
@@ -1094,6 +1101,7 @@ a 005. Todos os textos entre aspas nos FR acima são cópia exata das US.
 | MO-24 | Seções vazias da tela Orientações | "Nenhum pedido de orientação pendente." / "Nenhum convite de coorientação pendente." / "Nenhum orientando." | Clarifications Q11; FR-040 | A validar |
 | MO-25 | Aviso ao Aluno: coorientador externo reaproveitado pelo e-mail | "Este coorientador já estava cadastrado: foram mantidos o nome e a instituição registrados." | Clarifications Q13; FR-028 | A validar |
 | MO-26 | Link e notificação: pedido ou convite cancelado com a turma arquivada | Link: "Este pedido foi cancelado porque a turma foi arquivada." / "Este convite foi cancelado porque a turma foi arquivada." / Notificação ao docente: "O {pedido de orientação ou convite de coorientação} de {nome} foi cancelado porque a turma {identificador} foi arquivada." | Clarifications Q17; FR-050, FR-053 | A validar |
+| MO-27 | Notificação e e-mail ao Professor da Disciplina: pedido recusado (assunto: "SIGTCC: orientação recusada") | "{docente} recusou o pedido de orientação de {nome} na turma {identificador}." | US-18 D; RBN-CAD-10.2; Clarifications Q9 (revisão de 2026-11-10; Q-99) | A validar |
 
 ## Success Criteria *(mandatory)*
 
@@ -1103,7 +1111,7 @@ a 005. Todos os textos entre aspas nos FR acima são cópia exata das US.
 - **SC-002**: Um Docente aceita ou recusa um pedido em até 2 acionamentos, a partir do e-mail ou do
   sino.
 - **SC-003**: 100% das mensagens exibidas são idênticas às das US ou estão na tabela MO-xx (MO-01 a
-  MO-26).
+  MO-27).
 - **SC-004**: Todos os 99 cenários de aceite das 9 US (mais os 7 pontos de contato das User Stories
   2, 3 e 9) têm pelo menos um teste automatizado; nos cenários 1 e 3 da US-20, a parte da nota mínima
   é testada pela consulta do FR-039, porque a nota é aplicada pela US-27.
@@ -1126,8 +1134,8 @@ a 005. Todos os textos entre aspas nos FR acima são cópia exata das US.
   (Clarifications Q7).
 - A ata não guarda o autor (o dicionário não tem a coluna); só os comentários guardam autor, data e
   hora (US-19 C). A lacuna fica aceita, sem coluna nova (Clarifications D14; índice Q-102).
-- Os e-mails (pedido, MO-01; pedido de troca, MO-16; convite, MO-07; aceite ao Professor da
-  Disciplina, MO-04) seguem o padrão da spec 005: depois da gravação, com a falha só no log; a
+- Os e-mails (pedido, MO-01; pedido de troca, MO-16; convite, MO-07; aceite e recusa ao
+  Professor da Disciplina, MO-04 e MO-27) seguem o padrão da spec 005: depois da gravação, com a falha só no log; a
   notificação no sistema é a forma principal, e os demais avisos, inclusive a MO-06, saem só no
   sistema (índice Q-84).
 - A listagem de docentes com a quantidade de orientandos (RBN-CAD-11.3) é da spec 002.

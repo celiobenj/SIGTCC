@@ -374,7 +374,7 @@ MC13_FALHA_ENVIO_TROCA = (
 
 # =============================================================================================
 # Spec 006: Orientação, Atas e Publicações (US-17, 18, 19, 20, 36, 41, 42, 45, 46)
-# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_4.md; MO-01 a MO-26 da tabela
+# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_4.md; MO-01 a MO-27 da tabela
 # "Mensagens a validar com a PO" de specs/006-orientacao/spec.md (PROVISÓRIAS, índice Q-95).
 # Reaproveitadas sem duplicar: LINK_HTTPS_500, M14_CAMPO_OBRIGATORIO, MT25_TURMA_ARQUIVADA,
 # M02_ACESSO_NEGADO, MT31_PEDIDO_CANCELADO e MT22_NOTIFICACAO_TRANSFERENCIA. [SC-003][FR-048]
@@ -418,7 +418,7 @@ PUBLICACAO_SALVA = "Publicação salva"
 APROVEITAMENTO_HOMOLOGADO = "Aproveitamento homologado"
 APROVEITAMENTO_RECUSADO = "Aproveitamento recusado"
 
-# MO-01 a MO-26: PROVISÓRIAS (spec 006, "Mensagens a validar com a PO"; índice Q-95).
+# MO-01 a MO-27: PROVISÓRIAS (spec 006, "Mensagens a validar com a PO"; índice Q-95).
 # {titulo} é o título do TCC ou PROPOSTA_AINDA_NAO_REGISTRADA.
 MO01_PEDIDO_ORIENTACAO = "{nome} pediu a sua orientação. TCC: {titulo}."
 MO01_ASSUNTO = "SIGTCC: pedido de orientação"
@@ -484,6 +484,13 @@ MO25_EXTERNO_REAPROVEITADO = (
 MO26_PEDIDO_CANCELADO_ARQUIVAMENTO = "Este pedido foi cancelado porque a turma foi arquivada."
 MO26_CONVITE_CANCELADO_ARQUIVAMENTO = "Este convite foi cancelado porque a turma foi arquivada."
 MO26_NOTIFICACAO = "O {tipo} de {nome} foi cancelado porque a turma {identificador} foi arquivada."
+# MO-27: aviso ao Professor da Disciplina na recusa do pedido, pela RBN-CAD-10.2 (resultado ao
+# Professor da Disciplina por e-mail e notificação; índice Q-99, resposta A). PROVISÓRIA.
+# [US-18 D][RBN-CAD-10.2][FR-011]
+MO27_ORIENTACAO_RECUSADA = (
+    "{docente} recusou o pedido de orientação de {nome} na turma {identificador}."
+)
+MO27_ASSUNTO = "SIGTCC: orientação recusada"
 
 # Tipos usados em {tipo} da MO-18 e da MO-26 (texto da própria tabela da spec).
 TIPO_PEDIDO_ORIENTACAO = "pedido de orientação"

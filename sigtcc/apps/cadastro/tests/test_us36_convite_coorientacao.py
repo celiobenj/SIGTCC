@@ -8,6 +8,7 @@ Coorientador só com "Atas" e "Registrar ata" (FR-015).
 [US-36][RBN-CAD-10.4][FR-031 a FR-033][Q14][D7] (tasks T044)
 """
 
+from django.core import mail
 from django.urls import reverse
 from django.utils import timezone
 
@@ -94,6 +95,13 @@ class ConviteTest(TesteTurmas):
             mensagens.MO11_CONVITE_RECUSADO.format(docente=self.docente.usu_nome),
         )
         self.assertEqual(len(services_orientacao.historico_de_orientacao(self.tcc)), 1)
+
+    def test_recusa_do_convite_nao_avisa_o_professor_da_disciplina(self):
+        """Q-99: a MO-27 vale só para o pedido; no convite, só o Aluno é avisado (MO-11)."""
+        with self.captureOnCommitCallbacks(execute=True):
+            self.recusar()
+        self.assertFalse(Notificacoes.objects.filter(not_usu=self.professor).exists())
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_cenario5_removido_perde_a_tela_e_as_atas(self):
         self.aceitar()
