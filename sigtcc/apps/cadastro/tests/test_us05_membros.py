@@ -130,13 +130,13 @@ class CadastroMembroTest(TesteContas):
         self.assertContains(resposta, mensagens.OPCAO_INVALIDA)
 
     def test_cenario_14_atalho_da_banca_volta_com_o_membro(self):
-        voltar = reverse("cadastro:perfil") + "?aba=banca"
+        voltar = reverse("cadastro:painel") + "?aba=banca"
         resposta = self.client.post(f"{NOVO}?voltar={voltar}", dados(voltar=voltar))
         conta = Usuarios.objects.get(usu_email="ana@ufam.edu.br")
         self.assertRedirects(resposta, f"{voltar}&membro={conta.pk}", fetch_redirect_response=False)
 
     def test_cenario_15_cancelar_pelo_atalho_volta_sem_criar(self):
-        voltar = reverse("cadastro:perfil")
+        voltar = reverse("cadastro:painel")
         resposta = self.client.get(NOVO, {"voltar": voltar})
         self.assertContains(resposta, f'href="{voltar}">Cancelar')
         self.assertEqual(MembrosExternos.objects.count(), 0)
@@ -163,7 +163,7 @@ class CadastroMembroTest(TesteContas):
     def test_cenario_22_docente_sem_papel_nao_ve_o_menu(self):
         docente = docente_de(EC)
         self.client.force_login(docente)
-        resposta = self.client.get(reverse("cadastro:perfil"))
+        resposta = self.client.get(reverse("cadastro:painel"))
         self.assertNotContains(resposta, LISTA)
         self.assertEqual(self.client.get(LISTA).status_code, 403)
 

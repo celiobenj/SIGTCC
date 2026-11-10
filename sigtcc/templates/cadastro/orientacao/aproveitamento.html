@@ -29,11 +29,11 @@
     <tbody>
       {% for l in linhas %}
       <tr>
-        <td class="texto">{{ l.aluno }}</td>
-        <td class="texto">{{ l.orientador|default:"—" }}</td>
-        <td class="texto">{{ l.tcc.tcc_titulo }}</td>
+        <td>{{ l.aluno }}</td>
+        <td>{{ l.orientador|default:"—" }}</td>
+        <td>{{ l.tcc.tcc_titulo }}</td>
         <td>{{ l.artigo.art_veiculo_publicacao|default:"—" }}</td>
-        <td class="nw">{{ l.artigo.art_qualis_capes|default:"—" }}</td>
+        <td>{{ l.artigo.art_qualis_capes|default:"—" }}</td>
         <td><a href="{{ l.artigo.art_link_doi }}" target="_blank" rel="noopener noreferrer">abrir</a></td>
         <td><span class="chip">{{ l.artigo.art_homologacao|default:"—" }}</span></td>
         <td>

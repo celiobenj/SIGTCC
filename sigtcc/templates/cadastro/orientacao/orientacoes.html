@@ -4,8 +4,6 @@
   topo (link de pedido ou convite, FR-012 e FR-033), "Pedidos de orientação", "Convites de
   coorientação" e a tela de orientandos. Seções vazias com a MO-24. Sem regra aqui: as linhas e
   as decisões dos botões vêm prontas de services_orientacao.contexto_orientacoes.
-  Spec 007 (IC-04): "Agendar defesa" na linha do TCC que o docente pode agendar (`agendaveis`,
-  de services_defesa.tccs_elegiveis). [US-21][FR-006]
   [US-18][US-36][US-19][US-42][US-46][RBN-CAD-10.2][RBN-CAD-10.4][RBN-CAD-11.4]
   [FR-009][FR-012][FR-014][FR-015][FR-016][FR-026][FR-031][FR-033][FR-040][Q11]
 {% endcomment %}
@@ -64,10 +62,10 @@
     <tbody>
       {% for o in orientandos %}
       <tr>
-        <td class="texto">{{ o.aluno }}</td>
-        <td class="texto">{{ o.curso }}</td>
-        <td class="nw">{{ o.turma.tur_descricao }} · {{ o.turma.tur_identificador }}{% if o.arquivada %}<br><span class="chip">Arquivada</span>{% endif %}</td>
-        <td class="texto">{% if o.titulo %}{{ o.titulo }}{% else %}<span class="muted">Sem Proposta</span>{% endif %}</td>
+        <td>{{ o.aluno }}</td>
+        <td>{{ o.curso }}</td>
+        <td>{{ o.turma.tur_descricao }} · {{ o.turma.tur_identificador }}{% if o.arquivada %}<br><span class="chip">Arquivada</span>{% endif %}</td>
+        <td>{% if o.titulo %}{{ o.titulo }}{% else %}<span class="muted">Sem Proposta</span>{% endif %}</td>
         <td>{{ o.tcc.tcc_modalidade|default:"—" }}</td>
         <td>{{ o.papel }}</td>
         <td><span class="chip">{{ o.tcc.tcc_status }}</span></td>
@@ -83,7 +81,6 @@
             {% elif o.apto == "sem_entrega_cadastrada" %}<button type="button" class="btn" disabled title="{{ texto_sem_entrega }}">Apto para Defesa</button><small class="muted">{{ texto_sem_entrega }}</small>
             {% endif %}
             {% if o.apto_etiqueta %}<span class="chip verde">Apto para Defesa</span>{% endif %}
-            {% if o.tcc.pk in agendaveis %}<a class="btn pri" href="{% url 'defesa:agendar' %}?tcc={{ o.tcc.pk }}&amp;de=orientacoes"><span class="ms">event</span>Agendar defesa</a>{% endif %}
             {% if o.correcoes == "disponivel" %}<a class="btn pri" href="{% url 'cadastro:correcoes_conferidas' o.tcc.pk %}">Correções Conferidas</a>
             {% endif %}
             {% if o.correcoes_etiqueta %}<span class="chip verde">{{ o.correcoes_etiqueta }}</span>{% endif %}

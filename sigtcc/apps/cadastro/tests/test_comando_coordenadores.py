@@ -73,7 +73,7 @@ class ComandoCoordenadoresTest(TesteContas):
         conta.usu_status = StatusConta.ATIVA
         conta.save()
         self.client.force_login(conta)
-        resposta = self.client.get(reverse("cadastro:perfil"))
+        resposta = self.client.get(reverse("cadastro:painel"))
         self.assertContains(resposta, "Cadastros")
         self.assertContains(resposta, reverse("cadastro:contas_docentes"))
 

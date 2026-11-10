@@ -45,9 +45,9 @@ class NotificarTest(TesteAcesso):
 
     def test_link_interno_aceito_e_externo_descartado(self):
         """Só caminho interno válido vira not_link_tela."""
-        interno = services.notificar(self.usuario, "ok", link="/perfil/")
+        interno = services.notificar(self.usuario, "ok", link="/painel/")
         externo = services.notificar(self.usuario, "ok", link="https://outro.site/")
-        self.assertEqual(interno.not_link_tela, "/perfil/")
+        self.assertEqual(interno.not_link_tela, "/painel/")
         self.assertIsNone(externo.not_link_tela)
 
     def test_data_hora_e_nao_lida(self):

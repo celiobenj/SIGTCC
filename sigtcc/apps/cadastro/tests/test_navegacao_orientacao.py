@@ -52,7 +52,7 @@ class NavegacaoAlunoTest(TesteTurmas):
         self.client.force_login(self.aluno.alu)
 
     def test_do_menu_ate_a_secao_orientacao(self):
-        painel = self.client.get(reverse("cadastro:perfil"))
+        painel = self.client.get(reverse("cadastro:painel"))
         turmas = seguir(self, painel, reverse("cadastro:minhas_turmas"))
         meu_tcc = seguir(self, turmas, reverse("cadastro:meu_tcc", args=[self.turma.pk]))
         self.assertContains(meu_tcc, 'id="orientacao"')
@@ -90,7 +90,7 @@ class NavegacaoDocenteTest(TesteTurmas):
         self.client.force_login(self.docente)
 
     def test_menu_orientacoes_para_todo_docente(self):
-        painel = self.client.get(reverse("cadastro:perfil"))
+        painel = self.client.get(reverse("cadastro:painel"))
         self.assertContains(painel, "Orientações")
         self.assertContains(painel, "supervisor_account")
         tela = seguir(self, painel, reverse("cadastro:orientacoes"))
@@ -99,7 +99,7 @@ class NavegacaoDocenteTest(TesteTurmas):
 
     def test_menu_orientacoes_nao_aparece_para_outros_perfis(self):
         self.client.force_login(criar_secretaria())
-        painel = self.client.get(reverse("cadastro:perfil"))
+        painel = self.client.get(reverse("cadastro:painel"))
         self.assertNotIn(reverse("cadastro:orientacoes"), links(painel))
 
     def test_sino_leva_ao_pedido_e_ver_proposta_volta(self):
@@ -130,7 +130,7 @@ class NavegacaoProfessorTest(TesteTurmas):
         self.client.force_login(self.professor)
 
     def painel(self):
-        painel = self.client.get(reverse("cadastro:perfil"))
+        painel = self.client.get(reverse("cadastro:painel"))
         turmas = seguir(self, painel, reverse("cadastro:turmas"))
         turma = seguir(self, turmas, reverse("cadastro:turma", args=[self.turma.pk]))
         return seguir(
@@ -340,7 +340,7 @@ class NavegacaoPublicacaoTest(TesteTurmas):
         from sigtcc.apps.cadastro.tests.apoio_acesso import criar_coordenador
 
         self.client.force_login(criar_coordenador())
-        painel = self.client.get(reverse("cadastro:perfil"))
+        painel = self.client.get(reverse("cadastro:painel"))
         texto = painel.content.decode()
         self.assertIn("Gestão", texto)
         self.assertLess(texto.index("Cadastros"), texto.index("Gestão"))

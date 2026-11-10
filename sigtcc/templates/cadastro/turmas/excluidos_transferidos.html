@@ -14,10 +14,10 @@
     <tbody>
       {% for registro in registros %}
       <tr>
-        <td class="texto">{{ registro.hat_alu.alu.usu_nome }}</td>
-        <td class="nw">{{ registro.hat_alu.alu_matricula }}</td>
-        <td class="nw">{{ registro.hat_data_hora|date:"d/m/Y H:i" }}</td>
-        <td class="texto">{{ registro.hat_usu.usu_nome }}</td>
+        <td>{{ registro.hat_alu.alu.usu_nome }}</td>
+        <td>{{ registro.hat_alu.alu_matricula }}</td>
+        <td>{{ registro.hat_data_hora|date:"d/m/Y H:i" }}</td>
+        <td>{{ registro.hat_usu.usu_nome }}</td>
         <td>{{ registro.hat_tipo_evento }}{% if registro.hat_tur_destino %} para {{ registro.hat_tur_destino.tur_identificador }}{% endif %}</td>
         <td>{{ registro.hat_justificativa }}</td>
       </tr>

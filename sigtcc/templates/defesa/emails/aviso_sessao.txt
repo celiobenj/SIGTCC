@@ -1,6 +1,0 @@
-{% comment %}E-mail dos avisos da sessão de defesa (agendamento, reagendamento, cancelamento e alteração da banca): o mesmo texto da notificação no sistema (MD-xx, PROVISÓRIAS). [US-23][US-24][RBN-DEF-02.4][RBN-DEF-03.2][RBN-DEF-03.3]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
-
-{{ texto }}
-
-SIGTCC · Núcleo de Computação · EST/UEA
-{% endautoescape %}

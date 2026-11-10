@@ -65,12 +65,12 @@ class AtalhoDaBancaTest(TesteContas):
         self.request = RequestFactory().get("/")
 
     def test_aceita_caminho_interno_que_resolve(self):
-        self.assertEqual(services_contas.destino_interno("/perfil/", self.request), "/perfil/")
+        self.assertEqual(services_contas.destino_interno("/painel/", self.request), "/painel/")
 
     def test_recusa_externo_protocolo_relativo_e_inexistente(self):
         for valor in (
             "https://evil.example/",
-            "//evil.example/perfil/",
+            "//evil.example/painel/",
             "/nao-existe/",
             "painel/",
             "",
@@ -80,11 +80,11 @@ class AtalhoDaBancaTest(TesteContas):
 
     def test_com_parametro_preserva_a_query(self):
         self.assertEqual(
-            services_contas.com_parametro("/perfil/?aba=banca&membro=3", "membro", 9),
-            "/perfil/?aba=banca&membro=9",
+            services_contas.com_parametro("/painel/?aba=banca&membro=3", "membro", 9),
+            "/painel/?aba=banca&membro=9",
         )
         self.assertEqual(
-            services_contas.com_parametro("/perfil/", "membro", 9), "/perfil/?membro=9"
+            services_contas.com_parametro("/painel/", "membro", 9), "/painel/?membro=9"
         )
 
 

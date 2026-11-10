@@ -858,7 +858,7 @@ end box
 
 ' Declaração das Linhas de Vida
 
-note right of Usuario : Ouvintes: também o Professor da Disciplina (E9). Ocorrências: só o Orientador (RBN-DEF-08.5).\nA Secretaria só consulta os ouvintes (fluxo C). Agenda em PDF: também Coordenador de Curso e Secretaria (fluxo G)
+note right of Usuario : Ouvintes e ocorrências: também o Professor da Disciplina (E9). A Secretaria só consulta\nos ouvintes (fluxo C). Agenda em PDF: também Coordenador de Curso e Secretaria (fluxo G)
 
 Usuario -> Tela ++ : 1: abrirModalOuvintes(def_id)
 Tela -> Ctrl ++ : 1.1: carregarOuvintesDefesa(def_id, usuario)
@@ -4858,10 +4858,29 @@ break erro != vazio (E2: avaliações pendentes, E3: parecer não selecionado,\n
     Tela -> Tela ++ : 3.2: exibirErro(erro)
     deactivate Tela
 end
-note right of Ctrl : spec 008 (Q-134): a liberação não gera nem grava PDFs;\na Ata Final e a Folha de Aprovação são geradas a cada download (passo 4)
-Ctrl -> defesa ++ : 3.1.5: registrarResultado(def_nota_final, def_parecer,\ndef_status = 'Realizada', def_data_liberacao_resultado)
+Ctrl -> coordenador ++ : 3.1.2: assinaturaCoordenador = obterAssinatura(cur_id)
+coordenador -->> Ctrl -- : assinaturaCoordenador
+break assinaturaCoordenador = vazio (US-28 E2: Coordenador sem assinatura cadastrada)
+    Ctrl -->> Tela : erro
+    Tela -> Tela ++ : 3.3: exibirErro(erro)
+    deactivate Tela
+end
+Ctrl -> Gerador ++ : 3.1.3: def_ata_final_path = gerarAtaFinal(def_id, assinaturaCoordenador)
+note right of Gerador : Ata Final em PDF estático (US-28).\nTCC 1 e Reprovado: só a Ata Final
+Gerador -->> Ctrl -- : def_ata_final_path
+opt TCC 2 e def_parecer in ('Aprovado', 'Aprovado com Correções')
+    Ctrl -> Gerador ++ : 3.1.4: def_folha_aprovacao_path = gerarFolhaAprovacao(def_id)
+    note right of Gerador : sem nenhuma menção a notas numéricas
+    Gerador -->> Ctrl -- : def_folha_aprovacao_path
+end
+break falha na geração do PDF (US-28 E3)
+    Ctrl -->> Tela : erro
+    Tela -> Tela ++ : 3.4: exibirErro(erro)
+    deactivate Tela
+end
+Ctrl -> defesa ++ : 3.1.5: registrarResultado(def_nota_final, def_parecer,\ndef_ata_final_path, def_folha_aprovacao_path,\ndef_status = 'Realizada', def_data_liberacao_resultado)
 deactivate defesa
-note right of defesa : avaliações imutáveis (E5); def_ata_final_path e\ndef_folha_aprovacao_path ficam sem uso (Q-133)
+note right of defesa : avaliações imutáveis (E5)
 create historico
 Ctrl -->> historico ++ : 3.1.6: «create» HistoricoDefesa(defesa, hdf_evento = 'Liberação do Resultado',\nhdf_status_anterior = 'Em Andamento', hdf_status_novo = 'Realizada',\nhdf_data_hora, usuario)
 Ctrl -> tcc ++ : 3.1.7: alterarStatus(def_parecer, usuario, 'Liberação do resultado')
@@ -4870,17 +4889,9 @@ deactivate historico
 ref over Ctrl, tcc : AlterarStatusTCC\ngrava o HistoricoStatusTCC
 Ctrl -> Gerador ++ : 3.1.8: enviarDeclaracoes(def_id)
 deactivate Gerador
-note right of Gerador : depois do commit (services_documentos.ao_liberar_resultado);\ndeclaração em PDF gerada em memória, por e-mail, com código único
-Ctrl -> coordenador ++ : 3.1.9: pendencia = verificarAssinatura(cur_id)
-coordenador -->> Ctrl -- : pendencia
-opt pendencia != vazio (US-28 E2: curso sem Coordenador ou Coordenador sem assinatura no perfil)
-    note right of Ctrl : feat-09 (P1, Q-144): depois do commit, numa transação própria, notifica\no Coordenador (MX-03, link do perfil) ou a Secretaria do curso (MX-09);\na liberação não é desfeita nem bloqueada
-    Ctrl -->> Tela : alertaE2
-    Tela -> Tela ++ : 3.3: exibirAlerta("Não foi possível gerar a Ata Final: o Coordenador de\nCurso não possui assinatura cadastrada no perfil")
-    deactivate Tela
-end
+note right of Gerador : declaração em PDF por e-mail,\ncom código único
 Ctrl -->> Tela -- : resultado
-Tela -> Tela ++ : 3.5: exibirResultadoLiberado(def_nota_final, def_parecer)
+Tela -> Tela ++ : 3.5: exibirResultadoLiberado(def_nota_final, def_parecer,\ndef_ata_final_path, def_folha_aprovacao_path)
 deactivate Tela
 deactivate Tela
 
@@ -4894,24 +4905,8 @@ break erro != vazio (US-28 E4: Folha de Aprovação em TCC 1, E5: TCC reprovado,
     Tela -> Tela ++ : 4.2: exibirErro(erro)
     deactivate Tela
 end
-Ctrl -> defesa ++ : 4.1.2: dadosResultado = obterResultado(def_id)
-defesa -->> Ctrl -- : dadosResultado
-Ctrl -> coordenador ++ : 4.1.3: assinaturaCoordenador = obterAssinatura(cur_id)
-coordenador -->> Ctrl -- : assinaturaCoordenador
-note right of coordenador : o Coordenador de Curso atual no momento do download;\ncaminho gravado com o arquivo ausente: o PDF sai sem a imagem (Q-140)
-break assinaturaCoordenador = vazio (US-28 E2: curso sem Coordenador ou caminho vazio no perfil;\na mensagem da E2 ao Orientador e a MX-08 aos demais, sem nova notificação, P1)
-    Ctrl -->> Tela : erro
-    Tela -> Tela ++ : 4.3: exibirErro(erro)
-    deactivate Tela
-end
-Ctrl -> Gerador ++ : 4.1.4: arquivoPdf = gerarDocumento(tipo, dadosResultado,\nassinaturaCoordenador)
-note right of Gerador : PDF gerado em memória, sob demanda, e nunca gravado (Q-134).\nAta Final: TCC 1 e Reprovado só ela. Folha de Aprovação: TCC 2 aprovado,\nsem nenhuma menção a notas numéricas
-Gerador -->> Ctrl -- : arquivoPdf
-break falha na geração do PDF (US-28 E3)
-    Ctrl -->> Tela : erro
-    Tela -> Tela ++ : 4.4: exibirErro(erro)
-    deactivate Tela
-end
+Ctrl -> defesa ++ : 4.1.2: arquivoPdf = obterArquivo(tipo)
+defesa -->> Ctrl -- : arquivoPdf
 Ctrl -->> Tela -- : arquivoPdf
 Tela -> Tela ++ : 4.3: baixarArquivo(arquivoPdf)
 deactivate Tela

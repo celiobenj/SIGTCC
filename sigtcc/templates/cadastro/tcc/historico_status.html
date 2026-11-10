@@ -44,8 +44,8 @@
         <tr>
           <td>{{ linha.hst_status_anterior|default:"—" }}</td>
           <td>{{ linha.hst_status_novo }}</td>
-          <td class="nw">{{ linha.hst_data_hora|date:"d/m/Y H:i" }}</td>
-          <td class="texto">{{ linha.hst_usu.usu_nome }}</td>
+          <td>{{ linha.hst_data_hora|date:"d/m/Y H:i" }}</td>
+          <td>{{ linha.hst_usu.usu_nome }}</td>
           <td>{{ linha.hst_gatilho }}</td>
         </tr>
         {% endfor %}

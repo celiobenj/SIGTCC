@@ -381,9 +381,9 @@ class AlteracaoDocenteTest(TesteContas):
         self.assertContains(resposta, mensagens.MC10_STATUS_INCOMPATIVEL)
         self.assertFalse(Coordenadores.objects.filter(cor_doc_id=docente.pk).exists())
 
-    def test_m11_desmarcar_o_proprio_papel_leva_a_raiz(self):
+    def test_m11_desmarcar_o_proprio_papel_leva_ao_painel(self):
         resposta = self.client.post(editar(self.coordenador), dados_de(self.coordenador))
-        self.assertRedirects(resposta, reverse("cadastro:inicio"), fetch_redirect_response=False)
+        self.assertRedirects(resposta, reverse("cadastro:painel"), fetch_redirect_response=False)
         self.assertEqual(self.client.get(LISTA).status_code, 403)
 
     def test_c20_alteracao_nao_desfaz_status_gravado_por_outra_acao(self):

@@ -27,9 +27,9 @@
     <tbody>
       {% for entrega in entregas %}
       <tr>
-        <td class="texto"><a href="{% url 'cadastro:entrega_acompanhar' turma.pk entrega.pk %}">{{ entrega.tma_titulo }}</a></td>
+        <td><a href="{% url 'cadastro:entrega_acompanhar' turma.pk entrega.pk %}">{{ entrega.tma_titulo }}</a></td>
         <td>{{ entrega.tma_tipo }}</td>
-        <td class="nw">{{ entrega.tma_data_limite|date:"d/m/Y H:i" }}</td>
+        <td>{{ entrega.tma_data_limite|date:"d/m/Y H:i" }}</td>
       </tr>
       {% endfor %}
     </tbody>

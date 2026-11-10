@@ -41,13 +41,6 @@ class LoginTest(TesteAcesso):
         """Contador de senhas incorretas da conta no cache."""
         return caches["acesso"].get(f"acesso:falhas:{usuario.pk}")
 
-    def assertTelaInicial(self, resposta, rota):
-        """O login passa pela raiz e termina na tela inicial do perfil (FR-010, Q31)."""
-        self.assertEqual(
-            [url for url, _ in resposta.redirect_chain], [reverse("cadastro:inicio"), reverse(rota)]
-        )
-        self.assertEqual(resposta.status_code, 200)
-
     def assertLogado(self, usuario):
         """A sessão foi aberta para o usuário."""
         self.assertEqual(int(self.client.session.get("_auth_user_id", 0)), usuario.pk)
@@ -65,25 +58,25 @@ class LoginTest(TesteAcesso):
     # ------------------------------------------------------------------ cenários da US-11
 
     def test_cenario1_aluno_pela_matricula(self):
-        """Dado aluno ativo, quando entra pela matrícula, então vê a tela inicial do Aluno."""
+        """Dado aluno ativo, quando entra pela matrícula, então vê o painel do Aluno."""
         aluno = self.aluno_ativo()
         resposta = self.entrar("2026000001", SENHA, follow=True)
         self.assertLogado(aluno.alu)
-        self.assertTelaInicial(resposta, "cadastro:minhas_turmas")
+        self.assertContains(resposta, "Painel do Aluno")
 
     def test_cenario2_aluno_pelo_email_institucional(self):
-        """Dado aluno ativo com e-mail, quando entra pelo e-mail, vê a tela inicial do Aluno."""
+        """Dado aluno ativo com e-mail, quando entra pelo e-mail, então vê o painel do Aluno."""
         aluno = self.aluno_ativo()
         resposta = self.entrar("ana@uea.edu.br", SENHA, follow=True)
         self.assertLogado(aluno.alu)
-        self.assertTelaInicial(resposta, "cadastro:minhas_turmas")
+        self.assertContains(resposta, "Painel do Aluno")
 
     def test_cenario3_docente_pelo_email(self):
-        """Dado docente ativo, quando entra pelo e-mail, então vê a tela inicial do Docente."""
+        """Dado docente ativo, quando entra pelo e-mail, então vê o painel do Docente."""
         docente = criar_docente_ativo(email="prof@uea.edu.br")
         resposta = self.entrar("prof@uea.edu.br", SENHA, follow=True)
         self.assertLogado(docente)
-        self.assertTelaInicial(resposta, "cadastro:turmas")
+        self.assertContains(resposta, "Painel do Docente")
 
     def test_cenario4_senha_errada_registra_tentativa(self):
         """Dado sem tentativas, quando erra a senha, então "Credencial ou senha inválida" e 1."""
@@ -135,13 +128,13 @@ class LoginTest(TesteAcesso):
         self.assertNaoLogado()
 
     def test_cenario9_membro_externo_reativado(self):
-        """Dado Membro Externo que voltou a 'Ativa', quando entra, então vê a sua tela inicial."""
+        """Dado Membro Externo que voltou a 'Ativa', quando entra, então vê o seu painel."""
         membro = criar_membro_externo(email="ext@ufam.edu.br", status=StatusConta.EXPIRADA)
         self.entrar("ext@ufam.edu.br", SENHA)
         Usuarios.objects.filter(pk=membro.pk).update(usu_status=StatusConta.ATIVA)
         resposta = self.entrar("ext@ufam.edu.br", SENHA, follow=True)
         self.assertLogado(membro)
-        self.assertTelaInicial(resposta, "defesa:minhas_bancas")
+        self.assertContains(resposta, "Painel do Membro Externo")
 
     def test_cenario10_conta_aguardando_ativacao(self):
         """Dado aluno 'Aguardando Ativação', quando tenta entrar, então "Conta ainda não ativada".
@@ -178,8 +171,8 @@ class LoginTest(TesteAcesso):
         resposta = self.client.post(reverse("cadastro:sair"))
         self.assertRedirects(resposta, reverse("cadastro:entrar"))
         self.assertNaoLogado()
-        resposta = self.client.get(reverse("cadastro:perfil"))
-        self.assertRedirects(resposta, f"{reverse('cadastro:entrar')}?next=/perfil/")
+        resposta = self.client.get(reverse("cadastro:painel"))
+        self.assertRedirects(resposta, f"{reverse('cadastro:entrar')}?next=/painel/")
 
     def test_sair_so_por_post(self):
         """ "Sair" muda o estado: GET não encerra a sessão (contracts/rotas.md)."""
@@ -253,32 +246,28 @@ class LoginTest(TesteAcesso):
         self.assertIsNone(self.falhas(docente))
 
     def test_next_externo_ignorado(self):
-        """B2: next externo leva à raiz (tela inicial do perfil); next interno é seguido."""
+        """B2: next externo leva ao painel; next interno é seguido."""
         criar_docente_ativo(email="prof@uea.edu.br")
         for destino in ("https://outro.site/", "//outro.site", "/\\outro.site"):
             with self.subTest(next=destino):
                 resposta = self.entrar("prof@uea.edu.br", SENHA, next=destino)
-                self.assertRedirects(
-                    resposta, reverse("cadastro:inicio"), fetch_redirect_response=False
-                )
+                self.assertRedirects(resposta, reverse("cadastro:painel"))
                 self.client.post(reverse("cadastro:sair"))
-        resposta = self.entrar("prof@uea.edu.br", SENHA, next="/perfil/?aba=1")
-        self.assertRedirects(resposta, "/perfil/?aba=1")
+        resposta = self.entrar("prof@uea.edu.br", SENHA, next="/painel/?aba=1")
+        self.assertRedirects(resposta, "/painel/?aba=1")
 
     def test_next_volta_no_formulario(self):
         """O next da URL vai num campo oculto do formulário e é mantido quando há erro."""
-        resposta = self.client.get(reverse("cadastro:entrar") + "?next=/perfil/")
-        self.assertContains(resposta, 'name="next" value="/perfil/"')
-        resposta = self.entrar("x@uea.edu.br", "Errada123", next="/perfil/")
-        self.assertContains(resposta, 'name="next" value="/perfil/"')
+        resposta = self.client.get(reverse("cadastro:entrar") + "?next=/painel/")
+        self.assertContains(resposta, 'name="next" value="/painel/"')
+        resposta = self.entrar("x@uea.edu.br", "Errada123", next="/painel/")
+        self.assertContains(resposta, 'name="next" value="/painel/"')
 
-    def test_logado_em_entrar_vai_a_raiz(self):
-        """Usuário já logado que abre a tela de login vai à raiz (tela inicial do perfil)."""
+    def test_logado_em_entrar_vai_ao_painel(self):
+        """Usuário já logado que abre a tela de login vai ao painel."""
         self.client.force_login(criar_docente_ativo())
         self.assertRedirects(
-            self.client.get(reverse("cadastro:entrar")),
-            reverse("cadastro:inicio"),
-            fetch_redirect_response=False,
+            self.client.get(reverse("cadastro:entrar")), reverse("cadastro:painel")
         )
 
     def test_credencial_inexistente_calcula_hash(self):

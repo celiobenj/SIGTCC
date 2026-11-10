@@ -1,19 +1,16 @@
 {% comment %}
   Abas da tela da turma (barra "Seções da turma" do protótipo de 17/10, aqui com links, sem
-  JavaScript): "Alunos" (tela da turma da spec 004), "Entregas" (US v3.4; Q-80) e "Defesas"
-  (spec 007, IC-03), estas duas só quando `mostra_atividades` (Professor da Disciplina da turma;
-  a Secretaria do curso não vê, FR-027). Uso em turma.html (spec 004): with ativa="alunos"
-  mostra_atividades=e_professor; em entregas.html: with ativa="atividades" mostra_atividades=True;
-  em defesa/turma_defesas.html: with ativa="defesas" mostra_atividades=True.
-  [US-16][US-43][US-21][FR-027][FR-031][Q-89][spec 007 FR-006]
+  JavaScript): "Alunos" (tela da turma da spec 004) e "Entregas" (US v3.4; Q-80), esta
+  só quando `mostra_atividades` (Professor da Disciplina da turma; a Secretaria do curso não vê,
+  FR-027). Uso em turma.html (spec 004): with ativa="alunos" mostra_atividades=e_professor; em
+  entregas.html: with ativa="atividades" mostra_atividades=True.
+  [US-16][US-43][FR-027][FR-031][Q-89]
 {% endcomment %}
 {% url 'cadastro:turma' turma.pk as url_alunos %}
 {% url 'cadastro:entregas' turma.pk as url_atividades %}
-{% url 'defesa:turma_defesas' turma.pk as url_defesas %}
 <nav class="seg mt16" aria-label="Seções da turma">
   <a class="{% if ativa == 'alunos' %}ativo{% endif %}" href="{{ url_alunos }}"{% if ativa == 'alunos' %} aria-current="page"{% endif %}><span class="ms">group</span>Alunos</a>
   {% if mostra_atividades %}
   <a class="{% if ativa == 'atividades' %}ativo{% endif %}" href="{{ url_atividades }}"{% if ativa == 'atividades' %} aria-current="page"{% endif %}><span class="ms">assignment</span>Entregas</a>
-  <a class="{% if ativa == 'defesas' %}ativo{% endif %}" href="{{ url_defesas }}"{% if ativa == 'defesas' %} aria-current="page"{% endif %}><span class="ms">event</span>Defesas</a>
   {% endif %}
 </nav>

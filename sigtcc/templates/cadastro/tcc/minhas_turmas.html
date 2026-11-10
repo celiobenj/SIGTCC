@@ -27,12 +27,12 @@
       <tbody>
         {% for turma in turmas %}
           <tr>
-            <td class="nw"><a href="{% url 'cadastro:meu_tcc' turma.pk %}">{{ turma.tur_identificador }}</a></td>
+            <td><a href="{% url 'cadastro:meu_tcc' turma.pk %}">{{ turma.tur_identificador }}</a></td>
             <td>{{ turma.tur_descricao }}</td>
-            <td class="texto">{{ turma.tur_cur.cur_nome }}</td>
-            <td class="nw">{{ turma.tur_ano }}/{{ turma.tur_semestre }}</td>
-            <td class="texto">{{ turma.tur_doc.doc.usu_nome }}</td>
-            <td class="nw">{{ turma.tur_dia_da_semana }}, {{ turma.tur_hora_inicio|time:"H:i" }}–{{ turma.tur_hora_termino|time:"H:i" }}</td>
+            <td>{{ turma.tur_cur.cur_nome }}</td>
+            <td>{{ turma.tur_ano }}/{{ turma.tur_semestre }}</td>
+            <td>{{ turma.tur_doc.doc.usu_nome }}</td>
+            <td>{{ turma.tur_dia_da_semana }}, {{ turma.tur_hora_inicio|time:"H:i" }}–{{ turma.tur_hora_termino|time:"H:i" }}</td>
             <td>{{ turma.tur_local }}</td>
           </tr>
         {% endfor %}

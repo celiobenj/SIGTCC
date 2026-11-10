@@ -70,7 +70,7 @@
           <tbody>
             {% for e in entregas %}
             <tr>
-              <td class="texto">{{ e.marco.tma_titulo }}<br><small class="muted">{{ e.marco.tma_tipo }} · Data Limite {{ e.marco.tma_data_limite|date:"d/m/Y" }}</small></td>
+              <td>{{ e.marco.tma_titulo }}<br><small class="muted">{{ e.marco.tma_tipo }} · Data Limite {{ e.marco.tma_data_limite|date:"d/m/Y" }}</small></td>
               <td><span class="chip">{{ e.status }}</span>{% if e.envio %}<br><small class="muted">{{ e.envio.hen_data_envio|date:"d/m/Y H:i" }}</small>{% endif %}</td>
               <td>{% if e.envio %}<a href="{{ e.envio.hen_link }}" target="_blank" rel="noopener noreferrer">abrir</a>{% else %}—{% endif %}</td>
             </tr>

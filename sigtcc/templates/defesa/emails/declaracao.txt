@@ -1,6 +1,0 @@
-{% comment %}E-mail da declaração de participação em banca, enviado a cada membro efetivo na liberação do resultado, com o PDF anexado (MX-04, PROVISÓRIO, Q-142). [US-30][RBN-DEF-08.3][FR-019]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
-
-{{ texto }}
-
-SIGTCC · Núcleo de Computação · EST/UEA
-{% endautoescape %}

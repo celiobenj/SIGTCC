@@ -61,7 +61,7 @@ v3.2, que não existe no repositório (índice Q-77); isso não é efeito desta 
 
 1. Cadastre um membro com e-mail de outro domínio → "Membro externo cadastrado com sucesso";
    validade = hoje + 30.
-2. Abra `/cadastros/membros-externos/novo/?voltar=/perfil/`, salve e confira o retorno com
+2. Abra `/cadastros/membros-externos/novo/?voltar=/painel/`, salve e confira o retorno com
    `?membro=<id>`.
 3. Ponha a validade no passado (shell) e rode `python manage.py expirar_membros_externos`. Esperado:
    status "Expirada" sem tentativa de login (SC-006).

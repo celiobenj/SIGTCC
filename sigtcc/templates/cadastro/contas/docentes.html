@@ -32,13 +32,13 @@
         {% for linha in linhas %}
           {% with docente=linha.docente %}
           <tr>
-            <td class="texto">{{ docente.doc.usu_nome }}</td>
-            <td class="nw">{{ docente.doc.usu_email }}</td>
-            <td class="nw">{{ docente.doc_titulacao }}</td>
-            <td class="texto">{{ docente.doc_cur.cur_nome }}</td>
+            <td>{{ docente.doc.usu_nome }}</td>
+            <td>{{ docente.doc.usu_email }}</td>
+            <td>{{ docente.doc_titulacao }}</td>
+            <td>{{ docente.doc_cur.cur_nome }}</td>
             <td>{{ linha.papeis|join:", " }}{% if docente.coordenado %} ({{ docente.coordenado }}){% endif %}</td>
             <td><span class="chip{% if docente.doc.usu_status == 'Ativa' %} verde{% elif docente.doc.usu_status == 'Inativa' %} vermelho{% else %} amarelo{% endif %}">{{ docente.doc.usu_status }}</span></td>
-            <td class="nw">{% if linha.acima_do_limite %}<span class="chip amarelo" title="Mais de {{ limite }} orientandos"><span class="ms">warning</span>{% endif %}{{ docente.tcc1 }} / {{ docente.tcc2 }}{% if linha.acima_do_limite %}</span>{% endif %}</td>
+            <td>{% if linha.acima_do_limite %}<span class="chip amarelo" title="Mais de {{ limite }} orientandos"><span class="ms">warning</span>{% endif %}{{ docente.tcc1 }} / {{ docente.tcc2 }}{% if linha.acima_do_limite %}</span>{% endif %}</td>
             <td>
               {% if linha.pode_gerir %}
                 <div class="flex">

@@ -5,18 +5,13 @@
   (somente leitura) e, depois da Proposta salva, Área de Interesse e Palavras-Chave. Com o Status
   diferente de "Sem Proposta"/"Em Andamento", com o Aluno Desistente/Reprovado/Jubilado ou com a
   turma arquivada, os campos aparecem apenas para leitura, sem os botões de salvar (E7 a E9).
-  Em turma de TCC 2 com a entrega Versão Final cadastrada, as seções Defesa (parecer e Data
-  Limite) e Versão final (US-29: status, aviso MF-01, mensagem da devolução, campo
+  Em turma de TCC 2 com a entrega Versão Final cadastrada, as seções Defesa (parecer, Data
+  Limite, botões Ata Final e Folha de Aprovação — gerados pela US-28, do módulo de Defesa, ainda
+  indisponíveis, Q-87) e Versão final (US-29: status, aviso MF-01, mensagem da devolução, campo
   Link com Enviar ou link somente leitura; "Disponível após a liberação do resultado" antes do
   parecer). Sem regra aqui: tudo vem de `services_entregas.secao_versao_final`.
   Spec 006 (IC-09): seções Orientação, Atas de orientação e Publicação do artigo, com id para o
   ?secao= (research R12) e o contexto dos services da 006.
-  Spec 008 (IC-07): seção "Resultado da defesa" (defesa/_resultado_aluno.html), só depois da
-  liberação: nota final, parecer e, em TCC 2 aprovado, a Data Limite da Versão Final.
-  [US-27][RBN-DEF-06.5][FR-033]
-  Spec 009 (IC-05): seção "Documentos da defesa" (defesa/_documentos_aluno.html), com a Ata Final
-  e a Folha de Aprovação de cada sessão Realizada e liberada do TCC (P14); saem os dois botões
-  desabilitados do cartão Defesa (Q-87). [US-28][RBN-DEF-07.3]
   [US-13][US-29][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][RBN-CAD-08.5][RBN-CAD-09.2]
   [FR-001][FR-004][FR-005][FR-006][FR-023][FR-024][FR-025]
 {% endcomment %}
@@ -74,15 +69,16 @@
 {% include "cadastro/tcc/_secao_atas.html" %}
 {% if publicacao %}{% url 'cadastro:salvar_publicacao_aluno' turma.pk as url_publicacao %}{% include "cadastro/tcc/_secao_publicacao.html" with pub=publicacao url_acao=url_publicacao %}{% endif %}
 
-{% include "defesa/_resultado_aluno.html" with resultado=resultado_defesa %}
-{% include "defesa/_documentos_aluno.html" with documentos=documentos_defesa %}
-
 {% if versao_final %}
 {% with vf=versao_final %}
 <div class="cartao mt16">
   <h3>Defesa</h3>
   <p>Parecer: {% if vf.parecer %}{{ vf.parecer }}{% else %}{{ versao_final_pendente }}{% endif %}</p>
   <p>Data Limite da Versão Final: {{ vf.marco.tma_data_limite|date:"d/m/Y H:i" }}</p>
+  <div class="flex mt16">
+    <button type="button" class="btn txt" disabled>Ata Final</button>
+    <button type="button" class="btn txt" disabled>Folha de Aprovação</button>
+  </div>
 </div>
 <div class="cartao mt16">
   <h3>Versão final</h3>

@@ -16,7 +16,6 @@ from sigtcc.apps.cadastro.choices import TipoSolicitacao
 from sigtcc.apps.cadastro.forms_orientacao import CoorientadorForm
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada
-from sigtcc.apps.defesa import services_defesa
 
 
 def _volta_secao(tur_id, secao="orientacao"):
@@ -212,11 +211,6 @@ def _tela_orientacoes(request, estado=None):
     """
     contexto = services_orientacao.contexto_orientacoes(request.user)
     contexto.update(estado or {"aviso": "", "destaque": None})
-    # Spec 007 (IC-04): TCCs que o docente pode agendar, para o link "Agendar defesa" da linha
-    # (US-21, fluxo A). [US-21][RBN-DEF-01.3][spec 007 FR-006]
-    contexto["agendaveis"] = set(
-        services_defesa.tccs_elegiveis(request.user).values_list("pk", flat=True)
-    )
     acao = request.GET.get("acao")
     contexto["acao"] = acao if acao in ("aceitar", "recusar") else ""
     return render(request, "cadastro/orientacao/orientacoes.html", contexto)

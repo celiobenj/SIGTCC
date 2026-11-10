@@ -28,7 +28,6 @@ from sigtcc.apps.cadastro.forms_tcc import DadosTCCForm, PropostaForm
 from sigtcc.apps.cadastro.models import EncontroOrientacao
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import CONSULTAR, TurmaArquivada
-from sigtcc.apps.defesa import services_avaliacoes, services_documentos
 
 
 def _turmas_do_aluno(request, arquivadas):
@@ -98,9 +97,8 @@ def meu_tcc(request, tur_id):
     somente leitura); POST chama `salvar_proposta` (botão "Salvar Proposta") ou
     `salvar_alteracoes_tcc` (botão "Salvar alterações"). Em turma de TCC 2, também a seção
     "Versão final" (US-29), cujo botão Enviar posta em `entrega_enviar`. Restrita ao próprio
-    Aluno da turma (`vinculo_na_turma`, sem IDOR). Spec 009 (IC-05): também os documentos da
-    defesa de cada sessão Realizada e liberada do TCC (P14).
-    [US-28][RBN-DEF-07.3][US-13][US-29][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][FR-001][FR-006][FR-023][FR-024]
+    Aluno da turma (`vinculo_na_turma`, sem IDOR).
+    [US-13][US-29][RBN-CAD-07.1][RBN-CAD-08.1][RBN-CAD-08.2][FR-001][FR-006][FR-023][FR-024]
     [contracts/rotas.md]
     """
     turma, aluno = services_tcc.turma_do_aluno(tur_id, request.user)
@@ -177,11 +175,6 @@ def meu_tcc(request, tur_id):
             "n": EncontroOrientacao.objects.filter(enc_tcc=tcc).count(),
             "pode_registrar": services_orientacao.pode_alterar_no_tcc(tcc),
         },
-        # Spec 008 (IC-07): seção "Resultado da defesa", só depois da liberação (FR-033).
-        "resultado_defesa": services_avaliacoes.resultado_para_o_aluno(tcc),
-        # Spec 009 (IC-05): documentos de cada sessão Realizada e liberada do TCC (P14).
-        # [US-28][RBN-DEF-07.3]
-        "documentos_defesa": services_documentos.documentos_do_aluno(tcc),
     }
     return render(request, "cadastro/tcc/meu_tcc.html", contexto)
 

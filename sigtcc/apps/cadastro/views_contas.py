@@ -81,12 +81,11 @@ def _esquecer_papeis(usuario):
 
 def _depois_de_gravar(request, rota):
     """PRG: volta à lista; se o usuário perdeu o acesso a ela (desmarcou o próprio papel de
-    Coordenador), vai à raiz, que leva à tela inicial do perfil (US-03 A10; research C6, m11).
-    [FR-016][FR-022][FR-010]
+    Coordenador), vai ao painel (US-03 A10; research C6, m11). [FR-016][FR-022]
     """
     _esquecer_papeis(request.user)
     if not tem_perfil(request.user, *GESTAO):
-        return redirect("cadastro:inicio")
+        return redirect("cadastro:painel")
     return redirect(rota)
 
 

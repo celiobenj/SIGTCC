@@ -20,7 +20,7 @@
     <tbody>
       {% for linha in linhas %}
       <tr>
-        <td class="texto">{{ linha.aluno.alu.usu_nome }}<br><span class="dica">{{ linha.aluno.alu_matricula }}</span></td>
+        <td>{{ linha.aluno.alu.usu_nome }}<br><span class="dica">{{ linha.aluno.alu_matricula }}</span></td>
         <td><span class="chip">{{ linha.status }}</span></td>
         <td>
           {% if eh_proposta %}

@@ -92,9 +92,9 @@ class AlterarSenhaTest(TesteAcesso):
         outro = Client()
         outro.force_login(self.usuario)
         self.alterar()
-        self.assertEqual(self.client.get(reverse("cadastro:perfil")).status_code, 200)
-        resposta = outro.get(reverse("cadastro:perfil"))
-        self.assertRedirects(resposta, "/entrar/?next=/perfil/")
+        self.assertEqual(self.client.get(reverse("cadastro:painel")).status_code, 200)
+        resposta = outro.get(reverse("cadastro:painel"))
+        self.assertRedirects(resposta, "/entrar/?next=/painel/")
 
     def test_alterar_senha_exige_login(self):
         """Sem login, a tela pede login."""
@@ -189,7 +189,7 @@ class RedefinirSenhaTest(TesteAcesso):
         self.esqueci("prof@uea.edu.br")
         self.client.get(caminho_do_link(mail.outbox[0]))
         self.redefinir()
-        self.assertRedirects(logado.get(reverse("cadastro:perfil")), "/entrar/?next=/perfil/")
+        self.assertRedirects(logado.get(reverse("cadastro:painel")), "/entrar/?next=/painel/")
 
     def test_q26_redefinicao_em_conta_inativa_ou_expirada(self):
         """Q26: conta que deixou de estar 'Ativa' não redefine; GET e POST mostram M-15/M-16."""
@@ -385,8 +385,8 @@ class ResetPrimeiroAcessoTest(TesteAcesso):
             self.client.post(url_reset(aluno))
             self.client.post(url_reset(self.aluno))
         self.assertEqual(services.validar_link_ativacao(link).estado, EstadoLink.SEM_EMAIL)
-        resposta = sessao_aluno.get(reverse("cadastro:perfil"))
-        self.assertRedirects(resposta, "/entrar/?next=/perfil/")
+        resposta = sessao_aluno.get(reverse("cadastro:painel"))
+        self.assertRedirects(resposta, "/entrar/?next=/painel/")
 
     def test_aluno_inexistente_404(self):
         """Aluno que não existe: 404."""
