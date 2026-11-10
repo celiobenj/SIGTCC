@@ -1,0 +1,45 @@
+{% extends "defesa/pdf/base_pdf.html" %}
+{% comment %}
+  Ata Final em PDF (spec 009, US1; FR-001 e FR-008; research B4), gerada sob demanda a cada
+  download, sem gravar arquivo. Estende base_pdf.html (fontes Roboto locais, sem base.html).
+  Contexto de services_documentos.dados_da_ata, só com valores simples: cabeçalho e curso, título
+  da Ata (I ou II), aluno, título do trabalho, membros efetivos (papel, nome, titulação, nota e
+  assinatura da cópia da avaliação), nota final, parecer, observação do Qualis quando aplicada,
+  data da defesa e o Coordenador de Curso (nome e assinatura lidos no download). A imagem só é
+  emitida quando a assinatura não é None (arquivo ausente: sem imagem; Q-140). Sem regra aqui.
+  [US-28][RBN-DEF-07.1][RBN-CAD-13.1]
+{% endcomment %}
+{% block corpo %}
+<style>
+  .cabecalho { text-align: center; font-size: 10pt; }
+  table.notas { width: 100%; border-collapse: collapse; margin-top: 8pt; }
+  table.notas td, table.notas th { border: 1px solid #555555; padding: 4pt; font-size: 10pt; }
+  .assinaturas td { text-align: center; padding-top: 12pt; font-size: 9pt; }
+</style>
+<p class="cabecalho"><b>{{ cabecalho }}</b><br>{{ curso }}</p>
+<h1>{{ titulo_documento }}</h1>
+<p><b>Aluno:</b> {{ aluno }}</p>
+<p><b>Título do trabalho:</b> {{ titulo }}</p>
+<p><b>Data da defesa:</b> {{ data_defesa }}</p>
+<table class="notas">
+  <tr><th>Papel</th><th>Nome</th><th>Titulação</th><th>Nota</th></tr>
+  {% for membro in membros %}
+  <tr><td>{{ membro.papel }}</td><td>{{ membro.nome }}</td><td>{{ membro.titulacao }}</td><td>{{ membro.nota|default:"—" }}</td></tr>
+  {% endfor %}
+</table>
+<p><b>Nota final:</b> {{ nota_final }}</p>
+<p><b>Parecer:</b> {{ parecer }}</p>
+{% if observacao_qualis %}<p><i>Observação: {{ observacao_qualis }}</i></p>{% endif %}
+<table class="assinaturas" width="100%">
+  <tr>
+    {% for membro in membros %}
+    <td>{% if membro.assinatura %}<img src="{{ membro.assinatura }}" width="140" height="47"><br>{% endif %}{{ membro.nome }}<br>{{ membro.papel }}</td>
+    {% endfor %}
+  </tr>
+</table>
+{% if coordenador %}
+<table class="assinaturas" width="100%">
+  <tr><td>{% if coordenador.assinatura %}<img src="{{ coordenador.assinatura }}" width="140" height="47"><br>{% endif %}{{ coordenador.nome }}<br>Coordenador de Curso</td></tr>
+</table>
+{% endif %}
+{% endblock %}

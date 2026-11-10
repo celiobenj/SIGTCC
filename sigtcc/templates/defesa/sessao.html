@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load defesa_tags %}
+{% comment %}
+  Janela "Sessão de defesa" (abrirDefesa do protótipo de 17/10, só o visual; aqui em página
+  própria): cabeçalho com aluno, título, data, horário, formato, local ou link e status; a banca
+  com o papel de cada membro e os suplentes acionados; os botões que o perfil e o status
+  permitem. Contrato §3 da spec 007: a feat-08 e a feat-09 estendem este template e preenchem os
+  blocos avaliacao, resultado, documentos, ouvintes e ocorrencias, sem reescrever o cabeçalho.
+  Spec 008 (IC-05): os blocos avaliacao e resultado incluem _bloco_avaliacao.html e
+  _bloco_resultado.html, com o que services_avaliacoes.visao_da_avaliacao permite.
+  Spec 009 (IC-03): o bloco documentos inclui _bloco_documentos.html, com o que
+  services_documentos.visao_dos_documentos permite; o bloco ouvintes inclui _bloco_ouvintes.html,
+  com o que services_ouvintes.visao_da_sessao permite; o bloco ocorrencias inclui
+  _bloco_ocorrencias.html, com a parte de ocorrências da mesma visão.
+  [US-40][US-23][US-24][RBN-DEF-01.4][RBN-DEF-02.1][FR-030][US-25][US-27][RBN-DEF-06.8]
+  [US-28][RBN-DEF-07.3][US-30][RBN-DEF-08.2][RBN-DEF-08.5]
+{% endcomment %}
+{% block titulo %}Sessão de defesa · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <div>
+    <h2 class="pg">Sessão de defesa</h2>
+    <p class="pg-sub">{{ sessao.def_tcc.tcc_alu.alu.usu_nome }} · {{ sessao.def_tcc.tcc_tur.tur_descricao }} · {{ sessao.def_tcc.tcc_tur.tur_cur.cur_nome }}</p>
+  </div>
+  <div class="flex flex-wrap">
+    {% block acoes %}
+    {% if pode_alterar_banca %}<a class="btn" href="{% url 'defesa:alterar_banca' sessao.pk %}"><span class="ms">groups</span>Alterar banca</a>{% endif %}
+    {% if pode_acionar_suplente %}<a class="btn" href="{% url 'defesa:acionar_suplente' sessao.pk %}"><span class="ms">swap_horiz</span>Acionar suplente</a>{% endif %}
+    {% if pode_reagendar_ou_cancelar %}
+    <a class="btn" href="{% url 'defesa:reagendar' sessao.pk %}"><span class="ms">event_repeat</span>Reagendar</a>
+    <a class="btn perigo" href="{% url 'defesa:cancelar' sessao.pk %}"><span class="ms">event_busy</span>Cancelar sessão</a>
+    {% endif %}
+    {% endblock %}
+  </div>
+</div>
+<section class="cartao mt16">
+  <div class="dado"><span>Título</span><b>{{ sessao.def_tcc.tcc_titulo }}</b></div>
+  <div class="dado"><span>Data</span><b>{{ sessao.def_data|date:"d/m/Y" }}</b></div>
+  <div class="dado"><span>Horário</span><b>{{ sessao|horario }}</b></div>
+  <div class="dado"><span>Formato da Sessão</span><b>{{ sessao.def_formato }}</b></div>
+  <div class="dado"><span>{% if sessao.def_formato == "Presencial" %}Local{% else %}Link da Videochamada{% endif %}</span><b>{{ sessao|lugar }}</b></div>
+  <div class="dado"><span>Status</span><b><span class="chip">{{ sessao.def_status }}</span></b></div>
+</section>
+<section class="cartao mt16">
+  <header><span class="ms">groups</span><h3>Banca examinadora</h3></header>
+  {% for papel, membro in banca %}
+  <div class="dado"><span>{{ papel }}</span><b>{{ membro.usu_nome }}</b></div>
+  {% endfor %}
+  {% for suplente, substituido, justificativa in substituicoes %}
+  <p class="muted">Suplente acionado: {{ suplente.usu_nome }} no lugar de {{ substituido.usu_nome }}. Justificativa: {{ justificativa }}</p>
+  {% endfor %}
+</section>
+{% block avaliacao %}{% include "defesa/_bloco_avaliacao.html" %}{% endblock %}
+{% block resultado %}{% include "defesa/_bloco_resultado.html" %}{% endblock %}
+{% block documentos %}{% include "defesa/_bloco_documentos.html" %}{% endblock %}
+{% block ouvintes %}{% include "defesa/_bloco_ouvintes.html" %}{% endblock %}
+{% block ocorrencias %}{% include "defesa/_bloco_ocorrencias.html" %}{% endblock %}
+<div class="flex entre mt16">
+  <a class="btn txt" href="{% url 'defesa:defesas' %}">Fechar</a>
+  <a class="btn" href="{% url 'defesa:historico' sessao.pk %}"><span class="ms">history</span>Histórico</a>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% comment %}
+  Bloco "Resultado" da janela Sessão de defesa (spec 008, IC-05; contrato §3 da spec 007): depois
+  da liberação, a nota final e o parecer a quem abre a sessão (RBN-DEF-06.8); antes, só ao
+  Orientador (Presidente) e só com os 3 envios, a nota final, o parecer preliminar, Registrar
+  parecer (TCC 2 com 6,0 ou mais) e Liberar Resultado, desabilitado com pendências ou sem parecer
+  (D1). Tudo vem de visao (services_avaliacoes.visao_da_avaliacao e apuracao); sem regra aqui.
+  [US-27][RBN-DEF-06.3][RBN-DEF-06.4][RBN-DEF-06.6][RBN-DEF-06.8][FR-023 a FR-027]
+{% endcomment %}
+{% if visao.liberado %}
+<section class="cartao mt16" data-bloco-resultado>
+  <header><span class="ms">workspace_premium</span><h3>Resultado</h3></header>
+  <div class="dado"><span>Nota final</span><b>{{ visao.nota_final|floatformat:1 }}</b></div>
+  <div class="dado"><span>Parecer</span><b>{{ visao.parecer }}</b></div>
+  <div class="dado"><span>Liberado em</span><b>{{ sessao.def_data_liberacao_resultado|date:"d/m/Y H:i" }}</b></div>
+</section>
+{% elif visao.orientador and visao.apuracao %}
+{% with ap=visao.apuracao %}
+<section class="cartao mt16" data-bloco-resultado>
+  <header><span class="ms">workspace_premium</span><h3>Resultado</h3></header>
+  {% if ap.completos %}
+  <div class="dado"><span>Nota final</span><b>{{ ap.nota_final|floatformat:1 }}</b></div>
+  <div class="dado"><span>Parecer</span><b>{{ ap.parecer|default:"—" }}</b></div>
+  {% else %}
+  <p class="muted">Pendentes: {% for membro in ap.pendentes %}<b>{{ membro.usu_nome }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+  {% endif %}
+  {% if ap.pode_registrar_parecer %}
+  <form method="post" action="{% url 'defesa:registrar_parecer' sessao.pk %}" class="mt16" novalidate>
+    {% csrf_token %}
+    <div class="campo{% if form_parecer.parecer.errors %} com-erro{% endif %}">
+      <label>{{ form_parecer.parecer.label }}</label>
+      {{ form_parecer.parecer }}
+      {% for erro in form_parecer.parecer.errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn">Registrar parecer</button>
+  </form>
+  {% endif %}
+  <div class="flex mt16">
+    {% if ap.liberar_habilitado %}
+    <a class="btn pri" href="{% url 'defesa:liberar_resultado' sessao.pk %}"><span class="ms">verified</span>Liberar Resultado</a>
+    {% else %}
+    <button type="button" class="btn pri" disabled><span class="ms">verified</span>Liberar Resultado</button>
+    {% endif %}
+  </div>
+</section>
+{% endwith %}
+{% endif %}

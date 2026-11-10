@@ -8,22 +8,36 @@ abas "Alunos" e "Entregas" do Professor na tela da turma da spec 004 (a Secretar
 Escritos antes de `services_tcc.turmas_do_aluno`, `views_tcc.minhas_turmas` e dos includes de
 abas (T037 a T040): devem falhar até a implementação.
 
-[US-13][US-15][US-16][US-43][FR-031][Q-89]
+Spec 009 (IC-05, IC-16; tasks T023): na aba Meu TCC, os botões desabilitados "Ata Final" e
+"Folha de Aprovação" saíram e a parcial defesa/_documentos_aluno.html aparece depois da liberação.
+
+[US-13][US-15][US-16][US-43][FR-031][Q-89][US-28][RBN-DEF-07.3]
 """
 
+from datetime import datetime
 from urllib.parse import parse_qs, urlparse
 
 from django.urls import reverse
 
 from sigtcc.apps.cadastro import mensagens
-from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusConta, StatusTCC, StatusTurma
+from sigtcc.apps.cadastro.choices import (
+    DescricaoTurma,
+    StatusConta,
+    StatusTCC,
+    StatusTurma,
+    TipoEntrega,
+)
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_docente_ativo, criar_secretaria
+from sigtcc.apps.cadastro.tests.apoio_tcc import cadastrar_entrega
 from sigtcc.apps.cadastro.tests.apoio_turmas import (
     EC,
     TesteTurmas,
     criar_turma_de,
+    entrega_do_aluno,
     matricular_aluno,
 )
+from sigtcc.apps.defesa.tests.apoio_avaliacao import TesteAvaliacao, sessao_com_banca
+from sigtcc.apps.defesa.tests.apoio_documentos import sessao_liberada
 
 
 def _href(nome, *args):
@@ -65,7 +79,7 @@ class MenuETurmasDoAlunoTest(NavegacaoTestBase):
 
     def test_menu_do_aluno_tem_o_item_turmas_proprio(self):
         self.entrar_como_aluno()
-        resposta = self.client.get(reverse("cadastro:painel"))
+        resposta = self.client.get(reverse("cadastro:perfil"))
         self.assertContains(resposta, _href("minhas_turmas"))
         self.assertNotContains(resposta, _href("turmas"))
 
@@ -73,7 +87,7 @@ class MenuETurmasDoAlunoTest(NavegacaoTestBase):
         for usuario in (self.professor, criar_secretaria(curso=self.turma.tur_cur)):
             with self.subTest(usuario=usuario.usu_email):
                 self.client.force_login(usuario)
-                resposta = self.client.get(reverse("cadastro:painel"))
+                resposta = self.client.get(reverse("cadastro:perfil"))
                 self.assertNotContains(resposta, _href("minhas_turmas"))
 
     def test_cenario8_lista_so_as_turmas_ativas_do_aluno_e_leva_ao_meu_tcc(self):
@@ -194,3 +208,39 @@ class HistoricoPeloProfessorTest(NavegacaoTestBase):
         self.client.force_login(criar_secretaria(curso=self.turma.tur_cur))
         resposta = self.client.get(reverse("cadastro:turma", args=[self.turma.pk]))
         self.assertNotContains(resposta, _href("historico_status", self.turma.pk, self.aluno.pk))
+
+
+class DocumentosDaDefesaNoMeuTccTest(TesteAvaliacao):
+    """Spec 009 (IC-05, IC-16; tasks T023): na aba Meu TCC de TCC 2 com a Versão Final, o
+    cartão Defesa não tem mais os botões desabilitados "Ata Final" e "Folha de Aprovação"; a
+    parcial defesa/_documentos_aluno.html aparece depois da liberação, com os downloads.
+    [US-28][RBN-DEF-07.3][US-29]
+    """
+
+    def test_botoes_desabilitados_sairam_e_a_parcial_aparece(self):
+        cenario = sessao_liberada()
+        turma = cenario["tcc"].tcc_tur
+        marco = cadastrar_entrega(
+            turma, tipo=TipoEntrega.VERSAO_FINAL, data_limite=datetime(2026, 12, 15, 23, 59)
+        )
+        entrega_do_aluno(marco, cenario["tcc"].tcc_alu)
+        self.client.force_login(cenario["aluno"])
+        resposta = self.client.get(reverse("cadastro:meu_tcc", args=[turma.pk]))
+        self.assertContains(resposta, "Data Limite da Versão Final")
+        self.assertNotContains(resposta, "disabled>Ata Final")
+        self.assertNotContains(resposta, "disabled>Folha de Aprovação")
+        self.assertContains(resposta, "data-documentos-defesa")
+        sessao = cenario["sessao"]
+        self.assertContains(
+            resposta, f'{reverse("defesa:ata_final", args=[sessao.pk])}?origem=meu_tcc'
+        )
+        self.assertContains(
+            resposta, f'{reverse("defesa:folha_aprovacao", args=[sessao.pk])}?origem=meu_tcc'
+        )
+
+    def test_antes_da_liberacao_sem_a_parcial(self):
+        cenario = sessao_com_banca(descricao=DescricaoTurma.TCC_2)
+        self.client.force_login(cenario["aluno"])
+        resposta = self.client.get(reverse("cadastro:meu_tcc", args=[cenario["tcc"].tcc_tur_id]))
+        self.assertEqual(resposta.status_code, 200)
+        self.assertNotContains(resposta, "data-documentos-defesa")

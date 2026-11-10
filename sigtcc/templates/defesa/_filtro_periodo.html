@@ -1,0 +1,9 @@
+{% comment %}
+  Filtro de período das defesas (selPeriodo do protótipo de 17/10, só o visual; contrato §4):
+  atalho (Período Letivo, Esta Semana, Este Mês, Próximos 30 Dias) ou Data Inicial e Data Final.
+  Reaproveitável pela agenda, pelos ouvintes e pelos relatórios: inclua dentro de um <form> GET
+  com um FiltroPeriodoForm em `form`. [US-40][RBN-DEF-01.5][FR-025]
+{% endcomment %}
+{% include "includes/campo.html" with campo=form.atalho %}
+{% include "includes/campo.html" with campo=form.data_inicial %}
+{% include "includes/campo.html" with campo=form.data_final %}

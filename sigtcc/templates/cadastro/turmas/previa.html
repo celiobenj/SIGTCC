@@ -15,10 +15,10 @@
     <tbody>
       {% for item in previa.itens %}
       <tr>
-        <td>{{ item.numero }}</td>
-        <td>{{ item.matricula }}</td>
-        <td>{{ item.nome }}</td>
-        <td>{{ item.curso }}</td>
+        <td class="nw">{{ item.numero }}</td>
+        <td class="nw">{{ item.matricula }}</td>
+        <td class="texto">{{ item.nome }}</td>
+        <td class="texto">{{ item.curso }}</td>
         <td>{{ item.situacao }}</td>
         <td>{{ item.motivo }}{% for aviso in item.avisos %}<div class="muted">{{ aviso }}</div>{% endfor %}</td>
       </tr>

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% comment %}
+  Tela Defesas (viewDefesas do protótipo de 17/10, só o visual): filtros de período, Status e,
+  para o Coordenador de Curso e a Secretaria, Curso (US-39); a lista das sessões e o botão
+  "Agendar defesa" para quem agenda. Filtro inválido: a mensagem no topo e a lista do Período
+  Letivo. [US-21][US-40][US-39][RBN-DEF-01.4][RBN-DEF-01.5][RBN-CAD-14.1][FR-024 a FR-028]
+  Spec 009 (IC-06): botão "Agenda de defesas (PDF)" (pode_gerar_agenda), com a query string
+  atual. [US-30][RBN-DEF-08.1]
+{% endcomment %}
+{% block titulo %}Defesas · SIGTCC{% endblock %}
+{% block conteudo %}
+<div class="flex entre flex-wrap">
+  <h2 class="pg">Defesas</h2>
+  <div class="flex flex-wrap">
+    {% if pode_gerar_agenda %}<a class="btn" href="{{ url_agenda }}"><span class="ms">picture_as_pdf</span>Agenda de defesas (PDF)</a>{% endif %}
+    {% if pode_agendar %}<a class="btn pri" href="{{ url_agendar }}"><span class="ms">event</span>Agendar defesa</a>{% endif %}
+  </div>
+</div>
+<form method="get" class="cartao mt16" novalidate>
+  {% for erro in form.non_field_errors %}<div class="alerta erro" role="alert"><span class="ms">error</span><span class="texto">{{ erro }}</span></div>{% endfor %}
+  <div class="blocos">
+    {% include "defesa/_filtro_periodo.html" %}
+    {% include "includes/campo.html" with campo=form.status %}
+    {% if mostra_curso %}
+    <div class="campo">
+      <label for="id_curso">Curso</label>
+      <select class="inp" id="id_curso" name="curso">
+        {% for c in cursos %}<option value="{{ c.pk }}"{% if curso == c.pk|stringformat:"d" %} selected{% endif %}>{{ c.cur_nome }}</option>{% endfor %}
+        <option value="todos"{% if curso == "todos" %} selected{% endif %}>Todos</option>
+      </select>
+    </div>
+    {% endif %}
+  </div>
+  <div class="flex mt16"><button type="submit" class="btn"><span class="ms">filter_list</span>Filtrar</button></div>
+</form>
+<div class="mt16">{% include "defesa/_tabela_defesas.html" %}</div>
+{% endblock %}

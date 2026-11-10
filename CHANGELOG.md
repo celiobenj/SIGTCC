@@ -4,7 +4,117 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 
 ## [Não lançado]
 
-Nada ainda.
+### Adicionado
+
+- Agendamento e Banca (spec 007, feat-07; US-21, US-22, US-23, US-24 e US-40, com a US-39 na
+  tela Defesas), no app `defesa`, sem tabela nem coluna nova:
+  - "Agendar sessão de defesa": TCC só entre os Aptos sem sessão ativa e pelo perfil do curso
+    (Orientador em Eng. Comp., Professor da Disciplina em SI e LC), Local ou Link da Videochamada
+    e reserva de 1 hora; a partir do menu "Defesas", da aba "Defesas" da turma e da tela de
+    orientandos.
+  - Banca com Presidente fixo, listas sem a orientação e sem quem já foi escolhido, cadastro rápido
+    do Membro Externo, "Alterar banca" e "Acionar suplente".
+  - Conflito de horário da banca na janela de 1 hora, com todos os membros numa única mensagem e
+    trava dos docentes contra agendamentos simultâneos.
+  - Confirmação com avisos ao Aluno e à banca (com o link do Documento para Defesa), cancelamento
+    da troca de orientador pendente, "Reagendar", "Cancelar sessão" e início automático ao chegar
+    o horário (nas telas e pelo comando `iniciar_sessoes`).
+  - Tela "Defesas" com visibilidade por perfil e filtros de período, Status e Curso; janelas
+    "Sessão de defesa" e "Histórico da defesa".
+  - Contratos para a feat-08 e a feat-09: status e histórico da sessão, membros efetivos, filtro de
+    período e o template da sessão com os blocos reservados.
+- `popular_demo` com o cenário do roteiro manual da spec 007 (TCCs Aptos sem sessão, uma sessão em
+  cada status, suplentes) e a tabela de contas do roteiro.
+- Avaliação e Resultados (spec 008, feat-08; US-25, US-26 e US-27), no app `defesa`, sem tabela nem
+  coluna nova:
+  - janela "Critérios de avaliação" (somente leitura) e tela "Minhas bancas" (item de menu para
+    Docente e Membro Externo), com as pendências em destaque;
+  - formulário "Avaliação" com rascunho (só a Parte Escrita antes da sessão), envio assinado
+    (imagem anexada ou do perfil, até 2 MB e 2000 × 1000 pixels, cópia sem URL pública) e "Reabrir
+    minha avaliação";
+  - cálculo em `Decimal` com uma casa e arredondamento comercial, nota mínima 6,0 com artigo Qualis
+    A ou B homologado, "Registrar parecer" e "Liberar Resultado" com confirmação (e nova
+    confirmação se a nota mudar), Status do TCC pela liberação e avisos ao Aluno, à banca e à
+    Secretaria;
+  - sigilo das notas por uma única função (`visao_da_avaliacao`) e seção "Resultado da defesa" na
+    aba Meu TCC, com a Data Limite da Versão Final em TCC 2 aprovado;
+  - `xhtml2pdf` 0.2.28 no `requirements.txt` e utilitário de PDF em memória (`defesa/pdf.py`), sem
+    acesso à rede, para a feat-09; ponto de chamada `services_documentos.ao_liberar_resultado`;
+  - `popular_demo` com avaliações de exemplo, uma sessão pronta para liberar e dois resultados
+    liberados.
+- Documentação e Encerramento (spec 009, feat-09; US-28 e US-30), no app `defesa`, sem tabela nem
+  coluna nova:
+  - Ata Final e Folha de Aprovação em PDF, gerados sob demanda a cada download e nunca gravados,
+    com as notas e as assinaturas da banca (a Folha sem nenhuma nota) e a assinatura do
+    Coordenador de Curso; botões na janela "Sessão de defesa" e na aba Meu TCC (documentos de
+    cada sessão Realizada); recusas por perfil, antes da liberação, da Folha de TCC 1 e de
+    reprovado, e a E2 (Coordenador sem assinatura ou curso sem Coordenador) na liberação e em
+    todo download;
+  - janela "Ouvintes" (Presidente da banca e Professor da Disciplina, com a sessão Em Andamento ou
+    Realizada), com Adicionar, Remover e Salvar, e a lista só leitura para a Secretaria do curso;
+  - janela "Ocorrências" do Presidente da banca, até a liberação, com contador de 2.000
+    caracteres, e leitura pela Secretaria e pelo Professor da Disciplina;
+  - tela "Ouvintes das defesas" (item de menu só da Secretaria), com os filtros de período e de
+    Curso e 2 horas por sessão assistida;
+  - "Agenda de defesas (PDF)" na tela Defesas, com as sessões Agendadas e Reagendadas do período,
+    agrupadas por dia;
+  - declaração de participação em PDF, com código de validação, enviada por e-mail a cada membro
+    efetivo na liberação (numa thread, sem travar a tela) e segunda via em "Minhas bancas" e na
+    janela da sessão;
+  - `popular_demo` com ouvintes e ocorrências nas sessões Realizadas, Suplente não acionado,
+    assinatura do Coordenador de Eng. Comp. e Coordenadores de SI e LC sem assinatura (E2), e a
+    tabela de contas do roteiro da spec 009.
+- Dashboards de Produção (spec 010, feat-10; US-31, US-47, US-32 e US-33), no app `relatorios`,
+  sem tabela nem coluna nova e só de leitura:
+  - tela "Relatórios" (item de menu na seção Gestão, para Docente e Secretaria), com a lista de
+    relatórios por perfil e layout único (Padrão visual com as 10 heurísticas de Nielsen);
+  - Painel de atividades por docente (o Docente vê só a própria linha), Participação de Membros
+    Externos, Formação e evasão, Histórico de indicadores do NUCOMP, Produção de TCCs e Artigos;
+  - contagens pelo último registro do histórico do TCC na turma do período, com
+    Matriculados = Sem Proposta + Ativos + Com Sucesso + Sem Sucesso e
+    Total de Trabalhos = Ativos + Com Sucesso + Sem Sucesso;
+  - filtros de período (atalhos, Ano/Semestre e datas), Curso e Docente no endereço da página;
+  - exportação em PDF, CSV (UTF-8 com BOM, `;`) e XLSX da mesma estrutura da tela, com proteção
+    contra fórmula;
+  - gráficos em HTML/CSS e SVG, sem biblioteca nova, com a tabela como fonte de verdade;
+  - base reaproveitável pela feat-11: registro de relatórios por decorador, formulário de filtros,
+    estrutura única e exportação genérica (`contracts/base-relatorios.md`).
+- `popular_demo` com o cenário dos relatórios: troca de orientador, Suplente acionado em período
+  passado, terceiro período letivo com artigo copiado e Membros Externos de duas instituições numa
+  sessão Realizada (a 1ª Avaliadora dessa sessão passa a ser um Membro Externo).
+
+### Alterado
+
+- Emendas da spec 010 na spec 007: `filtro_de_periodo` aceita outro período letivo
+  (`ano_semestre`, opcional) e as datas dos atalhos saem de `intervalo_do_atalho`, sem mudar a tela
+  Defesas (IC-03; Q-153).
+- A Defesa passa a renovar a validade do Membro Externo nos eventos de banca e a conferir a conta
+  de quem entra na banca (contrato da spec 002; Q-67).
+- Menu com o item "Defesas" (também para o Membro Externo), aba "Defesas" na turma, link "Agendar
+  defesa" na tela de orientandos e as mensagens de acesso negado da US-21 E7 e da US-40 E5 (IC-01
+  a IC-06; Q-123).
+- Emendas da spec 008 na spec 007: o descarte de avaliações deixa de ser stub; na alteração da
+  banca, quem só troca de papel entre titulares mantém o rascunho e quem sai ou passa a Suplente
+  perde (D16, Q-135); o reagendamento de sessão Em Andamento devolve os envios a "Rascunho salvo",
+  mantendo as notas (D2).
+- Decisão de configuração (Q-134): **sem armazenamento externo**. Os PDFs (Ata Final, Folha de
+  Aprovação e declarações) são gerados sob demanda, a cada download, e nunca gravados; as
+  assinaturas continuam no disco do serviço (risco aceito). Sai do "Planejado para a v0.3.0".
+- Emendas da spec 009 nas specs 003, 005 e 008: `enviar_email` aceita anexos (IC-12);
+  `gerar_pdf` serializa a renderização com uma trava (IC-14); a liberação do resultado mostra o
+  alerta da E2 da US-28 depois da confirmação e notifica o Coordenador ou a Secretaria do curso
+  (IC-02; Q-144); `ao_liberar_resultado` e `declaracao_disponivel` deixam de ser stubs; o atalho
+  "Declaração" de Minhas bancas baixa a segunda via (IC-04); saem os botões desabilitados "Ata
+  Final" e "Folha de Aprovação" do cartão Defesa da aba Meu TCC (IC-05).
+
+### Corrigido
+
+- Tabelas de todo o sistema não partem mais palavras ("Engenhari/a de/Computaç/ão", "Adria/na"):
+  o texto só quebra entre palavras, colunas curtas, endereços e palavras com hífen ficam numa
+  linha, e a tabela rola dentro do próprio bloco (`fix(core)`, verificado com o Playwright em 360,
+  768 e 1280 px).
+- `popular_demo` não esvazia mais a tabela `Criterios` (carga da spec 001) e a recarrega se um
+  `popular_demo` anterior a apagou.
 
 ## [v0.2.1] - 25/10/2026 - Hotfix: nomes iguais às US v3.4 e aos diagramas
 
@@ -155,7 +265,8 @@ Render a partir da `main` e PGCS 1.2. Suíte com 1115 testes automatizados.
 
 - Gestão da Defesa (Épico 2): agendamento sem conflito, banca, avaliação, liberação do resultado
   e PDFs da Ata Final e da Folha de Aprovação (xhtml2pdf).
-- Armazenamento externo privado para assinaturas e PDFs.
+- ~~Armazenamento externo privado para assinaturas e PDFs.~~ Retirado em 03/11/2026 (spec 008,
+  Q-134): PDFs gerados sob demanda e assinaturas no disco do serviço.
 - Rotina agendada (GitHub Actions de hora em hora) para prazos, expiração e início das sessões.
 - Fluxo real do resultado da defesa nas US-29 e US-44 e seção Defesa do painel do aluno.
 

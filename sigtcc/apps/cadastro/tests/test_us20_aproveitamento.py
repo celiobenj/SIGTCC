@@ -139,7 +139,7 @@ class AproveitamentoTest(TesteTurmas):
 
     def test_cenario9_docente_sem_item_no_menu(self):
         self.client.force_login(criar_docente_ativo())
-        painel = self.client.get(reverse("cadastro:painel"))
+        painel = self.client.get(reverse("cadastro:perfil"))
         self.assertNotContains(painel, "Aproveitamento de artigos")
         self.assertEqual(self.tela().status_code, 403)
 

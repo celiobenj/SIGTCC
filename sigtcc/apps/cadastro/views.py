@@ -45,16 +45,19 @@ from sigtcc.apps.cadastro.services import (
     EstadoLogin,
     EstadoTroca,
 )
+from sigtcc.apps.defesa import mensagens as mensagens_defesa
+from sigtcc.apps.relatorios import mensagens as mensagens_relatorios
 
-# Texto de cada tipo de conta no painel (spec FR-010).
-_ROTULO_TIPO = {
-    "aluno": "do Aluno",
-    "docente": "do Docente",
-    "secretaria": "da Secretaria",
-    "membro_externo": "do Membro Externo",
+# Primeira tela de cada tipo de conta, aberta pela raiz do sistema (spec 003, FR-010). O Docente
+# tem uma tela só para todos os papéis (Q7). [US-11][RBN-CAD-06.4][FR-010][Q7]
+_TELA_INICIAL = {
+    "aluno": "cadastro:minhas_turmas",
+    "docente": "cadastro:turmas",
+    "secretaria": "defesa:defesas",
+    "membro_externo": "defesa:minhas_bancas",
 }
 
-# Texto de cada papel do Docente, mostrado no painel (spec Q7).
+# Texto de cada papel do Docente, mostrado em "Meu perfil" (spec Q7). [US-38][Q7]
 _ROTULO_PAPEL = {
     "coordenador": "Coordenador de Curso",
     "professor_disciplina": "Professor da Disciplina",
@@ -63,8 +66,20 @@ _ROTULO_PAPEL = {
 }
 
 
-# Mensagens de 403 próprias de uma US, levadas na exceção (PermissionDenied(texto)).
-MENSAGENS_403 = {mensagens.SEM_PERMISSAO_PAGINA}
+# Mensagens de 403 próprias de uma US, levadas na exceção (PermissionDenied(texto)); as da US-21
+# E7 e da US-40 E5 entram pela spec 007 (IC-06). [US-07][US-21][US-40][RBN-DEF-01.3]
+MENSAGENS_403 = {
+    mensagens.SEM_PERMISSAO_PAGINA,
+    mensagens_defesa.TCC_NAO_AGENDAVEL,
+    mensagens_defesa.SEM_PERMISSAO_SESSAO,
+    # Spec 008 (US-25 E8, US-26 E5 e US-27 E4).
+    mensagens_defesa.ACESSO_RESTRITO,
+    mensagens_defesa.APENAS_O_ORIENTADOR,
+    # Spec 009 (US-28 E6). [US-28][RBN-DEF-07.3]
+    mensagens_defesa.SEM_PERMISSAO_DOCUMENTOS,
+    # Spec 010 (IC-02; MR-06). [US-31][US-47][US-32][US-33][RBN-REL-01.1]
+    mensagens_relatorios.MR06_SEM_PERMISSAO,
+}
 
 
 def acesso_negado(request, exception=None):
@@ -79,23 +94,18 @@ def acesso_negado(request, exception=None):
 
 
 def inicio(request):
-    """Raiz do sistema: logado vai ao painel; visitante vai ao login. [US-11][FR-010]"""
-    return redirect("cadastro:painel" if request.user.is_authenticated else "cadastro:entrar")
+    """Raiz do sistema: visitante vai ao login; logado vai à primeira tela do tipo de conta.
 
-
-@perfil_requerido()
-def painel(request):
-    """Painel inicial mínimo do tipo de conta; papéis do Docente como itens extras (Q7).
-
+    Conta autenticada sem tipo recebe 403: mandá-la ao login, que manda logado de volta à raiz,
+    faria um laço de redirecionamentos.
     [US-11][RBN-CAD-06.4][FR-010][Q7]
     """
-    tipo = tipo_conta(request.user)
-    contexto = {
-        "tipo": tipo or "",
-        "rotulo_tipo": _ROTULO_TIPO.get(tipo, ""),
-        "papeis": [_ROTULO_PAPEL[p] for p in sorted(papeis(request.user))],
-    }
-    return render(request, "cadastro/painel.html", contexto)
+    if not request.user.is_authenticated:
+        return redirect("cadastro:entrar")
+    destino = _TELA_INICIAL.get(tipo_conta(request.user))
+    if destino is None:
+        raise PermissionDenied
+    return redirect(destino)
 
 
 # Mensagem exata de cada resultado do login (US-11; M-01 com os minutos restantes).
@@ -110,12 +120,12 @@ _MENSAGEM_LOGIN = {
 
 
 def _destino_seguro(request, destino):
-    """Segue o next só se for do próprio site (achado B2); senão, o painel. [US-11][FR-010]"""
+    """Segue o next só se for do próprio site (achado B2); senão, a raiz. [US-11][FR-010]"""
     if destino and url_has_allowed_host_and_scheme(
         destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()
     ):
         return destino
-    return reverse("cadastro:painel")
+    return reverse("cadastro:inicio")
 
 
 def entrar(request):
@@ -124,7 +134,7 @@ def entrar(request):
     [US-11][RBN-CAD-06.4][RBN-CAD-06.6][FR-007]-[FR-010][B2]
     """
     if request.user.is_authenticated:
-        return redirect("cadastro:painel")
+        return redirect("cadastro:inicio")
     if request.method == "POST":
         formulario = FormularioLogin(request.POST)
         resultado = services.autenticar(request.POST.get("credencial"), request.POST.get("senha"))
