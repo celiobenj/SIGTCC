@@ -5,7 +5,7 @@
 {% endcomment %}
 <header class="topbar">
   <button type="button" class="iconbtn" data-alternar-menu aria-controls="menu-lateral" aria-label="Menu principal"><span class="ms">menu</span></button>
-  <a class="logo" href="{% url 'cadastro:painel' %}"><span class="logo-mark"><span class="ms">school</span></span><span class="nome">SIGTCC</span></a>
+  <a class="logo" href="{% url 'cadastro:inicio' %}"><span class="logo-mark"><span class="ms">school</span></span><span class="nome">SIGTCC</span></a>
   <div class="spacer"></div>
   <a class="iconbtn" href="{% url 'cadastro:notificacoes' %}" aria-label="Notificações não lidas: {{ notificacoes_nao_lidas|default:0 }}" data-sino>
     <span class="ms">notifications</span>

@@ -32,7 +32,6 @@ urlpatterns = [
     path("esqueci-minha-senha/", views.esqueci_senha, name="esqueci_senha"),
     path("redefinir-senha/nova/", views.nova_senha, name="nova_senha"),
     path("redefinir-senha/<str:token>/", views.redefinir_senha, name="redefinir_senha"),
-    path("painel/", views.painel, name="painel"),
     path("perfil/", views.perfil, name="perfil"),
     path("perfil/assinatura/", views.assinatura, name="assinatura"),
     path("perfil/senha/", views.alterar_senha, name="alterar_senha"),
