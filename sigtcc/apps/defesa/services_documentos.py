@@ -329,19 +329,24 @@ LOCAL_DA_FOLHA = "Manaus"
 # Papéis impressos na Folha, na ordem Orientador, 1º e 2º Avaliador (FR-002).
 # [US-28][RBN-DEF-07.2]
 PAPEIS_DA_FOLHA = ("Presidente", "Avaliador", "Avaliador")
+# O cadastro não guarda gênero: cargo do Coordenador e titulação saem na forma neutra
+# (Q-155, decisão de 10/11/2026), em vez de deduzir o gênero pelo nome. [US-28][RBN-DEF-07.1]
+CARGO_DO_COORDENADOR = "Coordenador(a) do Curso"
+TITULACAO_NEUTRA = {"Doutor": "Doutor(a)"}
 
 
 def _titulacao(usuario):
     """Titulação lida no momento (doc_titulacao do Docente ou mem_titulacao do Membro
-    Externo), ou "" se a conta não tiver nenhuma das duas. [US-28][US-30][RBN-DEF-07.1]
+    Externo), na forma neutra ("Doutor(a)"; Mestre e Especialista não flexionam), ou "" se a
+    conta não tiver nenhuma das duas (Q-155). [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.3]
     """
     docente = especializacao(usuario, "docentes")
     if docente is not None:
-        return docente.get_doc_titulacao_display()
-    externo = especializacao(usuario, "membrosexternos")
-    if externo is not None:
-        return externo.get_mem_titulacao_display()
-    return ""
+        valor = docente.get_doc_titulacao_display()
+    else:
+        externo = especializacao(usuario, "membrosexternos")
+        valor = externo.get_mem_titulacao_display() if externo is not None else ""
+    return TITULACAO_NEUTRA.get(valor, valor)
 
 
 def _membros_do_documento(sessao):
@@ -390,16 +395,6 @@ def _dados_comuns(sessao):
     }
 
 
-def _cargo_do_coordenador(nome):
-    """ "Coordenadora do Curso" quando o primeiro nome termina em "a"; senão "Coordenador do
-    Curso". O cadastro não guarda gênero: a flexão segue o primeiro nome
-    (decisão registrada em docs/questoes-a-rever.md).
-    [US-28][RBN-DEF-07.1]
-    """
-    primeiro = nome.split()[0] if nome and nome.split() else ""
-    return "Coordenadora do Curso" if primeiro.lower().endswith("a") else "Coordenador do Curso"
-
-
 def _avaliacoes_da_ata(membros):
     """Linhas da tabela de notas e das assinaturas da Ata, na ordem Primeiro Avaliador, Segundo
     Avaliador e Orientador (modelo institucional); o suplente acionado ocupa a linha do
@@ -441,7 +436,7 @@ def dados_da_ata(sessao):
         conta = coordenador.cor_doc.doc
         dados_coordenador = {
             "nome": conta.usu_nome,
-            "cargo": _cargo_do_coordenador(conta.usu_nome),
+            "cargo": CARGO_DO_COORDENADOR,
             "assinatura": _imagem_existente(services.caminho_da_assinatura(conta)),
         }
     etapa = "II" if services_avaliacoes.e_tcc_2(sessao) else "I"

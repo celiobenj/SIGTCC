@@ -20,8 +20,8 @@ from django.core.files.storage import default_storage
 from django.urls import reverse
 
 from sigtcc.apps.cadastro import services
-from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusTCC
-from sigtcc.apps.cadastro.models import Notificacoes, TCCs
+from sigtcc.apps.cadastro.choices import DescricaoTurma, StatusTCC, Titulacao
+from sigtcc.apps.cadastro.models import Coordenadores, Docentes, Notificacoes, TCCs
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_secretaria
 from sigtcc.apps.defesa import mensagens, pdf, services_avaliacoes, services_documentos
 from sigtcc.apps.defesa.choices import PapelBanca, Parecer, StatusSessao
@@ -132,6 +132,31 @@ class TesteDadosDaAta(TesteAvaliacao):
         self.assertTrue(
             dados["coordenador"]["assinatura"].lstrip("/").startswith("media/assinaturas/")
         )
+
+    def test_cargo_e_titulacao_na_forma_neutra(self):
+        """Q-155: o cadastro não guarda gênero; o cargo sai "Coordenador(a) do Curso" para
+        qualquer nome e "Doutor" sai "Doutor(a)" (Mestre e Especialista não flexionam).
+        [US-28][RBN-DEF-07.1]"""
+        cenario = sessao_liberada()
+        coordenador = Coordenadores.objects.get(cor_cur=cenario["tcc"].tcc_tur.tur_cur)
+        for nome in ("Beatriz Lemos Aragão", "Luca Ferreira", "Ricardo Prado"):
+            with self.subTest(nome=nome):
+                conta = coordenador.cor_doc.doc
+                conta.usu_nome = nome
+                conta.save(update_fields=["usu_nome"])
+                dados = services_documentos.dados_da_ata(cenario["sessao"])
+                self.assertEqual(dados["coordenador"]["cargo"], "Coordenador(a) do Curso")
+        docente_orientador = Docentes.objects.get(doc=cenario["orientador"])
+        for valor, esperado in (
+            (Titulacao.DOUTOR, "Doutor(a)"),
+            (Titulacao.MESTRE, "Mestre"),
+            (Titulacao.ESPECIALISTA, "Especialista"),
+        ):
+            with self.subTest(titulacao=valor):
+                docente_orientador.doc_titulacao = valor
+                docente_orientador.save(update_fields=["doc_titulacao"])
+                folha = services_documentos.dados_da_folha(cenario["sessao"])
+                self.assertEqual(folha["membros"][0]["titulacao"], esperado)
 
     def test_tcc_1_tem_titulo_i(self):
         cenario = sessao_liberada(etapa=DescricaoTurma.TCC_1)
