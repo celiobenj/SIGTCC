@@ -333,9 +333,9 @@ FIM_ALERTA_VINCULOS = ". Encerre ou transfira esses vínculos primeiro"
 ACESSO_PRORROGADO_ATE = "Acesso prorrogado até {data}"
 FALHA_AO_PRORROGAR = "Não foi possível prorrogar o acesso. Tente novamente"
 
-# US-06: PROVISÓRIA até a Q-52 (troca da M-16 pela spec 003). Só o teste do cenário 3 da US-06 a
-# usa; com a resposta da Julia, a M-16 recebe este texto e a constante sai (research C16).
-ACESSO_EXPIRADO_US06 = "Seu acesso expirou. Procure a coordenação do curso"
+# US-06: a validade vencida usa ACESSO_EXPIRADO (M-16), o texto do login pedido pela RBN-CAD-03.3;
+# o "Procure a coordenação do curso" da US-06 não é usado (índice Q-52, resposta A).
+# [US-06][RBN-CAD-03.3]
 
 # Rótulos das US-03 a 06 e 50 (critério dos cenários, spec Q21). SALVAR e EDITAR já existem.
 CADASTRAR_DOCENTE = "Cadastrar docente"
@@ -374,7 +374,7 @@ MC13_FALHA_ENVIO_TROCA = (
 
 # =============================================================================================
 # Spec 006: Orientação, Atas e Publicações (US-17, 18, 19, 20, 36, 41, 42, 45, 46)
-# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_4.md; MO-01 a MO-26 da tabela
+# Textos das US copiados de docs/fonte/Historias_de_Usuario_v3_4.md; MO-01 a MO-27 da tabela
 # "Mensagens a validar com a PO" de specs/006-orientacao/spec.md (PROVISÓRIAS, índice Q-95).
 # Reaproveitadas sem duplicar: LINK_HTTPS_500, M14_CAMPO_OBRIGATORIO, MT25_TURMA_ARQUIVADA,
 # M02_ACESSO_NEGADO, MT31_PEDIDO_CANCELADO e MT22_NOTIFICACAO_TRANSFERENCIA. [SC-003][FR-048]
@@ -418,7 +418,7 @@ PUBLICACAO_SALVA = "Publicação salva"
 APROVEITAMENTO_HOMOLOGADO = "Aproveitamento homologado"
 APROVEITAMENTO_RECUSADO = "Aproveitamento recusado"
 
-# MO-01 a MO-26: PROVISÓRIAS (spec 006, "Mensagens a validar com a PO"; índice Q-95).
+# MO-01 a MO-27: PROVISÓRIAS (spec 006, "Mensagens a validar com a PO"; índice Q-95).
 # {titulo} é o título do TCC ou PROPOSTA_AINDA_NAO_REGISTRADA.
 MO01_PEDIDO_ORIENTACAO = "{nome} pediu a sua orientação. TCC: {titulo}."
 MO01_ASSUNTO = "SIGTCC: pedido de orientação"
@@ -484,6 +484,13 @@ MO25_EXTERNO_REAPROVEITADO = (
 MO26_PEDIDO_CANCELADO_ARQUIVAMENTO = "Este pedido foi cancelado porque a turma foi arquivada."
 MO26_CONVITE_CANCELADO_ARQUIVAMENTO = "Este convite foi cancelado porque a turma foi arquivada."
 MO26_NOTIFICACAO = "O {tipo} de {nome} foi cancelado porque a turma {identificador} foi arquivada."
+# MO-27: aviso ao Professor da Disciplina na recusa do pedido, pela RBN-CAD-10.2 (resultado ao
+# Professor da Disciplina por e-mail e notificação; índice Q-99, resposta A). PROVISÓRIA.
+# [US-18 D][RBN-CAD-10.2][FR-011]
+MO27_ORIENTACAO_RECUSADA = (
+    "{docente} recusou o pedido de orientação de {nome} na turma {identificador}."
+)
+MO27_ASSUNTO = "SIGTCC: orientação recusada"
 
 # Tipos usados em {tipo} da MO-18 e da MO-26 (texto da própria tabela da spec).
 TIPO_PEDIDO_ORIENTACAO = "pedido de orientação"

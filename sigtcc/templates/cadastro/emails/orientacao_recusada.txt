@@ -1,0 +1,8 @@
+{% comment %}E-mail ao Professor da Disciplina na recusa do pedido de orientação (MO-27, PROVISÓRIA), com o link do painel do aluno. [US-18 D][RBN-CAD-10.2][FR-011][Q-99]{% endcomment %}{% autoescape off %}Olá, {{ nome }}.
+
+{{ texto }}
+
+Para ver o aluno, acesse: {{ link }}
+
+SIGTCC · Núcleo de Computação · EST/UEA
+{% endautoescape %}

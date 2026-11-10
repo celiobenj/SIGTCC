@@ -144,6 +144,27 @@ class AceiteRecusaTest(RespostaTestBase):
         )
         self.assertFalse(Orientacoes.objects.filter(ori_tcc=self.tcc).exists())
 
+    def test_recusa_do_pedido_avisa_o_professor_da_disciplina(self):
+        """Q-99 (resposta A): na recusa do pedido, o Professor da Disciplina recebe a MO-27 no
+        sistema e por e-mail, com o link do painel do aluno, como no aceite. [RBN-CAD-10.2]
+        """
+        with self.captureOnCommitCallbacks(execute=True):
+            self.recusar()
+        texto = mensagens.MO27_ORIENTACAO_RECUSADA.format(
+            docente=self.docente.usu_nome,
+            nome=self.aluno.alu.usu_nome,
+            identificador=self.turma.tur_identificador,
+        )
+        aviso = Notificacoes.objects.get(not_usu=self.professor)
+        self.assertEqual(aviso.not_mensagem, texto)
+        painel = reverse("cadastro:painel_aluno", args=[self.turma.pk, self.aluno.pk])
+        self.assertEqual(aviso.not_link_tela, painel)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, mensagens.MO27_ASSUNTO)
+        self.assertEqual(mail.outbox[0].to, [self.professor.usu_email])
+        self.assertIn(texto, mail.outbox[0].body)
+        self.assertIn(painel, mail.outbox[0].body)
+
     def test_cenario10_sem_sessao_link_vai_ao_login(self):
         self.client.logout()
         resposta = self.link()

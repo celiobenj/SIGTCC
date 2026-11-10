@@ -9,7 +9,6 @@ teste marcado como falha esperada.
 """
 
 import io
-import unittest
 from datetime import date, datetime
 from unittest import mock
 
@@ -213,17 +212,11 @@ class LoginEExpiracaoTest(TesteContas):
         self.assertEqual(resposta.status_code, 302)
 
     def test_cenario_03_login_depois_da_validade_grava_expirada(self):
+        # Texto do login (M-16), pela RBN-CAD-03.3 (índice Q-52, resposta A). [RBN-CAD-03.3]
         conta = membro(validade=date(2026, 10, 27))
         resposta = self._entrar(conta, date(2026, 10, 28))
         self.assertContains(resposta, mensagens.ACESSO_EXPIRADO)
         self.assertEqual(status(conta), StatusConta.EXPIRADA)
-
-    @unittest.expectedFailure
-    def test_cenario_03_texto_da_us06_pendente_da_q52(self):
-        # Q-52 (Julia): o login da spec 003 ainda mostra a M-16; a US-06 pede outro texto.
-        conta = membro(validade=date(2026, 10, 27))
-        resposta = self._entrar(conta, date(2026, 10, 28))
-        self.assertContains(resposta, mensagens.ACESSO_EXPIRADO_US06)
 
     def test_cenario_04_dados_continuam_depois_de_expirar(self):
         conta = membro(validade=date(2026, 10, 27))

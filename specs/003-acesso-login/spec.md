@@ -172,6 +172,15 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
   "Campo obrigatório" (tabela "Mensagens a validar com a PO"; constantes já trocadas em
   `mensagens.py` pela spec 002).
 
+### Session 2026-11-10 (Q-52 respondida, Julia Cohen)
+
+- Q: a M-16 passa ao texto da US-06, "Seu acesso expirou. Procure a coordenação do curso" (spec
+  002, Clarifications Q4)? → A: **não, opção A, vale a matriz** (RBN-CAD-03.3, com precedência
+  sobre a US): a M-16 continua igual ao texto do login (US-11 E3), também para o Membro Externo
+  com a validade vencida (US-06 passo 4, E1 e cenário 3). Há uma só constante,
+  `mensagens.ACESSO_EXPIRADO` (`M16_ACESSO_EXPIRADO` é o mesmo texto); `ACESSO_EXPIRADO_US06` saiu
+  (índice Q-52).
+  
 ### Session 2026-11-10 (correção J1, Julia Cohen)
 
 - Q31: o painel mínimo de `/painel/` (boas-vindas, tipo de conta e papéis) e o item "Início" do menu
@@ -741,7 +750,7 @@ mas não bloqueiam as tarefas nem a implementação (Q25). Depois da resposta, c
 | M-13 | Reset do primeiro acesso concluído | "Primeiro acesso resetado. O aluno já pode refazer o primeiro acesso." | US-12 A2 | A validar |
 | M-14 | Campo obrigatório vazio nos formulários desta feature (exceto o login, que já tem texto) | "Campo obrigatório" | US-10, US-12 e US-38 (não tratam o caso); texto das demais US (Clarifications Q30) | Decidido (Q30; Q-50) |
 | M-15 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Inativa' (Q6, Q26) | "Conta inativa" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E5 | A validar |
-| M-16 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Expirada' ou de Membro Externo com a validade vencida (Q4, Q6, Q26) | "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E3 | A validar |
+| M-16 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Expirada' ou de Membro Externo com a validade vencida (Q4, Q6, Q26) | "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso" (o mesmo texto do login, US-11 E3; vale também para a validade vencida da US-06, Q-52) | US-10 (não trata o caso); US-11 E3; US-06 E1 (pela RBN-CAD-03.3) | A validar |
 | M-17 | Falha no envio do e-mail no primeiro acesso, no reenvio do link ou na troca de e-mail (Q13) | "Não foi possível enviar o e-mail agora. Tente novamente em alguns minutos." | Nenhuma fonte trata o caso | A validar |
 
 ## Assumptions

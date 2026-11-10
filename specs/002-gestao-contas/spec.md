@@ -5,8 +5,8 @@
 **Created**: 2026-10-22
 
 **Status**: Aprovada por Maria Luiza Guimarães em 2026-10-22, depois das conferências do analista de
-requisitos e do /speckit-clarify. Pendências abertas que não bloqueiam o plano: Q-52, Q-58, Q-63 e
-Q-47 (no plano).
+requisitos e do /speckit-clarify. Pendências abertas que não bloqueiam o plano: Q-58, Q-63 e
+Q-47 (no plano). A Q-52 foi respondida em 2026-11-10 (Clarifications, Q4).
 
 **Input**: User description: "Use o número 002 para esta spec. Gestão de Contas do SIGTCC: US-03, 04,
 05, 06 e 50. Use as seções dessas US em docs/fonte/Historias_de_Usuario_v3_2.md, com regras (RBN),
@@ -57,7 +57,11 @@ do RAN-CAD-01 (comando dos Coordenadores iniciais). Tabela completa na seção "
   Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso", que é o texto do
   login da spec 003 (M-16, tirado da US-11 E3). Qual vale? → A: o texto da US-06, por decisão da
   responsável em 2026-10-22, embora a matriz tenha precedência. A troca do texto no login é da spec
-  003 (Julia Cohen; índice Q-52).
+  003 (Julia Cohen; índice Q-52). **Revisão (Julia Cohen, 2026-11-10; Q-52 respondida, opção A)**:
+  vale a matriz (RBN-CAD-03.3), que tem precedência sobre a US. O Membro Externo com a validade
+  vencida vê o mesmo texto do login, "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso" (US-11 E3; M-16 da spec 003). O texto
+  "Procure a coordenação do curso" da US-06 não é usado; a constante `ACESSO_EXPIRADO_US06` saiu
+  de `mensagens.py`.
 - Q5 (resolvida pela matriz; US-03 E8 e cenário 17, "a confirmar com a equipe"): pelo RBN-CAD-14.1,
   "as ações do Coordenador de Curso e da Secretaria (cadastros, inativações, transferências...)
   continuam restritas ao próprio curso". O curso do usuário é o Curso Coordenado do Coordenador ou o
@@ -235,7 +239,8 @@ Decisões da revisão do plano (arquiteto-django), tomadas por Maria Luiza Guima
 
 Pendências de outras pessoas (registradas no índice):
 
-- Q29: a troca da M-16 pelo texto da US-06 no login é da spec 003 (Julia Cohen; Q-52). O ajuste do
+- Q29: a troca da M-16 pelo texto da US-06 no login é da spec 003 (Julia Cohen; Q-52). Resolvida
+  em 2026-11-10 a favor da matriz: a M-16 não muda (Clarifications, Q4). O ajuste do
   texto da Secretaria por curso no dicionário é da Maria Luiza Guimarães, e o do Glossário, da PO
   (Q-60). A correção do documento de US está na Q-61. As features de Defesa (Célio Benjamim; Q-67)
   e de Vida do TCC (Leandra Matos; Q-68) precisam ter ciência do que esta feature espera delas:
@@ -613,7 +618,7 @@ antes e depois da validade e a troca do status para 'Expirada'.
    com e-mail e senha corretos, **Então** o sistema permite o acesso.
 3. **Dado que** a validade do membro externo terminou em 27/10/2026, **Quando** ele tenta fazer login
    em 28/10/2026 com e-mail e senha corretos, **Então** o Status da Conta passa a Expirada, o sistema
-   nega o acesso e exibe "Seu acesso expirou. Procure a coordenação do curso" (Clarifications, Q4).
+   nega o acesso e exibe "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso" (RBN-CAD-03.3; Clarifications, Q4, revisão de 2026-11-10).
 4. **Dado que** a conta do membro externo expirou, **Quando** a Coordenação consulta bancas e
    relatórios do período, **Então** os dados cadastrais e a participação do membro continuam
    visíveis.
@@ -992,9 +997,9 @@ primeiro acesso de um Coordenador (spec 003) e, com ele, cadastrar uma Secretari
   para ela chamar.
 - **FR-040**: A validade DEVE valer até o fim do dia indicado. A partir do dia seguinte, a conta
   'Ativa' passa a 'Expirada' automaticamente, sem depender de login (RNF de Integridade do RAN-CAD-03;
-  Clarifications, Q3). O login negado pela validade também grava a troca e exibe "Seu acesso
-  expirou. Procure a coordenação do curso" (US-06 passo 4 e E1; Clarifications, Q4). O login é da
-  spec 003, que hoje exibe a M-16; a troca do texto depende da Q-52 do índice. Nome, E-mail,
+  Clarifications, Q3). O login negado pela validade também grava a troca e exibe "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso",
+  o texto do login da spec 003 (M-16; RBN-CAD-03.3; US-06 passo 4 e E1; Clarifications, Q4, revisão
+  de 2026-11-10; índice Q-52). Nome, E-mail,
   Titulação, Instituição e as participações em bancas não são apagados.
 - **FR-041**: Se o recálculo falhar, o sistema DEVE manter a validade anterior, registrar o erro no
   log e tentar de novo no próximo evento de banca do membro (US-06 E2).
@@ -1065,8 +1070,8 @@ prorrogação manual (Clarifications, Q36).
   (9), e os 4 cenários do comando dos Coordenadores iniciais, passam em testes automatizados. Os
   cenários que dependem de telas de outras features (US-05, cenários 14 e 15; gatilhos de banca da
   US-06) são testados aqui pela regra, com os dados criados direto, e nas telas pela feature dona.
-  O cenário 3 da US-06 só passa depois que a spec 003 trocar a M-16 pelo texto da US-06 (índice
-  Q-52).
+  O cenário 3 da US-06 usa o texto da M-16 da spec 003 (Clarifications, Q4, revisão de 2026-11-10;
+  índice Q-52).
 - **SC-002**: 100% das mensagens desta feature com texto definido nas US são idênticas ao texto da
   US, caractere por caractere. As demais são idênticas à tabela "Mensagens a validar com a PO".
 - **SC-003**: Nenhum e-mail fica repetido entre contas, nenhum curso fica com dois Coordenadores e
@@ -1199,16 +1204,16 @@ colchetes na tabela).
   informados por quem implanta, não ficam no código nem no repositório. A pasta `management/` está
   entre os itens de configuração da spec 003 que aguardam o Célio Benjamim (índice, Q-27).
 - **Mensagens**: as MC-01 a MC-10 estão definidas (Q14; índice Q-46). As MC-11 a MC-13 (PROVISÓRIAS) aguardam a
-  PO (índice Q-58). A mensagem de expiração do Membro Externo é a da US-06 (Clarifications, Q4); a
-  troca do texto no login da spec 003 (M-16) aguarda a Julia Cohen (índice Q-52). A M-02 e a M-14 da
+  PO (índice Q-58). A mensagem de expiração do Membro Externo é a do login, M-16 da spec 003
+  (RBN-CAD-03.3; Clarifications, Q4, revisão de 2026-11-10; índice Q-52, respondida). A M-02 e a M-14 da
   spec 003 passam aos textos das US nesta entrega (Q9; spec 003, Q30).
 - **Troca de e-mail pelo gestor** (FR-008): reaproveita o link de confirmação da troca de e-mail da
   spec 003 (FR-021), sem coluna nova. O FR-021 da spec 003 cobre só Aluno e Membro Externo (para
   Docente e Secretaria, o e-mail é só leitura no perfil). O plano DEVE estender o mecanismo a
   Docente e Secretaria e confirmar que ele serve para a troca feita por outra pessoa.
 - **Pendências registradas no índice** (`docs/questoes-a-rever.md`): Q-14 e Q-15 (respondidas por
-  este pedido); Q-16, Q-31, Q-44 a Q-51, Q-53 a Q-57 e Q-59 (respondidas em 2026-10-22); Q-52,
-  Q-58 e Q-60 a Q-62 (abertas). Da segunda conferência: Q-64 a Q-66 respondidas, S-03 registrada; aberta: Q-63 (prioridade da
+  este pedido); Q-16, Q-31, Q-44 a Q-51, Q-53 a Q-57 e Q-59 (respondidas em 2026-10-22); Q-52
+  (respondida em 2026-11-10); Q-58 e Q-60 a Q-62 (abertas). Da segunda conferência: Q-64 a Q-66 respondidas, S-03 registrada; aberta: Q-63 (prioridade da
   US-50, para a PO); ciência das outras features: Q-67 (Defesa) e Q-68
   (Vida do TCC).
 - **Dependências**: specs 001, 003 e 004 implementadas. Turmas (spec 004), orientações,
