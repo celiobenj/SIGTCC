@@ -85,6 +85,10 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 
 ### Alterado
 
+- Descritores dos 9 critérios trocados pelos textos da planilha oficial da EST/UEA (migration
+  `defesa/0005_descritores_oficiais`, reversível); as colunas `cri_desc_*` passam a VARCHAR(1000), com
+  o dicionário ajustado, e as telas Avaliação e Critérios respeitam as quebras de linha (spec 001,
+  FR-014a; Q-03 e Q-18).
 - Ata Final e Folha de Aprovação no padrão institucional da UEA/EST (logos, cabeçalho de três
   linhas, "1. Dados de Identificação", tabela de notas e assinaturas, conforme os modelos em
   `docs/`). O Aluno baixa só a Folha de Aprovação: a Ata, que traz as notas individuais, dá 403

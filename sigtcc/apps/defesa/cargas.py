@@ -1,8 +1,8 @@
 """Carga inicial dos 9 critérios oficiais de avaliação da EST/UEA (research D6).
 
-Os descritores são provisórios (spec FR-014): a planilha oficial de avaliação ainda não está em
-docs/fonte/. A troca pelos textos oficiais será uma data migration nova antes do TP3 (FR-014a),
-sem alterar nome, componente, peso nem identificador. Esta função não deve ser alterada.
+Os descritores desta carga são provisórios (spec FR-014). Os textos oficiais da planilha entraram
+pela migration 0005 (FR-014a, descritores_oficiais.py), sem alterar nome, componente, peso nem
+identificador. Esta função não deve ser alterada.
 
 [US-25][RBN-DEF-04.1][FR-014]
 """

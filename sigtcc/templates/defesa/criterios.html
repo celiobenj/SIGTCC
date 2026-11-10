@@ -19,9 +19,9 @@
         <td>{{ c.cri_componente }}</td>
         <td><b>{{ c.cri_nome }}</b>{% if c.cri_descricao %}<br><small class="muted">{{ c.cri_descricao }}</small>{% endif %}</td>
         <td class="nw">{{ c.cri_peso|floatformat:1 }}</td>
-        <td><small>{{ c.cri_desc_exemplar }}</small></td>
-        <td><small>{{ c.cri_desc_competente }}</small></td>
-        <td><small>{{ c.cri_desc_necessita_trabalho }}</small></td>
+        <td><small>{{ c.cri_desc_exemplar|linebreaksbr }}</small></td>
+        <td><small>{{ c.cri_desc_competente|linebreaksbr }}</small></td>
+        <td><small>{{ c.cri_desc_necessita_trabalho|linebreaksbr }}</small></td>
       </tr>
       {% endfor %}
       <tr><td colspan="2"><b>Total da {{ componente }}</b></td><td><b>{{ soma|floatformat:1 }}</b></td><td colspan="3"></td></tr>

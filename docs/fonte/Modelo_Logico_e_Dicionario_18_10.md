@@ -314,9 +314,9 @@ garantidos por restrição CHECK.
 | cri_nome                    | VARCHAR(100) | Não       | \-        | Nome do critério de avaliação                                       |
 | cri_componente              | VARCHAR(20)  | Não       | \-        | Componente da avaliação ('Parte Escrita', 'Parte Oral')             |
 | cri_descricao               | VARCHAR(255) | Sim       | \-        | Descrição do objetivo do critério                                   |
-| cri_desc_exemplar           | VARCHAR(255) | Não       | \-        | Descritor exigido para o conceito Exemplar                          |
-| cri_desc_competente         | VARCHAR(255) | Não       | \-        | Descritor exigido para o conceito Competente                        |
-| cri_desc_necessita_trabalho | VARCHAR(255) | Não       | \-        | Descritor exigido para o conceito Necessita de Trabalho             |
+| cri_desc_exemplar           | VARCHAR(1000) | Não       | \-        | Descritor exigido para o conceito Exemplar                          |
+| cri_desc_competente         | VARCHAR(1000) | Não       | \-        | Descritor exigido para o conceito Competente                        |
+| cri_desc_necessita_trabalho | VARCHAR(1000) | Não       | \-        | Descritor exigido para o conceito Necessita de Trabalho             |
 | cri_peso                    | DECIMAL(3,1) | Não       | \-        | Peso do critério no cálculo (faixa de 0.0 a 10.0, uma casa decimal) |
 
 ### 3.1.5 Tabela Areas_Interesse

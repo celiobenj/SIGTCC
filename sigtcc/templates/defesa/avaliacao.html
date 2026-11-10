@@ -44,9 +44,9 @@
           <td>{{ criterio.cri_componente }}</td>
           <td><b>{{ criterio.cri_nome }}</b>
             <details><summary class="muted">Descrições dos conceitos</summary>
-              <small><b>Exemplar (8,0 a 10,0):</b> {{ criterio.cri_desc_exemplar }}<br>
-              <b>Competente (6,0 a 7,9):</b> {{ criterio.cri_desc_competente }}<br>
-              <b>Necessita de Trabalho (0,0 a 5,9):</b> {{ criterio.cri_desc_necessita_trabalho }}</small>
+              <small><b>Exemplar (8,0 a 10,0):</b> {{ criterio.cri_desc_exemplar|linebreaksbr }}<br>
+              <b>Competente (6,0 a 7,9):</b> {{ criterio.cri_desc_competente|linebreaksbr }}<br>
+              <b>Necessita de Trabalho (0,0 a 5,9):</b> {{ criterio.cri_desc_necessita_trabalho|linebreaksbr }}</small>
             </details>
             {% for erro in form.non_field_errors %}<div class="msg-erro" role="alert">{{ erro }}</div>{% endfor %}
           </td>
