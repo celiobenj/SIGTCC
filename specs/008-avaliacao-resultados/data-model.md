@@ -68,7 +68,7 @@ Enviada (research A2).
 | `HistoricoDefesas` (`Historico_Defesas`) | `services_defesa.transicionar_status` (spec 007) | evento "Liberação do Resultado"; lida na janela Histórico (D15) |
 | `TCCs` (`TCCs`) e `HistoricoStatusTCC` (`Historico_Status_TCC`) | `services_turmas.atualizar_status_tcc` (spec 005) | gatilho "Liberação do resultado" |
 | `Docentes` (`Docentes`), `MembrosExternos` (`Membros_Externos`) | `services.salvar_assinatura` (spec 003) | "Salvar esta imagem no meu perfil" (`doc_assinatura_path`, `mem_assinatura_path`) |
-| `Notificacoes` (`Notificacoes`, dicionário 3.7.1) | `services.notificar` (spec 004) | avisos MA-06 a MA-08 |
+| `Notificacoes` (`Notificacoes`, dicionário 3.7.1) | `services.notificar` (spec 004) | aviso MA-08 à Secretaria (MA-06 e MA-07 removidas em 10/11/2026, Q-131 B) |
 
 ## Tabelas só lidas
 
