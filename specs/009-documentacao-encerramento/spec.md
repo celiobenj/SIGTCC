@@ -153,6 +153,23 @@ texto (C.7), todos decididos por Célio Benjamim na mesma data conforme a recome
   ganharia um botão numa sessão que não consegue abrir. FR-009, FR-012 a FR-015 e cenário 3.8.
   Índice Q-145.
 
+### Session 2026-11-10
+
+Padrão institucional da Ata e da Folha (guia das branches de fix, C1) e verificação da branch
+`fix/celio-defesa-pdf-config`, decididos por Célio Benjamim:
+
+- Q: Como sai o cargo do Coordenador e a titulação, se o cadastro não guarda gênero? → A: **na
+  forma neutra**: "Coordenador(a) do Curso" e "Doutor(a)" ("Mestre" e "Especialista" não
+  flexionam), na Ata, na Folha e na declaração. A regra pelo primeiro nome foi descartada porque
+  erra em nomes comuns (Beatriz, Raquel, Isabel; Luca, Nicola). FR-001 e FR-002. Índice Q-155.
+- Q: Que mensagem recebe o Aluno que abre o endereço da Ata Final? → A: **a da US-28 E6**, "Você
+  não tem permissão para acessar os documentos desta defesa" (403), a mesma de quem não pode
+  baixar os documentos; o guia citava a M-02 genérica, mas o texto da US é mais preciso. FR-005.
+- Q: Onde a Ata e a Folha diferem do modelo institucional? → A: ficam como a US e a spec mandam:
+  a observação do Qualis só aparece quando aplicada (US-28 cenário 7; o modelo traz a nota fixa);
+  "6,0" com vírgula (texto da US; o modelo usa "6.0"); o mês em minúsculas ("Manaus, 23 de junho
+  de 2026", norma do português; o modelo usa "Junho"); a linha "Parecer" na Ata (FR-001).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Baixar a Ata Final e a Folha de Aprovação (Priority: P1)
@@ -451,15 +468,16 @@ diferentes e conferir o conteúdo e a recusa sem defesas.
   a observação "Em caso de artigos, se Qualis A ou B, a nota final será o valor máximo entre 6,0 e
   a média dos avaliadores", quando aplicada; "Assinaturas:" com a imagem de assinatura de cada um
   dos 3 membros, tirada da cópia gravada em cada avaliação enviada (spec 008), e o nome; "Data:"
-  com a data da defesa; e o nome, o cargo (Coordenador ou Coordenadora do Curso, flexionado pelo
-  primeiro nome, pois o cadastro não guarda gênero) e a imagem de assinatura do Coordenador de
-  Curso, lidos do perfil no momento do download.
+  com a data da defesa; e o nome, o cargo "Coordenador(a) do Curso" (forma neutra, pois o
+  cadastro não guarda gênero; Q-155) e a imagem de assinatura do Coordenador de Curso, lidos do
+  perfil no momento do download.
 - **FR-002** [RBN-DEF-07.2]: O sistema MUST gerar a Folha de Aprovação em PDF não editável, sob
   demanda, só em TCC 2 com parecer Aprovado ou Aprovado com Correções (modalidades Monografia e
   Artigo Científico), no padrão institucional de `docs/Modelo Folha de Aprovacao.pdf`, com: logos
   e cabeçalho da Ata; título "FOLHA DE APROVAÇÃO"; título do trabalho; nome do aluno; a
   frase "Trabalho de Conclusão de Curso defendido e aprovado pela banca avaliadora constituída
-  pelos professores:"; os membros com titulação e papel (Presidente, Avaliador e Avaliador);
+  pelos professores:"; os membros com titulação (forma neutra: "Doutor(a)", "Mestre",
+  "Especialista"; Q-155) e papel (Presidente, Avaliador e Avaliador);
   "Manaus, DD de mês de AAAA" com a data da defesa; e as imagens das assinaturas dos 3 membros,
   tiradas da cópia gravada em cada avaliação enviada, sem nenhuma nota nem média.
 - **FR-003** [RBN-DEF-07.3]: O sistema MUST oferecer um botão de download para cada documento,
