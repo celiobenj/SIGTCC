@@ -109,6 +109,7 @@ SIGTCC/
 │   ├── diagramas/              \# Diagramas de sequência (PlantUML) e rastreabilidade  
 │   ├── fonte/                  \# Cópias de referência dos documentos do Drive  
 │   │   └── prototipo/          \# Protótipo de 17/10 (referência visual)  
+│   ├── metodologia/            \# Passo a passo do fluxo SDD por feature  
 │   ├── Modelo Ata final.pdf    \# Modelo institucional da Ata Final (UEA/EST)  
 │   ├── Modelo Folha de Aprovacao.pdf \# Modelo institucional da Folha de Aprovação  
 │   ├── ambientes.md            \# Visão de construção e de implantação real  
@@ -264,7 +265,7 @@ O settings.py lê segredos e parâmetros do ambiente pelo python-dotenv. Os ajus
 | **4** | **Log de eventos de acesso:** no ambiente local, em arquivo (LOG\_DIR). No Render, com LOG\_STDOUT \= True, os eventos vão para a saída padrão e aparecem na aba Logs do serviço (seção 9.6). |
 | **5** | **Envio de e-mail:** no ambiente local, backend de console. Em produção, backend SMTP do Django com o relay do Brevo (smtp-relay.brevo.com, porta 2525, TLS), configurado pelas variáveis EMAIL\_\*. O envio ocorre depois do commit, em thread separada, o que o processo contínuo do Render permite; a falha é registrada no log de acesso sem desfazer a operação. |
 | **6** | **Arquivos estáticos:** STATIC\_ROOT aponta para staticfiles/, preenchido pelo collectstatic no build; o WhiteNoise serve os arquivos pela própria aplicação, com DEBUG \= False. |
-| **7** | **HTTPS e endereço:** com COOKIES\_SEGUROS \= True, os cookies de sessão e CSRF exigem HTTPS e SECURE\_PROXY\_SSL\_HEADER \= ("HTTP\_X\_FORWARDED\_PROTO", "https") reconhece o proxy do Render. O domínio informado pelo Render (RENDER\_EXTERNAL\_HOSTNAME) entra automaticamente em ALLOWED\_HOSTS e CSRF\_TRUSTED\_ORIGINS, e RENDER\_EXTERNAL\_URL é o valor padrão de SITE\_URL. |
+| **7** | **HTTPS e endereço:** com COOKIES\_SEGUROS \= True, os cookies de sessão e CSRF exigem HTTPS e SECURE\_PROXY\_SSL\_HEADER \= ("HTTP\_X\_FORWARDED\_PROTO", "https") reconhece o proxy do Render. O domínio informado pelo Render (RENDER\_EXTERNAL\_HOSTNAME) entra automaticamente em ALLOWED\_HOSTS e CSRF\_TRUSTED\_ORIGINS, e RENDER\_EXTERNAL\_URL é o valor padrão de SITE\_URL. O redirecionamento de HTTP para HTTPS é feito pelo próprio Render; SECURE\_SSL\_REDIRECT e HSTS (SECURE\_HSTS\_SECONDS) não são ligados no ambiente de validação, únicos avisos do check \--deploy, e ficam para a implantação real. |
 | **8** | **Armazenamento de arquivos:** mantém-se o default\_storage do Django em sigtcc/media/, inclusive no Render (disco efêmero), sem armazenamento externo (Q-134). Um armazenamento de objetos privado fica para a implantação real (docs/ambientes.md); o código que usa default\_storage não precisaria ser alterado. |
 | **9** | **Geração de PDF:** a biblioteca xhtml2pdf gera os documentos em memória a partir dos templates de sigtcc/templates/defesa/pdf/, com as fontes locais de sigtcc/static/fonts/ e os logos de sigtcc/static/img/, sem acesso à rede; a view entrega o PDF depois de conferir a permissão, e nada é gravado. Uma trava no módulo pdf.py serializa as gerações de um mesmo processo. |
 
@@ -474,7 +475,15 @@ Exemplos reais e previstos:
 
 * \[Feat-00\] Documentos base v3.4 e diagramas (sem US)
 
-* \[Feat-07\] Agendamento e Banca (US-21, US-22, US-23, US-24, US-40) – previsto
+* \[Feat-07\] Agendamento e Banca (US-21, US-22, US-23, US-24, US-40)
+
+* \[Feat-08\] Avaliação e Resultados (US-25, US-26, US-27)
+
+* \[Feat-09\] Documentação e Encerramento (US-28, US-30)
+
+* \[Feat-10\] Dashboards de Produção (US-31, US-32, US-33, US-47)
+
+* \[Fix\] Tela inicial por perfil no lugar do painel (US-11) e fix(defesa): Ata e Folha no padrão institucional (branches fix/ do guia de 09/11/2026)
 
 ## **6.2 Governança de Esquema e Migrações de Banco de Dados**
 
