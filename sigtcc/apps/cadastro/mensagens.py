@@ -333,9 +333,9 @@ FIM_ALERTA_VINCULOS = ". Encerre ou transfira esses vínculos primeiro"
 ACESSO_PRORROGADO_ATE = "Acesso prorrogado até {data}"
 FALHA_AO_PRORROGAR = "Não foi possível prorrogar o acesso. Tente novamente"
 
-# US-06: PROVISÓRIA até a Q-52 (troca da M-16 pela spec 003). Só o teste do cenário 3 da US-06 a
-# usa; com a resposta da Julia, a M-16 recebe este texto e a constante sai (research C16).
-ACESSO_EXPIRADO_US06 = "Seu acesso expirou. Procure a coordenação do curso"
+# US-06: a validade vencida usa ACESSO_EXPIRADO (M-16), o texto do login pedido pela RBN-CAD-03.3;
+# o "Procure a coordenação do curso" da US-06 não é usado (índice Q-52, resposta A).
+# [US-06][RBN-CAD-03.3]
 
 # Rótulos das US-03 a 06 e 50 (critério dos cenários, spec Q21). SALVAR e EDITAR já existem.
 CADASTRAR_DOCENTE = "Cadastrar docente"
