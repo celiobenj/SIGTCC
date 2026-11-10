@@ -1,0 +1,27 @@
+{% load turmas_tags %}
+{% comment %}
+  Cartão de uma turma (cartaoTurma do protótipo de 17/10, só o visual): banner com a cor e o motivo
+  do curso, Descrição e Identificador, período e curso, nome e avatar do Professor da Disciplina;
+  no corpo, dia e horário, local e código da disciplina; no rodapé, a quantidade de alunos
+  matriculados (turma.qtd_alunos, contada na mesma consulta da lista) e a etiqueta "Arquivada".
+  O cartão inteiro é o link recebido em "link": a tela da turma para o Professor e a Secretaria,
+  "Meu TCC" para o Aluno.
+  [US-07][US-13][RBN-CAD-04.5][FR-010][FR-031]
+{% endcomment %}
+<a class="card-turma" href="{{ link }}">
+  <div class="ct-banner" style="{{ turma.tur_cur.cur_nome|banner_turma }}">
+    <h3>{{ turma.tur_descricao }} · {{ turma.tur_identificador }}</h3>
+    <p>{{ turma.tur_ano }}/{{ turma.tur_semestre }} · {{ turma.tur_cur.cur_nome }}</p>
+    <span class="prof">{{ turma.tur_doc.doc.usu_nome }}</span>
+    <span class="ct-avatar"><span class="avatar lg" style="background:{{ turma.tur_doc.doc.usu_nome|cor_avatar }}" aria-hidden="true">{{ turma.tur_doc.doc.usu_nome|slice:":1"|upper }}</span></span>
+  </div>
+  <div class="ct-body">
+    <div class="linha"><span class="ms" aria-hidden="true">schedule</span>{{ turma.tur_dia_da_semana }} {{ turma.tur_hora_inicio|time:"H:i" }}–{{ turma.tur_hora_termino|time:"H:i" }}</div>
+    <div class="linha"><span class="ms" aria-hidden="true">meeting_room</span>{{ turma.tur_local|default:"—" }}</div>
+    <div class="linha"><span class="ms" aria-hidden="true">tag</span>{{ turma.tur_dis.dis_codigo }}</div>
+  </div>
+  <div class="ct-foot">
+    <span class="linha"><span class="ms" aria-hidden="true">group</span>{{ turma.qtd_alunos }} aluno{{ turma.qtd_alunos|pluralize }}</span>
+    {% if turma.tur_status == "Arquivada" %}<span class="chip">Arquivada</span>{% endif %}
+  </div>
+</a>

@@ -8,6 +8,7 @@ from functools import wraps
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.db.models import Count
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -93,6 +94,13 @@ def _turma_do_professor(usuario, tur_id):
     return registro
 
 
+def _com_qtd_alunos(turmas):
+    """Acrescenta a quantidade de alunos matriculados (Alunos_Turmas) para o rodapé do cartão,
+    na mesma consulta da lista. [US-07][FR-010]
+    """
+    return turmas.annotate(qtd_alunos=Count("alunosturmas"))
+
+
 @perfil_requerido("docente", "secretaria")
 def turmas(request):
     """Turmas ativas do Docente (Professor da Disciplina) ou do curso da Secretaria (Q9).
@@ -100,7 +108,7 @@ def turmas(request):
     [US-07][FR-010][Q9]
     """
     contexto = {
-        "turmas": services_turmas.turmas_visiveis(request.user),
+        "turmas": _com_qtd_alunos(services_turmas.turmas_visiveis(request.user)),
         "pode_criar": tipo_conta(request.user) == "docente",
         "arquivadas": False,
     }
@@ -111,7 +119,7 @@ def turmas(request):
 def turmas_arquivadas(request):
     """Área de turmas arquivadas, só para consulta (RBN-CAD-04.5). [US-07][FR-008][FR-010]"""
     contexto = {
-        "turmas": services_turmas.turmas_visiveis(request.user, arquivadas=True),
+        "turmas": _com_qtd_alunos(services_turmas.turmas_visiveis(request.user, arquivadas=True)),
         "pode_criar": False,
         "arquivadas": True,
     }

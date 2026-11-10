@@ -9,6 +9,7 @@ Orientador e pelo Professor da Disciplina (US-14).
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.db.models import Count
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -37,7 +38,10 @@ def _turmas_do_aluno(request, arquivadas):
     [US-13][FR-031][Q-89]
     """
     contexto = {
-        "turmas": services_tcc.turmas_do_aluno(request.user, arquivadas=arquivadas),
+        # Cartões (spec 004): código da disciplina e quantidade de alunos na mesma consulta.
+        "turmas": services_tcc.turmas_do_aluno(request.user, arquivadas=arquivadas)
+        .select_related("tur_dis")
+        .annotate(qtd_alunos=Count("alunosturmas")),
         "arquivadas": arquivadas,
     }
     return render(request, "cadastro/tcc/minhas_turmas.html", contexto)
