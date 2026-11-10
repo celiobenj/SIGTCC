@@ -559,6 +559,10 @@ de ativação funciona chamada de fora das telas desta feature.
   correta: conta 'Inativa' – "Conta inativa"; conta 'Expirada', ou de Membro Externo com a data de
   hoje depois de `mem_validade_ate` (Q4; RBN-CAD-03.3) – "Seu acesso expirou. Procure o Orientador, o
   Professor da Disciplina, a Secretaria ou o Coordenador de Curso"; conta 'Ativa' – login aceito.
+  Acréscimo da spec 002 (FR-040; índice Q-71): no caso da validade vencida com a conta ainda
+  'Ativa', o login também grava 'Expirada' (`services.expirar_se_vencida`, com a conta travada e a
+  validade relida) e registra o evento `CONTA_EXPIRADA` com autor "sistema"; uma falha nessa
+  gravação vai para o log e não muda o resultado do login.
 - **FR-009**: Na terceira senha incorreta seguida para a mesma conta, qualquer que seja a credencial
   usada, o sistema DEVE bloquear a conta por 15 minutos, exibir o bloqueio e o tempo restante
   (mensagem PROVISÓRIA M-01) e
@@ -634,7 +638,12 @@ de ativação funciona chamada de fora das telas desta feature.
   e-mail" (Q28; M-07; link inválido: M-09; novo e-mail já em uso na confirmação: M-05); até lá, o
   e-mail antigo continua valendo. O link de confirmação vale 24 horas, como o de primeiro acesso (Q11), e
   deixa de valer depois de usado ou quando o e-mail da conta muda (Q24). Falha no envio: M-17. Todas
-  essas mensagens são PROVISÓRIAS.
+  essas mensagens são PROVISÓRIAS. Acréscimos da spec 002 (índice Q-71): (a) o mesmo pedido serve à
+  troca feita pelo gestor no cadastro de Docente, Secretaria e Membro Externo
+  (`pedir_troca_email(conta, novo, autor=gestor)`; o link e a confirmação não mudam, e o log
+  registra o gestor como autor); (b) a confirmação trava o novo e-mail (`travar_email`, trava
+  consultiva por e-mail normalizado) antes de conferir a unicidade; (c) a confirmação grava
+  `usu_link_gerado_em`, o que invalida os links de ativação e de redefinição enviados antes.
 - **FR-022**: Todas as páginas internas DEVEM mostrar o sino com o número de notificações não lidas
   do usuário. A central DEVE listar todas as notificações, da mais recente para a mais antiga, 20 por
   página, com o texto, a data e a hora (Q14); "Marcar como lidas" marca todas e zera o contador; sem notificações, exibe "Você
@@ -680,7 +689,10 @@ de ativação funciona chamada de fora das telas desta feature.
   e-mail (pedido e confirmação). Além desses 6 tipos, dois eventos técnicos também são registrados,
   fora da contagem do SC-009: e-mail duplicado encontrado na busca da credencial (sem conta na linha,
   só a quantidade de contas) e falha no envio de e-mail (só o tipo do erro). Senhas, links e códigos de
-  ativação NUNCA são gravados. O registro não
+  ativação NUNCA são gravados. A spec 002 acrescenta, fora da contagem do SC-009, os eventos da
+  Gestão de Contas (`CONTA_CRIADA`, `CONTA_ALTERADA`, `CONTA_INATIVADA`, `CONTA_REATIVADA`,
+  `ACESSO_PRORROGADO`, `CONTA_EXPIRADA`, `VALIDADE_RECALCULADA`, `SENHA_GESTOR_INCORRETA`), e o
+  autor pode ser o próprio sistema (`AUTOR_SISTEMA`; índice Q-71). O registro não
   usa tabela nem tem tela de consulta; a pasta do arquivo vem do .env e fica fora do Git (Q21).
   [US-11][RBN-CAD-06.6][US-12][RBN-CAD-06.5][RBN-CAD-06.7][RBN-CAD-06.8][US-38][RBN-CAD-13.1]
   [RNF de Confidencialidade do RAN-CAD-06]
