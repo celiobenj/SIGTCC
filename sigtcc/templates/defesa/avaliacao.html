@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static defesa_tags %}
 {% comment %}
   Formulário "Avaliação" (formAvaliacao do protótipo de 17/10, só o visual; aqui em página
   própria): cabeçalho com título, aluno, orientador, papel e link do Documento para Defesa; os 9
@@ -9,6 +9,7 @@
   assinada. Só leitura quando a avaliação foi Enviada ou a sessão está Realizada. Sem regra de
   negócio: o que está liberado vem de services_avaliacoes.formulario_da_avaliacao.
   [US-25][US-26][RBN-DEF-05.1][RBN-DEF-05.2][RBN-DEF-05.3][FR-008 a FR-019]
+  Status da sessão no chip com a cor do protótipo (cor_status_sessao).
 {% endcomment %}
 {% block titulo %}Avaliação · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -23,7 +24,7 @@
   <div class="dado"><span>Título</span><b>{{ sessao.def_tcc.tcc_titulo }}</b></div>
   <div class="dado"><span>Aluno</span><b>{{ sessao.def_tcc.tcc_alu.alu.usu_nome }}</b></div>
   <div class="dado"><span>Orientador</span><b>{{ dados.orientador.usu_nome|default:"—" }}</b></div>
-  <div class="dado"><span>Status da sessão</span><b><span class="chip">{{ sessao.def_status }}</span></b></div>
+  <div class="dado"><span>Status da sessão</span><b><span class="chip {{ sessao.def_status|cor_status_sessao }}">{{ sessao.def_status }}</span></b></div>
   <div class="dado"><span>Minha avaliação</span><b>{{ dados.estado }}{% if dados.data_envio %} em {{ dados.data_envio|date:"d/m/Y H:i" }}{% endif %}</b></div>
   {% if dados.nota_individual is not None %}<div class="dado"><span>Nota individual</span><b>{{ dados.nota_individual|floatformat:1 }}</b></div>{% endif %}
   {% if dados.documento %}<div class="dado"><span>Documento para Defesa</span><b><a href="{{ dados.documento }}" target="_blank" rel="noopener">{{ dados.documento }}</a></b></div>{% endif %}

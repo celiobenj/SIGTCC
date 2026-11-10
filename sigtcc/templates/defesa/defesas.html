@@ -6,6 +6,7 @@
   Letivo. [US-21][US-40][US-39][RBN-DEF-01.4][RBN-DEF-01.5][RBN-CAD-14.1][FR-024 a FR-028]
   Spec 009 (IC-06): botão "Agenda de defesas (PDF)" (pode_gerar_agenda), com a query string
   atual. [US-30][RBN-DEF-08.1]
+  "Agendar defesa" no botão flutuante do protótipo (.fab), com a mesma checagem pode_agendar.
 {% endcomment %}
 {% block titulo %}Defesas · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -13,7 +14,7 @@
   <h2 class="pg">Defesas</h2>
   <div class="flex flex-wrap">
     {% if pode_gerar_agenda %}<a class="btn" href="{{ url_agenda }}"><span class="ms">picture_as_pdf</span>Agenda de defesas (PDF)</a>{% endif %}
-    {% if pode_agendar %}<a class="btn pri" href="{{ url_agendar }}"><span class="ms">event</span>Agendar defesa</a>{% endif %}
+    {% if pode_agendar %}<a class="fab" href="{{ url_agendar }}"><span class="ms">event</span>Agendar defesa</a>{% endif %}
   </div>
 </div>
 <form method="get" class="cartao mt16" novalidate>
