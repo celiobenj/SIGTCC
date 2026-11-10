@@ -22,7 +22,7 @@ completou o `:GeradorDocumentosPDF` do diagrama 28.
 
 | Participante | Template (`sigtcc/templates/`) | View (`sigtcc/apps/cadastro/`) | Diagramas |
 |---|---|---|---|
-| `:TelaAcesso` | `cadastro/entrar.html`, `primeiro_acesso*.html`, `ativar.html`, `link_vencido.html`, `esqueci_senha.html`, `redefinir_senha.html` | `views.py` | 15, 16 |
+| `:TelaAcesso` | `cadastro/entrar.html`, `primeiro_acesso*.html`, `ativar.html`, `link_vencido.html`, `esqueci_senha.html`, `redefinir_senha.html` | `views.py` (`entrar`; a "tela inicial do perfil" do passo 6 é a raiz `/`, view `inicio`, que leva o Aluno a `cadastro:minhas_turmas`, o Docente a `cadastro:turmas`, a Secretaria a `defesa:defesas` e o Membro Externo a `defesa:minhas_bancas`; spec 003, Q31) | 15, 16 |
 | `:TelaAlunoDaTurma` | `cadastro/turmas/painel_aluno.html`, `cadastro/confirmar_reset.html` | `views.py`, `views_orientacao.py` | 15 |
 | `:TelaMeuPerfil` | `cadastro/perfil.html`, `alterar_senha.html`, `confirmar_email.html` | `views.py` | 15, 16, 17 |
 | `:TelaNotificacoes` | `cadastro/notificacoes.html` | `views.py` | 17 |

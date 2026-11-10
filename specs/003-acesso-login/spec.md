@@ -30,7 +30,7 @@ seção 4, itens 1 a 3); `docs/fonte/prototipo/prototipo_17_10.html` (só o visu
 **Rastreabilidade**: [US-10][RBN-CAD-06.1][RBN-CAD-06.2][RBN-CAD-06.3] ·
 [US-11][RBN-CAD-06.4][RBN-CAD-06.6][RBN-CAD-03.3] · [US-12][RBN-CAD-06.5][RBN-CAD-06.7][RBN-CAD-06.8]
 · [US-37][RBN-CAD-06.9] · [US-38][RBN-CAD-13.1][RBN-CAD-13.2]. RNF: RAN-CAD-06 (senhas criptografadas
-e nunca exibidas; login só para conta Ativa; direcionamento ao painel do perfil) e RAN-CAD-13 (cada
+e nunca exibidas; login só para conta Ativa; direcionamento à tela inicial do perfil) e RAN-CAD-13 (cada
 usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por link).
 
 ## Clarifications
@@ -172,6 +172,20 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
   "Campo obrigatório" (tabela "Mensagens a validar com a PO"; constantes já trocadas em
   `mensagens.py` pela spec 002).
 
+### Session 2026-11-10 (correção J1, Julia Cohen)
+
+- Q31: o painel mínimo de `/painel/` (boas-vindas, tipo de conta e papéis) e o item "Início" do menu
+  continuam? Hoje o usuário entra, vê uma tela quase vazia e precisa usar o menu para começar. → A:
+  não. A rota `/painel/`, a view, o template `cadastro/painel.html` e o item "Início" saem. A raiz
+  `/` leva cada tipo de conta à sua primeira tela: Aluno → Turmas (`cadastro:minhas_turmas`),
+  Docente → Turmas (`cadastro:turmas`, para todos os papéis, Q7), Secretaria → Defesas
+  (`defesa:defesas`) e Membro Externo → Minhas bancas (`defesa:minhas_bancas`); visitante → login;
+  conta autenticada sem tipo → 403 com a M-02 (ir ao login, que devolve o usuário logado à raiz,
+  faria um laço). O login (`LOGIN_REDIRECT_URL`, `next` recusado, usuário logado em `/entrar/`), a
+  volta da US-03 A10 e o logo da barra superior passam a usar a raiz. O "painel do aluno" da US-41
+  (`cadastro:painel_aluno`) é outra tela e não muda. Atualizados FR-010, a premissa "Telas
+  iniciais" e `contracts/rotas.md`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários abaixo reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
@@ -235,13 +249,13 @@ acesso, abrir o link recebido e criar a senha; a conta passa a 'Ativa'.
 ### User Story 2 - Fazer login e sair [US-11] (Priority: P1)
 
 Usuário com conta 'Ativa' entra com a credencial (matrícula ou e-mail institucional para o Aluno;
-e-mail para os demais) e a senha, e é levado ao painel do seu perfil. Três senhas incorretas seguidas
+e-mail para os demais) e a senha, e é levado à tela inicial do seu perfil (Q31). Três senhas incorretas seguidas
 bloqueiam a conta por 15 minutos.
 
 **Why this priority**: é a porta de entrada de todas as outras features.
 
 **Independent Test**: com uma conta ativa criada pelo shell, entrar com a credencial e a senha e ver
-o painel do perfil; errar a senha três vezes e confirmar o bloqueio.
+a tela inicial do perfil; errar a senha três vezes e confirmar o bloqueio.
 
 **Acceptance Scenarios** (US-11, cenários 1 a 12, mais a saída):
 
@@ -251,7 +265,7 @@ o painel do perfil; errar a senha três vezes e confirmar o bloqueio.
    e-mail institucional e a senha correta e clica em "Entrar", **Então** o sistema abre a sessão e
    exibe o painel do Aluno.
 3. **Dado que** o docente tem conta ativa, **Quando** informa o e-mail e a senha correta e clica em
-   "Entrar", **Então** o sistema abre a sessão e exibe o painel do Docente.
+   "Entrar", **Então** o sistema abre a sessão e exibe a tela inicial do Docente (Turmas; Q31).
 4. **Dado que** o usuário não tem tentativas incorretas registradas, **Quando** informa a credencial
    correta e uma senha errada, **Então** o sistema exibe "Credencial ou senha inválida" **E**
    registra uma tentativa incorreta.
@@ -269,7 +283,7 @@ o painel do perfil; errar a senha três vezes e confirmar o bloqueio.
    Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso".
 9. **Dado que** a conta do Membro Externo voltou para o Status Ativa depois de uma nova banca (US-06),
    **Quando** ele informa e-mail e a mesma senha de antes, **Então** o sistema abre a sessão e exibe
-   o painel do Membro Externo.
+   a tela inicial do Membro Externo (Minhas bancas; Q31).
 10. **Dado que** o aluno foi matriculado e a conta está com o Status Aguardando Ativação, **Quando**
     informa a matrícula e uma senha e clica em "Entrar", **Então** o sistema exibe "Conta ainda não
     ativada" e o link "Primeiro acesso".
@@ -541,10 +555,13 @@ de ativação funciona chamada de fora das telas desta feature.
   (mensagem PROVISÓRIA M-01) e
   recusar qualquer tentativa durante o prazo, mesmo com a senha correta. A senha correta zera o
   contador. O "N" da M-01 é o número de minutos restantes arredondado para cima, no mínimo 1 (Q16). O controle não cria coluna nem tabela (spec 001, research D2).
-- **FR-010**: Com o login aceito, o sistema DEVE abrir a sessão e levar o usuário ao painel do seu
-  tipo de conta (Aluno, Docente, Secretaria ou Membro Externo). O Docente tem um painel único; os
-  itens de Coordenador de Curso, Professor da Disciplina, Orientador e Coorientador aparecem como
-  itens extras no menu, conforme os papéis que ele tiver (Q7).
+- **FR-010**: Com o login aceito, o sistema DEVE abrir a sessão e levar o usuário à raiz (`/`), que
+  abre a tela inicial do seu tipo de conta: Aluno → Turmas (as turmas em que está matriculado),
+  Docente → Turmas, Secretaria → Defesas e Membro Externo → Minhas bancas (Q31). O Docente tem uma
+  tela inicial única; os itens de Coordenador de Curso, Professor da Disciplina, Orientador e
+  Coorientador aparecem como itens extras no menu, conforme os papéis que ele tiver (Q7). Visitante
+  que abre a raiz vai ao login; conta autenticada sem tipo recebe 403 com a M-02. O logo da barra
+  superior leva à raiz; não há página "painel" nem item "Início" no menu.
 - **FR-011**: O usuário autenticado DEVE poder sair ("Sair" no menu do usuário), encerrando a sessão.
   A sessão também DEVE terminar depois de 60 minutos sem uso e ao fechar o navegador; a próxima página
   interna pede login de novo (Q18).
@@ -737,9 +754,10 @@ mas não bloqueiam as tarefas nem a implementação (Q25). Depois da resposta, c
 - **Mensagens sem texto exato nas US**: estão na seção "Mensagens a validar com a PO" (M-01 a
   M-17), marcadas como PROVISÓRIAS. A implementação usa esses textos até a validação; um texto
   validado diferente entra como correção da spec, com o teste correspondente.
-- **Painéis**: esta feature entrega um painel inicial mínimo por tipo de conta (boas-vindas e menu);
-  o conteúdo de cada painel vem das features dos épicos. O Docente tem um só painel, com os itens de
-  cada papel no menu (Q7).
+- **Telas iniciais**: a tela inicial de cada tipo de conta é uma tela de feature dos épicos (Turmas,
+  Defesas ou Minhas bancas), aberta pela raiz (FR-010, Q31). Até 2026-11-10 esta feature entregava
+  um painel mínimo em `/painel/` (boas-vindas e menu), removido na correção J1. O Docente tem uma só
+  tela inicial, com os itens de cada papel no menu (Q7).
 - **E-mail**: o envio usa um servidor de e-mail configurado no ambiente (segredos no .env); em
   desenvolvimento, as mensagens com os links aparecem no terminal. A falha de envio é registrada; o
   que o usuário vê está em Q13.
