@@ -5,8 +5,8 @@
 **Created**: 2026-10-22
 
 **Status**: Aprovada por Maria Luiza Guimarães em 2026-10-22, depois das conferências do analista de
-requisitos e do /speckit-clarify. Pendências abertas que não bloqueiam o plano: Q-58, Q-63 e
-Q-47 (no plano). A Q-52 foi respondida em 2026-11-10 (Clarifications, Q4).
+requisitos e do /speckit-clarify. Pendências abertas que não bloqueiam o plano: Q-58 e
+Q-47 (no plano). A Q-52 e a Q-63 foram respondidas em 2026-11-10 (Clarifications, Q4 e Q22).
 
 **Input**: User description: "Use o número 002 para esta spec. Gestão de Contas do SIGTCC: US-03, 04,
 05, 06 e 50. Use as seções dessas US em docs/fonte/Historias_de_Usuario_v3_2.md, com regras (RBN),
@@ -167,6 +167,10 @@ Correções aplicadas sem decisão nova (primeira e segunda conferências):
 - Q22 (prioridades): o cabeçalho da US-04 diz Must Have, e a matriz dá Should Have (RBN-CAD-01.3 e
   02.3); vale a matriz, e a correção da US está na Q-61. O cabeçalho da US-50 diz Could Have, mas a
   prorrogação faz parte do RBN-CAD-03.3, Must Have na matriz. → Pendente: a PO decide (índice Q-63).
+  **Resposta (Julia Cohen, 2026-11-10; Q-63, opção A)**: vale a matriz. A US-50 é **Must Have**,
+  como o RBN-CAD-03.3, e é entregue junto com a US-06. O "P3" da User Story 5 indica só a ordem de
+  entrega, não a prioridade MoSCoW; o cabeçalho "Could Have" da US-50 é que precisa de correção no
+  documento de US.
   Recomendação: seguir a matriz e entregar a US-50 junto com a US-06.
 - Q23 (documentos de referência): a cópia em `docs/fonte/` é a US v3.3. O CLAUDE.md e os agentes
   foram corrigidos; a constituição aguarda o Célio Benjamim (índice Q-62). A US-50 cita a
@@ -258,10 +262,10 @@ Pendências de outras pessoas (registradas no índice):
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
-prioridades indicam só a ordem de entrega. Na matriz, US-03, US-05 e US-06 são Must Have, a US-04 é
-Should Have (RBN-CAD-01.3 e 02.3; o cabeçalho da US-04 diz Must Have, correção no índice, Q-61). A
-US-50 é Could Have no seu cabeçalho, mas a prorrogação faz parte do RBN-CAD-03.3, Must Have na
-matriz; a prioridade está em aberto (índice Q-63).
+prioridades (P1, P2, P3) indicam só a ordem de entrega, não a prioridade MoSCoW. Na matriz, US-03,
+US-05, US-06 e US-50 são Must Have, a US-04 é Should Have (RBN-CAD-01.3 e 02.3; o cabeçalho da US-04
+diz Must Have, correção no índice, Q-61). A US-50 é Must Have pelo RBN-CAD-03.3, embora o seu
+cabeçalho diga Could Have (Clarifications, Q22; índice Q-63, respondida).
 
 ### User Story 1 - Cadastrar, alterar e listar docentes e a Secretaria [US-03] (Priority: P1)
 
@@ -663,8 +667,9 @@ O Orientador do TCC cuja banca inclui o Membro Externo, o Professor da Disciplin
 Coordenador de Curso prorroga por mais 7 dias corridos o acesso do membro, para que ele continue
 entrando depois do fim da validade.
 
-**Why this priority**: Could Have no cabeçalho da US-50 (Must Have pelo RBN-CAD-03.3 da matriz;
-em aberto, Q-63); cobre o caso em que o membro precisa de acesso depois do
+**Why this priority**: Must Have pelo RBN-CAD-03.3 da matriz (Clarifications, Q22; Q-63); o P3 é
+só a ordem de entrega, depois das histórias 2 e 4. Cobre o caso em que o membro precisa de acesso
+depois do
 prazo automático (por exemplo, para assinar a avaliação). Depende das histórias 2 e 4.
 
 **Atores e pré-condições** (US-50):
@@ -1213,8 +1218,8 @@ colchetes na tabela).
   Docente e Secretaria e confirmar que ele serve para a troca feita por outra pessoa.
 - **Pendências registradas no índice** (`docs/questoes-a-rever.md`): Q-14 e Q-15 (respondidas por
   este pedido); Q-16, Q-31, Q-44 a Q-51, Q-53 a Q-57 e Q-59 (respondidas em 2026-10-22); Q-52
-  (respondida em 2026-11-10); Q-58 e Q-60 a Q-62 (abertas). Da segunda conferência: Q-64 a Q-66 respondidas, S-03 registrada; aberta: Q-63 (prioridade da
-  US-50, para a PO); ciência das outras features: Q-67 (Defesa) e Q-68
+  (respondida em 2026-11-10); Q-58 e Q-60 a Q-62 (abertas). Da segunda conferência: Q-64 a Q-66 respondidas, S-03 registrada; Q-63 (prioridade da
+  US-50) respondida em 2026-11-10; ciência das outras features: Q-67 (Defesa) e Q-68
   (Vida do TCC).
 - **Dependências**: specs 001, 003 e 004 implementadas. Turmas (spec 004), orientações,
   coorientações, convites e sessões de defesa são lidos nas tabelas da spec 001, mesmo antes de as

@@ -49,7 +49,8 @@ Cada app com itens de menu cria `menu.py` com `ITENS = [ {...}, ... ]`. Cada ite
 `icone` (nome do Material Symbols), `rota` (**nome** da URL, por exemplo `"defesa:agenda"`),
 `perfis` (tupla de tipos de conta e papéis), `ordem` (inteiro) e `secao` opcional (título de grupo no
 menu, como "Gestão"). O cadastro junta os itens de todos os apps, sem depender da ordem de
-carregamento e sem duplicar.
+carregamento e sem duplicar. A spec 002 acrescentou a seção "Cadastros" (Docentes, Secretarias e
+Membros externos) em `cadastro/menu.py` (índice Q-71).
 
 ## 4. Links e e-mail (FR-026) – `sigtcc.apps.cadastro.services`
 
@@ -69,13 +70,29 @@ carregamento e sem duplicar.
 - A inativação (US-04) e a expiração (US-06) só mudam `usu_status`. As sessões caem sozinhas na
   próxima página, e os links pendentes passam a mostrar M-15 ou M-16 (spec Q26).
 
+**Acréscimos da spec 002** (índice Q-71; conferidos no código em 2026-11-10):
+
+| Função | Acréscimo |
+|---|---|
+| `autenticar(credencial, senha)` | com a validade vencida e a conta 'Ativa', chama `expirar_se_vencida` dentro de `try/except` (FR-040 da spec 002); a falha vai para o log e o resultado continua `EXPIRADA` |
+| `expirar_se_vencida(usuario) -> bool` | nova: trava a conta, relê status e validade e grava 'Expirada'; registra `CONTA_EXPIRADA` com `AUTOR_SISTEMA`; usada pelo login e pelo comando `expirar_membros_externos` |
+| `pedir_troca_email(conta, novo, autor=None)` | parâmetro `autor`: quem pediu, quando não é a própria conta (troca pelo gestor, FR-008 da spec 002, em `services_contas`) |
+| `travar_email(email)` | nova: trava consultiva por e-mail normalizado até o fim da transação; usada no cadastro e na troca de e-mail da spec 002 e em `confirmar_troca_email` |
+| `confirmar_troca_email(token)` | trava o novo e-mail antes de conferir a unicidade e grava `usu_link_gerado_em`, invalidando os links de ativação e de redefinição anteriores |
+
 ## 5. Ações de conta, notificações e log – `sigtcc.apps.cadastro.services`
 
 | Função | Uso |
 |---|---|
 | `resetar_primeiro_acesso(professor, aluno) -> None` | `professor`: `Usuarios` com `Docentes`; `aluno`: instância de `Alunos`. Confere `pode_resetar_primeiro_acesso` de novo, numa transação com a conta travada; levanta `PermissionDenied` se faltar permissão. Mensagens: `mensagens.M12_CONFIRMAR_RESET` e `mensagens.M13_RESET_CONCLUIDO`; template de confirmação `cadastro/confirmar_reset.html` |
 | `item_indisponivel(request) -> HttpResponseRedirect` | grava "Este item não está mais disponível" (`mensagens.ITEM_INDISPONIVEL`) e volta à central; para a tela de destino de uma notificação cujo item foi cancelado (Defesa, Q-12) |
-| `registrar_evento(evento, conta, autor=None, detalhe="") -> None` | `evento`: valor de `EventoAcesso` (conjunto fechado); `conta`, `autor`: `Usuarios` ou `None`; `detalhe`: texto montado pelo sistema, nunca digitado pelo usuário; sem senha, token, link nem e-mail completo |
+| `registrar_evento(evento, conta, autor=None, detalhe="") -> None` | `evento`: valor de `EventoAcesso` (conjunto fechado); `conta`, `autor`: `Usuarios` ou `None`, e `autor` também `AUTOR_SISTEMA` (grava "sistema"; spec 002); `detalhe`: texto montado pelo sistema, nunca digitado pelo usuário; sem senha, token, link nem e-mail completo |
+
+**Acréscimos da spec 002** (índice Q-71): `EventoAcesso` ganhou `CONTA_CRIADA`, `CONTA_ALTERADA`,
+`CONTA_INATIVADA`, `CONTA_REATIVADA`, `ACESSO_PRORROGADO`, `CONTA_EXPIRADA`, `VALIDADE_RECALCULADA`
+e `SENHA_GESTOR_INCORRETA`. A M-02 e a M-14 usam os textos das US: `M02_ACESSO_NEGADO` = "Você não
+tem permissão para esta ação" e `M14_CAMPO_OBRIGATORIO` = "Campo obrigatório" (spec Q30; índice
+Q-50). Os testes da spec 003 que comparam essas constantes continuam valendo.
 
 **Notificações (para quem as cria)**: `not_link_tela` é um caminho relativo começando com `/`, sem
 host, com query string opcional (por exemplo `/defesa/convites/12/`). Endereços externos não são

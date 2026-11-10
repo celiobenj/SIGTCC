@@ -164,7 +164,9 @@ a matriz de 17/10 e o modelo lógico.
 - Q5: Onde fica o "Editar" dos dados do aluno (RBN-CAD-05.3; US-08 C: "na linha do aluno"), com a
   lista somente leitura e o painel da RBN-CAD-08.9 sem "Editar"? → A: **No painel**, junto com as
   ações da RBN-CAD-08.9. A PO deve incluir a ação na RBN-CAD-08.9 e na US-41 e ajustar a US-08 C
-  (índice Q-98).
+  (índice Q-98). **Confirmado (Julia Cohen, 2026-11-10; Q-98, opção A)**: "Editar" fica no painel
+  do aluno, não na linha do aluno; a spec 004 foi ajustada (cenário 10 da User Story 2, FR-019).
+  Falta incluir a ação na RBN-CAD-08.9 e na US-41 e corrigir a US-08 C nos documentos de origem.
 - Q6 (índice Q-91): Na transferência para TCC 2, vale a linha nova em `TCCs` (código da spec 004) ou
   a mesma linha (dicionário 3.5.1)? → A: **Linha nova**. Consequências nesta spec (FR-051): o
   registro de publicação vai para o TCC 2 com o aproveitamento já decidido (RBN-CAD-08.6 e 12.3); a
@@ -237,7 +239,10 @@ soluções só de implementação ficaram no plano (research R1 a R21), por dele
   continuar mostrando "cancelado pelo aluno" quando o aluno cancelou antes do arquivamento (US-18 E3
   e US-36 E3), o arquivamento é reconhecido pela notificação MO-26 que ele grava com a mesma data e
   hora e com o link da solicitação, sem coluna nova (FR-050). A regra nova na US-07 foi levada à
-  PO para ciência (índice Q-117).
+  PO para ciência (índice Q-117). **Confirmado (Julia Cohen, 2026-11-10; Q-117, opção A)**:
+  arquivar a turma cancela os pedidos e convites pendentes e avisa cada docente (MO-26); a regra
+  foi registrada também no FR-007 da spec 004. Falta ajustar a US-07 C e a RBN-CAD-04.5 nos
+  documentos de origem.
 - Q18: O FR-052 mandava as notificações do encerramento da participação e da transferência
   levarem à tela Orientações com a MO-12 e a MO-17, mas a spec 004 já avisa os docentes com a MT-31
   (encerramento) e a MT-22 (transferência). → A: **Manter as notificações da spec 004** como estão;
@@ -1100,7 +1105,7 @@ a 005. Todos os textos entre aspas nos FR acima são cópia exata das US.
 | MO-23 | Seção Defesa do painel do aluno, antes do módulo de Defesa | "Nenhuma sessão de defesa registrada." | Clarifications D12 | A validar |
 | MO-24 | Seções vazias da tela Orientações | "Nenhum pedido de orientação pendente." / "Nenhum convite de coorientação pendente." / "Nenhum orientando." | Clarifications Q11; FR-040 | A validar |
 | MO-25 | Aviso ao Aluno: coorientador externo reaproveitado pelo e-mail | "Este coorientador já estava cadastrado: foram mantidos o nome e a instituição registrados." | Clarifications Q13; FR-028 | A validar |
-| MO-26 | Link e notificação: pedido ou convite cancelado com a turma arquivada | Link: "Este pedido foi cancelado porque a turma foi arquivada." / "Este convite foi cancelado porque a turma foi arquivada." / Notificação ao docente: "O {pedido de orientação ou convite de coorientação} de {nome} foi cancelado porque a turma {identificador} foi arquivada." | Clarifications Q17; FR-050, FR-053 | A validar |
+| MO-26 | Link e notificação: pedido ou convite cancelado com a turma arquivada | Link: "Este pedido foi cancelado porque a turma foi arquivada." / "Este convite foi cancelado porque a turma foi arquivada." / Notificação ao docente: "O {pedido de orientação ou convite de coorientação} de {nome} foi cancelado porque a turma {identificador} foi arquivada." | Clarifications Q17; FR-050, FR-053; spec 004, FR-007 (Q-117: arquivar cancela os pedidos e convites pendentes) | A validar |
 | MO-27 | Notificação e e-mail ao Professor da Disciplina: pedido recusado (assunto: "SIGTCC: orientação recusada") | "{docente} recusou o pedido de orientação de {nome} na turma {identificador}." | US-18 D; RBN-CAD-10.2; Clarifications Q9 (revisão de 2026-11-10; Q-99) | A validar |
 
 ## Success Criteria *(mandatory)*
