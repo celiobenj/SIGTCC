@@ -155,6 +155,14 @@ como a Q-82.
 - O diagrama de sequência da matrícula é o 35 MatricularAluno, e o da exclusão, encerramento e transferência é o 36 RetirarAlunoDaTurma (`docs/diagramas/Diagramas_Sequencia_PlantUML_v2.md`).
 
 
+### Session 2026-11-10 (respostas de Julia Cohen ao índice de questões)
+
+- Q-98 (opção A): onde fica o "Editar" dos dados do aluno? A US-08 C diz "na linha do aluno", mas
+  a lista da aba "Alunos" passou a ser somente leitura (RBN-CAD-10.5; spec 006). → A: **no painel
+  do aluno** (US-41; spec 006, Clarifications Q5), junto com "Transferir", "Excluir da turma" e
+  "Encerrar participação". A regra do FR-019 não muda; muda só o lugar do botão. Atualizados o
+  cenário 10 da User Story 2, o FR-019 e a premissa "Painel do aluno".
+
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
@@ -257,7 +265,8 @@ um arquivo com linhas válidas e inválidas; conferir as contas criadas, os vín
    códigos não foram reconhecidos.
 9. **Dado que** o aluno 2026000123 já está na turma, **Quando** o Professor tenta matriculá-lo de
    novo, **Então** o sistema ignora o registro e informa "Aluno já matriculado nesta turma".
-10. **Dado que** o aluno está matriculado na turma, **Quando** o Professor clica em "Editar", corrige
+10. **Dado que** o aluno está matriculado na turma, **Quando** o Professor clica em "Editar" no
+    painel do aluno (US-41; Q-98), corrige
     o Nome Completo e salva, **Então** o sistema grava o novo nome **E** a Matrícula continua sem
     opção de edição.
 11. **Dado que** a turma foi arquivada, **Quando** o Professor abre a turma, **Então** a opção
@@ -480,7 +489,8 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   quantidade de códigos de curso não reconhecidos (MT-15) (US-08, passo 9).
 - **FR-019**: O Professor da Disciplina DEVE poder editar o Nome Completo e o Curso do aluno da
   turma, com as mesmas regras de FR-011; a Matrícula aparece só para leitura (RBN-CAD-05.3).
-  Sucesso: MT-14 (PROVISÓRIA).
+  Sucesso: MT-14 (PROVISÓRIA). O botão "Editar" fica no painel do aluno (US-41), não na linha da
+  lista de alunos (spec 006, Clarifications Q5; índice Q-98).
 
 **Transferência [US-08][RBN-CAD-05.6]**
 
@@ -647,8 +657,9 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
   esse evento, o registro com autor, data e hora vai para o arquivo de log de eventos da spec 003
   (FR-029 daquela spec), sem tabela nova.
 - **Painel do aluno (US-41)**: as ações "Excluir da turma", "Encerrar participação", "Editar" e
-  "Transferir" ficam na lista de alunos da turma nesta entrega; a US-41 (Leandra Matos) pode levá-las
-  ao painel do aluno, como o reset do primeiro acesso.
+  "Transferir" ficavam na lista de alunos da turma nesta entrega; a spec 006 (US-41) levou-as ao
+  painel do aluno, como o reset do primeiro acesso, e a lista passou a ser somente leitura
+  (RBN-CAD-10.5; índice Q-98, respondida em 2026-11-10).
 - **Restrições nas outras features**: os botões de editar TCC (US-13), indicar ou trocar orientador
   (US-17) e enviar entregas (US-16), e os bloqueios de entregas, atas, defesas e lembretes em turma
   arquivada, são das features donas; esta entrega oferece as verificações reutilizáveis (FR-008 e

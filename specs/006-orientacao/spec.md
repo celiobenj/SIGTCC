@@ -164,7 +164,9 @@ a matriz de 17/10 e o modelo lógico.
 - Q5: Onde fica o "Editar" dos dados do aluno (RBN-CAD-05.3; US-08 C: "na linha do aluno"), com a
   lista somente leitura e o painel da RBN-CAD-08.9 sem "Editar"? → A: **No painel**, junto com as
   ações da RBN-CAD-08.9. A PO deve incluir a ação na RBN-CAD-08.9 e na US-41 e ajustar a US-08 C
-  (índice Q-98).
+  (índice Q-98). **Confirmado (Julia Cohen, 2026-11-10; Q-98, opção A)**: "Editar" fica no painel
+  do aluno, não na linha do aluno; a spec 004 foi ajustada (cenário 10 da User Story 2, FR-019).
+  Falta incluir a ação na RBN-CAD-08.9 e na US-41 e corrigir a US-08 C nos documentos de origem.
 - Q6 (índice Q-91): Na transferência para TCC 2, vale a linha nova em `TCCs` (código da spec 004) ou
   a mesma linha (dicionário 3.5.1)? → A: **Linha nova**. Consequências nesta spec (FR-051): o
   registro de publicação vai para o TCC 2 com o aproveitamento já decidido (RBN-CAD-08.6 e 12.3); a
