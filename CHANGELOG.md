@@ -92,7 +92,11 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 - Ata Final e Folha de Aprovação no padrão institucional da UEA/EST (logos, cabeçalho de três
   linhas, "1. Dados de Identificação", tabela de notas e assinaturas, conforme os modelos em
   `docs/`). O Aluno baixa só a Folha de Aprovação: a Ata, que traz as notas individuais, dá 403
-  ao Aluno e some da aba Meu TCC (`pode_baixar_ata` e `pode_baixar_folha`; spec 009).
+  ao Aluno e some da aba Meu TCC (`pode_baixar_ata` e `pode_baixar_folha`; spec 009). O cargo do
+  Coordenador e a titulação saem na forma neutra, "Coordenador(a) do Curso" e "Doutor(a)", porque
+  o cadastro não guarda gênero (Q-155).
+- Todas as questões em aberto de `docs/questoes-a-rever.md` respondidas em 10/11/2026; o
+  comentário temporário de revisão saiu da constituição (Q-11), sem mudar a versão.
 - O aviso do resultado da defesa vai só à Secretaria do curso: saem os avisos ao Aluno (MA-06) e à
   banca (MA-07) e a divergência DV-01 (Q-131 B; spec 008).
 - Quem recebeu uma notificação de sessão de defesa e saiu da banca vê "Este item não está mais
