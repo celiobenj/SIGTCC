@@ -351,7 +351,7 @@ a.bloco:hover { border-color: var(--azul-btn); box-shadow: var(--sombra); }
 .ct-banner { position: relative; height: 100px; padding: 16px 16px 12px; color: #fff; background-repeat: no-repeat; background-position: right center; }
 .ct-banner h3 { margin: 0; font-family: var(--fonte-tit); font-size: 22px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85%; }
 .card-turma:hover .ct-banner h3, .card-turma:focus-visible .ct-banner h3 { text-decoration: underline; }
-.ct-banner p { margin: 2px 0 0; font-size: 14px; opacity: .95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+.ct-banner p { margin: 2px 0 0; font-size: 14px; opacity: .95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-banner .prof { position: absolute; bottom: 10px; left: 16px; font-size: 13px; max-width: calc(100% - 120px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-avatar { position: absolute; right: 16px; bottom: -36px; border: 0; }
 .ct-body { flex: 1; padding: 16px; padding-top: 44px; font-size: 13px; color: var(--texto2); overflow: hidden; }

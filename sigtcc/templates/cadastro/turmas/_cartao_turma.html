@@ -4,14 +4,15 @@
   do curso, Descrição e Identificador, período e curso, nome e avatar do Professor da Disciplina;
   no corpo, dia e horário, local e código da disciplina; no rodapé, a quantidade de alunos
   matriculados (turma.qtd_alunos, contada na mesma consulta da lista) e a etiqueta "Arquivada".
+  Título e subtítulo cortados com reticências, como no protótipo, levam o texto inteiro no title.
   O cartão inteiro é o link recebido em "link": a tela da turma para o Professor e a Secretaria,
   "Meu TCC" para o Aluno.
   [US-07][US-13][RBN-CAD-04.5][FR-010][FR-031]
 {% endcomment %}
 <a class="card-turma" href="{{ link }}">
   <div class="ct-banner" style="{{ turma.tur_cur.cur_nome|banner_turma }}">
-    <h3>{{ turma.tur_descricao }} · {{ turma.tur_identificador }}</h3>
-    <p>{{ turma.tur_ano }}/{{ turma.tur_semestre }} · {{ turma.tur_cur.cur_nome }}</p>
+    <h3 title="{{ turma.tur_descricao }} · {{ turma.tur_identificador }}">{{ turma.tur_descricao }} · {{ turma.tur_identificador }}</h3>
+    <p title="{{ turma.tur_ano }}/{{ turma.tur_semestre }} · {{ turma.tur_cur.cur_nome }}">{{ turma.tur_ano }}/{{ turma.tur_semestre }} · {{ turma.tur_cur.cur_nome }}</p>
     <span class="prof">{{ turma.tur_doc.doc.usu_nome }}</span>
     <span class="ct-avatar"><span class="avatar lg" style="background:{{ turma.tur_doc.doc.usu_nome|cor_avatar }}" aria-hidden="true">{{ turma.tur_doc.doc.usu_nome|slice:":1"|upper }}</span></span>
   </div>
