@@ -310,24 +310,27 @@ class TesteLiberacaoTcc1(BaseLiberacao):
         self.recarregar()
         self.assertEqual(self.sessao.def_nota_final, D("6.0"))
 
-    def test_avisos_ao_aluno_banca_e_secretaria_sem_a_nota(self):
+    def test_so_a_secretaria_recebe_o_aviso_sem_a_nota(self):
+        """Q-131 B (10/11/2026): o Aluno e a banca não recebem aviso do resultado (MA-06 e MA-07
+        removidas); só a Secretaria (MA-08). [US-27][RBN-DEF-06.4][FR-030]
+        """
         self.enviar_todos(D("7.3"), D("7.3"), D("7.3"))
         with self.captureOnCommitCallbacks(execute=True):
             self.confirmar("7.3", Parecer.APROVADO_PARA_TCC_2)
         aluno = self.cenario["aluno"]
-        self.assertEqual(
-            Notificacoes.objects.get(not_usu=aluno).not_mensagem,
-            "O resultado da sua defesa foi liberado. Consulte a nota final e o parecer na aba "
-            "Meu TCC.",
-        )
+        self.assertFalse(Notificacoes.objects.filter(not_usu=aluno).exists())
         for membro in self.membros:
-            self.assertTrue(
+            self.assertFalse(
                 Notificacoes.objects.filter(
                     not_usu=membro, not_mensagem__startswith="O resultado da defesa de"
                 ).exists()
             )
         aviso = Notificacoes.objects.get(not_usu=self.secretaria)
         self.assertIn("encerrada com parecer Aprovado para TCC 2", aviso.not_mensagem)
+        para_secretaria = [e for e in mail.outbox if self.secretaria.usu_email in e.to]
+        self.assertEqual([e.subject for e in para_secretaria], ["SIGTCC: resultado da defesa"])
+        para_aluno = [e for e in mail.outbox if aluno.usu_email in e.to]
+        self.assertFalse([e for e in para_aluno if e.subject == "SIGTCC: resultado da defesa"])
         assuntos = {email.subject for email in mail.outbox}
         # Spec 009 (IC-16): a liberação também envia a declaração de participação (MX-04).
         self.assertEqual(

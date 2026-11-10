@@ -120,11 +120,9 @@ MA05_CONFIRMAR_LIBERACAO = (
     "Liberar o resultado com nota final {nota} e parecer {parecer}? Depois disso, as notas não "
     "podem mais ser alteradas."
 )
-MA06_RESULTADO_ALUNO = (
-    "O resultado da sua defesa foi liberado. Consulte a nota final e o parecer na aba Meu TCC."
-)
-MA06_ASSUNTO = "SIGTCC: resultado da defesa"
-MA07_RESULTADO_BANCA = "O resultado da defesa de {aluno} foi liberado. TCC: {titulo}."
+# MA-06 e MA-07 (avisos ao Aluno e à banca) foram removidas em 10/11/2026 (Q-131 B): só a
+# Secretaria recebe o aviso do resultado.
+MA08_ASSUNTO = "SIGTCC: resultado da defesa"
 MA08_RESULTADO_SECRETARIA = "Defesa de {aluno} encerrada com parecer {parecer}. TCC: {titulo}."
 MA09_RASCUNHO_SALVO = "Rascunho salvo"
 MA10_AVALIACAO_ENVIADA = "Avaliação enviada com sucesso"

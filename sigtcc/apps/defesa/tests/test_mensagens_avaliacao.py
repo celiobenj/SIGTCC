@@ -29,6 +29,10 @@ TEXTOS_DAS_US = (
 )
 
 
+# Mensagens removidas pela decisão Q-131 B (10/11/2026): avisos ao Aluno (MA-06) e à banca (MA-07).
+MA_REMOVIDAS = (6, 7)
+
+
 def _linhas_ma():
     """{"MA-01": linha inteira da tabela, ...} da spec 008."""
     linhas = {}
@@ -53,16 +57,28 @@ class MensagensAvaliacaoTest(SimpleTestCase):
 
     def test_cada_ma_tem_constante(self):
         for numero in range(1, 15):
+            if numero in MA_REMOVIDAS:
+                continue
             with self.subTest(mensagem=f"MA-{numero:02d}"):
                 self.assertTrue([n for n in dir(mensagens) if n.startswith(f"MA{numero:02d}_")])
+
+    def test_ma06_e_ma07_removidas(self):
+        """Q-131 B (10/11/2026): só a Secretaria recebe o aviso do resultado; a tabela da spec
+        mantém a numeração, com as duas linhas marcadas como removidas. [SC-007][US-27]
+        """
+        linhas = _linhas_ma()
+        for numero in MA_REMOVIDAS:
+            with self.subTest(mensagem=f"MA-{numero:02d}"):
+                self.assertIn("Removida", linhas[f"MA-{numero:02d}"])
+                self.assertFalse([n for n in dir(mensagens) if n.startswith(f"MA{numero:02d}_")])
 
     def test_constantes_ma_iguais_a_tabela_da_spec(self):
         linhas = _linhas_ma()
         for nome in sorted(n for n in dir(mensagens) if re.match(r"MA\d{2}_", n)):
             with self.subTest(constante=nome):
                 texto = getattr(mensagens, nome)
-                if nome == "MA06_ASSUNTO":
-                    # O assunto do e-mail está na coluna "Uso" da MA-06.
-                    self.assertIn(f'"{texto}"', linhas["MA-06"])
+                if nome == "MA08_ASSUNTO":
+                    # O assunto do e-mail está na coluna "Uso" da MA-08.
+                    self.assertIn(f'"{texto}"', linhas["MA-08"])
                     continue
                 self.assertIn(f'"{texto}"', linhas[f"MA-{nome[2:4]}"])
