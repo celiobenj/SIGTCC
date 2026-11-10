@@ -167,6 +167,10 @@ como a Q-82.
   fica também nesta spec: ao arquivar, os pendentes dos TCCs da turma são cancelados na mesma
   gravação e cada docente recebe a MO-26 da spec 006. Pedido ou convite pendente não é vínculo,
   então continua valendo "com todos os vínculos preservados" (US-07 C). Atualizado o FR-007.
+- Q-39 (opção A; confirmação de 09/11/2026): o aluno 'Aprovado para TCC 2' matriculado numa turma
+  de TCC 1 é recusado? → A: **sim**, com a MT-28 ("O aluno foi aprovado em TCC 1. Matricule-o numa
+  turma de TCC 2."), que deixa de ser PROVISÓRIA. Atualizados o caso de borda, o FR-013 e a tabela
+  MT.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -365,8 +369,8 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
 - **Aluno com TCC ativo noutra turma ou já aprovado ou concluído** (Q7): a matrícula é recusada (MT-26
   ou MT-27); para mudar de turma no período, usa-se a Transferência.
 - **Aluno 'Aprovado para TCC 2' matriculado em turma de TCC 1**: caso não coberto pela US-08 nem pelo
-  diagrama; proposta do planejamento: recusar com MT-28 (PROVISÓRIA), a confirmar pela responsável
-  (índice Q-39).
+  diagrama; a matrícula é recusada com a MT-28, como propôs o planejamento (confirmação de
+  09/11/2026; índice Q-39).
 - **Curso do aluno diferente do curso da turma** (RBN-CAD-05.7): o aluno é matriculado e aparece um
   alerta de divergência; relatórios, filtros e permissões usam sempre o curso da turma.
 - **Arquivo com cabeçalhos em outra ordem**: aceito, desde que os três cabeçalhos estejam presentes
@@ -468,8 +472,9 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   'Desistente' ou 'Jubilado', o aluno ganha um novo TCC 'Sem Proposta' na nova turma (RBN-CAD-05.5).
   Se o aluno tiver TCC 'Sem Proposta', 'Em Andamento' ou 'Apto para Defesa' noutra turma não
   arquivada, a matrícula é recusada com MT-26; se algum TCC do aluno estiver 'Aprovado', 'Aprovado
-  com Correções' ou 'Concluído', é recusada com MT-27 (Clarifications, Q7). Na importação, a recusa é
-  por linha, com o motivo na prévia e no resumo.
+  com Correções' ou 'Concluído', é recusada com MT-27 (Clarifications, Q7); se o Status do último TCC
+  for 'Aprovado para TCC 2' e a turma for de TCC 1, é recusada com MT-28 (confirmação de 09/11/2026;
+  índice Q-39). Na importação, a recusa é por linha, com o motivo na prévia e no resumo.
 - **FR-014**: Aluno já matriculado nesta turma DEVE ser ignorado com "Aluno já matriculado nesta
   turma" (uma mesma matrícula não pode ser vinculada duas vezes à mesma turma, RAN-CAD-05).
 - **FR-015**: O curso do aluno DEVE ser reconhecido pelo código de curso da UEA informado no campo
@@ -644,7 +649,7 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
 | MT-25 | Ação em turma arquivada pelo endereço direto | "Esta turma está arquivada e só pode ser consultada." | US-07 E4; RBN-CAD-04.5 | A validar |
 | MT-26 | Aluno com TCC em andamento noutra turma | "O aluno já tem TCC em andamento na turma IDENTIFICADOR. Use Transferir." | Clarifications, Q7; RBN-CAD-05.5 e 05.6 | A validar |
 | MT-27 | Aluno com TCC aprovado ou concluído | "O TCC deste aluno já foi aprovado ou concluído." | Clarifications, Q7 | A validar |
-| MT-28 | Aluno 'Aprovado para TCC 2' matriculado em turma de TCC 1 | "O aluno foi aprovado em TCC 1. Matricule-o numa turma de TCC 2." | Planejamento (research B6); índice Q-39 | A validar (comportamento a confirmar) |
+| MT-28 | Aluno 'Aprovado para TCC 2' matriculado em turma de TCC 1 | "O aluno foi aprovado em TCC 1. Matricule-o numa turma de TCC 2." | Planejamento (research B6); índice Q-39 | Confirmada em 09/11/2026 (comportamento e texto; Q-39) |
 | MT-29 | Aluno matriculado com a conta 'Inativa' ou 'Expirada' | "A conta deste aluno está STATUS: ele não consegue entrar até a conta ser reativada pela Gestão de Contas." | Clarifications, Q16 | A validar |
 | MT-30 | Encerramento com sessão de defesa ativa | "Não é possível encerrar a participação: há sessão de defesa ativa." | Clarifications, Q14; E4 da US-08 | A validar |
 | MT-31 | Notificação ao docente de pedido ou convite cancelado pelo encerramento | "O pedido de TIPO para o TCC de NOME foi cancelado porque a participação do aluno foi encerrada." | Clarifications, Q19 | A validar |
