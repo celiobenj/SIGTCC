@@ -6,14 +6,8 @@ ordem e secao opcional (título de grupo no menu).
 [FR-022][FR-025][FR-010][Q7]
 """
 
+# Não há item "Início": a raiz e o logo levam à primeira tela do perfil (spec 003, FR-010).
 ITENS = [
-    {
-        "rotulo": "Início",
-        "icone": "home",
-        "rota": "cadastro:painel",
-        "perfis": ("aluno", "docente", "secretaria", "membro_externo"),
-        "ordem": 0,
-    },
     # Spec 005: item "Turmas" do Aluno, com as turmas em que está matriculado; não dá acesso à
     # tela da turma da spec 004 (FR-010 da spec 004). [US-13][US-15][FR-031][Q-89]
     {

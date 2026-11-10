@@ -88,13 +88,15 @@ class BaseComumTest(TesteAcesso):
         criar_notificacao(docente)
         criar_notificacao(docente, lida=True)
         self.client.force_login(docente)
-        resposta = self.client.get(reverse("cadastro:painel"))
+        resposta = self.client.get(reverse("cadastro:perfil"))
         self.assertContains(resposta, 'class="topbar"')
         self.assertContains(resposta, '<span class="nome">SIGTCC</span>', html=False)
         self.assertContains(resposta, '<span class="badge" data-contador>2</span>', html=False)
         self.assertContains(resposta, ">Sair</button>")
         self.assertContains(resposta, 'id="menu-lateral"')
-        self.assertContains(resposta, "Início")
+        # Sem o item "Início" (spec 003, Q31): o logo leva à raiz.
+        self.assertNotContains(resposta, "Início")
+        self.assertContains(resposta, 'class="logo" href="/"', html=False)
         self.assertContains(resposta, "css/sigtcc.css")
         self.assertContains(resposta, "family=Figtree")
         self.assertContains(resposta, "Material+Symbols+Outlined")
@@ -172,16 +174,16 @@ class BaseComumTest(TesteAcesso):
         """FR-025: o menu mostra só os itens permitidos; seção agrupa os itens."""
         itens = [
             {
-                "rotulo": "Início",
+                "rotulo": "Comum",
                 "icone": "home",
-                "rota": "cadastro:painel",
+                "rota": "cadastro:perfil",
                 "perfis": ("aluno", "docente"),
                 "ordem": 0,
             },
             {
                 "rotulo": "Coordenação",
                 "icone": "tune",
-                "rota": "cadastro:painel",
+                "rota": "cadastro:perfil",
                 "perfis": ("coordenador",),
                 "ordem": 1,
                 "secao": "Gestão",
@@ -196,14 +198,14 @@ class BaseComumTest(TesteAcesso):
         ]
         with mock.patch.object(contexto, "_itens_de_todos_os_apps", return_value=itens):
             self.client.force_login(criar_coordenador())
-            resposta = self.client.get(reverse("cadastro:painel"))
+            resposta = self.client.get(reverse("cadastro:perfil"))
             self.assertContains(resposta, "Coordenação")
             self.assertContains(resposta, '<div class="dr-sec">Gestão</div>', html=False)
             self.assertNotContains(resposta, "Inexistente")
             aluno = criar_aluno_com_turma(status=StatusConta.ATIVA, senha=SENHA)
             self.client.force_login(aluno.alu)
-            resposta = self.client.get(reverse("cadastro:painel"))
-            self.assertContains(resposta, "Início")
+            resposta = self.client.get(reverse("cadastro:perfil"))
+            self.assertContains(resposta, "Comum")
             self.assertNotContains(resposta, "Coordenação")
 
     def test_permission_denied_em_servico_usa_handler403(self):
@@ -226,4 +228,4 @@ class BaseComumTest(TesteAcesso):
         docente = criar_docente_ativo()
         self.client.force_login(docente)
         Usuarios.objects.filter(pk=docente.pk).update(usu_status=StatusConta.INATIVA)
-        self.assertRedirects(self.client.get(reverse("cadastro:painel")), "/entrar/?next=/painel/")
+        self.assertRedirects(self.client.get(reverse("cadastro:perfil")), "/entrar/?next=/perfil/")

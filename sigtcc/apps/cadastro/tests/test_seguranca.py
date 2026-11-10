@@ -105,10 +105,10 @@ class SessaoECookiesTest(TesteAcesso):
         outro = Client()
         outro.post(reverse("cadastro:entrar"), {"credencial": "prof@uea.edu.br", "senha": SENHA})
         with avancar_relogio(minutos=59):
-            self.assertEqual(self.client.get(reverse("cadastro:painel")).status_code, 200)
+            self.assertEqual(self.client.get(reverse("cadastro:perfil")).status_code, 200)
         with avancar_relogio(minutos=61):
-            resposta = outro.get(reverse("cadastro:painel"))
-        self.assertRedirects(resposta, "/entrar/?next=/painel/", fetch_redirect_response=False)
+            resposta = outro.get(reverse("cadastro:perfil"))
+        self.assertRedirects(resposta, "/entrar/?next=/perfil/", fetch_redirect_response=False)
 
     def test_senha_nunca_aparece(self):
         """SC-008: a senha não volta no HTML e fica só como hash."""
@@ -142,7 +142,6 @@ class TodasAsPaginasTest(TesteAcesso):
     def internas(self):
         """(método, caminho) de cada rota interna de contracts/rotas.md."""
         return (
-            ("get", reverse("cadastro:painel")),
             ("get", reverse("cadastro:perfil")),
             ("get", reverse("cadastro:assinatura")),
             ("get", reverse("cadastro:alterar_senha")),

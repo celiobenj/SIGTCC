@@ -417,6 +417,10 @@ problemas da reconferência aparecem como [N1] a [N12].
   (FR-042). Como `contexto.menu` ordena as seções pelo nome, "Gestão" aparece depois de
   "Cadastros"; no protótipo, "Cadastros" fica dentro de "Gestão". A diferença é só de posição e
   fica aceita, sem mexer em `contexto.py` [A32].
+  - **Correção J1 (2026-11-10, spec 003 Q31)**: o item "Início" (ordem 0, rota `cadastro:painel`)
+    saiu do menu e a rota `/painel/` foi removida; "Turmas" passa a ser o primeiro item do Docente
+    e também a sua tela inicial (a raiz `/` leva a `cadastro:turmas`). O "painel do aluno" desta
+    spec (`cadastro:painel_aluno`, US-41) não muda.
 - **Justificativa**: FR-040 e FR-041; o processador `contexto.menu` já esconde o item cuja rota
   ainda não existe.
 
@@ -430,6 +434,9 @@ problemas da reconferência aparecem como [N1] a [N12].
   - `test_us12_senha.py`: o reset passa pelo painel; a tela provisória redireciona;
   - `test_seguranca.py:152`;
   - `test_base_comum.py`: itens novos do menu;
+  - Correção J1 (2026-11-10, spec 003 Q31): os testes de navegação desta spec
+    (`test_navegacao_orientacao.py`, `test_navegacao_tcc.py`, `test_us20_aproveitamento.py`), que
+    abriam o menu em `cadastro:painel`, passam a abri-lo em `cadastro:perfil`, que tem o mesmo menu;
   - `test_us07_*` (arquivamento): continua passando; o cancelamento dos pendentes ganha testes na
     006 (IC-12).
 

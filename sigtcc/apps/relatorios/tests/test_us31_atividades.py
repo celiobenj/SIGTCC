@@ -188,7 +188,7 @@ class TesteCenariosDaUS(TesteAtividades):
         """1.11: o item Relatórios não aparece."""
         tcc = aluno_com_status(self.turma1, status_conta=StatusConta.ATIVA)
         self.client.force_login(tcc.tcc_alu.alu)
-        resposta = self.client.get(reverse("cadastro:painel"))
+        resposta = self.client.get(reverse("cadastro:perfil"))
         rotulos = [item["rotulo"] for item in resposta.context["menu_itens"]]
         self.assertNotIn("Relatórios", rotulos)
 
