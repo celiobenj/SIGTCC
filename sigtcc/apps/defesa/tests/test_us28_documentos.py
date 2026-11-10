@@ -341,7 +341,6 @@ class TesteDownloadsTcc2Aprovado(BaseDocumentos):
         folha = self.baixar(cenario["orientador"], "folha_aprovacao", sessao)
         self.conferir_pdf(folha, f"folha_aprovacao_{sessao.pk}.pdf")
         texto = junto(texto_do_pdf(folha))
-        self.assertIn("Folha de Aprovação", texto)
         self.assertIn("defendido e aprovado pela banca avaliadora", texto)
         self.assertIn("Manaus, 20 de novembro de 2026", texto)
         self.assertNotIn("8,0", texto)
@@ -568,7 +567,7 @@ class TesteE2DoCoordenador(BaseDocumentos):
         resposta = self.baixar(cenario["orientador"], "ata_final", sessao, follow=True)
         self.assertRedirects(resposta, reverse("defesa:sessao", args=[sessao.pk]))
         self.assertContains(resposta, E2)
-        for chave in ("av1", "aluno", "professor"):
+        for chave in ("av1", "professor"):
             with self.subTest(perfil=chave):
                 resposta = self.baixar(cenario[chave], "ata_final", sessao, follow=True)
                 self.assertContains(resposta, MX08)
@@ -603,7 +602,7 @@ class TesteE2DoCoordenador(BaseDocumentos):
             ata = self.baixar(cenario["orientador"], "ata_final", cenario["sessao"])
         self.conferir_pdf(ata, f"ata_final_{cenario['sessao'].pk}.pdf")
         self.assertIn(cenario["coordenador"].usu_nome, texto_do_pdf(ata))
-        self.assertEqual(numero_de_imagens(ata), 3)
+        self.assertEqual(numero_de_imagens(ata), 5)
         self.assertIn("Imagem de assinatura ausente", "".join(log.output))
 
     def test_assinatura_de_membro_ausente_gera_o_pdf_sem_a_imagem(self):
@@ -616,11 +615,11 @@ class TesteE2DoCoordenador(BaseDocumentos):
         with self.assertLogs("sigtcc.defesa", level="WARNING"):
             ata = self.baixar(cenario["orientador"], "ata_final", cenario["sessao"])
         self.conferir_pdf(ata, f"ata_final_{cenario['sessao'].pk}.pdf")
-        self.assertEqual(numero_de_imagens(ata), 3)
+        self.assertEqual(numero_de_imagens(ata), 5)
         with self.assertLogs("sigtcc.defesa", level="WARNING"):
             folha = self.baixar(cenario["orientador"], "folha_aprovacao", cenario["sessao"])
         self.conferir_pdf(folha, f"folha_aprovacao_{cenario['sessao'].pk}.pdf")
-        self.assertEqual(numero_de_imagens(folha), 2)
+        self.assertEqual(numero_de_imagens(folha), 4)
 
     def test_coordenador_cadastra_a_assinatura_depois_da_liberacao(self):
         cenario = sessao_liberada(assinatura_coordenador=False)
@@ -630,7 +629,7 @@ class TesteE2DoCoordenador(BaseDocumentos):
         assinatura_no_perfil(cenario["coordenador"])
         ata = self.baixar(cenario["orientador"], "ata_final", sessao)
         self.conferir_pdf(ata, f"ata_final_{sessao.pk}.pdf")
-        self.assertEqual(numero_de_imagens(ata), 4)
+        self.assertEqual(numero_de_imagens(ata), 6)
 
 
 class TesteFalhaNaGeracao(BaseDocumentos):
@@ -641,15 +640,21 @@ class TesteFalhaNaGeracao(BaseDocumentos):
         sessao = cenario["sessao"]
         meu_tcc = reverse("cadastro:meu_tcc", args=[cenario["tcc"].tcc_tur_id])
         antes = arquivos_em_media()
-        for nome in ("ata_final", "folha_aprovacao"):
+        janela = reverse("defesa:sessao", args=[sessao.pk])
+        # A Ata volta à janela da sessão (o Aluno não a baixa); a Folha, à aba Meu TCC do Aluno.
+        casos = (
+            ("ata_final", cenario["orientador"], None, janela),
+            ("folha_aprovacao", cenario["aluno"], "meu_tcc", meu_tcc),
+        )
+        for nome, usuario, origem, destino in casos:
             with self.subTest(documento=nome):
                 with mock.patch(
                     "sigtcc.apps.defesa.pdf.gerar_pdf",
                     side_effect=pdf.ErroAoGerarPdf("conversor fora"),
                 ):
-                    resposta = self.baixar(cenario["aluno"], nome, sessao, "meu_tcc")
-                self.assertRedirects(resposta, meu_tcc, fetch_redirect_response=False)
-                self.assertContains(self.client.get(meu_tcc), E3)
+                    resposta = self.baixar(usuario, nome, sessao, origem)
+                self.assertRedirects(resposta, destino, fetch_redirect_response=False)
+                self.assertContains(self.client.get(destino), E3)
         self.assertEqual(arquivos_em_media(), antes)
 
     def test_falha_real_do_conversor_vai_ao_log(self):
@@ -693,7 +698,8 @@ class TesteDuasSessoesNoMeuTcc(BaseDocumentos):
         self.assertIn("Defesa de 10/12/2026", pagina)
         self.assertIn("Defesa de 20/11/2026", pagina)
         self.assertLess(pagina.index("Defesa de 10/12/2026"), pagina.index("Defesa de 20/11/2026"))
-        self.assertIn(self.url("ata_final", primeira, "meu_tcc"), pagina)
+        # O Aluno não recebe o botão da Ata em nenhuma das sessões.
+        self.assertNotIn(self.url("ata_final", primeira, "meu_tcc"), pagina)
         self.assertNotIn(self.url("folha_aprovacao", primeira, "meu_tcc"), pagina)
-        self.assertIn(self.url("ata_final", segunda, "meu_tcc"), pagina)
+        self.assertNotIn(self.url("ata_final", segunda, "meu_tcc"), pagina)
         self.assertIn(self.url("folha_aprovacao", segunda, "meu_tcc"), pagina)

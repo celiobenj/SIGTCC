@@ -107,9 +107,7 @@ class TesteDocumentosEDeclaracao(BasePermissoes):
         cenario = sessao_liberada(suplente_acionado=True)
         sessao, perfis = recarregar(cenario["sessao"]), self.perfis(cenario)
         efetivos = ("presidente", "av1", "suplente")
-        self.conferir(
-            perm.pode_baixar_ata, sessao, perfis, efetivos + ("professor", "secretaria")
-        )
+        self.conferir(perm.pode_baixar_ata, sessao, perfis, efetivos + ("professor", "secretaria"))
         self.conferir(
             perm.pode_baixar_folha, sessao, perfis, efetivos + ("professor", "secretaria", "aluno")
         )

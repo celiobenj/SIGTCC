@@ -391,7 +391,7 @@ def _dados_comuns(sessao):
 
 
 def _cargo_do_coordenador(nome):
-    """"Coordenadora do Curso" quando o primeiro nome termina em "a"; senão "Coordenador do
+    """ "Coordenadora do Curso" quando o primeiro nome termina em "a"; senão "Coordenador do
     Curso". O cadastro não guarda gênero: a flexão segue o primeiro nome
     (decisão registrada em docs/questoes-a-rever.md).
     [US-28][RBN-DEF-07.1]
