@@ -161,7 +161,7 @@ prévia gravada no servidor (gravaria arquivos que podem ser abandonados).
   e devolve os valores novos para a tela reabrir a confirmação (D10); grava `def_nota_final`,
   `def_parecer` e `def_data_liberacao_resultado`; `transicionar_status(sessao, REALIZADA,
   usuario)` (evento "Liberação do Resultado"); `atualizar_status_tcc(tcc, turma, usuario,
-  parecer, LIBERACAO_DO_RESULTADO)`; notificações (MA-06 a MA-08) e e-mails depois do commit;
+  parecer, LIBERACAO_DO_RESULTADO)`; notificação e e-mail da MA-08 (só a Secretaria; Q-131 B, 10/11/2026) depois do commit;
   ponto de chamada da feat-09 depois do commit (A10).
 - **D10 em TCC 2 quando a nota sobe a 6,0 ou mais** (revisão I-03): o novo parecer não é
   automático; a liberação não grava e volta à sessão com Registrar parecer disponível e Liberar

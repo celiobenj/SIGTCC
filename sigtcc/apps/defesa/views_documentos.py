@@ -36,13 +36,13 @@ TEMPLATE_AGENDA = "defesa/pdf/agenda.html"
 ORIGEM_MEU_TCC = "meu_tcc"
 
 
-def _sessao_com_permissao(request, def_id):
-    """Sessão do download, já conferida: sem permissão de baixar os documentos (inclusive o
-    Suplente não acionado e antes da liberação), 403 com o texto da US-28 E6 (P5, P13).
-    [US-28][RBN-DEF-07.3]
+def _sessao_com_permissao(request, def_id, permissao):
+    """Sessão do download, já conferida pela `permissao` do documento (pode_baixar_ata ou
+    pode_baixar_folha): sem ela (inclusive o Aluno na Ata, o Suplente não acionado e antes da
+    liberação), 403 com o texto da US-28 E6 (P5, P13). [US-28][RBN-DEF-07.3]
     """
     registro = views_defesa.sessao_ou_404(def_id)
-    if not permissoes_defesa.pode_baixar_documentos(request.user, registro):
+    if not permissao(request.user, registro):
         raise PermissionDenied(mensagens.SEM_PERMISSAO_DOCUMENTOS)
     return registro
 
@@ -70,12 +70,12 @@ def _baixar(request, registro, nome_arquivo, template, contexto):
 
 @perfil_requerido()
 def ata_final(request, def_id):
-    """Download da Ata Final (FR-001, FR-005 a FR-008). Com a E2 (curso sem Coordenador ou
-    Coordenador sem assinatura no perfil), não gera o PDF: o Presidente da banca vê a mensagem da
-    US-28 E2 e os demais perfis a MX-08, sem nova notificação (P1).
+    """Download da Ata Final (FR-001, FR-005 a FR-008); o Aluno recebe 403. Com a E2 (curso sem
+    Coordenador ou Coordenador sem assinatura no perfil), não gera o PDF: o Presidente da banca
+    vê a mensagem da US-28 E2 e os demais perfis a MX-08, sem nova notificação (P1).
     [US-28][RBN-DEF-07.1][RBN-DEF-07.3][RBN-CAD-13.1]
     """
-    registro = _sessao_com_permissao(request, def_id)
+    registro = _sessao_com_permissao(request, def_id, permissoes_defesa.pode_baixar_ata)
     if services_documentos.situacao_da_ata(registro) is not None:
         if permissoes_defesa.e_presidente(request.user, registro):
             return _voltar(request, registro, mensagens.ATA_SEM_ASSINATURA_COORDENADOR)
@@ -95,7 +95,7 @@ def folha_aprovacao(request, def_id):
     recusados com a mensagem da US-28 (cenários 12 e 13), também pelo endereço direto.
     [US-28][RBN-DEF-07.2][RBN-DEF-07.3]
     """
-    registro = _sessao_com_permissao(request, def_id)
+    registro = _sessao_com_permissao(request, def_id, permissoes_defesa.pode_baixar_folha)
     recusa = services_documentos.folha_aplicavel(registro)
     if recusa is not None:
         return _voltar(request, registro, recusa)

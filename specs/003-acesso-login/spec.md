@@ -80,7 +80,8 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
 - Q10: Como detectar a notificação de item indisponível? → A: Nesta feature, só o item removido: se o
   endereço da notificação não leva a uma página existente, a central marca a notificação como lida e
   exibe "Este item não está mais disponível". O caso "cancelado" (US-38, cenário 9, convite de banca)
-  é **pendência para a feature de Defesa**, que deve tratar o item cancelado na sua tela de destino.
+  foi **tratado na feature de Defesa** (10/11/2026): quem tinha a notificação da sessão e perdeu o
+  acesso (saiu da banca) vê a mesma mensagem, por `services.item_indisponivel`, em vez do 403.
 - Q11: Validade, "substituído" e mensagem da troca de e-mail? → A: O link de confirmação vale 24 horas,
   a mesma validade que a matriz define para o link de primeiro acesso (RBN-CAD-06.1 e 06.9). O caso
   "substituído" foi decidido em Q24. Ao salvar uma alteração que inclui troca de e-mail, aparece só a
@@ -650,8 +651,8 @@ de ativação funciona chamada de fora das telas desta feature.
   não tem notificações".
 - **FR-023**: Clicar numa notificação DEVE marcá-la como lida, atualizar o contador e abrir a tela
   relacionada; se o endereço não levar a uma página existente (item removido), exibe "Este item não
-  está mais disponível" (Q10). O item cancelado fica para a feature dona do item (pendência da
-  Defesa).
+  está mais disponível" (Q10). O item cancelado é da feature dona do item; na Defesa, a janela
+  Sessão de defesa mostra a mesma mensagem a quem foi notificado e perdeu o acesso (Q-12).
 
 **Base comum para as demais features (entregas compartilhadas)**
 

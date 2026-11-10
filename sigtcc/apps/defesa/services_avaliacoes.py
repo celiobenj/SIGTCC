@@ -852,8 +852,6 @@ def formulario_da_avaliacao(usuario, sessao):
 # Apuração, parecer e liberação do resultado (research A6, A10; US-27)
 # =============================================================================================
 
-TEMPLATE_RESULTADO_ALUNO = "defesa/emails/resultado_aluno.txt"
-TEMPLATE_RESULTADO_BANCA = "defesa/emails/resultado_banca.txt"
 TEMPLATE_RESULTADO_SECRETARIA = "defesa/emails/resultado_secretaria.txt"
 
 
@@ -950,29 +948,19 @@ def registrar_parecer(usuario, def_id, parecer):
 
 
 def _avisar_liberacao(sessao, tcc, parecer):
-    """Avisos da liberação (FR-030; D8, DV-01): MA-06 ao Aluno, MA-07 aos membros efetivos e
-    MA-08 à Secretaria do curso, pela central de notificações e por e-mail depois do commit
-    (assunto "SIGTCC: resultado da defesa"), sem a nota no texto.
-    [US-27][RBN-DEF-06.4][FR-030]
+    """Aviso da liberação (FR-030; Q-131 B): só a MA-08, à Secretaria do curso, pela central de
+    notificações e por e-mail depois do commit (assunto "SIGTCC: resultado da defesa"), sem a
+    nota no texto. O Aluno e a banca não recebem aviso (o resultado continua visível a eles na
+    tela). [US-27][RBN-DEF-06.4][FR-030]
     """
     from django.urls import reverse
 
     from sigtcc.apps.cadastro.choices import StatusConta
     from sigtcc.apps.cadastro.models import Secretarios
 
-    aluno = tcc.tcc_alu.alu
     link_sessao = reverse("defesa:sessao", args=[sessao.pk])
-    assunto = mensagens.MA06_ASSUNTO
-    texto = mensagens.MA06_RESULTADO_ALUNO
-    services.notificar(aluno, texto, link=reverse("cadastro:meu_tcc", args=[tcc.tcc_tur_id]))
-    services.enviar_email_apos_commit(aluno, assunto, TEMPLATE_RESULTADO_ALUNO, {"texto": texto})
-    dados = {"aluno": aluno.usu_nome, "titulo": tcc.tcc_titulo}
-    texto = mensagens.MA07_RESULTADO_BANCA.format(**dados)
-    for membro in services_defesa.membros_efetivos(sessao):
-        services.notificar(membro, texto, link=link_sessao)
-        services.enviar_email_apos_commit(
-            membro, assunto, TEMPLATE_RESULTADO_BANCA, {"texto": texto}
-        )
+    assunto = mensagens.MA08_ASSUNTO
+    dados = {"aluno": tcc.tcc_alu.alu.usu_nome, "titulo": tcc.tcc_titulo}
     texto = mensagens.MA08_RESULTADO_SECRETARIA.format(parecer=parecer, **dados)
     for secretaria in Secretarios.objects.select_related("sec").filter(
         sec_cur_id=tcc.tcc_tur.tur_cur_id, sec__usu_status=StatusConta.ATIVA

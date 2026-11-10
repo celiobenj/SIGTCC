@@ -34,8 +34,8 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
     minha avaliação";
   - cálculo em `Decimal` com uma casa e arredondamento comercial, nota mínima 6,0 com artigo Qualis
     A ou B homologado, "Registrar parecer" e "Liberar Resultado" com confirmação (e nova
-    confirmação se a nota mudar), Status do TCC pela liberação e avisos ao Aluno, à banca e à
-    Secretaria;
+    confirmação se a nota mudar), Status do TCC pela liberação e aviso à Secretaria (o Aluno e a
+    banca não recebem aviso do resultado; Q-131 B);
   - sigilo das notas por uma única função (`visao_da_avaliacao`) e seção "Resultado da defesa" na
     aba Meu TCC, com a Data Limite da Versão Final em TCC 2 aprovado;
   - `xhtml2pdf` 0.2.28 no `requirements.txt` e utilitário de PDF em memória (`defesa/pdf.py`), sem
@@ -85,6 +85,25 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 
 ### Alterado
 
+- Descritores dos 9 critérios trocados pelos textos da planilha oficial da EST/UEA (migration
+  `defesa/0005_descritores_oficiais`, reversível); as colunas `cri_desc_*` passam a VARCHAR(1000), com
+  o dicionário ajustado, e as telas Avaliação e Critérios respeitam as quebras de linha (spec 001,
+  FR-014a; Q-03 e Q-18).
+- Ata Final e Folha de Aprovação no padrão institucional da UEA/EST (logos, cabeçalho de três
+  linhas, "1. Dados de Identificação", tabela de notas e assinaturas, conforme os modelos em
+  `docs/`). O Aluno baixa só a Folha de Aprovação: a Ata, que traz as notas individuais, dá 403
+  ao Aluno e some da aba Meu TCC (`pode_baixar_ata` e `pode_baixar_folha`; spec 009). O cargo do
+  Coordenador e a titulação saem na forma neutra, "Coordenador(a) do Curso" e "Doutor(a)", porque
+  o cadastro não guarda gênero (Q-155).
+- Todas as questões em aberto de `docs/questoes-a-rever.md` respondidas em 10/11/2026; o
+  comentário temporário de revisão saiu da constituição (Q-11), sem mudar a versão.
+- O aviso do resultado da defesa vai só à Secretaria do curso: saem os avisos ao Aluno (MA-06) e à
+  banca (MA-07) e a divergência DV-01 (Q-131 B; spec 008).
+- Quem recebeu uma notificação de sessão de defesa e saiu da banca vê "Este item não está mais
+  disponível" em vez do 403 (Q-12; specs 003 e 007).
+- Documentação: `docs/ambientes.md` separa a visão de construção (desenvolvimento e validação no
+  Render, para a disciplina) da implantação real (produção escalável); as tarefas por data rodam
+  por execução manual, sem agendador (Q-67 C); FR-007 da spec 001 sem CHECK no banco (Q-06 B).
 - Emendas da spec 010 na spec 007: `filtro_de_periodo` aceita outro período letivo
   (`ano_semestre`, opcional) e as datas dos atalhos saem de `intervalo_do_atalho`, sem mudar a tela
   Defesas (IC-03; Q-153).

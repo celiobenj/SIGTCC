@@ -9,8 +9,8 @@ Todas com `perfil_requerido(...)`: sem login → tela de login com `next`, e a a
 
 | Nome | Caminho | Métodos | Perfis (`perfil_requerido`) | Permissão (research B2) | Resposta |
 |---|---|---|---|---|---|
-| `ata_final` | `defesas/<int:def_id>/ata-final/` | GET | qualquer logado | `pode_baixar_documentos` (senão 403 com `SEM_PERMISSAO_DOCUMENTOS`) | PDF `ata_final_<def_id>.pdf`; E2 → redireciona com a E2 (Presidente da banca) ou MX-08; E3 → redireciona com `ERRO_AO_GERAR_DOCUMENTOS` |
-| `folha_aprovacao` | `defesas/<int:def_id>/folha-aprovacao/` | GET | qualquer logado | `pode_baixar_documentos` | PDF `folha_aprovacao_<def_id>.pdf`; TCC 1 → `FOLHA_NAO_SE_APLICA`; Reprovado → `FOLHA_REPROVADO`; E3 |
+| `ata_final` | `defesas/<int:def_id>/ata-final/` | GET | qualquer logado | `pode_baixar_ata` (sem o Aluno; senão 403 com `SEM_PERMISSAO_DOCUMENTOS`) | PDF `ata_final_<def_id>.pdf`; E2 → redireciona com a E2 (Presidente da banca) ou MX-08; E3 → redireciona com `ERRO_AO_GERAR_DOCUMENTOS` |
+| `folha_aprovacao` | `defesas/<int:def_id>/folha-aprovacao/` | GET | qualquer logado | `pode_baixar_folha` (o Aluno do TCC ou quem baixa a Ata) | PDF `folha_aprovacao_<def_id>.pdf`; TCC 1 → `FOLHA_NAO_SE_APLICA`; Reprovado → `FOLHA_REPROVADO`; E3 |
 | `declaracao` | `defesas/<int:def_id>/declaracao/` | GET | qualquer logado (revisão I-04) | `pode_baixar_declaracao` (senão 403 com `SEM_PERMISSAO_DOCUMENTOS`) | PDF `declaracao_participacao_<def_id>.pdf`; E3 |
 | `ouvintes` | `defesas/<int:def_id>/ouvintes/` | GET, POST | `docente` | `pode_editar_ouvintes` (senão 403, M-02; `TurmaArquivada` da trava também vira 403) | GET: janela Ouvintes (formset). POST válido: grava a lista, "Ouvintes salvos com sucesso", volta à sessão. POST inválido: a janela com os erros e os campos destacados |
 | `ocorrencias` | `defesas/<int:def_id>/ocorrencias/` | GET, POST | `docente` | `pode_editar_ocorrencias` (senão 403, M-02; `TurmaArquivada` da trava também vira 403) | GET: janela Ocorrências. POST válido: MX-06, volta à sessão. Acima de 2.000: MX-01, caixa destacada |

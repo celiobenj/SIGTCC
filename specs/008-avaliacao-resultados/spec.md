@@ -171,9 +171,9 @@ Benjamim na mesma data (índice Q-130; a divergência do D8 fica aberta para a P
   bloco de avaliação, nem o status de envio; o Aluno também não vê o status. As Observações,
   que nenhuma fonte manda exibir a outros, ficam visíveis só ao próprio avaliador. FR-031,
   FR-032 e cenários 5.3 e 5.7.
-- Q (D8): Quem é notificado na liberação? → A: **Aluno, membros efetivos da banca e Secretaria do
-  curso**. **Diverge da US-27**, que só cita a Secretaria (atores secundários); fica registrado na
-  seção "Divergências em relação às US" e na Q-131 para revisar depois. FR-030.
+- Q (D8): Quem é notificado na liberação? → A (10/11/2026, Q-131 B): **só a Secretaria do curso**,
+  como na US-27 (atores secundários). A resposta de 03/11/2026 (Aluno, banca e Secretaria) foi
+  substituída; as MA-06 e MA-07, aprovadas em 03/11/2026 (Q-129), foram removidas. FR-030.
 - Q (D9): Uma falha na geração dos PDFs desfaz a liberação? → A: não; o ponto de chamada é
   acionado depois de gravada a liberação, e o contrato com a feat-09 (nome do serviço e como ela
   informa que a declaração existe) é definido no plano. FR-028.
@@ -666,9 +666,9 @@ antes e depois da liberação e conferir o que cada um vê.
   sem pedido de Folha de Aprovação, e o aluno MUST ficar com acesso só de consulta (regra já
   aplicada pelo Status do TCC, RBN-CAD-08.5).
 - **FR-030** [RBN-DEF-06.4]: Depois da liberação, o sistema MUST notificar, pela central de
-  notificações e por e-mail, o Aluno, os membros efetivos da banca e a Secretaria do curso de que
-  o resultado foi liberado, sem a nota no texto do e-mail (MA-06 a MA-08). **Diverge da US-27**,
-  que só cita a Secretaria (D8; ver "Divergências em relação às US" e Q-131).
+  notificações e por e-mail, só a Secretaria do curso de que o resultado foi liberado, sem a nota
+  no texto do e-mail (MA-08), como na US-27. O Aluno e a banca não recebem aviso; veem o
+  resultado na tela (decisão de 10/11/2026, Q-131 B, que substituiu a D8 de 03/11/2026).
 
 ### Functional Requirements — Sigilo e resultado para o aluno (US-27; RBN-DEF-06.5, RBN-DEF-06.8)
 
@@ -778,7 +778,7 @@ Decisões desta spec que diferem do texto das US, para revisar depois com a PO:
 
 | ID | Ponto | US | Decisão desta spec | Índice |
 |---|---|---|---|---|
-| DV-01 | Notificações da liberação do resultado | US-27 (atores secundários) só cita a Secretaria do curso, "notificada do encerramento da defesa" | Notifica também o Aluno e os membros efetivos da banca (FR-030; MA-06 e MA-07), sem a nota no e-mail | Q-131 |
+| ~~DV-01~~ | ~~Notificações da liberação do resultado~~ | US-27 (atores secundários) só cita a Secretaria do curso, "notificada do encerramento da defesa" | **Removida em 10/11/2026 (Q-131 B):** só a Secretaria do curso é avisada (MA-08), como na US-27; o Aluno e a banca veem o resultado na tela, sem aviso (MA-06 e MA-07 removidas). Não há mais divergência. | Q-131 |
 
 ## Mensagens a validar com a PO
 
@@ -792,9 +792,9 @@ Q-129, 2026-11-03). Todos os textos entre aspas nos FR acima são cópia exata d
 | MA-03 | Nota no formulário com a sessão Agendada ou Reagendada | "A sessão ainda não começou: só a Parte Escrita pode ser avaliada e salva." | US-25 B.a (sem texto exato); FR-011 | Aprovada |
 | MA-04 | Tentativa de salvar, enviar ou reabrir depois da liberação | "O resultado desta defesa já foi liberado e as avaliações não podem mais ser alteradas" | US-27 E5 (sem texto exato); FR-022 | Aprovada |
 | MA-05 | Confirmação de Liberar Resultado | "Liberar o resultado com nota final {nota} e parecer {parecer}? Depois disso, as notas não podem mais ser alteradas." | US-27 passo 8 (sem texto exato); FR-027 | Aprovada |
-| MA-06 | Aviso ao Aluno (notificação e e-mail, assunto "SIGTCC: resultado da defesa") | "O resultado da sua defesa foi liberado. Consulte a nota final e o parecer na aba Meu TCC." | US-27 passo 13 (sem texto exato); FR-030 | Aprovada |
-| MA-07 | Aviso aos membros da banca | "O resultado da defesa de {aluno} foi liberado. TCC: {titulo}." | US-27 (sem texto exato); FR-030 | Aprovada |
-| MA-08 | Aviso à Secretaria do curso | "Defesa de {aluno} encerrada com parecer {parecer}. TCC: {titulo}." | US-27, atores secundários (sem texto exato); FR-030 | Aprovada |
+| MA-06 | ~~Aviso ao Aluno~~ | ~~"O resultado da sua defesa foi liberado. Consulte a nota final e o parecer na aba Meu TCC."~~ | US-27 passo 13 (sem texto exato); FR-030 | Removida (Q-131 B, 10/11/2026) |
+| MA-07 | ~~Aviso aos membros da banca~~ | ~~"O resultado da defesa de {aluno} foi liberado. TCC: {titulo}."~~ | US-27 (sem texto exato); FR-030 | Removida (Q-131 B, 10/11/2026) |
+| MA-08 | Aviso à Secretaria do curso (notificação e e-mail, assunto "SIGTCC: resultado da defesa") | "Defesa de {aluno} encerrada com parecer {parecer}. TCC: {titulo}." | US-27, atores secundários (sem texto exato); FR-030 | Aprovada |
 | MA-09 | Confirmação na tela depois de Salvar | "Rascunho salvo" | US-25 B.c (sem texto exato); FR-013 | Aprovada |
 | MA-10 | Confirmação na tela depois do envio | "Avaliação enviada com sucesso" | US-25 passo 12 (sem texto exato); FR-019 | Aprovada |
 | MA-11 | Confirmação na tela depois da liberação | "Resultado liberado com sucesso" | US-27 passo 10 (sem texto exato); FR-027 | Aprovada |

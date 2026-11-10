@@ -231,7 +231,7 @@ class DocumentosDaDefesaNoMeuTccTest(TesteAvaliacao):
         self.assertNotContains(resposta, "disabled>Folha de Aprovação")
         self.assertContains(resposta, "data-documentos-defesa")
         sessao = cenario["sessao"]
-        self.assertContains(
+        self.assertNotContains(
             resposta, f'{reverse("defesa:ata_final", args=[sessao.pk])}?origem=meu_tcc'
         )
         self.assertContains(

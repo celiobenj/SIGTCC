@@ -105,7 +105,8 @@ texto (C.7), todos decididos por Célio Benjamim na mesma data conforme a recome
 - Q (P4): Matrícula já cadastrada com outro nome? → A: **mantém o nome gravado, sem aviso**, como
   no diagrama 05. A MX-02 sai.
 - Q (P5): O Suplente não acionado baixa os documentos? → A: **não**; só os membros efetivos da
-  banca (a Ata é deles), além do Professor da Disciplina, da Secretaria e do Aluno. FR-005.
+  banca (a Ata é deles), além do Professor da Disciplina e da Secretaria; o Aluno baixa só a Folha
+  de Aprovação (decisão de 10/11/2026). FR-005.
 - Q (P6): A Secretaria vê os ouvintes de uma sessão Em Andamento? → A: **sim, só leitura, na
   janela da sessão** (Em Andamento e Realizada; "durante e após", RBN-DEF-08.2). O menu "Ouvintes
   das defesas" mostra só as sessões Realizadas (RBN-DEF-08.4). FR-009.
@@ -152,12 +153,30 @@ texto (C.7), todos decididos por Célio Benjamim na mesma data conforme a recome
   ganharia um botão numa sessão que não consegue abrir. FR-009, FR-012 a FR-015 e cenário 3.8.
   Índice Q-145.
 
+### Session 2026-11-10
+
+Padrão institucional da Ata e da Folha (guia das branches de fix, C1) e verificação da branch
+`fix/celio-defesa-pdf-config`, decididos por Célio Benjamim:
+
+- Q: Como sai o cargo do Coordenador e a titulação, se o cadastro não guarda gênero? → A: **na
+  forma neutra**: "Coordenador(a) do Curso" e "Doutor(a)" ("Mestre" e "Especialista" não
+  flexionam), na Ata, na Folha e na declaração. A regra pelo primeiro nome foi descartada porque
+  erra em nomes comuns (Beatriz, Raquel, Isabel; Luca, Nicola). FR-001 e FR-002. Índice Q-155.
+- Q: Que mensagem recebe o Aluno que abre o endereço da Ata Final? → A: **a da US-28 E6**, "Você
+  não tem permissão para acessar os documentos desta defesa" (403), a mesma de quem não pode
+  baixar os documentos; o guia citava a M-02 genérica, mas o texto da US é mais preciso. FR-005.
+- Q: Onde a Ata e a Folha diferem do modelo institucional? → A: ficam como a US e a spec mandam:
+  a observação do Qualis só aparece quando aplicada (US-28 cenário 7; o modelo traz a nota fixa);
+  "6,0" com vírgula (texto da US; o modelo usa "6.0"); o mês em minúsculas ("Manaus, 23 de junho
+  de 2026", norma do português; o modelo usa "Junho"); a linha "Parecer" na Ata (FR-001).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Baixar a Ata Final e a Folha de Aprovação (Priority: P1)
 
-Como Aluno, membro efetivo da banca, Professor da Disciplina ou Secretaria, baixo, depois da liberação do
-resultado, a Ata Final e, em TCC 2 aprovado, a Folha de Aprovação, em PDF não editável, gerados na
+Como membro efetivo da banca, Professor da Disciplina ou Secretaria, baixo, depois da liberação do
+resultado, a Ata Final e, em TCC 2 aprovado, a Folha de Aprovação; como Aluno, baixo só a Folha de
+Aprovação. Os PDFs são não editáveis, no padrão institucional (modelos em `docs/`), gerados na
 hora com os dados congelados da sessão, as assinaturas da banca e, na Ata, as do Coordenador de
 Curso.
 
@@ -172,7 +191,8 @@ documento como cada perfil e conferir o conteúdo, os botões e as recusas.
 1. **Given** o Orientador liberou o resultado de um TCC 2 com parecer Aprovado, **When** o sistema
    gera os documentos, **Then** cria a Ata Final com as notas e as assinaturas dos 3 examinadores e
    do Coordenador, e a Folha de Aprovação sem notas, **And** exibe os botões de download para a
-   banca, o Professor da Disciplina, a Secretaria e o aluno (US-28 cenário 1).
+   banca, o Professor da Disciplina e a Secretaria, e o botão da Folha também ao aluno; o aluno
+   não recebe a Ata (US-28 cenário 1; decisão de 10/11/2026).
 2. **Given** a Folha de Aprovação foi gerada, **When** o Aluno aciona o botão na aba Meu TCC,
    **Then** o sistema baixa o PDF assinado (US-28 cenário 2).
 3. **Given** a defesa é de uma turma de TCC 1, **When** o sistema gera os documentos, **Then** cria
@@ -438,35 +458,43 @@ diferentes e conferir o conteúdo e a recusa sem defesas.
 ### Functional Requirements — Ata Final e Folha de Aprovação (US-28; RBN-DEF-07.1 a 07.3)
 
 - **FR-001** [RBN-DEF-07.1]: O sistema MUST gerar a Ata Final em PDF não editável, sob demanda, a
-  partir da liberação do resultado, com: cabeçalho UEA/EST e nome do curso; título "Ata Final de
-  Avaliação de Trabalho de Conclusão de Curso I" ou "II", conforme a etapa; nome do aluno; título
-  do trabalho; os membros efetivos da banca com titulação e papel (o suplente acionado na linha do
-  titular substituído); nota do 1º Avaliador, do 2º Avaliador e do Orientador; nota final; parecer;
+  partir da liberação do resultado, no padrão institucional de `docs/Modelo Ata final.pdf`, com:
+  logos da UEA e da EST nas pontas e, centralizado, "Universidade do Estado do Amazonas - UEA",
+  "Escola Superior de Tecnologia - EST" e "Curso de {curso}"; título "ATA FINAL DE AVALIAÇÃO DE
+  TRABALHO DE CONCLUSÃO DE CURSO I" ou "II", conforme a etapa; "1. Dados de Identificação" (nome
+  do aluno, título do trabalho e Professor Orientador); tabela de notas do Primeiro Avaliador, do
+  Segundo Avaliador e do Orientador (o suplente acionado na linha do titular substituído) e a
+  MÉDIA FINAL; parecer;
   a observação "Em caso de artigos, se Qualis A ou B, a nota final será o valor máximo entre 6,0 e
-  a média dos avaliadores", quando aplicada; data da defesa; as imagens das assinaturas dos 3
-  membros, tiradas da cópia gravada em cada avaliação enviada (spec 008); e o nome e a imagem de
-  assinatura do Coordenador de Curso, lidos do perfil no momento do download.
+  a média dos avaliadores", quando aplicada; "Assinaturas:" com a imagem de assinatura de cada um
+  dos 3 membros, tirada da cópia gravada em cada avaliação enviada (spec 008), e o nome; "Data:"
+  com a data da defesa; e o nome, o cargo "Coordenador(a) do Curso" (forma neutra, pois o
+  cadastro não guarda gênero; Q-155) e a imagem de assinatura do Coordenador de Curso, lidos do
+  perfil no momento do download.
 - **FR-002** [RBN-DEF-07.2]: O sistema MUST gerar a Folha de Aprovação em PDF não editável, sob
   demanda, só em TCC 2 com parecer Aprovado ou Aprovado com Correções (modalidades Monografia e
-  Artigo Científico), com: cabeçalho UEA/EST e nome do curso; título do trabalho; nome do aluno; a
+  Artigo Científico), no padrão institucional de `docs/Modelo Folha de Aprovacao.pdf`, com: logos
+  e cabeçalho da Ata; título "FOLHA DE APROVAÇÃO"; título do trabalho; nome do aluno; a
   frase "Trabalho de Conclusão de Curso defendido e aprovado pela banca avaliadora constituída
-  pelos professores:"; os membros com titulação e papel (Presidente, Avaliador e Avaliador);
+  pelos professores:"; os membros com titulação (forma neutra: "Doutor(a)", "Mestre",
+  "Especialista"; Q-155) e papel (Presidente, Avaliador e Avaliador);
   "Manaus, DD de mês de AAAA" com a data da defesa; e as imagens das assinaturas dos 3 membros,
   tiradas da cópia gravada em cada avaliação enviada, sem nenhuma nota nem média.
 - **FR-003** [RBN-DEF-07.3]: O sistema MUST oferecer um botão de download para cada documento,
   depois da liberação: na janela Sessão de defesa (bloco `documentos`, aberta por Minhas bancas,
   pela aba Defesas da turma ou pela tela Defesas) aos membros efetivos da banca, ao Professor da
-  Disciplina da turma e à Secretaria do curso; e na aba Meu TCC ao Aluno, com os documentos de
-  todas as sessões Realizadas do TCC, cada um com a data da defesa (P14). A Folha de Aprovação
-  MUST aparecer só quando existir (TCC 2 aprovado); em TCC 1 e com parecer Reprovado, só a Ata
-  Final.
+  Disciplina da turma e à Secretaria do curso; e na aba Meu TCC ao Aluno, só com a Folha de
+  Aprovação das sessões Realizadas do TCC, cada uma com a data da defesa (P14); o Aluno não recebe
+  o botão da Ata Final. A Folha de Aprovação MUST aparecer só quando existir (TCC 2 aprovado); em
+  TCC 1 e com parecer Reprovado, só a Ata Final (aos demais perfis).
 - **FR-004** [RBN-DEF-07.3]: O sistema MUST recusar o download da Folha de Aprovação de TCC 1 com
   "A Folha de Aprovação não se aplica ao TCC 1" e de trabalho Reprovado com "Documento indisponível
   para trabalhos reprovados", também pelo endereço direto.
 - **FR-005** [RBN-DEF-07.3]: O sistema MUST recusar o download, com "Você não tem permissão para
   acessar os documentos desta defesa", a quem não é membro efetivo da banca (inclusive o Suplente
-  não acionado; P5), Professor da Disciplina da turma, Secretaria do curso nem o Aluno do TCC, e
-  MUST recusar com a mesma mensagem qualquer download antes da liberação do resultado (P13).
+  não acionado; P5), Professor da Disciplina da turma nem Secretaria do curso, e ao Aluno do TCC
+  na Ata Final (a Folha de Aprovação ele baixa); MUST recusar com a mesma mensagem qualquer
+  download antes da liberação do resultado (P13).
 - **FR-006** [RBN-DEF-07.1][RBN-CAD-13.1]: Quando o Coordenador de Curso do curso do TCC nunca
   cadastrou a imagem de assinatura (caminho vazio no perfil) ou o curso não tem Coordenador, o
   sistema MUST não gerar a Ata Final. Na liberação, depois do commit, MUST alertar o Orientador na

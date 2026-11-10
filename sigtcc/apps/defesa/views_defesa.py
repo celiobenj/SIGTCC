@@ -11,8 +11,9 @@ from django.urls import reverse
 from django.utils.http import urlencode
 
 from sigtcc.apps.cadastro import mensagens as mensagens_cadastro
+from sigtcc.apps.cadastro import services as services_cadastro
 from sigtcc.apps.cadastro import services_contas
-from sigtcc.apps.cadastro.models import Cursos, TCCs, Turmas, Usuarios
+from sigtcc.apps.cadastro.models import Cursos, Notificacoes, TCCs, Turmas, Usuarios
 from sigtcc.apps.cadastro.permissoes import perfil_requerido, tem_perfil
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada, turma_arquivada
 from sigtcc.apps.defesa import (
@@ -229,6 +230,18 @@ def sessao_ou_404(def_id):
     )
 
 
+def _sem_acesso_a_sessao(request, registro):
+    """Resposta a quem não pode abrir a janela da sessão. Quem recebeu uma notificação que leva a
+    esta sessão (convite de banca, por exemplo) e perdeu o acesso depois (saiu da banca) vê
+    "Este item não está mais disponível", na central de notificações (item_indisponivel; índice
+    Q-12, US-38 cenário 9); os demais, 403 (US-40 E5). [US-40][US-38][RBN-DEF-01.4][RBN-CAD-13.2]
+    """
+    link = reverse("defesa:sessao", args=[registro.pk])
+    if Notificacoes.objects.filter(not_usu_id=request.user.pk, not_link_tela=link).exists():
+        return services_cadastro.item_indisponivel(request)
+    raise PermissionDenied(mensagens.SEM_PERMISSAO_SESSAO)
+
+
 @perfil_requerido()
 def sessao(request, def_id):
     """Janela "Sessão de defesa" (US-40 passo 8): aluno, título, data, horário, formato, local ou
@@ -239,7 +252,7 @@ def sessao(request, def_id):
     """
     registro = sessao_ou_404(def_id)
     if not permissoes_defesa.pode_ver_sessao(request.user, registro):
-        raise PermissionDenied(mensagens.SEM_PERMISSAO_SESSAO)
+        return _sem_acesso_a_sessao(request, registro)
     return render(request, "defesa/sessao.html", contexto_da_sessao(request, registro))
 
 

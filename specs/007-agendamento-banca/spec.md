@@ -638,7 +638,9 @@ outras histórias.
   defesa" só para os membros da banca (inclusive o Suplente), o Professor da Disciplina da turma,
   a Secretaria do curso e o Aluno do próprio TCC, e MUST bloquear o acesso direto de qualquer
   outro usuário (inclusive o Coordenador de Curso e o Coorientador, que veem só a lista),
-  exibindo "Você não tem permissão para visualizar esta defesa".
+  exibindo "Você não tem permissão para visualizar esta defesa". Exceção (Q-12, 10/11/2026): quem
+  recebeu uma notificação que leva à sessão e perdeu o acesso (saiu da banca) vê, em vez disso,
+  "Este item não está mais disponível" (`services.item_indisponivel`, spec 003).
 
 ### Key Entities *(reaproveitadas da spec 001/Épico 2; nenhuma nova sem confirmação)*
 

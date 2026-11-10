@@ -3,6 +3,7 @@
 [US-25][RBN-DEF-04.1][RBN-DEF-04.2][FR-001][FR-002] (tasks T016)
 """
 
+from django.template.defaultfilters import linebreaksbr
 from django.urls import get_resolver, reverse
 
 from sigtcc.apps.cadastro.choices import StatusConta
@@ -50,8 +51,15 @@ class TesteCriterios(TesteTurmas):
                     "Necessita de Trabalho (0,0 a 5,9)",
                 ):
                     self.assertIn(faixa, texto)
-                criterio = Criterios.objects.first()
-                self.assertContains(resposta, criterio.cri_desc_exemplar)
+                # Os descritores oficiais têm várias linhas: a tela troca as quebras por <br>
+                # (|linebreaksbr), então o texto esperado passa pelo mesmo filtro (FR-014a).
+                for criterio in Criterios.objects.all():
+                    for descritor in (
+                        criterio.cri_desc_exemplar,
+                        criterio.cri_desc_competente,
+                        criterio.cri_desc_necessita_trabalho,
+                    ):
+                        self.assertContains(resposta, linebreaksbr(descritor))
 
     def test_cenario_1_2_somente_leitura_para_todos(self):
         self.client.force_login(criar_coordenador())

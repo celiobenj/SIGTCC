@@ -301,10 +301,20 @@ def folha_aplicavel(sessao):
 # Dados da Ata Final, da Folha de Aprovação e da declaração (research B4 e B6)
 # =============================================================================================
 
-# Cabeçalho textual dos documentos (não há logotipo oficial em static/img/).
+# Cabeçalho textual das declarações (uma linha) e cabeçalho institucional da Ata Final e da Folha
+# (três linhas, entre os logos da UEA e da EST de static/img/; modelos de docs/).
 # [US-28][US-30][RBN-DEF-07.1][RBN-DEF-07.2][RBN-DEF-08.3]
 CABECALHO = "Universidade do Estado do Amazonas – Escola Superior de Tecnologia"
-TITULO_DA_ATA = "Ata Final de Avaliação de Trabalho de Conclusão de Curso {etapa}"
+CABECALHO_UEA = "Universidade do Estado do Amazonas - UEA"
+CABECALHO_EST = "Escola Superior de Tecnologia - EST"
+TITULO_DA_ATA = "ATA FINAL DE AVALIAÇÃO DE TRABALHO DE CONCLUSÃO DE CURSO {etapa}"
+# Papel da banca -> rótulo da tabela de notas da Ata, na ordem do modelo institucional.
+# [US-28][RBN-DEF-07.1]
+ROTULOS_DA_ATA = (
+    (PapelBanca.PRIMEIRO_AVALIADOR, "Primeiro Avaliador"),
+    (PapelBanca.SEGUNDO_AVALIADOR, "Segundo Avaliador"),
+    (PapelBanca.ORIENTADOR_PRESIDENTE, "Orientador"),
+)
 # Texto exato da US-28 e da matriz (RBN-DEF-07.1). [US-28][RBN-DEF-07.1]
 OBSERVACAO_QUALIS = (
     "Em caso de artigos, se Qualis A ou B, a nota final será o valor máximo entre 6,0 e a média "
@@ -319,19 +329,24 @@ LOCAL_DA_FOLHA = "Manaus"
 # Papéis impressos na Folha, na ordem Orientador, 1º e 2º Avaliador (FR-002).
 # [US-28][RBN-DEF-07.2]
 PAPEIS_DA_FOLHA = ("Presidente", "Avaliador", "Avaliador")
+# O cadastro não guarda gênero: cargo do Coordenador e titulação saem na forma neutra
+# (Q-155, decisão de 10/11/2026), em vez de deduzir o gênero pelo nome. [US-28][RBN-DEF-07.1]
+CARGO_DO_COORDENADOR = "Coordenador(a) do Curso"
+TITULACAO_NEUTRA = {"Doutor": "Doutor(a)"}
 
 
 def _titulacao(usuario):
     """Titulação lida no momento (doc_titulacao do Docente ou mem_titulacao do Membro
-    Externo), ou "" se a conta não tiver nenhuma das duas. [US-28][US-30][RBN-DEF-07.1]
+    Externo), na forma neutra ("Doutor(a)"; Mestre e Especialista não flexionam), ou "" se a
+    conta não tiver nenhuma das duas (Q-155). [US-28][US-30][RBN-DEF-07.1][RBN-DEF-08.3]
     """
     docente = especializacao(usuario, "docentes")
     if docente is not None:
-        return docente.get_doc_titulacao_display()
-    externo = especializacao(usuario, "membrosexternos")
-    if externo is not None:
-        return externo.get_mem_titulacao_display()
-    return ""
+        valor = docente.get_doc_titulacao_display()
+    else:
+        externo = especializacao(usuario, "membrosexternos")
+        valor = externo.get_mem_titulacao_display() if externo is not None else ""
+    return TITULACAO_NEUTRA.get(valor, valor)
 
 
 def _membros_do_documento(sessao):
@@ -368,11 +383,34 @@ def _dados_comuns(sessao):
     return {
         "def_id": sessao.pk,
         "cabecalho": CABECALHO,
+        "cabecalho_linhas": [
+            CABECALHO_UEA,
+            CABECALHO_EST,
+            f"Curso de {tcc.tcc_tur.tur_cur.cur_nome}",
+        ],
         "curso": tcc.tcc_tur.tur_cur.cur_nome,
         "aluno": tcc.tcc_alu.alu.usu_nome,
         "titulo": tcc.tcc_titulo,
         "data_defesa": _data_curta(sessao.def_data),
     }
+
+
+def _avaliacoes_da_ata(membros):
+    """Linhas da tabela de notas e das assinaturas da Ata, na ordem Primeiro Avaliador, Segundo
+    Avaliador e Orientador (modelo institucional); o suplente acionado ocupa a linha do
+    substituído. [US-28][RBN-DEF-07.1][RBN-DEF-02.2]
+    """
+    por_papel = {membro["papel"]: membro for membro in membros}
+    return [
+        {
+            "rotulo": rotulo,
+            "nome": por_papel[papel]["nome"],
+            "nota": por_papel[papel]["nota"],
+            "assinatura": por_papel[papel]["assinatura"],
+        }
+        for papel, rotulo in ROTULOS_DA_ATA
+        if papel in por_papel
+    ]
 
 
 def dados_da_ata(sessao):
@@ -398,6 +436,7 @@ def dados_da_ata(sessao):
         conta = coordenador.cor_doc.doc
         dados_coordenador = {
             "nome": conta.usu_nome,
+            "cargo": CARGO_DO_COORDENADOR,
             "assinatura": _imagem_existente(services.caminho_da_assinatura(conta)),
         }
     etapa = "II" if services_avaliacoes.e_tcc_2(sessao) else "I"
@@ -405,6 +444,10 @@ def dados_da_ata(sessao):
         **_dados_comuns(sessao),
         "titulo_documento": TITULO_DA_ATA.format(etapa=etapa),
         "membros": membros,
+        "avaliacoes": _avaliacoes_da_ata(membros),
+        "orientador": next(
+            (m["nome"] for m in membros if m["papel"] == PapelBanca.ORIENTADOR_PRESIDENTE), ""
+        ),
         "nota_final": _nota(resultado["nota_final"]),
         "parecer": resultado["parecer"],
         "observacao_qualis": OBSERVACAO_QUALIS if resultado["elevada_pelo_qualis"] else None,
@@ -477,24 +520,24 @@ def dados_da_declaracao(sessao, usuario):
 
 def visao_dos_documentos(usuario, sessao):
     """Bloco `documentos` da janela Sessão de defesa (FR-003): quais botões aparecem ao
-    usuário. Ata Final para quem pode baixar os documentos (com a E2 o botão continua: o download
-    mostra a mensagem); Folha de Aprovação também só quando ela existe (folha_aplicavel); a
-    Declaração aos membros efetivos (o botão entra com a rota da Phase 8, tasks T045). O botão
-    aparece se e somente se o endereço aceita (research B2).
+    usuário. Ata Final para quem pode baixá-la, o que exclui o Aluno (com a E2 o botão continua:
+    o download mostra a mensagem); Folha de Aprovação também só quando ela existe
+    (folha_aplicavel); a Declaração aos membros efetivos (o botão entra com a rota da Phase 8,
+    tasks T045). O botão aparece se e somente se o endereço aceita (research B2).
     [US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.3]
     """
-    documentos = permissoes_defesa.pode_baixar_documentos(usuario, sessao)
     return {
-        "ata": documentos,
-        "folha": documentos and folha_aplicavel(sessao) is None,
+        "ata": permissoes_defesa.pode_baixar_ata(usuario, sessao),
+        "folha": permissoes_defesa.pode_baixar_folha(usuario, sessao)
+        and folha_aplicavel(sessao) is None,
         "declaracao": permissoes_defesa.pode_baixar_declaracao(usuario, sessao),
     }
 
 
 def documentos_do_aluno(tcc):
     """Documentos da aba Meu TCC (P14): as sessões Realizadas e liberadas do TCC, da mais
-    recente para a mais antiga, cada uma com a data da defesa e os botões (Ata Final sempre;
-    Folha de Aprovação só quando existe). Lista vazia antes da primeira liberação.
+    recente para a mais antiga, cada uma com a data da defesa e o botão da Folha de Aprovação
+    (só quando existe); o Aluno não baixa a Ata Final. Lista vazia antes da primeira liberação.
     [US-28][RBN-DEF-07.3]
     """
     sessoes = (

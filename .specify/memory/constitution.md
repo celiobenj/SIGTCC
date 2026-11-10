@@ -1,32 +1,3 @@
-<!--
-Relatório de Impacto da Sincronização (Sync Impact Report)
-- Emenda 2026-10-25: 1.0.1 → 1.0.2 (PATCH). O lint.bat foi substituído pelo pre-commit (PGCS 3.3):
-  princípio V e passo 6 do fluxo citam `pre-commit run --all-files`; sem efeito semântico nas
-  regras de qualidade (mesmas ferramentas e opções).
-- Emenda 2026-10-24: 1.0.0 → 1.0.1 (PATCH). Referência às Histórias de Usuário trocada de v3.2 para
-  v3.3 (seção II e "Restrições de Stack e Escopo"), a versão que está em docs/fonte/; sem efeito
-  semântico (índice Q-62). Aprovação do responsável pela configuração e revisão por pares no PR.
-- Versão: (modelo sem versão) → 1.0.0
-- Motivo: primeira adoção da constituição (ratificação inicial).
-- Princípios definidos (template tinha 5 espaços; a equipe adotou 9):
-  I. Especificação Primeiro
-  II. Rastreabilidade Obrigatória
-  III. Modelo de Dados Oficial
-  IV. Arquitetura Monólito Modular Django
-  V. Qualidade de Código
-  VI. Testes de Aceitação
-  VII. Segurança e LGPD
-  VIII. Gerência de Configuração
-  IX. Governança de Escopo e Configuração
-- Seções adicionadas: "Restrições de Stack e Escopo", "Fluxo de Desenvolvimento e Portões de
-  Qualidade", "Governança".
-- Seções removidas: nenhuma.
-- Templates dependentes: não alterados por este comando (leem a constituição em tempo de execução).
-- TODOs pendentes: nenhum.
-- Fonte: docs/fonte/constituicao_base.md.
-Este comentário é material temporário de revisão e deve ser removido antes do commit.
--->
-
 # Constituição do SIGTCC
 
 Sistema de Gestão de TCC do NUCOMP-UEA. Disciplina Engenharia de Software (ESTCMP025), 2026/2.

@@ -36,7 +36,7 @@ sessões antes (research A4).
 | `defesa/avaliacao.html` | cabeçalho (título, aluno, orientador, link do Documento), 9 linhas, nota MA-03 antes da sessão, bloco Assinatura do Membro da Banca, botões Salvar e Enviar avaliação assinada; só leitura depois da liberação |
 | `defesa/confirmar_liberacao.html` | confirmação MA-05 com nota final e parecer |
 | `defesa/_bloco_avaliacao.html`, `defesa/_bloco_resultado.html`, `defesa/_resultado_aluno.html` | parciais acima |
-| `defesa/emails/resultado_*.txt` | e-mails MA-06 a MA-08 |
+| `defesa/emails/resultado_secretaria.txt` | e-mail da MA-08 (Q-131 B, 10/11/2026: só a Secretaria) |
 
 O JavaScript da página Avaliação só faz a prévia da imagem, a conferência imediata do tamanho e da
 extensão e a habilitação dos campos; nenhuma regra de negócio (a validação que vale é no servidor).

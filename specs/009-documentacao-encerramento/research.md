@@ -33,7 +33,8 @@ Q-140, turma arquivada e B-03).
   | Função | Regra |
   |---|---|
   | `e_presidente(usuario, sessao)` | papel Orientador (Presidente) na banca da sessão (já usada por `pode_registrar_parecer` e `pode_liberar`) |
-  | `pode_baixar_documentos(usuario, sessao)` | resultado liberado **e** (membro efetivo, isto é, em `membros_efetivos(sessao)`; Professor da Disciplina da turma; Secretaria do curso da turma; Aluno do TCC). Suplente não acionado: não (P5) |
+  | `pode_baixar_ata(usuario, sessao)` | resultado liberado **e** (membro efetivo, isto é, em `membros_efetivos(sessao)`; Professor da Disciplina da turma; Secretaria do curso da turma). O Aluno e o Suplente não acionado, não (P5; decisão de 10/11/2026: o Aluno só baixa a Folha) |
+  | `pode_baixar_folha(usuario, sessao)` | resultado liberado **e** (Aluno do TCC ou `pode_baixar_ata`); se a Folha existe é decisão de `folha_aplicavel` |
   | `pode_baixar_declaracao(usuario, sessao)` | resultado liberado e usuário em `membros_efetivos(sessao)` |
   | `pode_editar_ouvintes(usuario, sessao)` | sessão Em Andamento ou Realizada; turma não arquivada; Presidente ou Professor da Disciplina da turma |
   | `pode_ver_ouvintes(usuario, sessao)` | **sem depender de `pode_editar_ouvintes`** (revisão B-02): Presidente ou Professor da Disciplina da turma, em qualquer status, quando há presenças gravadas ou ele pode editar; Secretaria do curso só com a sessão Em Andamento ou Realizada (FR-009, P6) |

@@ -1,0 +1,14 @@
+{% comment %}
+  Cabeçalho institucional da Ata Final e da Folha de Aprovação (modelos de docs/): logo da UEA à
+  esquerda, as três linhas centralizadas (cabecalho_linhas, de services_documentos._dados_comuns)
+  e logo da EST à direita. Os logos são de static/img/, resolvidos por pdf.link_callback.
+  Uso: {% include "defesa/pdf/_cabecalho.html" %} dentro de um template que estende base_pdf.html.
+  [US-28][RBN-DEF-07.1][RBN-DEF-07.2]
+{% endcomment %}
+<table class="topo" width="100%">
+  <tr>
+    <td width="15%" align="left"><img src="static/img/logo_uea.png" width="56" height="58"></td>
+    <td width="70%" align="center">{% for linha in cabecalho_linhas %}{{ linha }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+    <td width="15%" align="right"><img src="static/img/logo_est.png" width="77" height="55"></td>
+  </tr>
+</table>
