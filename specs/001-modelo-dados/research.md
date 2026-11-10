@@ -108,9 +108,11 @@ não é da banca).
 **Limitações aceitas**: o Django Admin não suporta modelos com chave composta; o `pk` é uma tupla.
 Nomes de tabela em SQL bruto precisam de aspas (`"Avaliacoes"`), ver R2.
 
-**A verificar na feature que usar**: `ModelForm`, `bulk_update` e a biblioteca de auditoria
-(dicionário, seção 4, item 5, por exemplo django-simple-history, que depende de content types) em
-modelos com chave composta. Não há garantia nesta feature.
+**Verificado nas features seguintes (Q-22 A, fechado em 09/11/2026)**: as chaves compostas
+funcionam nas features que as usaram (`Alunos_Turmas`, `Banca_Defesa`, `Avaliacoes`,
+`Presenca_Ouvintes` e `PalavrasChave_TCC`). O sistema não usa `ModelForm`, `bulk_update` nem
+biblioteca de auditoria sobre esses modelos (a auditoria é feita pelas tabelas de histórico). Não
+há pendência.
 
 ## D4. Identidade "BY DEFAULT" em vez de "ALWAYS"
 

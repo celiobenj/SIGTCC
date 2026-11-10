@@ -258,7 +258,9 @@ conteúdo das 4 tabelas contra a matriz.
   (`ent_tma_id`, `ent_alu_id`) e `TCCs` (`tcc_alu_id`, `tcc_tur_id`).
 - **FR-007**: O banco DEVE garantir as unicidades parciais:
   - `Usuarios.usu_email` e `CoorientadoresExternos.cext_email`, quando preenchidos. E-mail sem
-    valor DEVE ser gravado como nulo, nunca como texto vazio (condição da aprovação de 2026-10-19);
+    valor DEVE ser gravado como nulo, nunca como texto vazio (condição da aprovação de
+    2026-10-19). Essa conversão é feita **só pela aplicação** (`save()` e `create_user`); o banco
+    não tem `CHECK (usu_email <> '')` (Q-06 B, 09/11/2026);
   - `Turmas_Marcos` (`tma_tur_id`, `tma_tipo`) quando `tma_tipo` ≠ 'Outra';
   - `Orientacoes` (`ori_tcc_id`) quando `ori_status` = 'Ativa';
   - `Coorientacoes` (`coo_tcc_id`, `coo_doc_id`) e (`coo_tcc_id`, `coo_cext_id`) quando
