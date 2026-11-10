@@ -2,7 +2,9 @@
 
 Roteiro para publicar o SIGTCC num link público, com o backend e o banco rodando, para a
 Product Owner validar as funcionalidades já implementadas. Não é o ambiente de produção final do
-PGCS (seção 9, previsto para o TP4): é um ambiente de validação, no plano gratuito do Render.
+PGCS (seção 9, previsto para o TP4): é um ambiente de validação, no plano gratuito do Render. Ele
+pertence à **visão de construção** da entrega da disciplina; a implantação real, com escala e
+operação contínua, está descrita em [`ambientes.md`](ambientes.md).
 
 O repositório já traz o que o Render precisa:
 
@@ -171,9 +173,11 @@ Os e-mails `demo.…@uea.edu.br` da carga não existem; os envios para eles volt
   continuam.
 - **O banco gratuito expira 30 dias depois de criado.** O Render avisa por e-mail. Depois disso,
   é preciso passar para um plano pago ou criar outro banco e repetir o Passo 4.
-- **Nada roda agendado.** Os lembretes de entrega (US-15) e a expiração de membros externos não
-  são automáticos. Se precisar, rode-os do seu computador com o `DATABASE_URL` do Passo 4:
-  `enviar_lembretes_entrega` e `expirar_membros_externos`.
+- **Nada roda agendado.** O plano gratuito não tem Cron Job, e as tarefas por data rodam por
+  **execução manual** (decisão Q-67 C, 09/11/2026). Rode-as do seu computador com o
+  `DATABASE_URL` do Passo 4: `iniciar_sessoes` (início automático das sessões de defesa),
+  `expirar_membros_externos` (validade do Membro Externo) e `enviar_lembretes_entrega`
+  (lembretes da US-15). Enquanto não rodam, as telas aplicam as mesmas regras por data.
 - **Use só dados fictícios.** Não cadastre dados pessoais reais de alunos (LGPD).
 
 ## Atualizar o sistema publicado

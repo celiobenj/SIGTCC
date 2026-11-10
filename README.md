@@ -51,9 +51,28 @@ arquivos alterados. Antes de abrir um Pull Request, rode a verificação complet
 pre-commit run --all-files
 ```
 
+## Tarefas por data
+
+Três comandos de gestão aplicam regras por data e **rodam por execução manual**, sem agendador (o
+plano gratuito do Render não tem Cron Job; decisão Q-67 C, 09/11/2026). As telas já aplicam as
+regras por data; os comandos completam o registro e os lembretes:
+
+```bash
+python manage.py iniciar_sessoes             # início automático das sessões de defesa
+python manage.py expirar_membros_externos    # muda para Expirada as validades vencidas
+python manage.py enviar_lembretes_entrega    # lembretes de 7 dias, 48 e 24 horas
+```
+
+## Ambientes
+
+O projeto separa a **visão de construção** (desenvolvimento local e validação no Render, para a
+disciplina) da **visão de implantação real** (produção escalável, ainda não implementada). Veja
+`docs/ambientes.md`; o passo a passo do Render está em `docs/deploy-render.md`.
+
 ## Documentação
 
 - Constituição do projeto: `.specify/memory/constitution.md`
 - Documentos de origem (matriz, histórias de usuário, dicionário de dados, PGCS): `docs/fonte/`
 - Especificações por feature (Spec Kit): `specs/`
+- Ambientes (construção × implantação real): `docs/ambientes.md`
 - Validação do modelo de dados: `specs/001-modelo-dados/quickstart.md`
