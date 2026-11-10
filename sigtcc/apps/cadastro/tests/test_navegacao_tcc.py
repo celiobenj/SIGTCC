@@ -79,7 +79,7 @@ class MenuETurmasDoAlunoTest(NavegacaoTestBase):
 
     def test_menu_do_aluno_tem_o_item_turmas_proprio(self):
         self.entrar_como_aluno()
-        resposta = self.client.get(reverse("cadastro:painel"))
+        resposta = self.client.get(reverse("cadastro:perfil"))
         self.assertContains(resposta, _href("minhas_turmas"))
         self.assertNotContains(resposta, _href("turmas"))
 
@@ -87,7 +87,7 @@ class MenuETurmasDoAlunoTest(NavegacaoTestBase):
         for usuario in (self.professor, criar_secretaria(curso=self.turma.tur_cur)):
             with self.subTest(usuario=usuario.usu_email):
                 self.client.force_login(usuario)
-                resposta = self.client.get(reverse("cadastro:painel"))
+                resposta = self.client.get(reverse("cadastro:perfil"))
                 self.assertNotContains(resposta, _href("minhas_turmas"))
 
     def test_cenario8_lista_so_as_turmas_ativas_do_aluno_e_leva_ao_meu_tcc(self):

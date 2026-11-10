@@ -348,11 +348,11 @@ class NotificacoesTest(TesteAcesso):
 
     def test_cenario4_abrir_notificacao(self):
         """Dado 3 não lidas, quando abre uma, então a tela relacionada e o contador vai a 2."""
-        primeira = criar_notificacao(self.usuario, link="/painel/?origem=1")
+        primeira = criar_notificacao(self.usuario, link="/perfil/?origem=1")
         criar_notificacao(self.usuario)
         criar_notificacao(self.usuario)
         resposta = self.abrir(primeira)
-        self.assertEqual(resposta.redirect_chain[-1][0], "/painel/?origem=1")
+        self.assertEqual(resposta.redirect_chain[-1][0], "/perfil/?origem=1")
         self.assertContains(resposta, '<span class="badge" data-contador>2</span>', html=False)
         self.assertEqual(self.nao_lidas(), 2)
 
@@ -405,7 +405,7 @@ class NotificacoesTest(TesteAcesso):
 
     def test_link_externo_na_notificacao_nao_e_seguido(self):
         """A12: endereço externo não é seguido; aparece "Este item não está mais disponível"."""
-        for link in ("https://outro.site/painel/", "//outro.site/painel/", "painel/"):
+        for link in ("https://outro.site/perfil/", "//outro.site/perfil/", "painel/"):
             with self.subTest(link=link):
                 resposta = self.abrir(criar_notificacao(self.usuario, link=link))
                 self.assertEqual(resposta.redirect_chain[-1][0], URL_NOTIFICACOES)
@@ -428,7 +428,7 @@ class NotificacoesTest(TesteAcesso):
     def test_base_cenario4_layout_completo(self):
         """História 6, cenário 4: "Meu perfil" e o link do sino para a central (tasks H1)."""
         criar_notificacao(self.usuario)
-        resposta = self.client.get(reverse("cadastro:painel"))
+        resposta = self.client.get(reverse("cadastro:perfil"))
         self.assertContains(resposta, f'href="{URL_PERFIL}"')
         self.assertContains(resposta, mensagens.MEU_PERFIL)
         self.assertContains(resposta, f'class="iconbtn" href="{URL_NOTIFICACOES}"')

@@ -102,7 +102,7 @@ AUTH_USER_MODEL = "cadastro.Usuarios"
 # services.autenticar (research A1). [US-11][RBN-CAD-06.4]
 AUTHENTICATION_BACKENDS = ["sigtcc.apps.cadastro.backends.SigtccBackend"]
 LOGIN_URL = "cadastro:entrar"
-LOGIN_REDIRECT_URL = "cadastro:painel"
+LOGIN_REDIRECT_URL = "cadastro:inicio"
 
 # Regra de senha da US-10 e da US-12: 8 a 64 caracteres, 1 letra e 1 número (research A10).
 # [US-10][RBN-CAD-06.3][US-12][RBN-CAD-06.5]

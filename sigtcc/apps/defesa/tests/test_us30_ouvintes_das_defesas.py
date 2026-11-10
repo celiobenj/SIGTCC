@@ -161,9 +161,9 @@ class TesteAcesso(BaseOuvintesDasDefesas):
     def test_menu_so_da_secretaria(self):
         cenario = sessao_com_banca(StatusSessao.REALIZADA)
         self.client.force_login(self.secretaria)
-        self.assertContains(self.client.get(reverse("cadastro:painel")), "Ouvintes das defesas")
+        self.assertContains(self.client.get(reverse("cadastro:perfil")), "Ouvintes das defesas")
         for usuario in (cenario["professor"], cenario["coordenador"], cenario["aluno"]):
             with self.subTest(usuario=usuario.pk):
                 self.client.force_login(usuario)
-                pagina = self.client.get(reverse("cadastro:painel"))
+                pagina = self.client.get(reverse("cadastro:perfil"))
                 self.assertNotContains(pagina, "Ouvintes das defesas")
