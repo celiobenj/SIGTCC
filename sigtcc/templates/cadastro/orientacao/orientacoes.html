@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load chips_tags turmas_tags %}
 {% comment %}
   Tela Orientações do docente, como viewOrientacoes do protótipo de 17/10: aviso de estado no
   topo (link de pedido ou convite, FR-012 e FR-033), "Pedidos de orientação", "Convites de
@@ -6,6 +7,8 @@
   as decisões dos botões vêm prontas de services_orientacao.contexto_orientacoes.
   Spec 007 (IC-04): "Agendar defesa" na linha do TCC que o docente pode agendar (`agendaveis`,
   de services_defesa.tccs_elegiveis). [US-21][FR-006]
+  Visual do protótipo: avatar com a cor de cada aluno (cor_avatar) e o Status do TCC no chip com a
+  cor de chipSit (cor_status_tcc).
   [US-18][US-36][US-19][US-42][US-46][RBN-CAD-10.2][RBN-CAD-10.4][RBN-CAD-11.4]
   [FR-009][FR-012][FR-014][FR-015][FR-016][FR-026][FR-031][FR-033][FR-040][Q11]
 {% endcomment %}
@@ -20,7 +23,7 @@
 <div class="sec-tit c-azul">Pedidos de orientação</div>
 {% for p in pedidos %}
 <div class="item{% if destaque == p.sol.pk %} destaque{% endif %}" id="solicitacao-{{ p.sol.pk }}">
-  <span class="avatar md">{{ p.aluno|slice:":1"|upper }}</span>
+  <span class="avatar md" style="background:{{ p.aluno|cor_avatar }}" aria-hidden="true">{{ p.aluno|slice:":1"|upper }}</span>
   <div class="corpo">
     <b>{{ p.aluno }} — {{ p.titulo }}</b>
     <small>{{ p.turma.tur_descricao }} · {{ p.turma.tur_identificador }} · {{ p.sol.sol_data_solicitacao|date:"d/m/Y H:i" }}{% if p.orientador_atual %} · Orientador atual: {{ p.orientador_atual }}{% endif %}</small>
@@ -38,7 +41,7 @@
 <div class="sec-tit c-azul">Convites de coorientação</div>
 {% for c in convites %}
 <div class="item{% if destaque == c.sol.pk %} destaque{% endif %}" id="solicitacao-{{ c.sol.pk }}">
-  <span class="avatar md">{{ c.aluno|slice:":1"|upper }}</span>
+  <span class="avatar md" style="background:{{ c.aluno|cor_avatar }}" aria-hidden="true">{{ c.aluno|slice:":1"|upper }}</span>
   <div class="corpo">
     <b>{{ c.aluno }} — {{ c.titulo }}</b>
     <small>{{ c.turma.tur_identificador }}{% if c.orientador %} · Orientador: {{ c.orientador }}{% endif %}</small>
@@ -70,7 +73,7 @@
         <td class="texto">{% if o.titulo %}{{ o.titulo }}{% else %}<span class="muted">Sem Proposta</span>{% endif %}</td>
         <td>{{ o.tcc.tcc_modalidade|default:"—" }}</td>
         <td>{{ o.papel }}</td>
-        <td><span class="chip">{{ o.tcc.tcc_status }}</span></td>
+        <td><span class="chip {{ o.tcc.tcc_status|cor_status_tcc }}">{{ o.tcc.tcc_status }}</span></td>
         <td><small>{% for titulo, status in o.entregas %}{{ titulo }}: {{ status }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</small></td>
         <td>
           <div class="acoes">
