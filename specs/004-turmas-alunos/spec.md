@@ -162,6 +162,11 @@ como a Q-82.
   do aluno** (US-41; spec 006, Clarifications Q5), junto com "Transferir", "Excluir da turma" e
   "Encerrar participação". A regra do FR-019 não muda; muda só o lugar do botão. Atualizados o
   cenário 10 da User Story 2, o FR-019 e a premissa "Painel do aluno".
+- Q-117 (opção A): o arquivamento da turma cancela os pedidos de orientação e os convites de
+  coorientação pendentes? → A: **sim**, regra da spec 006 (Clarifications Q17, FR-053), que agora
+  fica também nesta spec: ao arquivar, os pendentes dos TCCs da turma são cancelados na mesma
+  gravação e cada docente recebe a MO-26 da spec 006. Pedido ou convite pendente não é vínculo,
+  então continua valendo "com todos os vínculos preservados" (US-07 C). Atualizado o FR-007.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -418,7 +423,10 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   Em Andamento – senão "Há sessão de defesa ativa"; (c) em TCC 2, a Data Limite da entrega do tipo
   Versão Final da turma já tiver passado – senão "A Data Limite da Versão Final ainda não venceu ou
   não foi cadastrada". As condições são conferidas nessa ordem e aparece o primeiro motivo. Sucesso:
-  MT-10 (PROVISÓRIA) (RBN-CAD-04.5).
+  MT-10 (PROVISÓRIA) (RBN-CAD-04.5). Na mesma gravação, o arquivamento DEVE cancelar os pedidos de
+  orientação e os convites de coorientação ainda pendentes dos TCCs da turma, com a mesma data e
+  hora, e avisar no sistema o docente de cada um (MO-26 da spec 006; spec 006, FR-053 e
+  Clarifications Q17; índice Q-117).
 - **FR-008**: A turma arquivada DEVE sair da listagem principal e ficar numa área de turmas
   arquivadas, só para consulta, com alunos, TCCs, entregas, atas, defesas e vínculos preservados. Nela
   ficam indisponíveis, inclusive pelo endereço direto: Editar, Excluir, Arquivar, Matricular alunos,
