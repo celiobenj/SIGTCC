@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% comment %}
-  Turmas ativas do Docente (Professor da Disciplina) ou do curso da Secretaria.
+  Turmas ativas do Docente (Professor da Disciplina) ou do curso da Secretaria, em cartões. O botão
+  flutuante "Nova turma" (.fab do protótipo; rótulo da US-07) só aparece com pode_criar, a mesma
+  checagem do botão anterior (só o Docente cria turma, RBN-CAD-04.2).
   [US-07][FR-010][Q9]
 {% endcomment %}
 {% block titulo %}Turmas · SIGTCC{% endblock %}
@@ -9,7 +11,7 @@
   <h2 class="pg">Turmas</h2>
   <div class="flex flex-wrap">
     <a class="btn txt" href="{% url 'cadastro:turmas_arquivadas' %}"><span class="ms">inventory_2</span>Turmas arquivadas</a>
-    {% if pode_criar %}<a class="btn pri" href="{% url 'cadastro:turma_nova' %}"><span class="ms">add</span>Nova turma</a>{% endif %}
+    {% if pode_criar %}<a class="fab" href="{% url 'cadastro:turma_nova' %}"><span class="ms">add</span>Nova turma</a>{% endif %}
   </div>
 </div>
 <div class="mt16">{% include "cadastro/turmas/_lista_turmas.html" %}</div>

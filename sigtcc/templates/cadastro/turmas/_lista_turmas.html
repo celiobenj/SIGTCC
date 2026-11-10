@@ -1,24 +1,14 @@
 {% comment %}
-  Cartões das turmas (tela "Gerenciar turmas de TCC" do protótipo, só o visual).
+  Grade de cartões das turmas (tela "Turmas" do protótipo de 17/10, viewHome; só o visual), usada
+  por lista.html e arquivadas.html. Cada cartão abre a tela da turma.
   [US-07][FR-008][FR-010][Q9]
 {% endcomment %}
 {% if turmas %}
-  <div class="tabela-wrap">
-    <table class="tabela">
-      <thead><tr><th>Identificador</th><th>Descrição</th><th>Curso</th><th>Período</th><th>Dia e horário</th><th>Local</th></tr></thead>
-      <tbody>
-        {% for turma in turmas %}
-          <tr>
-            <td class="nw"><a href="{% url 'cadastro:turma' turma.pk %}">{{ turma.tur_identificador }}</a></td>
-            <td>{{ turma.tur_descricao }}</td>
-            <td class="texto">{{ turma.tur_cur.cur_nome }}</td>
-            <td class="nw">{{ turma.tur_ano }}/{{ turma.tur_semestre }}</td>
-            <td class="nw">{{ turma.tur_dia_da_semana }}, {{ turma.tur_hora_inicio|time:"H:i" }}–{{ turma.tur_hora_termino|time:"H:i" }}</td>
-            <td>{{ turma.tur_local }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="grade">
+    {% for turma in turmas %}
+      {% url 'cadastro:turma' turma.pk as link %}
+      {% include "cadastro/turmas/_cartao_turma.html" with turma=turma link=link %}
+    {% endfor %}
   </div>
 {% else %}
   <div class="vazio"><span class="ms">groups</span>Nenhuma turma.</div>

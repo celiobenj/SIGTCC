@@ -449,6 +449,16 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   consulta e com "Transferir". Nenhum outro perfil abre a turma, nem pelo endereço direto (M-02 da
   spec 003); o Coordenador de Curso só é Professor da Disciplina das turmas que ele mesmo criou
   (Clarifications, Q9).
+  **Grade de cartões** (tela "Turmas" do protótipo de 17/10, só o visual; 2026-11-10): as telas
+  Turmas e Turmas arquivadas, e as turmas do Aluno (spec 005, FR-031), mostram as turmas numa grade
+  de cartões, não numa tabela. Cada cartão é um link (a tela da turma; para o Aluno, "Meu TCC") e
+  traz: no banner, a cor e o desenho do curso (Engenharia de Computação, Sistemas de Informação e
+  Licenciatura em Computação; outro curso, só uma cor fixa), "Descrição · Identificador", "Ano/
+  Semestre · Curso", o nome e o avatar do Professor da Disciplina; no corpo, dia e horário, local e
+  código da disciplina; no rodapé, a quantidade de alunos matriculados e, na turma arquivada, a
+  etiqueta "Arquivada". A cor sai do curso, sem coluna nova (FR-028). "Nova turma" é um botão
+  flutuante, mostrado só ao Docente, como antes. Sem turmas, "Nenhuma turma.". A ordem continua a
+  mesma (mais recente primeiro).
 
 **Matrícula de alunos [US-08][RBN-CAD-05.1, 05.2, 05.3, 05.5, 05.7]**
 
