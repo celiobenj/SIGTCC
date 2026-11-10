@@ -95,6 +95,10 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
   ao Aluno e some da aba Meu TCC (`pode_baixar_ata` e `pode_baixar_folha`; spec 009). O cargo do
   Coordenador e a titulação saem na forma neutra, "Coordenador(a) do Curso" e "Doutor(a)", porque
   o cadastro não guarda gênero (Q-155).
+- PGCS 1.3 (cópia em `docs/fonte/`): PDFs sob demanda sem armazenamento externo, rotinas por
+  data por execução manual, branches `fix/`, itens de configuração CI-18 e CI-19 e limitações
+  conhecidas. Diagramas de arquitetura atualizados à v0.3.0 e PNG exportados de novo (Q-137);
+  instalação conferida num Linux limpo (Q-136).
 - Todas as questões em aberto de `docs/questoes-a-rever.md` respondidas em 10/11/2026; o
   comentário temporário de revisão saiu da constituição (Q-11), sem mudar a versão.
 - O aviso do resultado da defesa vai só à Secretaria do curso: saem os avisos ao Aluno (MA-06) e à
