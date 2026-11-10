@@ -14,6 +14,7 @@
   _bloco_ocorrencias.html, com a parte de ocorrências da mesma visão.
   [US-40][US-23][US-24][RBN-DEF-01.4][RBN-DEF-02.1][FR-030][US-25][US-27][RBN-DEF-06.8]
   [US-28][RBN-DEF-07.3][US-30][RBN-DEF-08.2][RBN-DEF-08.5]
+  Status da sessão no chip com a cor do protótipo (cor_status_sessao).
 {% endcomment %}
 {% block titulo %}Sessão de defesa · SIGTCC{% endblock %}
 {% block conteudo %}
@@ -39,7 +40,7 @@
   <div class="dado"><span>Horário</span><b>{{ sessao|horario }}</b></div>
   <div class="dado"><span>Formato da Sessão</span><b>{{ sessao.def_formato }}</b></div>
   <div class="dado"><span>{% if sessao.def_formato == "Presencial" %}Local{% else %}Link da Videochamada{% endif %}</span><b>{{ sessao|lugar }}</b></div>
-  <div class="dado"><span>Status</span><b><span class="chip">{{ sessao.def_status }}</span></b></div>
+  <div class="dado"><span>Status</span><b><span class="chip {{ sessao.def_status|cor_status_sessao }}">{{ sessao.def_status }}</span></b></div>
 </section>
 <section class="cartao mt16">
   <header><span class="ms">groups</span><h3>Banca examinadora</h3></header>

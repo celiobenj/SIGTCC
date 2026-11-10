@@ -5,7 +5,8 @@
   usuário é membro (inclusive Suplente), sem as Canceladas, em ordem cronológica, com papel,
   data, horário, aluno, título e status; as avaliações pendentes em destaque (só membros
   efetivos); os atalhos Documento, Critérios de avaliação, Avaliar e Declaração; a data abre a
-  janela Sessão de defesa. Sem regra aqui: tudo vem de services_avaliacoes.minhas_bancas.
+  janela Sessão de defesa. Sem regra aqui: tudo vem de services_avaliacoes.minhas_bancas. Status
+  no chip com a cor do protótipo (cor_status_sessao).
   Spec 009 (IC-04): o atalho Declaração baixa a segunda via (defesa:declaracao).
   [US-25][RBN-DEF-05.4][RBN-DEF-08.3][FR-003 a FR-006][US-30]
 {% endcomment %}
@@ -26,7 +27,7 @@
         <td>{{ b.papel }}</td>
         <td class="texto">{{ b.sessao.def_tcc.tcc_alu.alu.usu_nome }}</td>
         <td class="texto">{{ b.sessao.def_tcc.tcc_titulo }}</td>
-        <td><span class="chip">{{ b.sessao.def_status }}</span></td>
+        <td><span class="chip {{ b.sessao.def_status|cor_status_sessao }}">{{ b.sessao.def_status }}</span></td>
         <td>{% if b.pendente %}<b>Pendente</b> · {% endif %}{{ b.estado|default:"—" }}</td>
         <td>
           <div class="flex flex-wrap">

@@ -4,6 +4,7 @@
   (com a reserva de 1 hora), Aluno, Título, Orientador, Local ou Link e Status, em ordem
   cronológica; a data abre a janela da sessão para quem pode vê-la (`pode_abrir`, de
   listar_defesas). Sem sessões, mantém os cabeçalhos e mostra a mensagem da US-40 E2.
+  Status no chip com a cor do protótipo (cor_status_sessao: azul, amarelo, verde ou vermelho).
   Uso: {% include "defesa/_tabela_defesas.html" with sessoes=sessoes %}
   [US-21][US-40][RBN-DEF-01.4][FR-024][FR-028]
 {% endcomment %}
@@ -21,7 +22,7 @@
         <td class="texto">{{ sessao.def_tcc.tcc_titulo }}</td>
         <td class="texto">{{ sessao.orientador_nome }}</td>
         <td class="nw">{{ sessao|lugar }}</td>
-        <td><span class="chip">{{ sessao.def_status }}</span></td>
+        <td><span class="chip {{ sessao.def_status|cor_status_sessao }}">{{ sessao.def_status }}</span></td>
       </tr>
       {% empty %}
       <tr><td colspan="7" class="muted">Nenhuma sessão de defesa encontrada para o período e filtros selecionados</td></tr>
