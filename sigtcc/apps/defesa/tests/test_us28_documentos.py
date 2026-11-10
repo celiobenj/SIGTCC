@@ -109,7 +109,7 @@ class TesteDadosDaAta(TesteAvaliacao):
         dados = services_documentos.dados_da_ata(cenario["sessao"])
         self.assertEqual(
             dados["titulo_documento"],
-            "Ata Final de Avaliação de Trabalho de Conclusão de Curso II",
+            "ATA FINAL DE AVALIAÇÃO DE TRABALHO DE CONCLUSÃO DE CURSO II",
         )
         self.assertEqual(dados["aluno"], cenario["aluno"].usu_nome)
         self.assertEqual(dados["titulo"], cenario["tcc"].tcc_titulo)
@@ -138,7 +138,7 @@ class TesteDadosDaAta(TesteAvaliacao):
         dados = services_documentos.dados_da_ata(cenario["sessao"])
         self.assertEqual(
             dados["titulo_documento"],
-            "Ata Final de Avaliação de Trabalho de Conclusão de Curso I",
+            "ATA FINAL DE AVALIAÇÃO DE TRABALHO DE CONCLUSÃO DE CURSO I",
         )
         self.assertEqual(dados["parecer"], Parecer.APROVADO_PARA_TCC_2)
 
@@ -236,8 +236,8 @@ class TesteDadosDaDeclaracao(TesteAvaliacao):
 # Parte de view (tasks T022): cenários 1.1 a 1.19
 # =============================================================================================
 
-ATA_II = "Ata Final de Avaliação de Trabalho de Conclusão de Curso II"
-ATA_I = "Ata Final de Avaliação de Trabalho de Conclusão de Curso I"
+ATA_II = "ATA FINAL DE AVALIAÇÃO DE TRABALHO DE CONCLUSÃO DE CURSO II"
+ATA_I = "ATA FINAL DE AVALIAÇÃO DE TRABALHO DE CONCLUSÃO DE CURSO I"
 SEM_PERMISSAO = "Você não tem permissão para acessar os documentos desta defesa"
 E2 = (
     "Não foi possível gerar a Ata Final: o Coordenador de Curso não possui assinatura cadastrada "
@@ -324,14 +324,20 @@ class TesteDownloadsTcc2Aprovado(BaseDocumentos):
         self.conferir_pdf(ata, f"ata_final_{sessao.pk}.pdf")
         texto = junto(texto_do_pdf(ata))
         self.assertIn(ATA_II, texto)
-        self.assertIn("Universidade do Estado do Amazonas – Escola Superior de Tecnologia", texto)
+        self.assertIn("Universidade do Estado do Amazonas - UEA", texto)
+        self.assertIn("Escola Superior de Tecnologia - EST", texto)
+        self.assertIn(f"Curso de {cenario['tcc'].tcc_tur.tur_cur.cur_nome}", texto)
+        for rotulo in ("1. Dados de Identificação", "Primeiro Avaliador", "Segundo Avaliador"):
+            self.assertIn(rotulo, texto)
+        self.assertIn("Assinaturas:", texto)
         for chave in ("orientador", "av1", "av2", "coordenador", "aluno"):
             self.assertIn(cenario[chave].usu_nome, texto)
-        self.assertIn("Nota final: 8,0", texto)
+        self.assertIn("MÉDIA FINAL:", texto)
+        self.assertIn("8,0", texto)
         self.assertIn("Parecer: Aprovado", texto)
         self.assertIn("20/11/2026", texto)
-        # 3 assinaturas da banca e a do Coordenador (FR-001).
-        self.assertEqual(numero_de_imagens(ata), 4)
+        # 2 logos, 3 assinaturas da banca e a do Coordenador (FR-001).
+        self.assertEqual(numero_de_imagens(ata), 6)
         folha = self.baixar(cenario["orientador"], "folha_aprovacao", sessao)
         self.conferir_pdf(folha, f"folha_aprovacao_{sessao.pk}.pdf")
         texto = junto(texto_do_pdf(folha))
@@ -340,12 +346,18 @@ class TesteDownloadsTcc2Aprovado(BaseDocumentos):
         self.assertIn("Manaus, 20 de novembro de 2026", texto)
         self.assertNotIn("8,0", texto)
         self.assertNotIn("Nota", texto)
-        self.assertEqual(numero_de_imagens(folha), 3)
-        for nome in ("orientador", "av1", "av2", "professor", "aluno"):
+        self.assertIn("FOLHA DE APROVAÇÃO", texto)
+        self.assertIn("Universidade do Estado do Amazonas - UEA", texto)
+        # 2 logos e 3 assinaturas.
+        self.assertEqual(numero_de_imagens(folha), 5)
+        for nome in ("orientador", "av1", "av2", "professor"):
             with self.subTest(perfil=nome):
                 pagina = self.janela(cenario[nome], sessao)
                 self.assertContains(pagina, self.url("ata_final", sessao))
                 self.assertContains(pagina, self.url("folha_aprovacao", sessao))
+        pagina = self.janela(cenario["aluno"], sessao)
+        self.assertNotContains(pagina, self.url("ata_final", sessao))
+        self.assertContains(pagina, self.url("folha_aprovacao", sessao))
         pagina = self.janela(secretaria, sessao)
         self.assertContains(pagina, "Ata Final (PDF)")
         self.assertContains(pagina, "Folha de Aprovação (PDF)")
@@ -356,10 +368,21 @@ class TesteDownloadsTcc2Aprovado(BaseDocumentos):
         pagina = self.meu_tcc(cenario)
         self.assertContains(pagina, "Documentos da defesa")
         self.assertContains(pagina, self.url("folha_aprovacao", sessao, "meu_tcc"))
-        self.assertContains(pagina, self.url("ata_final", sessao, "meu_tcc"))
+        self.assertNotContains(pagina, self.url("ata_final", sessao, "meu_tcc"))
+        self.assertNotContains(pagina, "Ata Final (PDF)")
         folha = self.baixar(cenario["aluno"], "folha_aprovacao", sessao, "meu_tcc")
         self.conferir_pdf(folha, f"folha_aprovacao_{sessao.pk}.pdf")
-        self.assertEqual(numero_de_imagens(folha), 3)
+        self.assertEqual(numero_de_imagens(folha), 5)
+
+    def test_aluno_nao_baixa_a_ata_final(self):
+        """O Aluno baixa só a Folha: a Ata traz as notas individuais (403 no endereço direto).
+        [US-28][RBN-DEF-07.3]
+        """
+        cenario = sessao_liberada()
+        self.conferir_recusa_403(self.baixar(cenario["aluno"], "ata_final", cenario["sessao"]))
+        self.conferir_recusa_403(
+            self.baixar(cenario["aluno"], "ata_final", cenario["sessao"], "meu_tcc")
+        )
 
     def test_cenario_1_5_aprovado_com_correcoes_tem_folha(self):
         cenario = sessao_liberada(parecer=Parecer.APROVADO_COM_CORRECOES)
@@ -367,7 +390,7 @@ class TesteDownloadsTcc2Aprovado(BaseDocumentos):
         self.assertContains(self.meu_tcc(cenario), self.url("folha_aprovacao", sessao, "meu_tcc"))
         folha = self.baixar(cenario["aluno"], "folha_aprovacao", sessao, "meu_tcc")
         self.conferir_pdf(folha, f"folha_aprovacao_{sessao.pk}.pdf")
-        ata = self.baixar(cenario["aluno"], "ata_final", sessao)
+        ata = self.baixar(cenario["orientador"], "ata_final", sessao)
         self.assertIn("Parecer: Aprovado com Correções", junto(texto_do_pdf(ata)))
 
     def test_cenario_1_8_secretaria_pela_lista_defesas(self):
@@ -396,7 +419,7 @@ class TesteDownloadsTcc2Aprovado(BaseDocumentos):
         self.assertEqual(resposta.status_code, 302)
         self.assertIn(reverse("cadastro:entrar"), resposta["Location"])
         self.assertIn("next=", resposta["Location"])
-        self.client.force_login(cenario["aluno"])
+        self.client.force_login(cenario["orientador"])
         self.conferir_pdf(self.client.get(endereco), f"ata_final_{sessao.pk}.pdf")
 
 
@@ -424,7 +447,8 @@ class TesteConteudoPorEtapaEParecer(BaseDocumentos):
         self.assertNotContains(pagina, "Folha de Aprovação (PDF)")
         texto = junto(texto_do_pdf(self.baixar(cenario["orientador"], "ata_final", sessao)))
         self.assertIn("Parecer: Reprovado", texto)
-        self.assertIn("Nota final: 5,0", texto)
+        self.assertIn("MÉDIA FINAL:", texto)
+        self.assertIn("5,0", texto)
 
     def test_cenario_1_6_suplente_na_linha_do_titular(self):
         cenario = sessao_liberada(
@@ -433,9 +457,9 @@ class TesteConteudoPorEtapaEParecer(BaseDocumentos):
         sessao = cenario["sessao"]
         ata = self.baixar(cenario["orientador"], "ata_final", sessao)
         texto = junto(texto_do_pdf(ata))
-        self.assertIn(f"1º Avaliador {cenario['suplente'].usu_nome}", texto)
+        self.assertIn(f"Primeiro Avaliador: {cenario['suplente'].usu_nome}", texto)
         self.assertNotIn(cenario["ausente"].usu_nome, texto)
-        self.assertEqual(numero_de_imagens(ata), 4)
+        self.assertEqual(numero_de_imagens(ata), 6)
         folha = junto(texto_do_pdf(self.baixar(cenario["orientador"], "folha_aprovacao", sessao)))
         self.assertIn(cenario["suplente"].usu_nome, folha)
         self.assertNotIn(cenario["ausente"].usu_nome, folha)

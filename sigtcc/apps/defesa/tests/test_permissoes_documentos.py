@@ -74,7 +74,7 @@ class BasePermissoes(TesteAvaliacao):
 
 
 class TesteDocumentosEDeclaracao(BasePermissoes):
-    """pode_baixar_documentos e pode_baixar_declaracao (FR-005, FR-021; P5, P13).
+    """pode_baixar_ata, pode_baixar_folha e pode_baixar_declaracao (FR-005, FR-021; P5, P13).
     [US-28][US-30][RBN-DEF-07.3][RBN-DEF-08.3]
     """
 
@@ -82,14 +82,21 @@ class TesteDocumentosEDeclaracao(BasePermissoes):
         for status in STATUS_SEM_LIBERACAO:
             cenario = sessao_com_banca(status)
             sessao, perfis = recarregar(cenario["sessao"]), self.perfis(cenario)
-            self.conferir(perm.pode_baixar_documentos, sessao, perfis, ())
+            self.conferir(perm.pode_baixar_ata, sessao, perfis, ())
+            self.conferir(perm.pode_baixar_folha, sessao, perfis, ())
             self.conferir(perm.pode_baixar_declaracao, sessao, perfis, ())
 
     def test_depois_da_liberacao(self):
         cenario = sessao_liberada()
         sessao, perfis = recarregar(cenario["sessao"]), self.perfis(cenario)
         self.conferir(
-            perm.pode_baixar_documentos,
+            perm.pode_baixar_ata,
+            sessao,
+            perfis,
+            ("presidente", "av1", "av2", "professor", "secretaria"),
+        )
+        self.conferir(
+            perm.pode_baixar_folha,
             sessao,
             perfis,
             ("presidente", "av1", "av2", "professor", "secretaria", "aluno"),
@@ -101,10 +108,10 @@ class TesteDocumentosEDeclaracao(BasePermissoes):
         sessao, perfis = recarregar(cenario["sessao"]), self.perfis(cenario)
         efetivos = ("presidente", "av1", "suplente")
         self.conferir(
-            perm.pode_baixar_documentos,
-            sessao,
-            perfis,
-            efetivos + ("professor", "secretaria", "aluno"),
+            perm.pode_baixar_ata, sessao, perfis, efetivos + ("professor", "secretaria")
+        )
+        self.conferir(
+            perm.pode_baixar_folha, sessao, perfis, efetivos + ("professor", "secretaria", "aluno")
         )
         self.conferir(perm.pode_baixar_declaracao, sessao, perfis, efetivos)
 
@@ -112,7 +119,8 @@ class TesteDocumentosEDeclaracao(BasePermissoes):
         cenario = sessao_liberada()
         Turmas.objects.filter(pk=cenario["tcc"].tcc_tur_id).update(tur_status=StatusTurma.ARQUIVADA)
         sessao, perfis = recarregar(cenario["sessao"]), self.perfis(cenario)
-        self.assertTrue(perm.pode_baixar_documentos(perfis["aluno"], sessao))
+        self.assertTrue(perm.pode_baixar_folha(perfis["aluno"], sessao))
+        self.assertFalse(perm.pode_baixar_ata(perfis["aluno"], sessao))
         self.assertTrue(perm.pode_baixar_declaracao(perfis["presidente"], sessao))
 
 
@@ -233,7 +241,8 @@ class TestePresidenteDeTcc1DepoisDoTcc2(BasePermissoes):
         Defesas.objects.filter(pk=cenario["sessao"].pk).update(def_ocorrencias="Sem incidentes")
         sessao = recarregar(cenario["sessao"])
         self.assertTrue(perm.e_presidente(presidente, sessao))
-        self.assertTrue(perm.pode_baixar_documentos(presidente, sessao))
+        self.assertTrue(perm.pode_baixar_ata(presidente, sessao))
+        self.assertTrue(perm.pode_baixar_folha(presidente, sessao))
         self.assertTrue(perm.pode_baixar_declaracao(presidente, sessao))
         self.assertTrue(perm.pode_editar_ouvintes(presidente, sessao))
         self.assertTrue(perm.pode_ver_ouvintes(presidente, sessao))

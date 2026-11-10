@@ -201,20 +201,29 @@ def _turma_arquivada(sessao):
     return services_turmas.turma_arquivada(sessao.def_tcc.tcc_tur)
 
 
-def pode_baixar_documentos(usuario, sessao):
-    """Ata Final e Folha de Aprovação (US-28; FR-003 e FR-005): só depois da liberação e só aos
-    membros efetivos da banca, ao Professor da Disciplina da turma, à Secretaria do curso e ao
-    Aluno do TCC. O Suplente não acionado, não (P5); antes da liberação, ninguém (P13).
-    [US-28][RBN-DEF-07.3]
+def pode_baixar_ata(usuario, sessao):
+    """Ata Final (US-28; FR-003 e FR-005): só depois da liberação e só aos membros efetivos da
+    banca, ao Professor da Disciplina da turma e à Secretaria do curso. O Aluno não baixa a Ata,
+    que traz as notas individuais (decisão de 10/11/2026); o Suplente não acionado, não (P5);
+    antes da liberação, ninguém (P13). [US-28][RBN-DEF-07.1][RBN-DEF-07.3]
     """
     if not _liberado(sessao):
         return False
     return (
-        sessao.def_tcc.tcc_alu_id == usuario.pk
-        or _e_professor_da_disciplina(usuario, sessao)
+        _e_professor_da_disciplina(usuario, sessao)
         or _e_secretaria_do_curso(usuario, sessao)
         or _e_membro_efetivo(usuario, sessao)
     )
+
+
+def pode_baixar_folha(usuario, sessao):
+    """Folha de Aprovação (US-28; FR-003 e FR-005): quem baixa a Ata e também o Aluno do TCC,
+    porque a Folha não traz nota. Depois da liberação; se a Folha existe para o parecer e a etapa
+    é decisão de services_documentos.folha_aplicavel. [US-28][RBN-DEF-07.2][RBN-DEF-07.3]
+    """
+    if not _liberado(sessao):
+        return False
+    return sessao.def_tcc.tcc_alu_id == usuario.pk or pode_baixar_ata(usuario, sessao)
 
 
 def pode_baixar_declaracao(usuario, sessao):
