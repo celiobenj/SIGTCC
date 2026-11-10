@@ -33,6 +33,10 @@ python manage.py criar_conta_teste --perfil secretaria --status ativa --email se
 Exemplos prontos (dados fictícios) em [`exemplos/`](exemplos/): `alunos_teste.csv` e
 `alunos_teste.xlsx`, com os três códigos de curso da equivalência.
 
+**Limite desta validação (índice Q-43):** a importação foi validada só com arquivos de teste; sem
+exportação real do sistema acadêmico da UEA. Os cabeçalhos, a codificação e o tamanho de um XLSX
+real (limite de descompressão, achado N7) continuam por conferir.
+
 ## 3. Roteiro manual
 
 Cronometrar os itens a e d juntos (SC-007: até 5 minutos).
