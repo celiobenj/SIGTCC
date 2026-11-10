@@ -260,7 +260,8 @@ a.bloco:hover { border-color: var(--azul-btn); box-shadow: var(--sombra); }
 .tabela.larga { min-width: 1080px; }
 /* Spec 008: avaliação pendente em Minhas bancas e na Sessão de defesa (destaque), linha bloqueada
    do formulário Avaliação e prévia da assinatura. [US-25][US-26][US-27][RBN-DEF-05.4] */
-.tabela tr.pendente td, .pendente-destaque { background: var(--amarelo-claro); }
+/* tr.alerta-amarelo: nome do protótipo para a mesma linha em destaque (docente acima do limite). */
+.tabela tr.pendente td, .tabela tr.alerta-amarelo td, .pendente-destaque { background: var(--amarelo-claro); }
 .tabela tr.bloqueado td { color: var(--texto2); background: var(--fundo); }
 .tabela td .inp, .tabela td select, .tabela td input, .tabela td textarea { width: 100%; }
 .assin { max-width: 320px; max-height: 120px; border: 1px solid var(--borda); border-radius: 6px; background: #fff; }
