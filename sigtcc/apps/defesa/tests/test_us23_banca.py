@@ -15,6 +15,8 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from sigtcc.apps.cadastro import mensagens as mensagens_cadastro
+from sigtcc.apps.cadastro import services as services_cadastro
 from sigtcc.apps.cadastro.choices import StatusConta, Titulacao
 from sigtcc.apps.cadastro.models import MembrosExternos, Notificacoes
 from sigtcc.apps.cadastro.tests.apoio_acesso import criar_membro_externo
@@ -236,6 +238,24 @@ class TesteAlterarBancaEAcionarSuplente(TesteTurmas):
             aviso = Notificacoes.objects.get(not_usu=pessoa)
             self.assertEqual(aviso.not_link_tela, self.url_sessao)
         self.assertIsNone(Notificacoes.objects.get(not_usu=self.av2).not_link_tela)
+
+    def test_convite_de_quem_saiu_da_banca_mostra_item_indisponivel(self):
+        """Índice Q-12 (US-38 cenário 9): a notificação do convite leva à sessão; quem saiu da
+        banca vê "Este item não está mais disponível" em vez do 403; quem nunca foi avisado
+        continua com o 403. [US-38][US-40][RBN-DEF-01.4]
+        """
+        convite = services_cadastro.notificar(self.av2, "Convite para a banca", self.url_sessao)
+        self.alterar(segundo_avaliador=docente().pk)
+        self.assertFalse(BancaDefesa.objects.filter(ban_def=self.sessao, ban_usu=self.av2).exists())
+        self.client.force_login(self.av2)
+        abrir = reverse("cadastro:abrir_notificacao", args=[convite.pk])
+        resposta = self.client.get(abrir, follow=True)
+        self.assertEqual(resposta.redirect_chain[-1][0], reverse("cadastro:notificacoes"))
+        self.assertContains(resposta, mensagens_cadastro.ITEM_INDISPONIVEL)
+        direto = self.client.get(self.url_sessao, follow=True)
+        self.assertContains(direto, mensagens_cadastro.ITEM_INDISPONIVEL)
+        self.client.force_login(docente())
+        self.assertEqual(self.client.get(self.url_sessao).status_code, 403)
 
     def test_cenario_7_acionamento_justificado_do_suplente(self):
         avancar_para(self.sessao, StatusSessao.EM_ANDAMENTO)
