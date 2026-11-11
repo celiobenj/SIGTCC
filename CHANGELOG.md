@@ -132,6 +132,13 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 
 ### Corrigido
 
+- A notificação cujo destino o usuário não acessa mais (aluno transferido de turma, turma que o
+  docente não consulta mais) mostra "Este item não está mais disponível" em vez de 404 ou 403
+  (Q-156; spec 003).
+- Ids malformados no endereço (`?curso=²`, número gigante) não derrubam mais as telas: caem no
+  padrão, por `validators.id_valido`, nos 9 pontos que usavam `isdigit()` (Q-153).
+- Teste intermitente do link de ativação estabilizado: o primeiro link nasce 1 minuto antes
+  (Q-119).
 - Tabelas de todo o sistema não partem mais palavras ("Engenhari/a de/Computaç/ão", "Adria/na"):
   o texto só quebra entre palavras, colunas curtas, endereços e palavras com hífen ficam numa
   linha, e a tabela rola dentro do próprio bloco (`fix(core)`, verificado com o Playwright em 360,

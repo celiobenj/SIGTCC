@@ -24,6 +24,7 @@ from sigtcc.apps.cadastro.permissoes import (
 from sigtcc.apps.cadastro.tests.apoio_acesso import (
     SENHA,
     TesteAcesso,
+    avancar_relogio,
     caminho_do_link,
     criar_aluno_com_turma,
     criar_coordenador,
@@ -104,7 +105,10 @@ class BaseComumTest(TesteAcesso):
     def test_cenario5_link_gerado_fora_das_telas(self):
         """Dado conta aguardando, quando o link é gerado por código, então a tela o aceita."""
         docente = criar_docente_ativo(senha=None, status=StatusConta.AGUARDANDO_ATIVACAO)
-        anterior = services.gerar_link_ativacao(docente)
+        # Q-119: o primeiro link nasce 1 minuto antes; no Windows o relógio (~15 ms) dava o mesmo
+        # instante aos dois links seguidos e o teste falhava às vezes. [US-10][Q-119]
+        with avancar_relogio(minutos=-1):
+            anterior = services.gerar_link_ativacao(docente)
         link = services.gerar_link_ativacao(docente)
         self.assertTrue(link.startswith("http://testserver/primeiro-acesso/ativar/"))
         resposta = self.client.get(anterior.removeprefix("http://testserver"), follow=True)

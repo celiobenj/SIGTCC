@@ -5,6 +5,8 @@ As regras ficam em services.py e permissoes.py; os textos, em mensagens.py.
 [US-10][US-11][US-12][US-37][US-38][FR-025] research A20
 """
 
+from urllib.parse import urlsplit
+
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.core.exceptions import PermissionDenied
@@ -13,11 +15,11 @@ from django.core.paginator import Paginator
 from django.db.models import Case, IntegerField, Value, When
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.urls import resolve, reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from sigtcc.apps.cadastro import mensagens, services
+from sigtcc.apps.cadastro import mensagens, services, services_tcc, services_turmas
 from sigtcc.apps.cadastro.choices import StatusTurma
 from sigtcc.apps.cadastro.forms import (
     AlterarSenhaForm,
@@ -561,11 +563,37 @@ def abrir_notificacao(request, not_id):
     if aberta is None:
         raise Http404
     notificacao, destino = aberta
-    if destino:
+    if destino and _destino_acessivel(request.user, destino):
         return redirect(destino)
     if notificacao.not_link_tela:
         return services.item_indisponivel(request)
     return redirect("cadastro:notificacoes")
+
+
+# Rotas do Aluno presas a uma turma: depois de transferência ou exclusão da turma, o link da
+# notificação antiga leva a uma turma em que ele não está mais (Q-156). [US-38][Q-156]
+ROTAS_DO_ALUNO_NA_TURMA = {"minhas_entregas", "entrega_enviar", "meu_tcc"}
+
+
+def _destino_acessivel(usuario, destino):
+    """Falso quando o destino recusaria o usuário: rota do Aluno numa turma em que ele não está
+    mais matriculado (transferido ou excluído) ou tela da turma que o docente não pode mais
+    consultar. A central mostra "Este item não está mais disponível" em vez de 404 ou 403.
+    [US-38][RBN-CAD-13.2][FR-023][Q10][Q-156]
+    """
+    rota = resolve(urlsplit(destino).path)
+    if rota.namespace != "cadastro":
+        return True
+    try:
+        if rota.url_name in ROTAS_DO_ALUNO_NA_TURMA:
+            services_tcc.turma_do_aluno(rota.kwargs["tur_id"], usuario)
+        elif rota.url_name == "turma":
+            # Professor da Disciplina que deixou a turma (transferência de aluno ou troca de
+            # professor): a tela recusaria com 403. [US-07][Q-156]
+            services_turmas.turma_para(usuario, rota.kwargs["tur_id"], services_turmas.CONSULTAR)
+    except (Http404, PermissionDenied):
+        return False
+    return True
 
 
 @require_POST

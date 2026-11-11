@@ -16,6 +16,7 @@ from sigtcc.apps.cadastro import services_contas
 from sigtcc.apps.cadastro.models import Cursos, Notificacoes, TCCs, Turmas, Usuarios
 from sigtcc.apps.cadastro.permissoes import perfil_requerido, tem_perfil
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada, turma_arquivada
+from sigtcc.apps.cadastro.validators import id_valido
 from sigtcc.apps.defesa import (
     mensagens,
     permissoes_defesa,
@@ -118,9 +119,9 @@ def _origem(request):
     tela"): a aba Defesas da turma, a tela de orientandos ou a tela Defesas.
     [US-21][US-24][FR-006]
     """
-    turma = request.GET.get("turma", "")
-    if turma.isdigit():
-        return reverse("defesa:turma_defesas", args=[int(turma)])
+    turma = id_valido(request.GET.get("turma", ""))  # [Q-153]
+    if turma is not None:
+        return reverse("defesa:turma_defesas", args=[turma])
     if request.GET.get("de") == "orientacoes":
         return reverse("cadastro:orientacoes")
     return reverse("defesa:defesas")
@@ -132,14 +133,15 @@ def _tccs_para_o_formulario(request):
     [US-21][RBN-DEF-01.1][RBN-DEF-01.3][FR-003][FR-006]
     """
     tccs = services_defesa.tccs_elegiveis(request.user)
-    tcc_id, tur_id = request.GET.get("tcc", ""), request.GET.get("turma", "")
-    if tcc_id.isdigit():
+    tcc_id = id_valido(request.GET.get("tcc", ""))  # [Q-153]
+    tur_id = id_valido(request.GET.get("turma", ""))
+    if tcc_id is not None:
         tcc = get_object_or_404(TCCs.objects.select_related("tcc_tur__tur_cur"), pk=tcc_id)
         if not permissoes_defesa.pode_agendar(request.user, tcc):
             raise PermissionDenied(mensagens.TCC_NAO_AGENDAVEL)
         tccs = tccs.filter(pk=tcc.pk)
-    elif tur_id.isdigit():
-        tccs = tccs.filter(tcc_tur_id=int(tur_id))
+    elif tur_id is not None:
+        tccs = tccs.filter(tcc_tur_id=tur_id)
     return tccs
 
 
@@ -202,13 +204,14 @@ def _iniciais(request):
     if request.method != "GET":
         return {}
     iniciais = {campo: request.GET[campo] for campo in CAMPOS_QUE_VOLTAM if request.GET.get(campo)}
-    membro, campo = request.GET.get("membro", ""), request.GET.get("campo", "")
+    membro = id_valido(request.GET.get("membro", ""))  # [Q-153]
+    campo = request.GET.get("campo", "")
     if (
-        membro.isdigit()
+        membro is not None
         and campo in CAMPOS_DO_FORMULARIO
-        and services_contas.membros_externos_disponiveis().filter(pk=int(membro)).exists()
+        and services_contas.membros_externos_disponiveis().filter(pk=membro).exists()
     ):
-        iniciais[campo] = int(membro)
+        iniciais[campo] = membro
     return iniciais
 
 
@@ -311,11 +314,9 @@ def alterar_banca(request, def_id):
     form = AlterarBancaForm(request.POST or None, sessao=registro, banca=banca)
     if request.method == "POST" and form.is_valid():
         nova = form.nova_banca()
-        presidente = request.POST.get("presidente", "")
-        if presidente.isdigit():
-            nova[PapelBanca.ORIENTADOR_PRESIDENTE] = Usuarios.objects.filter(
-                pk=int(presidente)
-            ).first()
+        presidente = id_valido(request.POST.get("presidente", ""))  # [Q-153]
+        if presidente is not None:
+            nova[PapelBanca.ORIENTADOR_PRESIDENTE] = Usuarios.objects.filter(pk=presidente).first()
         try:
             services_defesa.alterar_banca(
                 request.user, registro.pk, nova, form.cleaned_data["justificativa"]

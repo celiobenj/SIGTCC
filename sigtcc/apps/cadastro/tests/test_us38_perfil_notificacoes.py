@@ -22,6 +22,7 @@ from django.urls import reverse
 from sigtcc.apps.cadastro import mensagens
 from sigtcc.apps.cadastro.choices import StatusConta, Titulacao
 from sigtcc.apps.cadastro.models import (
+    AlunosTurmas,
     Docentes,
     MembrosExternos,
     Notificacoes,
@@ -38,6 +39,7 @@ from sigtcc.apps.cadastro.tests.apoio_acesso import (
     criar_notificacao,
     criar_secretaria,
 )
+from sigtcc.apps.cadastro.tests.fabricas import criar_turma
 
 URL_PERFIL = reverse("cadastro:perfil")
 URL_NOTIFICACOES = reverse("cadastro:notificacoes")
@@ -424,6 +426,37 @@ class NotificacoesTest(TesteAcesso):
         self.assertEqual(self.abrir(alheia, follow=False).status_code, 404)
         alheia.refresh_from_db()
         self.assertFalse(alheia.not_lida)
+
+    def test_q156_link_de_turma_antiga_mostra_item_indisponivel(self):
+        """Dado Aluno transferido, quando abre notificação da turma antiga, então "Este item não
+        está mais disponível" em vez de 404. [US-38][RBN-CAD-13.2][Q-156]"""
+        aluno = criar_aluno_com_turma(status=StatusConta.ATIVA)
+        antiga = AlunosTurmas.objects.get(mat_alu=aluno).mat_tur
+        AlunosTurmas.objects.filter(mat_alu=aluno).update(mat_tur=criar_turma())
+        self.client.force_login(aluno.alu)
+        link = reverse("cadastro:minhas_entregas", args=[antiga.pk])
+        notificacao = criar_notificacao(aluno.alu, link=link)
+        resposta = self.abrir(notificacao)
+        self.assertEqual(resposta.redirect_chain[-1][0], URL_NOTIFICACOES)
+        self.assertContains(resposta, mensagens.ITEM_INDISPONIVEL)
+
+    def test_q156_link_da_turma_atual_segue_para_a_tela(self):
+        """Aluno ainda matriculado: o link da turma abre a tela normalmente. [US-38][Q-156]"""
+        aluno = criar_aluno_com_turma(status=StatusConta.ATIVA)
+        turma = AlunosTurmas.objects.get(mat_alu=aluno).mat_tur
+        self.client.force_login(aluno.alu)
+        link = reverse("cadastro:minhas_entregas", args=[turma.pk])
+        resposta = self.abrir(criar_notificacao(aluno.alu, link=link), follow=False)
+        self.assertRedirects(resposta, link, fetch_redirect_response=False)
+
+    def test_q156_turma_que_o_docente_nao_consulta_mais(self):
+        """Docente com notificação de uma turma de outro professor: item indisponível, não 403.
+        [US-38][US-07][Q-156]"""
+        turma = criar_turma()
+        link = reverse("cadastro:turma", args=[turma.pk])
+        resposta = self.abrir(criar_notificacao(self.usuario, link=link))
+        self.assertEqual(resposta.redirect_chain[-1][0], URL_NOTIFICACOES)
+        self.assertContains(resposta, mensagens.ITEM_INDISPONIVEL)
 
     def test_base_cenario4_layout_completo(self):
         """História 6, cenário 4: "Meu perfil" e o link do sino para a central (tasks H1)."""

@@ -51,3 +51,19 @@ class RegraSenhaSigtcc:
         [US-10][RBN-CAD-06.3]
         """
         return REGRA_SENHA
+
+
+# Maior id aceito vindo da URL ou do formulário: 9 dígitos cabem no inteiro do PostgreSQL.
+MAXIMO_DE_DIGITOS_DO_ID = 9
+
+
+def id_valido(valor):
+    """Id numérico vindo de GET/POST: só dígitos ASCII e curto. `"²".isdigit()` é verdadeiro e
+    quebraria em int(), e um número gigante estoura o inteiro do banco (erro 500). Devolve o int
+    ou None. [US-03][RBN-CAD-14.1][Q-153]
+    """
+    if not isinstance(valor, str):
+        return None
+    if not (valor.isascii() and valor.isdecimal()) or len(valor) > MAXIMO_DE_DIGITOS_DO_ID:
+        return None
+    return int(valor)
