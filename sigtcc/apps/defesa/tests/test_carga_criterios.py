@@ -3,6 +3,7 @@
 [US-25][RBN-DEF-04.1][spec 001, US3 cenários 2 e 5][FR-014][FR-017][SC-004][SC-005]
 """
 
+import importlib
 from decimal import Decimal
 
 from django.apps import apps
@@ -77,3 +78,32 @@ class CargaCriteriosTest(TestCase):
                 continue
             with self.subTest(tabela=modelo._meta.db_table):
                 self.assertEqual(modelo.objects.count(), 0)
+
+
+class MigracaoDescritoresTest(TestCase):
+    """Hotfix v0.3.1: a 0005 roda num banco em que um popular_demo antigo esvaziou Criterios
+    (deploy do Render de 11/11/2026). [US-25][RBN-DEF-04.1][FR-014a]
+    """
+
+    def aplicar_0005(self):
+        migracao = importlib.import_module(
+            "sigtcc.apps.defesa.migrations.0005_descritores_oficiais"
+        )
+        migracao.aplicar_descritores_oficiais(apps, None)
+
+    def test_tabela_vazia_recarrega_e_aplica_os_oficiais(self):
+        """Dado Criterios vazia, quando a 0005 roda, então os 9 critérios voltam com os oficiais."""
+        Criterios.objects.all().delete()
+        self.aplicar_0005()
+        self.assertCountEqual(
+            Criterios.objects.values_list("cri_componente", "cri_nome", "cri_peso"), CRITERIOS
+        )
+        self.assertFalse(
+            Criterios.objects.filter(cri_desc_exemplar__startswith="PROVISÓRIO").exists()
+        )
+
+    def test_com_os_criterios_nao_duplica_nem_muda_ids(self):
+        """Com os 9 critérios, a 0005 só grava os descritores (mesmos identificadores)."""
+        antes = sorted(Criterios.objects.values_list("cri_id", "cri_nome"))
+        self.aplicar_0005()
+        self.assertEqual(sorted(Criterios.objects.values_list("cri_id", "cri_nome")), antes)
