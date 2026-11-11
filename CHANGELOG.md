@@ -4,6 +4,13 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 
 ## [Não lançado]
 
+## [v0.3.0] - 11/11/2026 - Marco TP3 (adiantado)
+
+Baseline 3: Módulo de Gestão da Defesa completo (feat-07 a feat-09, Épico 2) e, adiantado pela
+mudança de cronograma de 10/11/2026, o Módulo de Relatórios completo (feat-10 e feat-11, Épico 3).
+Todas as 46 US e os 111 RBN ativos implementados, PGCS 1.3 e todas as questões de
+`docs/questoes-a-rever.md` respondidas. Suíte com 1864 testes automatizados.
+
 ### Adicionado
 
 - Agendamento e Banca (spec 007, feat-07; US-21, US-22, US-23, US-24 e US-40, com a US-39 na
@@ -154,6 +161,20 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
   768 e 1280 px).
 - `popular_demo` não esvazia mais a tabela `Criterios` (carga da spec 001) e a recarrega se um
   `popular_demo` anterior a apagou.
+
+### Pendências
+
+- Homologação com as professoras-clientes, execução dos casos de teste, implantação com carga
+  real e encerramento (cronograma, atividades 5.1 e 5.3 a 5.5), para a v1.0.0.
+- Correção dos documentos de requisitos no Drive (matriz, US, dicionário, diagramas de sequência
+  e cronograma) pela planilha da Parte C.
+- Banco PostgreSQL gratuito do Render expira 30 dias depois de criado: migrar para um banco que
+  não expire antes da entrega (troca da `DATABASE_URL`; `docs/deploy-render.md`).
+
+### Planejado para a v1.0.0 (TP4, 09/12/2026)
+
+- Sistema homologado em produção, com os ajustes pedidos na homologação (release/v1.0.0).
+- Rotinas por data com agendador no ambiente de produção real, se adotado (`docs/ambientes.md`).
 
 ## [v0.2.1] - 25/10/2026 - Hotfix: nomes iguais às US v3.4 e aos diagramas
 
