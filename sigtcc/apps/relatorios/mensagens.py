@@ -104,3 +104,48 @@ DEFINICAO_QUANTIDADE_PESSOAS = "Pessoas distintas nas sessões Realizadas do per
 ROTULO_DOCENTES_NUCOMP = "Docentes do NUCOMP"
 ROTULO_MEMBROS_EXTERNOS = "Membros Externos"
 ROTULO_INSTITUICAO = "Instituição de origem: {nome}"
+
+# Relatórios operacionais (spec 011; Clarifications C10, índice Q-157): descrições MR-15 a MR-18,
+# "Como é calculado" (MR-03) e definições de coluna (MR-04).
+# [US-48][US-49][US-34][US-35][RBN-REL-03.1][RBN-REL-03.2][RBN-REL-03.3][RBN-REL-03.4]
+MR15_DESCRICAO_DEFESAS = "Sessões Realizadas no período, com banca e parecer"
+MR16_DESCRICAO_TURMAS = "Turmas do período com o Status do TCC de cada aluno"
+MR17_DESCRICAO_ALUNO_ORIENTADOR = "Alunos de TCC 1 com o orientador; Aprovados para TCC 2 primeiro"
+MR18_DESCRICAO_HORAS = "Presenças de ouvintes nas sessões Realizadas, 2 horas cada"
+
+COMO_DEFESAS = (
+    "Lista só as sessões com status Realizada, pela data da sessão no período escolhido.",
+    "Orientador é quem presidiu a banca; Banca traz o 1º e o 2º Avaliador que atuaram, com o "
+    "Suplente acionado no papel que ocupou.",
+    "O Curso é o da turma do TCC da sessão. O Professor da Disciplina vê as sessões das suas "
+    "turmas.",
+)
+COMO_TURMAS = (
+    "Uma linha por turma do período letivo, com os alunos matriculados nela.",
+    "O Status de cada aluno é o último registrado no histórico do TCC naquela turma; quem ainda "
+    "não salvou a Proposta aparece como Sem Proposta.",
+    "Reprovado, Desistente e Jubilado aparecem destacados. O Professor da Disciplina vê só as "
+    "suas turmas.",
+)
+COMO_ALUNO_ORIENTADOR = (
+    "Lista os alunos das turmas de TCC 1 do período letivo.",
+    "Orientador é o do TCC na turma: o vínculo ativo ou, sem ele, o mais recente.",
+    "O Status é o último registrado no histórico do TCC na turma: quem já foi matriculado em "
+    "TCC 2 continua como Aprovado para TCC 2 no período de origem.",
+    "Os Aprovados para TCC 2 vêm primeiro e destacados; depois, os demais, pelo nome.",
+)
+COMO_HORAS = (
+    "Uma linha por presença de ouvinte em sessão Realizada do período: quem assistiu a 3 bancas "
+    "aparece em 3 linhas.",
+    "Cada presença vale 2 horas complementares; o Total soma as horas de todas as linhas.",
+    "O Curso é o da turma do TCC da sessão. O Professor da Disciplina vê as sessões das suas "
+    "turmas.",
+)
+DEFINICAO_ORIENTADOR_PRESIDENTE = "Orientador (Presidente) da banca da sessão"
+DEFINICAO_BANCA_EFETIVA = "1º e 2º Avaliador que atuaram na sessão"
+DEFINICAO_TOTAL_ALUNOS = "Alunos matriculados na turma"
+DEFINICAO_STATUS_NA_TURMA = "Último Status registrado no histórico do TCC na turma"
+DEFINICAO_ORIENTADOR_TCC_1 = "Orientador do TCC na turma de TCC 1"
+DEFINICAO_HORAS = "2 horas complementares por presença"
+TITULO_ALUNOS = "Alunos"
+ROTULO_TOTAL = "Total"

@@ -25,7 +25,14 @@ RELATORIOS = (
     "artigos",
     "formacao-evasao",
     "historico-nucomp",
+    # Spec 011 (SC-002). [US-48][US-49][US-34][US-35]
+    "defesas-realizadas",
+    "turmas-alunos",
+    "aluno-orientador",
+    "horas-ouvintes",
 )
+# Relatórios com sub-listas (spec 010 US-31; spec 011 US-49).
+COM_SUBLISTAS = ("atividades-docente", "turmas-alunos")
 CONSULTA = "?curso=todos"
 _ESPACOS = re.compile(r"[\s\x00-\x1f]+")
 
@@ -204,7 +211,7 @@ class TesteIgualdade(TesteRelatorios):
                     self.colunas_das_sublistas(relatorio),
                     relatorio.indice_da_linha_mae(),
                 )
-                self.assertEqual(bool(esperado), id == "atividades-docente")
+                self.assertEqual(bool(esperado), id in COM_SUBLISTAS)
                 for titulo, linhas_esperadas in esperado.items():
                     posicao = linhas.index([titulo]) + 2
                     self.conferir(

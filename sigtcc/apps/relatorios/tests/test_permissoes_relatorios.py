@@ -197,7 +197,11 @@ class TesteMembrosExternos(TesteRelatorios):
 
 TODOS = ("atividades-docente", "membros-externos", "producao-tccs", "artigos")
 TODOS += ("formacao-evasao", "historico-nucomp")
-SO_GESTAO = ("atividades-docente", "membros-externos")
+# Relatórios operacionais da spec 011 (IC-02): Coordenador, Secretaria e Professor da Disciplina.
+# [US-48][US-49][US-34][US-35][RAN-REL-03]
+OPERACIONAIS = ("defesas-realizadas", "turmas-alunos", "aluno-orientador", "horas-ouvintes")
+TODOS += OPERACIONAIS
+SO_GESTAO = ("atividades-docente", "membros-externos", *OPERACIONAIS)
 
 
 class TesteMatrizDePermissoes(TesteRelatorios):
@@ -216,7 +220,7 @@ class TesteMatrizDePermissoes(TesteRelatorios):
             "membro externo": (membro(), None),
             "sem especialização": (criar_usuario(), None),
             "docente": (docente_de(EC), ("atividades-docente",)),
-            "professor": (professor, ("atividades-docente",)),
+            "professor": (professor, ("atividades-docente", *OPERACIONAIS)),
             "orientador": (orientador, ("atividades-docente",)),
             "coorientador": (coorientador, ("atividades-docente",)),
             "coordenador": (coordenador_de(EC), TODOS),
