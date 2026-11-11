@@ -9,8 +9,8 @@ por `sigtcc/urls.py`, que também define `handler403` (página `acesso_negado.ht
 
 | Nome da rota | Caminho | Métodos | Acesso | Template | Requisitos |
 |---|---|---|---|---|---|
-| `inicio` | `/` | GET | público | — (com login → `painel`; sem login → `entrar`) | FR-010 |
-| `entrar` | `/entrar/` | GET, POST | público (logado → `painel`) | `cadastro/entrar.html` | FR-007 a FR-010; US-11 |
+| `inicio` | `/` | GET | público | — (sem login → `entrar`; com login, pelo tipo de conta: Aluno → `cadastro:minhas_turmas`, Docente → `cadastro:turmas`, Secretaria → `defesa:defesas`, Membro Externo → `defesa:minhas_bancas`; logado sem tipo → 403 com a M-02) | FR-010; Q31 |
+| `entrar` | `/entrar/` | GET, POST | público (logado → `inicio`) | `cadastro/entrar.html` | FR-007 a FR-010; US-11 |
 | `sair` | `/sair/` | POST | logado | — (→ `entrar`) | FR-011 |
 | `primeiro_acesso` | `/primeiro-acesso/` | GET | público | `cadastro/primeiro_acesso.html` (escolha "Aluno" ou "Docente, Secretaria ou Membro Externo") | FR-001; Q8 |
 | `primeiro_acesso_aluno` | `/primeiro-acesso/aluno/` | GET, POST | público | `cadastro/primeiro_acesso_form.html` | FR-001 a FR-003; US-10 |
@@ -21,7 +21,6 @@ por `sigtcc/urls.py`, que também define `handler403` (página `acesso_negado.ht
 | `esqueci_senha` | `/esqueci-minha-senha/` | GET, POST | público | `cadastro/esqueci_senha.html` | FR-013; US-12 |
 | `redefinir_senha` | `/redefinir-senha/<token>/` | GET | público | — (guarda o token na sessão e redireciona para `nova_senha`) | FR-014; research A3 |
 | `nova_senha` | `/redefinir-senha/nova/` | GET, POST | público, com token na sessão | `cadastro/redefinir_senha.html` | FR-014; US-12; Q26 |
-| `painel` | `/painel/` | GET | logado (todos os tipos) | `cadastro/painel.html` | FR-010; Q7 |
 | `perfil` | `/perfil/` | GET, POST | logado | `cadastro/perfil.html` | FR-019 a FR-021; US-38 |
 | `assinatura` | `/perfil/assinatura/` | GET | logado (só a própria imagem) | — (`FileResponse` com o tipo detectado) | FR-020; research A11 |
 | `alterar_senha` | `/perfil/senha/` | GET, POST | logado | `cadastro/alterar_senha.html` | FR-012; US-12 |
@@ -35,7 +34,9 @@ por `sigtcc/urls.py`, que também define `handler403` (página `acesso_negado.ht
 Regras gerais:
 - Página interna sem login: redireciona para `/entrar/?next=<caminho>`. O `next` vai num campo oculto
   do formulário de login e só é seguido se `url_has_allowed_host_and_scheme` aceitar (mesmo host,
-  HTTPS quando a requisição for HTTPS); senão, `painel` (research A1, achado B2).
+  HTTPS quando a requisição for HTTPS); senão, `inicio` (research A1, achado B2; Q31).
+  `LOGIN_REDIRECT_URL = "cadastro:inicio"`. A rota `painel` (`/painel/`) foi removida em
+  2026-11-10 (Q31); o logo da barra superior aponta para `inicio`.
 - Logado sem permissão: `PermissionDenied` → `handler403` → `acesso_negado.html`, status 403, M-02.
 - Formulários com CSRF; ações que mudam dados só por POST, com uma exceção registrada:
   `abrir_notificacao` marca a notificação como lida no GET (research A12).

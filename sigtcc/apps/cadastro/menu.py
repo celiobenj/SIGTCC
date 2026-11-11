@@ -6,14 +6,8 @@ ordem e secao opcional (título de grupo no menu).
 [FR-022][FR-025][FR-010][Q7]
 """
 
+# Não há item "Início": a raiz e o logo levam à primeira tela do perfil (spec 003, FR-010).
 ITENS = [
-    {
-        "rotulo": "Início",
-        "icone": "home",
-        "rota": "cadastro:painel",
-        "perfis": ("aluno", "docente", "secretaria", "membro_externo"),
-        "ordem": 0,
-    },
     # Spec 005: item "Turmas" do Aluno, com as turmas em que está matriculado; não dá acesso à
     # tela da turma da spec 004 (FR-010 da spec 004). [US-13][US-15][FR-031][Q-89]
     {
@@ -40,6 +34,34 @@ ITENS = [
         "rota": "cadastro:orientacoes",
         "perfis": ("docente",),
         "ordem": 12,
+    },
+    # Spec 007 (IC-02): tela Defesas, para todos os perfis que veem sessões (RBN-DEF-01.4; o
+    # Membro Externo como avaliador), logo depois de "Orientações", com o ícone do protótipo.
+    # [US-21][US-40][FR-024]
+    {
+        "rotulo": "Defesas",
+        "icone": "event",
+        "rota": "defesa:defesas",
+        "perfis": ("aluno", "docente", "secretaria", "membro_externo"),
+        "ordem": 13,
+    },
+    # Spec 008 (IC-02): Minhas bancas, ponto de entrada do avaliador (Docente e Membro Externo),
+    # logo depois de "Defesas", com o ícone do protótipo de 17/10. [US-25][RBN-DEF-05.4][FR-003]
+    {
+        "rotulo": "Minhas bancas",
+        "icone": "gavel",
+        "rota": "defesa:minhas_bancas",
+        "perfis": ("docente", "membro_externo"),
+        "ordem": 14,
+    },
+    # Spec 009 (IC-07): Ouvintes das defesas, só da Secretaria (P8), depois de "Minhas bancas",
+    # na mesma seção do item "Defesas". [US-30][RBN-DEF-08.4][FR-016]
+    {
+        "rotulo": "Ouvintes das defesas",
+        "icone": "how_to_reg",
+        "rota": "defesa:ouvintes_das_defesas",
+        "perfis": ("secretaria",),
+        "ordem": 15,
     },
     # Spec 006: tela do Coordenador de Curso na seção nova "Gestão", como no protótipo de 17/10
     # (a seção aparece depois de "Cadastros", pela ordem do processador; research R19).

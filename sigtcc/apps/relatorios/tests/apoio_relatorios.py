@@ -1,0 +1,152 @@
+"""Apoio aos testes da feature 010: alunos com Status conhecido, sessões Realizadas, artigos e
+dados hostis, sobre as fábricas das specs 004, 006 e 007.
+
+[US-31][US-47][US-32][US-33][RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2]
+[RBN-REL-02.3][RBN-REL-02.4][research R15] (tasks T001)
+"""
+
+from datetime import date, time
+
+from django.utils import timezone
+
+from sigtcc.apps.cadastro.choices import (
+    DescricaoTurma,
+    GatilhoStatusTCC,
+    ModalidadeTCC,
+    StatusSubmissao,
+    StatusTCC,
+)
+from sigtcc.apps.cadastro.models import HistoricoStatusTCC, TCCs, Usuarios
+from sigtcc.apps.cadastro.tests.apoio_contas import coordenador_de, docente_de, membro
+from sigtcc.apps.cadastro.tests.apoio_orientacao import salvar_artigo, vincular_orientador
+from sigtcc.apps.cadastro.tests.apoio_turmas import (
+    EC,
+    TesteTurmas,
+    criar_turma_de,
+    matricular_aluno,
+    tcc_de,
+)
+from sigtcc.apps.defesa.choices import FormatoSessao, PapelBanca, StatusSessao
+from sigtcc.apps.defesa.models import BancaDefesa, Defesas, Ouvintes, PresencaOuvintes
+
+# Conteúdo que uma planilha, o HTML ou o PDF poderiam interpretar (research R15).
+LINK_HOSTIL = "javascript:alert(1)"
+LINK_LONGO = "https://doi.org/" + "a" * 484
+
+
+class TesteRelatorios(TesteTurmas):
+    """Base dos testes da feature 010."""
+
+
+def registrar_status(tcc, status, quando=None, turma=None, autor=None):
+    """Grava a mudança de Status no histórico e no TCC, como o serviço único faz.
+
+    `turma` permite simular um registro feito noutra turma (hst_tur). [US-32][RBN-CAD-08.7]
+    """
+    HistoricoStatusTCC.objects.create(
+        hst_tcc=tcc,
+        hst_tur=turma or tcc.tcc_tur,
+        hst_status_anterior=tcc.tcc_status,
+        hst_status_novo=status,
+        hst_gatilho=GatilhoStatusTCC.LIBERACAO_DO_RESULTADO,
+        hst_data_hora=quando or timezone.now(),
+        hst_usu=autor or tcc.tcc_tur.tur_doc.doc,
+    )
+    tcc.tcc_status = status
+    tcc.save(update_fields=["tcc_status"])
+    return tcc
+
+
+def aluno_com_status(turma, status=StatusTCC.EM_ANDAMENTO, quando=None, orientador=None, **dados):
+    """Aluno matriculado com o Status gravado também no histórico. Devolve o TCC.
+
+    [US-32][RBN-CAD-08.7]
+    """
+    aluno = matricular_aluno(turma, status_tcc=StatusTCC.EM_ANDAMENTO, **dados)
+    tcc = tcc_de(aluno, turma)
+    if quando is not None:
+        HistoricoStatusTCC.objects.filter(hst_tcc=tcc).update(hst_data_hora=quando)
+    if status == StatusTCC.SEM_PROPOSTA:
+        tcc.tcc_status = status
+        tcc.tcc_titulo = tcc.tcc_resumo = tcc.tcc_modalidade = None
+        tcc.save()
+    else:
+        registrar_status(tcc, status, quando)
+    if orientador is not None:
+        vincular_orientador(tcc, orientador)
+    return tcc
+
+
+def sessao_realizada(tcc, banca, data=None):
+    """Sessão Realizada com a banca informada: lista de (usuario, papel, substituido), direto nos
+    modelos, sem o fluxo de avaliação (feat-08). [US-31][US-47][RBN-DEF-01.2][RBN-DEF-02.2]
+    """
+    sessao = Defesas.objects.create(
+        def_tcc=tcc,
+        def_data=data or date(2026, 11, 20),
+        def_h_inicio=time(14, 0),
+        def_formato=FormatoSessao.PRESENCIAL,
+        def_status=StatusSessao.REALIZADA,
+    )
+    for usuario, papel, *resto in banca:
+        BancaDefesa.objects.create(
+            ban_def=sessao,
+            ban_usu=usuario,
+            ban_papel=papel,
+            ban_usu_substituido=resto[0] if resto else None,
+        )
+    return sessao
+
+
+def banca_de(presidente, primeiro, segundo, suplente=None):
+    """Lista de membros para sessao_realizada. [US-23][RBN-DEF-02.1]"""
+    banca = [
+        (presidente, PapelBanca.ORIENTADOR_PRESIDENTE),
+        (primeiro, PapelBanca.PRIMEIRO_AVALIADOR),
+        (segundo, PapelBanca.SEGUNDO_AVALIADOR),
+    ]
+    if suplente is not None:
+        banca.append((suplente, PapelBanca.SUPLENTE))
+    return banca
+
+
+def artigo(tcc, status=None, homologacao=None, link="https://doi.org/10.1000/teste"):
+    """Artigo do TCC. [US-33][RBN-CAD-12.1][RBN-CAD-12.3]"""
+    return salvar_artigo(tcc, link=link, status=status, art_homologacao=homologacao)
+
+
+def cenario_hostil():
+    """Dados para os 10 relatórios em 2026/2, com conteúdo hostil em nomes, títulos, veículo,
+    instituição e link. Devolve o Coordenador. [US-31][US-47][US-32][US-33][research R15]
+    """
+    coordenador = coordenador_de(EC)
+    orientador = docente_de(EC)
+    Usuarios.objects.filter(pk=orientador.pk).update(usu_nome="@a docente")
+    orientador.refresh_from_db()
+    avaliador = docente_de(EC)
+    externo = membro(instituicao="-x instituição")
+    turma1 = criar_turma_de(orientador, ano=2026, semestre=2)
+    turma2 = criar_turma_de(orientador, descricao=DescricaoTurma.TCC_2, ano=2026, semestre=2)
+    trabalhos = [
+        aluno_com_status(turma2, StatusTCC.APROVADO, orientador=orientador, nome=nome)
+        for nome in ("=1+1", "#REF!")
+    ]
+    TCCs.objects.filter(pk=trabalhos[0].pk).update(
+        tcc_titulo="<script>alert(1)</script>", tcc_modalidade=ModalidadeTCC.ARTIGO_CIENTIFICO
+    )
+    TCCs.objects.filter(pk=trabalhos[1].pk).update(
+        tcc_titulo='a\x0bb com aspas "duplas"', tcc_modalidade=ModalidadeTCC.ARTIGO_CIENTIFICO
+    )
+    for tcc in trabalhos:
+        tcc.refresh_from_db()
+    primeiro = artigo(trabalhos[0], status=StatusSubmissao.PUBLICADO, link=LINK_HOSTIL)
+    primeiro.art_veiculo_publicacao = "=VEICULO()"
+    primeiro.save()
+    artigo(trabalhos[1], status=StatusSubmissao.ACEITO, link=LINK_LONGO)
+    sessao = sessao_realizada(trabalhos[0], banca_de(orientador, avaliador, externo))
+    # Ouvinte com nome que uma planilha interpretaria (spec 011, US-35). [US-35][research R15]
+    ouvinte = Ouvintes.objects.create(ouv_matricula="2415080011", ouv_nome="=HYPERLINK(1)")
+    PresencaOuvintes.objects.create(pre_def=sessao, pre_ouv=ouvinte)
+    aluno_com_status(turma1, StatusTCC.SEM_PROPOSTA, nome="Sem Proposta da Silva")
+    aluno_com_status(turma1, StatusTCC.REPROVADO, orientador=avaliador, nome="<b>Negrito</b>")
+    return coordenador

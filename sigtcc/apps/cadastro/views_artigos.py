@@ -19,6 +19,7 @@ from sigtcc.apps.cadastro.models import Cursos
 from sigtcc.apps.cadastro.permissoes import curso_id_do_usuario, perfil_requerido
 from sigtcc.apps.cadastro.services_orientacao import link_secao, tcc_do_orientador
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada
+from sigtcc.apps.cadastro.validators import id_valido
 
 # =============================================================================================
 # Publicação do artigo (US-46; rotas 10 e 22)
@@ -93,8 +94,9 @@ def _curso_escolhido(request):
     valor = request.GET.get("curso") or request.POST.get("curso") or ""
     if valor == "todos":
         return None, "todos"
-    if valor.isdigit() and Cursos.objects.filter(pk=int(valor)).exists():
-        return int(valor), valor
+    cur_id = id_valido(valor)  # [Q-153]
+    if cur_id is not None and Cursos.objects.filter(pk=cur_id).exists():
+        return cur_id, valor
     meu = curso_id_do_usuario(request.user)
     return meu, str(meu) if meu else "todos"
 

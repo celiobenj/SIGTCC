@@ -1,0 +1,13 @@
+{% comment %}
+  Linhas por período em SVG gerado no template (spec 010; FR-072 a FR-075), com o valor escrito em
+  cada ponto e legenda sempre visível. Dados de graficos.linhas; sem regra aqui.
+  [US-32][RBN-REL-02.4]
+{% endcomment %}
+<div class="legenda">{% for serie in grafico.dados.series %}<span><i class="cor-{{ serie.cor }}"></i>{{ serie.rotulo }}</span>{% endfor %}</div>
+<svg class="grafico-linhas" viewBox="{{ grafico.dados.caixa }}" role="img" aria-label="{{ grafico.resumo }}">
+  {% for serie in grafico.dados.series %}
+  <polyline class="traco-{{ serie.cor }}{% if serie.tracejada %} tracejada{% endif %}" points="{{ serie.caminho }}"></polyline>
+  {% for ponto in serie.pontos %}<text x="{{ ponto.x }}" y="{{ ponto.y }}" dy="-6">{{ ponto.valor }}</text>{% endfor %}
+  {% endfor %}
+  {% for item in grafico.dados.eixo %}<text x="{{ item.x }}" y="{{ item.y }}">{{ item.rotulo }}</text>{% endfor %}
+</svg>

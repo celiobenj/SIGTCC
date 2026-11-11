@@ -155,6 +155,23 @@ como a Q-82.
 - O diagrama de sequência da matrícula é o 35 MatricularAluno, e o da exclusão, encerramento e transferência é o 36 RetirarAlunoDaTurma (`docs/diagramas/Diagramas_Sequencia_PlantUML_v2.md`).
 
 
+### Session 2026-11-10 (respostas de Julia Cohen ao índice de questões)
+
+- Q-98 (opção A): onde fica o "Editar" dos dados do aluno? A US-08 C diz "na linha do aluno", mas
+  a lista da aba "Alunos" passou a ser somente leitura (RBN-CAD-10.5; spec 006). → A: **no painel
+  do aluno** (US-41; spec 006, Clarifications Q5), junto com "Transferir", "Excluir da turma" e
+  "Encerrar participação". A regra do FR-019 não muda; muda só o lugar do botão. Atualizados o
+  cenário 10 da User Story 2, o FR-019 e a premissa "Painel do aluno".
+- Q-117 (opção A): o arquivamento da turma cancela os pedidos de orientação e os convites de
+  coorientação pendentes? → A: **sim**, regra da spec 006 (Clarifications Q17, FR-053), que agora
+  fica também nesta spec: ao arquivar, os pendentes dos TCCs da turma são cancelados na mesma
+  gravação e cada docente recebe a MO-26 da spec 006. Pedido ou convite pendente não é vínculo,
+  então continua valendo "com todos os vínculos preservados" (US-07 C). Atualizado o FR-007.
+- Q-39 (opção A; confirmação de 09/11/2026): o aluno 'Aprovado para TCC 2' matriculado numa turma
+  de TCC 1 é recusado? → A: **sim**, com a MT-28 ("O aluno foi aprovado em TCC 1. Matricule-o numa
+  turma de TCC 2."), que deixa de ser PROVISÓRIA. Atualizados o caso de borda, o FR-013 e a tabela
+  MT.
+
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
@@ -257,7 +274,8 @@ um arquivo com linhas válidas e inválidas; conferir as contas criadas, os vín
    códigos não foram reconhecidos.
 9. **Dado que** o aluno 2026000123 já está na turma, **Quando** o Professor tenta matriculá-lo de
    novo, **Então** o sistema ignora o registro e informa "Aluno já matriculado nesta turma".
-10. **Dado que** o aluno está matriculado na turma, **Quando** o Professor clica em "Editar", corrige
+10. **Dado que** o aluno está matriculado na turma, **Quando** o Professor clica em "Editar" no
+    painel do aluno (US-41; Q-98), corrige
     o Nome Completo e salva, **Então** o sistema grava o novo nome **E** a Matrícula continua sem
     opção de edição.
 11. **Dado que** a turma foi arquivada, **Quando** o Professor abre a turma, **Então** a opção
@@ -351,8 +369,8 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
 - **Aluno com TCC ativo noutra turma ou já aprovado ou concluído** (Q7): a matrícula é recusada (MT-26
   ou MT-27); para mudar de turma no período, usa-se a Transferência.
 - **Aluno 'Aprovado para TCC 2' matriculado em turma de TCC 1**: caso não coberto pela US-08 nem pelo
-  diagrama; proposta do planejamento: recusar com MT-28 (PROVISÓRIA), a confirmar pela responsável
-  (índice Q-39).
+  diagrama; a matrícula é recusada com a MT-28, como propôs o planejamento (confirmação de
+  09/11/2026; índice Q-39).
 - **Curso do aluno diferente do curso da turma** (RBN-CAD-05.7): o aluno é matriculado e aparece um
   alerta de divergência; relatórios, filtros e permissões usam sempre o curso da turma.
 - **Arquivo com cabeçalhos em outra ordem**: aceito, desde que os três cabeçalhos estejam presentes
@@ -409,7 +427,10 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   Em Andamento – senão "Há sessão de defesa ativa"; (c) em TCC 2, a Data Limite da entrega do tipo
   Versão Final da turma já tiver passado – senão "A Data Limite da Versão Final ainda não venceu ou
   não foi cadastrada". As condições são conferidas nessa ordem e aparece o primeiro motivo. Sucesso:
-  MT-10 (PROVISÓRIA) (RBN-CAD-04.5).
+  MT-10 (PROVISÓRIA) (RBN-CAD-04.5). Na mesma gravação, o arquivamento DEVE cancelar os pedidos de
+  orientação e os convites de coorientação ainda pendentes dos TCCs da turma, com a mesma data e
+  hora, e avisar no sistema o docente de cada um (MO-26 da spec 006; spec 006, FR-053 e
+  Clarifications Q17; índice Q-117).
 - **FR-008**: A turma arquivada DEVE sair da listagem principal e ficar numa área de turmas
   arquivadas, só para consulta, com alunos, TCCs, entregas, atas, defesas e vínculos preservados. Nela
   ficam indisponíveis, inclusive pelo endereço direto: Editar, Excluir, Arquivar, Matricular alunos,
@@ -428,6 +449,16 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   consulta e com "Transferir". Nenhum outro perfil abre a turma, nem pelo endereço direto (M-02 da
   spec 003); o Coordenador de Curso só é Professor da Disciplina das turmas que ele mesmo criou
   (Clarifications, Q9).
+  **Grade de cartões** (tela "Turmas" do protótipo de 17/10, só o visual; 2026-11-10): as telas
+  Turmas e Turmas arquivadas, e as turmas do Aluno (spec 005, FR-031), mostram as turmas numa grade
+  de cartões, não numa tabela. Cada cartão é um link (a tela da turma; para o Aluno, "Meu TCC") e
+  traz: no banner, a cor e o desenho do curso (Engenharia de Computação, Sistemas de Informação e
+  Licenciatura em Computação; outro curso, só uma cor fixa), "Descrição · Identificador", "Ano/
+  Semestre · Curso", o nome e o avatar do Professor da Disciplina; no corpo, dia e horário, local e
+  código da disciplina; no rodapé, a quantidade de alunos matriculados e, na turma arquivada, a
+  etiqueta "Arquivada". A cor sai do curso, sem coluna nova (FR-028). "Nova turma" é um botão
+  flutuante, mostrado só ao Docente, como antes. Sem turmas, "Nenhuma turma.". A ordem continua a
+  mesma (mais recente primeiro).
 
 **Matrícula de alunos [US-08][RBN-CAD-05.1, 05.2, 05.3, 05.5, 05.7]**
 
@@ -451,8 +482,9 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   'Desistente' ou 'Jubilado', o aluno ganha um novo TCC 'Sem Proposta' na nova turma (RBN-CAD-05.5).
   Se o aluno tiver TCC 'Sem Proposta', 'Em Andamento' ou 'Apto para Defesa' noutra turma não
   arquivada, a matrícula é recusada com MT-26; se algum TCC do aluno estiver 'Aprovado', 'Aprovado
-  com Correções' ou 'Concluído', é recusada com MT-27 (Clarifications, Q7). Na importação, a recusa é
-  por linha, com o motivo na prévia e no resumo.
+  com Correções' ou 'Concluído', é recusada com MT-27 (Clarifications, Q7); se o Status do último TCC
+  for 'Aprovado para TCC 2' e a turma for de TCC 1, é recusada com MT-28 (confirmação de 09/11/2026;
+  índice Q-39). Na importação, a recusa é por linha, com o motivo na prévia e no resumo.
 - **FR-014**: Aluno já matriculado nesta turma DEVE ser ignorado com "Aluno já matriculado nesta
   turma" (uma mesma matrícula não pode ser vinculada duas vezes à mesma turma, RAN-CAD-05).
 - **FR-015**: O curso do aluno DEVE ser reconhecido pelo código de curso da UEA informado no campo
@@ -480,7 +512,8 @@ participação de um aluno com TCC Em Andamento e conferir a lista de excluídos
   quantidade de códigos de curso não reconhecidos (MT-15) (US-08, passo 9).
 - **FR-019**: O Professor da Disciplina DEVE poder editar o Nome Completo e o Curso do aluno da
   turma, com as mesmas regras de FR-011; a Matrícula aparece só para leitura (RBN-CAD-05.3).
-  Sucesso: MT-14 (PROVISÓRIA).
+  Sucesso: MT-14 (PROVISÓRIA). O botão "Editar" fica no painel do aluno (US-41), não na linha da
+  lista de alunos (spec 006, Clarifications Q5; índice Q-98).
 
 **Transferência [US-08][RBN-CAD-05.6]**
 
@@ -626,7 +659,7 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
 | MT-25 | Ação em turma arquivada pelo endereço direto | "Esta turma está arquivada e só pode ser consultada." | US-07 E4; RBN-CAD-04.5 | A validar |
 | MT-26 | Aluno com TCC em andamento noutra turma | "O aluno já tem TCC em andamento na turma IDENTIFICADOR. Use Transferir." | Clarifications, Q7; RBN-CAD-05.5 e 05.6 | A validar |
 | MT-27 | Aluno com TCC aprovado ou concluído | "O TCC deste aluno já foi aprovado ou concluído." | Clarifications, Q7 | A validar |
-| MT-28 | Aluno 'Aprovado para TCC 2' matriculado em turma de TCC 1 | "O aluno foi aprovado em TCC 1. Matricule-o numa turma de TCC 2." | Planejamento (research B6); índice Q-39 | A validar (comportamento a confirmar) |
+| MT-28 | Aluno 'Aprovado para TCC 2' matriculado em turma de TCC 1 | "O aluno foi aprovado em TCC 1. Matricule-o numa turma de TCC 2." | Planejamento (research B6); índice Q-39 | Confirmada em 09/11/2026 (comportamento e texto; Q-39) |
 | MT-29 | Aluno matriculado com a conta 'Inativa' ou 'Expirada' | "A conta deste aluno está STATUS: ele não consegue entrar até a conta ser reativada pela Gestão de Contas." | Clarifications, Q16 | A validar |
 | MT-30 | Encerramento com sessão de defesa ativa | "Não é possível encerrar a participação: há sessão de defesa ativa." | Clarifications, Q14; E4 da US-08 | A validar |
 | MT-31 | Notificação ao docente de pedido ou convite cancelado pelo encerramento | "O pedido de TIPO para o TCC de NOME foi cancelado porque a participação do aluno foi encerrada." | Clarifications, Q19 | A validar |
@@ -647,8 +680,9 @@ M-14 da spec 003 ("Preencha este campo."); ação recusada por permissão usa a 
   esse evento, o registro com autor, data e hora vai para o arquivo de log de eventos da spec 003
   (FR-029 daquela spec), sem tabela nova.
 - **Painel do aluno (US-41)**: as ações "Excluir da turma", "Encerrar participação", "Editar" e
-  "Transferir" ficam na lista de alunos da turma nesta entrega; a US-41 (Leandra Matos) pode levá-las
-  ao painel do aluno, como o reset do primeiro acesso.
+  "Transferir" ficavam na lista de alunos da turma nesta entrega; a spec 006 (US-41) levou-as ao
+  painel do aluno, como o reset do primeiro acesso, e a lista passou a ser somente leitura
+  (RBN-CAD-10.5; índice Q-98, respondida em 2026-11-10).
 - **Restrições nas outras features**: os botões de editar TCC (US-13), indicar ou trocar orientador
   (US-17) e enviar entregas (US-16), e os bloqueios de entregas, atas, defesas e lembretes em turma
   arquivada, são das features donas; esta entrega oferece as verificações reutilizáveis (FR-008 e

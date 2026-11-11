@@ -1,6 +1,6 @@
 """Textos exatos das mensagens da feature 006 (SC-003; FR-048): constantes de mensagens.py contra
 as US-17, 18, 19, 20, 36, 41, 42, 45 e 46 (v3.3) e contra a tabela "Mensagens a validar com a PO"
-da spec 006 (MO-01 a MO-26).
+da spec 006 (MO-01 a MO-27).
 
 Mesmo padrão de test_mensagens_tcc.py. As linhas da tabela MO podem ter mais de um texto entre
 aspas (formas de pedido e convite, de link e de notificação, e o assunto do e-mail); cada
@@ -81,11 +81,11 @@ class MensagensOrientacaoTest(SimpleTestCase):
             with self.subTest(constante=nome):
                 self.assertIn(f'"{texto}', historias)
 
-    def test_tabela_da_spec_tem_mo01_a_mo26(self):
-        self.assertEqual(sorted(_linhas_mo()), [f"MO-{n:02d}" for n in range(1, 27)])
+    def test_tabela_da_spec_tem_mo01_a_mo27(self):
+        self.assertEqual(sorted(_linhas_mo()), [f"MO-{n:02d}" for n in range(1, 28)])
 
     def test_cada_mo_tem_constante(self):
-        for numero in range(1, 27):
+        for numero in range(1, 28):
             with self.subTest(mensagem=f"MO-{numero:02d}"):
                 nomes = [n for n in dir(mensagens) if n.startswith(f"MO{numero:02d}_")]
                 self.assertTrue(nomes)

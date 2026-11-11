@@ -434,9 +434,9 @@ Restrições: `ck_artigos_art_qualis_capes`, `ck_artigos_art_status_submissao`,
 | cri_nome | cri_nome | CharField(100) |
 | cri_componente | cri_componente | CharField(20), `ComponenteCriterio` |
 | cri_descricao | cri_descricao | CharField(255), nulo |
-| cri_desc_exemplar | cri_desc_exemplar | CharField(255) |
-| cri_desc_competente | cri_desc_competente | CharField(255) |
-| cri_desc_necessita_trabalho | cri_desc_necessita_trabalho | CharField(255) |
+| cri_desc_exemplar | cri_desc_exemplar | CharField(1000) |
+| cri_desc_competente | cri_desc_competente | CharField(1000) |
+| cri_desc_necessita_trabalho | cri_desc_necessita_trabalho | CharField(1000) |
 | cri_peso | cri_peso | DecimalField(3, 1) |
 
 Restrições: `ck_criterios_cri_componente`, `ck_criterios_cri_peso` (0,0 a 10,0).
@@ -455,7 +455,7 @@ Carga inicial (`0004_carga_criterios_provisorios`):
 | Parte Oral | Domínio do Assunto | 1,5 |
 | Parte Oral | Postura perante a Banca | 0,5 |
 
-Descritores provisórios (FR-014), iguais para os 9 critérios até a troca (FR-014a):
+Descritores provisórios da carga `0004` (FR-014), trocados na `0005_descritores_oficiais` (FR-014a) pelos textos da planilha oficial, em `defesa/descritores_oficiais.py`:
 - Exemplar: `PROVISÓRIO – Exemplar (nota de 8,0 a 10,0). Texto oficial pendente da planilha de avaliação da EST/UEA.`
 - Competente: `PROVISÓRIO – Competente (nota de 6,0 a 7,9). Texto oficial pendente da planilha de avaliação da EST/UEA.`
 - Necessita de Trabalho: `PROVISÓRIO – Necessita de Trabalho (nota de 0,0 a 5,9). Texto oficial pendente da planilha de avaliação da EST/UEA.`

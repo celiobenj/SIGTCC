@@ -2,7 +2,9 @@
 
 Roteiro para publicar o SIGTCC num link público, com o backend e o banco rodando, para a
 Product Owner validar as funcionalidades já implementadas. Não é o ambiente de produção final do
-PGCS (seção 9, previsto para o TP4): é um ambiente de validação, no plano gratuito do Render.
+PGCS (seção 9, previsto para o TP4): é um ambiente de validação, no plano gratuito do Render. Ele
+pertence à **visão de construção** da entrega da disciplina; a implantação real, com escala e
+operação contínua, está descrita em [`ambientes.md`](ambientes.md).
 
 O repositório já traz o que o Render precisa:
 
@@ -25,13 +27,11 @@ O `SECRET_KEY` é gerado pelo Render. O `.env` não vai para o servidor e contin
 
 ## Passo 1. Enviar a branch para o GitHub
 
-O Render lê o código do GitHub, não do seu computador. No PowerShell, na pasta do projeto:
+O Render lê o código do GitHub, não do seu computador. O ambiente de validação publica a branch
+`main`, que só recebe código pelo merge de uma release ou de um hotfix (PGCS 9.2). Na primeira
+publicação de cada baseline, a `main` é atualizada pelo merge da `release/vX.Y.Z`.
 
-```powershell
-git push -u origin release/v0.2.0
-```
-
-Toda vez que você fizer push nessa branch, o Render publica de novo sozinho.
+Toda vez que a `main` recebe um push, o Render publica de novo sozinho.
 
 ## Passo 2. Criar a conta no Render
 
@@ -50,7 +50,7 @@ cobrado enquanto tudo estiver no plano **Free**.
    o acesso no GitHub.
 3. Preencha:
    - **Blueprint Name:** `sigtcc`;
-   - **Branch:** `release/v0.2.0`.
+   - **Branch:** `main`.
 4. O Render mostra o que vai criar: o banco `sigtcc-db` e o serviço web `sigtcc`, ambos Free.
    Clique em **Deploy Blueprint**.
 5. Espere de 5 a 10 minutos. Para acompanhar, abra o serviço **sigtcc** e a aba **Logs**. No
@@ -171,16 +171,22 @@ Os e-mails `demo.…@uea.edu.br` da carga não existem; os envios para eles volt
   continuam.
 - **O banco gratuito expira 30 dias depois de criado.** O Render avisa por e-mail. Depois disso,
   é preciso passar para um plano pago ou criar outro banco e repetir o Passo 4.
-- **Nada roda agendado.** Os lembretes de entrega (US-15) e a expiração de membros externos não
-  são automáticos. Se precisar, rode-os do seu computador com o `DATABASE_URL` do Passo 4:
-  `enviar_lembretes_entrega` e `expirar_membros_externos`.
+- **Nada roda agendado.** O plano gratuito não tem Cron Job, e as tarefas por data rodam por
+  **execução manual** (decisão Q-67 C, 09/11/2026). Rode-as do seu computador com o
+  `DATABASE_URL` do Passo 4: `iniciar_sessoes` (início automático das sessões de defesa),
+  `expirar_membros_externos` (validade do Membro Externo) e `enviar_lembretes_entrega`
+  (lembretes da US-15). Enquanto não rodam, as telas aplicam as mesmas regras por data.
 - **Use só dados fictícios.** Não cadastre dados pessoais reais de alunos (LGPD).
 
 ## Atualizar o sistema publicado
 
-- Novo push na `release/v0.2.0`: o Render publica sozinho. As migrações novas rodam no build.
-- Para publicar a partir de outra branch (por exemplo a `main`, depois do merge da release), abra
-  o serviço > **Settings** > **Build & Deploy** > **Branch**.
+- Novo push na `main` (merge de release ou hotfix): o Render publica sozinho. As migrações novas
+  rodam no build.
+- Para conferir ou trocar a branch publicada, abra o serviço > **Settings** > **Build & Deploy** >
+  **Branch**. A v0.2.0 foi publicada a partir da `release/v0.2.0`, já apagada depois do merge na
+  `main`: o serviço deve estar apontando para a `main`.
+- Depois de publicar uma baseline com migração de dados (por exemplo a `defesa 0005`, descritores
+  oficiais, na v0.3.0), rode de novo o `popular_demo` (Passo 4) se quiser recomeçar a demonstração.
 - Para publicar de novo sem mudar o código, use **Manual Deploy** > **Deploy latest commit**.
 
 ## Problemas comuns

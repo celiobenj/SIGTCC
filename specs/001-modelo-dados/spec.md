@@ -258,7 +258,9 @@ conteúdo das 4 tabelas contra a matriz.
   (`ent_tma_id`, `ent_alu_id`) e `TCCs` (`tcc_alu_id`, `tcc_tur_id`).
 - **FR-007**: O banco DEVE garantir as unicidades parciais:
   - `Usuarios.usu_email` e `CoorientadoresExternos.cext_email`, quando preenchidos. E-mail sem
-    valor DEVE ser gravado como nulo, nunca como texto vazio (condição da aprovação de 2026-10-19);
+    valor DEVE ser gravado como nulo, nunca como texto vazio (condição da aprovação de
+    2026-10-19). Essa conversão é feita **só pela aplicação** (`save()` e `create_user`); o banco
+    não tem `CHECK (usu_email <> '')` (Q-06 B, 09/11/2026);
   - `Turmas_Marcos` (`tma_tur_id`, `tma_tipo`) quando `tma_tipo` ≠ 'Outra';
   - `Orientacoes` (`ori_tcc_id`) quando `ori_status` = 'Ativa';
   - `Coorientacoes` (`coo_tcc_id`, `coo_doc_id`) e (`coo_tcc_id`, `coo_cext_id`) quando
@@ -326,10 +328,13 @@ conteúdo das 4 tabelas contra a matriz.
   avaliação não estiver disponível, cada descritor DEVE ser um texto provisório iniciado por
   "PROVISÓRIO", com no máximo 255 caracteres e com a faixa de nota do conceito (Exemplar 8,0 a
   10,0; Competente 6,0 a 7,9; Necessita de Trabalho 0,0 a 5,9) [US-25][RBN-DEF-04.1].
+  Os três descritores passaram a VARCHAR(1000) (migration 0005), porque os textos oficiais chegam
+  a 704 caracteres.
 - **FR-014a**: Os descritores provisórios DEVEM ser substituídos pelos textos da planilha oficial
   de avaliação por data migration (carga) antes do TP3 (18/11/2026),
   sem alterar nome, componente, peso nem identificador dos critérios. Após essa atualização, nenhum
-  descritor pode conter "PROVISÓRIO".
+  descritor pode conter "PROVISÓRIO". Feito em `defesa/0005_descritores_oficiais`, a partir da
+  planilha oficial entregue pela professora.
 - **FR-015**: A carga inicial DEVE inserir em `Areas_Interesse` exatamente as 10 áreas de
   RBN-CAD-08.1 (ver User Story 3, cenário 3) [US-13][RBN-CAD-08.1].
 - **FR-016**: A carga inicial DEVE inserir em `Equivalencia_Cursos` somente códigos de curso da UEA
@@ -391,7 +396,7 @@ Detalhes completos em `docs/fonte/Modelo_Logico_e_Dicionario_18_10.md`, seção 
   uma vez.
 - **SC-006**: Nenhuma tabela ou coluna de negócio existe na base sem correspondência no dicionário.
 - **SC-007**: Até o TP3 (18/11/2026), 0 dos 27 descritores dos critérios contém "PROVISÓRIO".
-  Verificado fora desta entrega, pela data migration (carga) de FR-014a (ver Notes do tasks.md).
+  Verificado por `test_carga_criterios.test_descritores_oficiais`, após a migration 0005 (FR-014a).
 
 ## Assumptions
 

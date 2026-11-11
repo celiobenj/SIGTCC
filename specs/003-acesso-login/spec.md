@@ -30,7 +30,7 @@ seção 4, itens 1 a 3); `docs/fonte/prototipo/prototipo_17_10.html` (só o visu
 **Rastreabilidade**: [US-10][RBN-CAD-06.1][RBN-CAD-06.2][RBN-CAD-06.3] ·
 [US-11][RBN-CAD-06.4][RBN-CAD-06.6][RBN-CAD-03.3] · [US-12][RBN-CAD-06.5][RBN-CAD-06.7][RBN-CAD-06.8]
 · [US-37][RBN-CAD-06.9] · [US-38][RBN-CAD-13.1][RBN-CAD-13.2]. RNF: RAN-CAD-06 (senhas criptografadas
-e nunca exibidas; login só para conta Ativa; direcionamento ao painel do perfil) e RAN-CAD-13 (cada
+e nunca exibidas; login só para conta Ativa; direcionamento à tela inicial do perfil) e RAN-CAD-13 (cada
 usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por link).
 
 ## Clarifications
@@ -80,7 +80,8 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
 - Q10: Como detectar a notificação de item indisponível? → A: Nesta feature, só o item removido: se o
   endereço da notificação não leva a uma página existente, a central marca a notificação como lida e
   exibe "Este item não está mais disponível". O caso "cancelado" (US-38, cenário 9, convite de banca)
-  é **pendência para a feature de Defesa**, que deve tratar o item cancelado na sua tela de destino.
+  foi **tratado na feature de Defesa** (10/11/2026): quem tinha a notificação da sessão e perdeu o
+  acesso (saiu da banca) vê a mesma mensagem, por `services.item_indisponivel`, em vez do 403.
 - Q11: Validade, "substituído" e mensagem da troca de e-mail? → A: O link de confirmação vale 24 horas,
   a mesma validade que a matriz define para o link de primeiro acesso (RBN-CAD-06.1 e 06.9). O caso
   "substituído" foi decidido em Q24. Ao salvar uma alteração que inclui troca de e-mail, aparece só a
@@ -172,6 +173,29 @@ usuário vê e edita só os campos do seu papel; troca de e-mail confirmada por 
   "Campo obrigatório" (tabela "Mensagens a validar com a PO"; constantes já trocadas em
   `mensagens.py` pela spec 002).
 
+### Session 2026-11-10 (Q-52 respondida, Julia Cohen)
+
+- Q: a M-16 passa ao texto da US-06, "Seu acesso expirou. Procure a coordenação do curso" (spec
+  002, Clarifications Q4)? → A: **não, opção A, vale a matriz** (RBN-CAD-03.3, com precedência
+  sobre a US): a M-16 continua igual ao texto do login (US-11 E3), também para o Membro Externo
+  com a validade vencida (US-06 passo 4, E1 e cenário 3). Há uma só constante,
+  `mensagens.ACESSO_EXPIRADO` (`M16_ACESSO_EXPIRADO` é o mesmo texto); `ACESSO_EXPIRADO_US06` saiu
+  (índice Q-52).
+  
+### Session 2026-11-10 (correção J1, Julia Cohen)
+
+- Q31: o painel mínimo de `/painel/` (boas-vindas, tipo de conta e papéis) e o item "Início" do menu
+  continuam? Hoje o usuário entra, vê uma tela quase vazia e precisa usar o menu para começar. → A:
+  não. A rota `/painel/`, a view, o template `cadastro/painel.html` e o item "Início" saem. A raiz
+  `/` leva cada tipo de conta à sua primeira tela: Aluno → Turmas (`cadastro:minhas_turmas`),
+  Docente → Turmas (`cadastro:turmas`, para todos os papéis, Q7), Secretaria → Defesas
+  (`defesa:defesas`) e Membro Externo → Minhas bancas (`defesa:minhas_bancas`); visitante → login;
+  conta autenticada sem tipo → 403 com a M-02 (ir ao login, que devolve o usuário logado à raiz,
+  faria um laço). O login (`LOGIN_REDIRECT_URL`, `next` recusado, usuário logado em `/entrar/`), a
+  volta da US-03 A10 e o logo da barra superior passam a usar a raiz. O "painel do aluno" da US-41
+  (`cadastro:painel_aluno`) é outra tela e não muda. Atualizados FR-010, a premissa "Telas
+  iniciais" e `contracts/rotas.md`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 Os cenários abaixo reproduzem os cenários de aceite das US, com as mensagens exatas entre aspas. As
@@ -235,13 +259,13 @@ acesso, abrir o link recebido e criar a senha; a conta passa a 'Ativa'.
 ### User Story 2 - Fazer login e sair [US-11] (Priority: P1)
 
 Usuário com conta 'Ativa' entra com a credencial (matrícula ou e-mail institucional para o Aluno;
-e-mail para os demais) e a senha, e é levado ao painel do seu perfil. Três senhas incorretas seguidas
+e-mail para os demais) e a senha, e é levado à tela inicial do seu perfil (Q31). Três senhas incorretas seguidas
 bloqueiam a conta por 15 minutos.
 
 **Why this priority**: é a porta de entrada de todas as outras features.
 
 **Independent Test**: com uma conta ativa criada pelo shell, entrar com a credencial e a senha e ver
-o painel do perfil; errar a senha três vezes e confirmar o bloqueio.
+a tela inicial do perfil; errar a senha três vezes e confirmar o bloqueio.
 
 **Acceptance Scenarios** (US-11, cenários 1 a 12, mais a saída):
 
@@ -251,7 +275,7 @@ o painel do perfil; errar a senha três vezes e confirmar o bloqueio.
    e-mail institucional e a senha correta e clica em "Entrar", **Então** o sistema abre a sessão e
    exibe o painel do Aluno.
 3. **Dado que** o docente tem conta ativa, **Quando** informa o e-mail e a senha correta e clica em
-   "Entrar", **Então** o sistema abre a sessão e exibe o painel do Docente.
+   "Entrar", **Então** o sistema abre a sessão e exibe a tela inicial do Docente (Turmas; Q31).
 4. **Dado que** o usuário não tem tentativas incorretas registradas, **Quando** informa a credencial
    correta e uma senha errada, **Então** o sistema exibe "Credencial ou senha inválida" **E**
    registra uma tentativa incorreta.
@@ -269,7 +293,7 @@ o painel do perfil; errar a senha três vezes e confirmar o bloqueio.
    Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso".
 9. **Dado que** a conta do Membro Externo voltou para o Status Ativa depois de uma nova banca (US-06),
    **Quando** ele informa e-mail e a mesma senha de antes, **Então** o sistema abre a sessão e exibe
-   o painel do Membro Externo.
+   a tela inicial do Membro Externo (Minhas bancas; Q31).
 10. **Dado que** o aluno foi matriculado e a conta está com o Status Aguardando Ativação, **Quando**
     informa a matrícula e uma senha e clica em "Entrar", **Então** o sistema exibe "Conta ainda não
     ativada" e o link "Primeiro acesso".
@@ -536,15 +560,22 @@ de ativação funciona chamada de fora das telas desta feature.
   correta: conta 'Inativa' – "Conta inativa"; conta 'Expirada', ou de Membro Externo com a data de
   hoje depois de `mem_validade_ate` (Q4; RBN-CAD-03.3) – "Seu acesso expirou. Procure o Orientador, o
   Professor da Disciplina, a Secretaria ou o Coordenador de Curso"; conta 'Ativa' – login aceito.
+  Acréscimo da spec 002 (FR-040; índice Q-71): no caso da validade vencida com a conta ainda
+  'Ativa', o login também grava 'Expirada' (`services.expirar_se_vencida`, com a conta travada e a
+  validade relida) e registra o evento `CONTA_EXPIRADA` com autor "sistema"; uma falha nessa
+  gravação vai para o log e não muda o resultado do login.
 - **FR-009**: Na terceira senha incorreta seguida para a mesma conta, qualquer que seja a credencial
   usada, o sistema DEVE bloquear a conta por 15 minutos, exibir o bloqueio e o tempo restante
   (mensagem PROVISÓRIA M-01) e
   recusar qualquer tentativa durante o prazo, mesmo com a senha correta. A senha correta zera o
   contador. O "N" da M-01 é o número de minutos restantes arredondado para cima, no mínimo 1 (Q16). O controle não cria coluna nem tabela (spec 001, research D2).
-- **FR-010**: Com o login aceito, o sistema DEVE abrir a sessão e levar o usuário ao painel do seu
-  tipo de conta (Aluno, Docente, Secretaria ou Membro Externo). O Docente tem um painel único; os
-  itens de Coordenador de Curso, Professor da Disciplina, Orientador e Coorientador aparecem como
-  itens extras no menu, conforme os papéis que ele tiver (Q7).
+- **FR-010**: Com o login aceito, o sistema DEVE abrir a sessão e levar o usuário à raiz (`/`), que
+  abre a tela inicial do seu tipo de conta: Aluno → Turmas (as turmas em que está matriculado),
+  Docente → Turmas, Secretaria → Defesas e Membro Externo → Minhas bancas (Q31). O Docente tem uma
+  tela inicial única; os itens de Coordenador de Curso, Professor da Disciplina, Orientador e
+  Coorientador aparecem como itens extras no menu, conforme os papéis que ele tiver (Q7). Visitante
+  que abre a raiz vai ao login; conta autenticada sem tipo recebe 403 com a M-02. O logo da barra
+  superior leva à raiz; não há página "painel" nem item "Início" no menu.
 - **FR-011**: O usuário autenticado DEVE poder sair ("Sair" no menu do usuário), encerrando a sessão.
   A sessão também DEVE terminar depois de 60 minutos sem uso e ao fechar o navegador; a próxima página
   interna pede login de novo (Q18).
@@ -608,15 +639,20 @@ de ativação funciona chamada de fora das telas desta feature.
   e-mail" (Q28; M-07; link inválido: M-09; novo e-mail já em uso na confirmação: M-05); até lá, o
   e-mail antigo continua valendo. O link de confirmação vale 24 horas, como o de primeiro acesso (Q11), e
   deixa de valer depois de usado ou quando o e-mail da conta muda (Q24). Falha no envio: M-17. Todas
-  essas mensagens são PROVISÓRIAS.
+  essas mensagens são PROVISÓRIAS. Acréscimos da spec 002 (índice Q-71): (a) o mesmo pedido serve à
+  troca feita pelo gestor no cadastro de Docente, Secretaria e Membro Externo
+  (`pedir_troca_email(conta, novo, autor=gestor)`; o link e a confirmação não mudam, e o log
+  registra o gestor como autor); (b) a confirmação trava o novo e-mail (`travar_email`, trava
+  consultiva por e-mail normalizado) antes de conferir a unicidade; (c) a confirmação grava
+  `usu_link_gerado_em`, o que invalida os links de ativação e de redefinição enviados antes.
 - **FR-022**: Todas as páginas internas DEVEM mostrar o sino com o número de notificações não lidas
   do usuário. A central DEVE listar todas as notificações, da mais recente para a mais antiga, 20 por
   página, com o texto, a data e a hora (Q14); "Marcar como lidas" marca todas e zera o contador; sem notificações, exibe "Você
   não tem notificações".
 - **FR-023**: Clicar numa notificação DEVE marcá-la como lida, atualizar o contador e abrir a tela
   relacionada; se o endereço não levar a uma página existente (item removido), exibe "Este item não
-  está mais disponível" (Q10). O item cancelado fica para a feature dona do item (pendência da
-  Defesa).
+  está mais disponível" (Q10). O item cancelado é da feature dona do item; na Defesa, a janela
+  Sessão de defesa mostra a mesma mensagem a quem foi notificado e perdeu o acesso (Q-12).
 
 **Base comum para as demais features (entregas compartilhadas)**
 
@@ -654,7 +690,10 @@ de ativação funciona chamada de fora das telas desta feature.
   e-mail (pedido e confirmação). Além desses 6 tipos, dois eventos técnicos também são registrados,
   fora da contagem do SC-009: e-mail duplicado encontrado na busca da credencial (sem conta na linha,
   só a quantidade de contas) e falha no envio de e-mail (só o tipo do erro). Senhas, links e códigos de
-  ativação NUNCA são gravados. O registro não
+  ativação NUNCA são gravados. A spec 002 acrescenta, fora da contagem do SC-009, os eventos da
+  Gestão de Contas (`CONTA_CRIADA`, `CONTA_ALTERADA`, `CONTA_INATIVADA`, `CONTA_REATIVADA`,
+  `ACESSO_PRORROGADO`, `CONTA_EXPIRADA`, `VALIDADE_RECALCULADA`, `SENHA_GESTOR_INCORRETA`), e o
+  autor pode ser o próprio sistema (`AUTOR_SISTEMA`; índice Q-71). O registro não
   usa tabela nem tem tela de consulta; a pasta do arquivo vem do .env e fica fora do Git (Q21).
   [US-11][RBN-CAD-06.6][US-12][RBN-CAD-06.5][RBN-CAD-06.7][RBN-CAD-06.8][US-38][RBN-CAD-13.1]
   [RNF de Confidencialidade do RAN-CAD-06]
@@ -724,7 +763,7 @@ mas não bloqueiam as tarefas nem a implementação (Q25). Depois da resposta, c
 | M-13 | Reset do primeiro acesso concluído | "Primeiro acesso resetado. O aluno já pode refazer o primeiro acesso." | US-12 A2 | A validar |
 | M-14 | Campo obrigatório vazio nos formulários desta feature (exceto o login, que já tem texto) | "Campo obrigatório" | US-10, US-12 e US-38 (não tratam o caso); texto das demais US (Clarifications Q30) | Decidido (Q30; Q-50) |
 | M-15 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Inativa' (Q6, Q26) | "Conta inativa" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E5 | A validar |
-| M-16 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Expirada' ou de Membro Externo com a validade vencida (Q4, Q6, Q26) | "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso" (reaproveita o texto da US-11) | US-10 (não trata o caso); US-11 E3 | A validar |
+| M-16 | Primeiro acesso, link de ativação ou link de redefinição de conta 'Expirada' ou de Membro Externo com a validade vencida (Q4, Q6, Q26) | "Seu acesso expirou. Procure o Orientador, o Professor da Disciplina, a Secretaria ou o Coordenador de Curso" (o mesmo texto do login, US-11 E3; vale também para a validade vencida da US-06, Q-52) | US-10 (não trata o caso); US-11 E3; US-06 E1 (pela RBN-CAD-03.3) | A validar |
 | M-17 | Falha no envio do e-mail no primeiro acesso, no reenvio do link ou na troca de e-mail (Q13) | "Não foi possível enviar o e-mail agora. Tente novamente em alguns minutos." | Nenhuma fonte trata o caso | A validar |
 
 ## Assumptions
@@ -737,9 +776,10 @@ mas não bloqueiam as tarefas nem a implementação (Q25). Depois da resposta, c
 - **Mensagens sem texto exato nas US**: estão na seção "Mensagens a validar com a PO" (M-01 a
   M-17), marcadas como PROVISÓRIAS. A implementação usa esses textos até a validação; um texto
   validado diferente entra como correção da spec, com o teste correspondente.
-- **Painéis**: esta feature entrega um painel inicial mínimo por tipo de conta (boas-vindas e menu);
-  o conteúdo de cada painel vem das features dos épicos. O Docente tem um só painel, com os itens de
-  cada papel no menu (Q7).
+- **Telas iniciais**: a tela inicial de cada tipo de conta é uma tela de feature dos épicos (Turmas,
+  Defesas ou Minhas bancas), aberta pela raiz (FR-010, Q31). Até 2026-11-10 esta feature entregava
+  um painel mínimo em `/painel/` (boas-vindas e menu), removido na correção J1. O Docente tem uma só
+  tela inicial, com os itens de cada papel no menu (Q7).
 - **E-mail**: o envio usa um servidor de e-mail configurado no ambiente (segredos no .env); em
   desenvolvimento, as mensagens com os links aparecem no terminal. A falha de envio é registrada; o
   que o usuário vê está em Q13.

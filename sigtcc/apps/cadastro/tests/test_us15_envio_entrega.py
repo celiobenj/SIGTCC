@@ -50,6 +50,10 @@ from sigtcc.apps.cadastro.tests.apoio_turmas import (
 
 LINK_VALIDO = "https://drive.google.com/documento-1"
 LINK_SUBSTITUTO = "https://drive.google.com/documento-2"
+# Na entrega só para consulta (US-15, E3 a E6), o botão Enviar aparece desabilitado, sem
+# formulário que envie (índice Q-92, resposta A). [US-15][FR-019][FR-023]
+BOTAO_ENVIAR_DESABILITADO = '<button type="button" class="btn pri" disabled>Enviar</button>'
+BOTAO_ENVIAR_ATIVO = '<button type="submit" class="btn pri">Enviar</button>'
 
 
 class EnviarEntregaTestBase(TesteTurmas):
@@ -355,23 +359,25 @@ class MinhasEntregasViewTest(EnviarEntregaTestBase):
         self.assertContains(resposta, mensagens.LINK_HTTPS_500)
         self.assertFalse(HistoricoEnviosEntregas.objects.filter(hen_ent=self.registro()).exists())
 
-    def test_cenario8_tcc_fora_de_em_andamento_esconde_o_botao_enviar(self):
-        """Cenário 8 do spec.md: campo só leitura, sem o botão Enviar. [US-15][FR-023]"""
+    def test_cenario8_tcc_fora_de_em_andamento_desabilita_o_botao_enviar(self):
+        """Cenário 8 do spec.md: campo só leitura e botão Enviar desabilitado. [US-15][FR-023]"""
         tcc = services_turmas.tcc_do_aluno(self.turma, self.aluno)
         tcc.tcc_status = StatusTCC.APTO_PARA_DEFESA
         tcc.save(update_fields=["tcc_status"])
         self.client.force_login(self.aluno.alu)
         resposta = self.client.get(self.url_entrega())
         self.assertEqual(resposta.status_code, 200)
-        self.assertNotContains(resposta, ">Enviar<")
+        self.assertContains(resposta, BOTAO_ENVIAR_DESABILITADO, html=True)
+        self.assertNotContains(resposta, BOTAO_ENVIAR_ATIVO, html=True)
 
-    def test_turma_arquivada_esconde_o_botao_enviar(self):
+    def test_turma_arquivada_desabilita_o_botao_enviar(self):
         self.turma.tur_status = StatusTurma.ARQUIVADA
         self.turma.save(update_fields=["tur_status"])
         self.client.force_login(self.aluno.alu)
         resposta = self.client.get(self.url_entrega())
         self.assertEqual(resposta.status_code, 200)
-        self.assertNotContains(resposta, ">Enviar<")
+        self.assertContains(resposta, BOTAO_ENVIAR_DESABILITADO, html=True)
+        self.assertNotContains(resposta, BOTAO_ENVIAR_ATIVO, html=True)
 
     def test_outro_aluno_recebe_404_sem_idor(self):
         """Sem IDOR: outro aluno (mesmo que da mesma turma) não acessa a entrega alheia.
@@ -429,7 +435,7 @@ class MinhasEntregasViewTest(EnviarEntregaTestBase):
 
     def test_cenario10_substituicao_apos_o_prazo_fica_somente_leitura(self):
         """Cenário 10 da US-15 (E3): enviado no prazo e aberto depois da Data Limite, o Link
-        aparece só para leitura, sem o botão Enviar, e o status permanece Entregue.
+        aparece só para leitura, com o botão Enviar desabilitado, e o status permanece Entregue.
         [US-15][FR-019]
         """
         enviar_link(
@@ -444,13 +450,14 @@ class MinhasEntregasViewTest(EnviarEntregaTestBase):
         resposta = self.client.get(self.url_entrega())
         self.assertContains(resposta, LINK_VALIDO)
         self.assertContains(resposta, StatusEntrega.ENTREGUE.label)
-        self.assertNotContains(resposta, ">Enviar<")
+        self.assertContains(resposta, BOTAO_ENVIAR_DESABILITADO, html=True)
+        self.assertNotContains(resposta, BOTAO_ENVIAR_ATIVO, html=True)
         # Pelo endereço direto, o POST também não grava nada (SC-004).
         self.client.post(self.url_entrega(), {"link": LINK_SUBSTITUTO})
         self.assertFalse(HistoricoEnviosEntregas.objects.filter(hen_link=LINK_SUBSTITUTO).exists())
 
-    def test_cenario12_aluno_jubilado_sem_o_botao_enviar(self):
-        """Cenário 12 da US-15 (E5): aluno Jubilado abre a entrega, sem o botão Enviar.
+    def test_cenario12_aluno_jubilado_com_o_botao_enviar_desabilitado(self):
+        """Cenário 12 da US-15 (E5): aluno Jubilado abre a entrega com o botão Enviar desabilitado.
 
         [US-15][RBN-CAD-08.5][FR-023]
         """
@@ -460,7 +467,8 @@ class MinhasEntregasViewTest(EnviarEntregaTestBase):
         self.client.force_login(self.aluno.alu)
         resposta = self.client.get(self.url_entrega())
         self.assertEqual(resposta.status_code, 200)
-        self.assertNotContains(resposta, ">Enviar<")
+        self.assertContains(resposta, BOTAO_ENVIAR_DESABILITADO, html=True)
+        self.assertNotContains(resposta, BOTAO_ENVIAR_ATIVO, html=True)
 
 
 class EnviarLembretesTest(EnviarEntregaTestBase):

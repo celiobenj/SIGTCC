@@ -2,7 +2,8 @@
 {% comment %}
   Lista de Membros externos, sem filtro de Curso (Q19): Nome, E-mail, Instituição de Origem, Status
   da Conta (a validade vencida aparece como Expirada) e validade do acesso. "Editar" para quem pode
-  alterar; "Prorrogar" quando a view indicar (US-50). Visual do protótipo de 17/10.
+  alterar; "Prorrogar" quando a view indicar (US-50). Visual do protótipo de 17/10, com
+  "Cadastrar membro externo" no botão flutuante (.fab).
   [US-05][US-50][RBN-CAD-03.1][RBN-CAD-03.3][FR-031][FR-036][FR-042][Q19]
 {% endcomment %}
 {% block titulo %}Membros externos · SIGTCC{% endblock %}
@@ -10,7 +11,7 @@
 {% include "cadastro/contas/abas.html" with ativa="membros" %}
 <div class="flex entre flex-wrap">
   <h2 class="pg">Membros externos</h2>
-  {% if pode_cadastrar %}<a class="btn pri" href="{% url 'cadastro:contas_membro_novo' %}"><span class="ms">person_add</span>Cadastrar membro externo</a>{% endif %}
+  {% if pode_cadastrar %}<a class="fab" href="{% url 'cadastro:contas_membro_novo' %}"><span class="ms">add</span>Cadastrar membro externo</a>{% endif %}
 </div>
 {% if linhas %}
   <div class="tabela-wrap mt16">
@@ -20,10 +21,10 @@
         {% for linha in linhas %}
           {% with membro=linha.membro %}
           <tr>
-            <td>{{ membro.mem.usu_nome }}</td>
-            <td>{{ membro.mem.usu_email }}</td>
-            <td>{{ membro.mem_titulacao }}</td>
-            <td>{{ membro.mem_instituicao }}</td>
+            <td class="texto">{{ membro.mem.usu_nome }}</td>
+            <td class="nw">{{ membro.mem.usu_email }}</td>
+            <td class="nw">{{ membro.mem_titulacao }}</td>
+            <td class="texto">{{ membro.mem_instituicao }}</td>
             <td><span class="chip{% if linha.status == 'Ativa' %} verde{% elif linha.status == 'Expirada' %} vermelho{% else %} amarelo{% endif %}">{{ linha.status }}</span>{% if membro.mem_validade_ate %} <small>até {{ membro.mem_validade_ate|date:"d/m/Y" }}</small>{% endif %}</td>
             <td>
               <div class="flex">

@@ -18,12 +18,14 @@ from sigtcc.apps.cadastro.tests.apoio_acesso import (
     TesteAcesso,
     avancar_relogio,
     criar_aluno_com_turma,
+    criar_coordenador,
     criar_docente_ativo,
     criar_membro_externo,
     criar_notificacao,
     criar_secretaria,
 )
 from sigtcc.apps.cadastro.tests.fabricas import criar_turma
+from sigtcc.apps.cadastro.validators import id_valido
 
 NOVA = "NovaSenha99"
 
@@ -105,10 +107,10 @@ class SessaoECookiesTest(TesteAcesso):
         outro = Client()
         outro.post(reverse("cadastro:entrar"), {"credencial": "prof@uea.edu.br", "senha": SENHA})
         with avancar_relogio(minutos=59):
-            self.assertEqual(self.client.get(reverse("cadastro:painel")).status_code, 200)
+            self.assertEqual(self.client.get(reverse("cadastro:perfil")).status_code, 200)
         with avancar_relogio(minutos=61):
-            resposta = outro.get(reverse("cadastro:painel"))
-        self.assertRedirects(resposta, "/entrar/?next=/painel/", fetch_redirect_response=False)
+            resposta = outro.get(reverse("cadastro:perfil"))
+        self.assertRedirects(resposta, "/entrar/?next=/perfil/", fetch_redirect_response=False)
 
     def test_senha_nunca_aparece(self):
         """SC-008: a senha não volta no HTML e fica só como hash."""
@@ -142,7 +144,6 @@ class TodasAsPaginasTest(TesteAcesso):
     def internas(self):
         """(método, caminho) de cada rota interna de contracts/rotas.md."""
         return (
-            ("get", reverse("cadastro:painel")),
             ("get", reverse("cadastro:perfil")),
             ("get", reverse("cadastro:assinatura")),
             ("get", reverse("cadastro:alterar_senha")),
@@ -177,3 +178,33 @@ class TodasAsPaginasTest(TesteAcesso):
                     self.assertNotContains(resposta, "2026000077", status_code=403)
         self.assertEqual(Usuarios.objects.get(pk=self.aluno.pk).usu_status, StatusConta.ATIVA)
         self.assertEqual(len(mail.outbox), 0)
+
+
+class IdsMalformadosTest(TesteAcesso):
+    """Ids de GET/POST com dígito sobrescrito ("²") ou número gigante não derrubam a tela (500):
+    caem no padrão, como um valor ausente. [US-03][RBN-CAD-14.1][Q-153]
+    """
+
+    VALORES = ("²", "١٢", "99999999999999999999", "-1", " 1")
+
+    def test_filtro_de_curso_com_valor_malformado(self):
+        self.client.force_login(criar_coordenador())
+        for rota in ("cadastro:contas_docentes", "cadastro:contas_secretarias", "defesa:defesas"):
+            for valor in self.VALORES:
+                with self.subTest(rota=rota, valor=valor):
+                    resposta = self.client.get(reverse(rota), {"curso": valor})
+                    self.assertEqual(resposta.status_code, 200)
+
+    def test_agendar_com_ids_malformados(self):
+        self.client.force_login(criar_coordenador())
+        for valor in self.VALORES:
+            for campo in ("tcc", "turma", "membro"):
+                with self.subTest(campo=campo, valor=valor):
+                    resposta = self.client.get(reverse("defesa:agendar"), {campo: valor})
+                    self.assertLess(resposta.status_code, 500)
+
+    def test_id_valido(self):
+        self.assertEqual(id_valido("42"), 42)
+        for valor in (*self.VALORES, "", None, "1.0"):
+            with self.subTest(valor=valor):
+                self.assertIsNone(id_valido(valor))

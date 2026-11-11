@@ -1071,9 +1071,10 @@ def _aceitar_convite(docente, tcc, sol, aluno, agora):
 
 
 def recusar_solicitacao(docente, sol_id):
-    """ "Recusar" um pedido (FR-011: MO-03 ao Aluno; o orientador atual é mantido na troca) ou
-    convite (FR-032: MO-11 ao Aluno), com autor, data e hora. Devolve a mensagem da tela.
-    [US-18][US-36][RBN-CAD-10.2][RBN-CAD-10.4][FR-011][FR-032]
+    """ "Recusar" um pedido (FR-011: MO-03 ao Aluno e MO-27, no sistema e por e-mail, ao Professor
+    da Disciplina; o orientador atual é mantido na troca) ou convite (FR-032: MO-11 só ao Aluno),
+    com autor, data e hora. Devolve a mensagem da tela.
+    [US-18][US-36][RBN-CAD-10.2][RBN-CAD-10.4][FR-011][FR-032][Q-99]
     """
     with transaction.atomic():
         tcc, sol = _travar_para_resposta(docente, sol_id)
@@ -1082,11 +1083,28 @@ def recusar_solicitacao(docente, sol_id):
         sol.save(update_fields=["sol_status", "sol_data_resposta"])
         convite = sol.sol_tipo == TipoSolicitacao.COORIENTACAO
         modelo = mensagens.MO11_CONVITE_RECUSADO if convite else mensagens.MO03_PEDIDO_RECUSADO
+        aluno = tcc.tcc_alu.alu
         notificar(
-            tcc.tcc_alu.alu,
+            aluno,
             modelo.format(docente=docente.usu_nome),
             link=link_secao(tcc, "orientacao"),
         )
+        if not convite:
+            # Pedido (de orientação ou de troca): o resultado vai também ao Professor da
+            # Disciplina, como no aceite (RBN-CAD-10.2; índice Q-99, resposta A).
+            turma = tcc.tcc_tur
+            professor = turma.tur_doc.doc
+            texto = mensagens.MO27_ORIENTACAO_RECUSADA.format(
+                docente=docente.usu_nome, nome=aluno.usu_nome, identificador=turma.tur_identificador
+            )
+            link_painel = reverse("cadastro:painel_aluno", args=[turma.pk, aluno.pk])
+            notificar(professor, texto, link=link_painel)
+            enviar_email_apos_commit(
+                professor,
+                mensagens.MO27_ASSUNTO,
+                "cadastro/emails/orientacao_recusada.txt",
+                {"texto": texto, "link": settings.SITE_URL + link_painel},
+            )
     return mensagens.CONVITE_RECUSADO if convite else mensagens.PEDIDO_RECUSADO
 
 

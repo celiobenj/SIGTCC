@@ -1,4 +1,4 @@
-"""Carga inicial dos 9 critérios oficiais, com descritores provisórios (data migration 0004).
+"""Carga dos 9 critérios oficiais (migration 0004) e dos descritores oficiais (migration 0005).
 
 [US-25][RBN-DEF-04.1][spec 001, US3 cenários 2 e 5][FR-014][FR-017][SC-004][SC-005]
 """
@@ -9,7 +9,7 @@ from django.apps import apps
 from django.db.models import Sum
 from django.test import TestCase
 
-from sigtcc.apps.defesa import cargas
+from sigtcc.apps.defesa import cargas, descritores_oficiais
 from sigtcc.apps.defesa.models import Criterios
 
 CRITERIOS = [
@@ -23,21 +23,6 @@ CRITERIOS = [
     ("Parte Oral", "Domínio do Assunto", Decimal("1.5")),
     ("Parte Oral", "Postura perante a Banca", Decimal("0.5")),
 ]
-
-DESCRITORES = {
-    "cri_desc_exemplar": (
-        "PROVISÓRIO – Exemplar (nota de 8,0 a 10,0). "
-        "Texto oficial pendente da planilha de avaliação da EST/UEA."
-    ),
-    "cri_desc_competente": (
-        "PROVISÓRIO – Competente (nota de 6,0 a 7,9). "
-        "Texto oficial pendente da planilha de avaliação da EST/UEA."
-    ),
-    "cri_desc_necessita_trabalho": (
-        "PROVISÓRIO – Necessita de Trabalho (nota de 0,0 a 5,9). "
-        "Texto oficial pendente da planilha de avaliação da EST/UEA."
-    ),
-}
 
 
 class CargaCriteriosTest(TestCase):
@@ -59,16 +44,25 @@ class CargaCriteriosTest(TestCase):
         self.assertEqual(soma, {"Parte Escrita": Decimal("7.0"), "Parte Oral": Decimal("3.0")})
         self.assertEqual(Criterios.objects.aggregate(t=Sum("cri_peso"))["t"], Decimal("10.0"))
 
-    def test_descritores_provisorios(self):
-        """Os 27 descritores são os textos provisórios, até 255 caracteres (FR-014)."""
+    def test_descritores_oficiais(self):
+        """Os 27 descritores são os da planilha oficial da EST/UEA, sem texto provisório."""
+        oficiais = descritores_oficiais.DESCRITORES_OFICIAIS
+        self.assertCountEqual(oficiais, [nome for _, nome, _ in CRITERIOS])
         for criterio in Criterios.objects.all():
             self.assertIsNone(criterio.cri_descricao)
-            for campo, texto in DESCRITORES.items():
+            for campo, texto in oficiais[criterio.cri_nome].items():
                 with self.subTest(criterio=criterio.cri_nome, campo=campo):
                     valor = getattr(criterio, campo)
                     self.assertEqual(valor, texto)
-                    self.assertTrue(valor.startswith("PROVISÓRIO"))
-                    self.assertLessEqual(len(valor), 255)
+                    self.assertNotIn("PROVISÓRIO", valor)
+                    self.assertLessEqual(len(valor), 1000)
+
+    def test_reaplicacao_da_carga_nao_volta_ao_provisorio(self):
+        """A carga da 0004 reaplicada não sobrescreve os descritores oficiais."""
+        cargas.carregar_criterios_provisorios(apps, None)
+        self.assertFalse(
+            Criterios.objects.filter(cri_desc_exemplar__startswith="PROVISÓRIO").exists()
+        )
 
     def test_reaplicacao(self):
         """Aplicar a carga de novo não duplica nem muda identificadores (FR-017, SC-005)."""

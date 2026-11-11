@@ -21,6 +21,13 @@ recusa se devolver `False`. Conferir só na lista não basta. Sem isso, uma inat
 deixa um docente inativo com vínculo aberto (SC-005). Ordem das travas: `Usuarios` (id crescente),
 depois a especialização, depois `Cursos` (id crescente).
 
+**Exceção aceita: criação de turma (índice Q-77, opção B; Julia Cohen, 2026-11-10)**:
+`services_turmas.criar_turma` (spec 004) não chama `travar_e_conferir_ativo`. A corrida entre
+inativar o docente e ele criar uma turma no mesmo instante fica **aceita como risco**: o docente
+inativo pode ficar com uma turma ativa. O risco é baixo, porque quem cria a turma é o próprio
+docente, logado, e a conta inativada perde a sessão na página seguinte (spec 003, research A1). As
+demais criações de vínculo continuam com a trava desta regra.
+
 ## 2. Validade do Membro Externo (FR-039, FR-041) – Defesa (Q-67)
 
 | Função | Uso |

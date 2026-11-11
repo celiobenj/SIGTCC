@@ -119,7 +119,23 @@ p.pg-sub { color: var(--texto2); margin: 0 0 20px; }
 .tabela-wrap { overflow-x: auto; border: 1px solid var(--borda); border-radius: var(--radius); }
 table.tabela { border-collapse: collapse; width: 100%; font-size: 13px; }
 .tabela th { text-align: left; font-weight: 500; color: var(--texto2); background: var(--fundo2); padding: 10px 12px; border-bottom: 1px solid var(--borda); white-space: nowrap; }
-.tabela td { padding: 10px 12px; border-bottom: 1px solid var(--borda); vertical-align: top; overflow-wrap: anywhere; }
+/* Correção da quebra de palavras letra a letra nas tabelas ("Engenhari/a de/Computaç/ão" na tela
+   Relatórios, "Adria/na/Lope/s" na lista de docentes): com "overflow-wrap: anywhere", a coluna
+   encolhia até uma letra. O texto agora só quebra entre palavras, e a tabela que não couber rola
+   na horizontal dentro da .tabela-wrap. Colunas curtas (.nw: números, datas, Titulação, e-mails,
+   "4 / 0") não quebram linha; colunas de texto (.texto: nome, curso, título) têm largura mínima.
+   fix(core): impedir quebra de palavras nas tabelas */
+.tabela td { padding: 10px 12px; border-bottom: 1px solid var(--borda); vertical-align: top; overflow-wrap: normal; word-break: normal; hyphens: none; }
+.tabela .nw, .tabela .chip { white-space: nowrap; }
+.tabela td.texto { min-width: 140px; }
+/* Segunda correção (palavras partidas em 360 e 768 px, medidas com o Playwright): o navegador
+   também quebra a linha nas barras e pontos de um endereço e no hífen ou travessão de uma palavra
+   ("Humano-Computador", "14:00–17:40"), sem precisar de "overflow-wrap: anywhere". Endereços
+   (links externos e a coluna Link ou DOI) ficam inteiros numa linha, e a tabela rola dentro da
+   .tabela-wrap; as palavras com hífen dos relatórios vêm em <span class="nw">
+   (relatorios_tags.palavras_inteiras). Não há mais exceção com quebra em qualquer ponto.
+   fix(core): manter palavras inteiras nas tabelas em telas pequenas */
+.tabela td.link, .tabela a[href^="http"] { white-space: nowrap; }
 .tabela tr:last-child td { border-bottom: 0; }
 .chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: var(--hover); color: var(--texto2); white-space: nowrap; }
 .chip.azul { background: var(--azul-claro); color: var(--azul); }
@@ -242,4 +258,110 @@ a.bloco:hover { border-color: var(--azul-btn); box-shadow: var(--sombra); }
 /* Tabela larga (tela de orientandos, 9 colunas): rola dentro de .tabela-wrap em vez de quebrar
    o texto letra a letra (T060). [US-18][FR-014] */
 .tabela.larga { min-width: 1080px; }
-.tabela.larga td { overflow-wrap: normal; }
+/* Spec 008: avaliação pendente em Minhas bancas e na Sessão de defesa (destaque), linha bloqueada
+   do formulário Avaliação e prévia da assinatura. [US-25][US-26][US-27][RBN-DEF-05.4] */
+/* tr.alerta-amarelo: nome do protótipo para a mesma linha em destaque (docente acima do limite). */
+.tabela tr.pendente td, .tabela tr.alerta-amarelo td, .pendente-destaque { background: var(--amarelo-claro); }
+.tabela tr.bloqueado td { color: var(--texto2); background: var(--fundo); }
+.tabela td .inp, .tabela td select, .tabela td input, .tabela td textarea { width: 100%; }
+.assin { max-width: 320px; max-height: 120px; border: 1px solid var(--borda); border-radius: 6px; background: #fff; }
+
+/* ===================== Spec 010: Dashboards de Produção =====================
+   Regras do protótipo de 17/10 (linhas 183, 184, 225 a 230, 259 a 269, 293 a 295) que ainda não
+   existiam, adaptadas aos nomes da base (.tb → .tabela; .rel-menu com links, para funcionar sem
+   JavaScript), e o que o Padrão visual acrescenta: barra empilhada, linhas em SVG, sub-lista,
+   destaque e cabeçalho fixo. Nenhuma regra existente alterada.
+   [US-31][US-47][US-32][US-33][RBN-REL-01.1][RBN-REL-01.2][RBN-REL-02.1][RBN-REL-02.2]
+   [RBN-REL-02.3][RBN-REL-02.4][FR-070][FR-071][FR-073][FR-076][IC-04] (tasks T013) */
+.wrap:has(.rel-layout) { max-width: 1200px; }
+.tabela td.num, .tabela th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabela tfoot td { font-weight: 500; background: var(--fundo2); }
+.tabela tr.destaque td { font-weight: 500; background: var(--amarelo-claro); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.kpi { border: 1px solid var(--borda); border-radius: 8px; padding: 14px 16px; }
+.kpi b { display: block; font-size: 26px; font-family: var(--fonte-tit); font-weight: 600; }
+.kpi span { color: var(--texto2); font-size: 12px; }
+.rel-layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; }
+.rel-layout > section { min-width: 0; }
+.rel-menu a { display: block; padding: 10px 12px; border-radius: 6px; font-size: 13px; color: inherit; text-decoration: none; }
+.rel-menu a:hover { background: var(--hover); }
+.rel-menu a.ativo { background: var(--azul-claro); color: var(--azul); font-weight: 500; }
+.rel-menu small { display: block; color: var(--texto3); font-size: 11px; font-weight: 400; }
+.rel-titulo { font-family: var(--fonte-tit); font-weight: 500; font-size: 22px; margin: 0; }
+.rel-frase { color: var(--texto2); margin: 4px 0 16px; }
+.rel-mostrando { color: var(--texto2); font-size: 13px; margin: 0 0 16px; }
+.rel-rodape { color: var(--texto3); font-size: 12px; margin-top: 12px; }
+.rel-calculo { margin-top: 12px; font-size: 13px; color: var(--texto2); }
+.rel-calculo summary { cursor: pointer; }
+.filtros { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+.filtros .campo { margin: 0; min-width: 150px; }
+.rel-tabela { max-height: 70vh; overflow: auto; }
+.rel-tabela > table > thead th { position: sticky; top: 0; z-index: 1; }
+.barras { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 20px; }
+.barra { display: grid; grid-template-columns: 200px 1fr 60px; align-items: center; gap: 12px; font-size: 13px; }
+.barra .trilho { height: 22px; background: var(--hover); border-radius: 4px; overflow: hidden; display: flex; }
+.barra .preench { height: 100%; }
+.barra .valor { text-align: right; font-variant-numeric: tabular-nums; }
+.legenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--texto2); margin-bottom: 8px; }
+.legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.cor-azul { background: var(--azul); }
+.cor-verde { background: var(--verde); }
+.cor-vermelho { background: var(--vermelho); }
+.cor-cinza { background: var(--texto3); }
+.cor-roxo { background: var(--roxo); }
+.cor-teal { background: var(--teal); }
+.grafico-linhas { width: 100%; height: auto; margin-bottom: 12px; }
+.grafico-linhas polyline { fill: none; stroke-width: 2; }
+.grafico-linhas polyline.tracejada { stroke-dasharray: 6 4; }
+.grafico-linhas text { font-size: 11px; fill: var(--texto2); text-anchor: middle; }
+.traco-azul { stroke: var(--azul); }
+.traco-verde { stroke: var(--verde); }
+.traco-vermelho { stroke: var(--vermelho); }
+.traco-teal { stroke: var(--teal); }
+.linha-expande { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-align: left; }
+.linha-expande .ms { font-size: 18px; color: var(--texto2); }
+.sub { background: var(--fundo2); padding: 8px 12px 12px; font-size: 12px; }
+.sub h4 { margin: 8px 0 4px; font-size: 12px; font-weight: 500; }
+.sub table { width: 100%; border-collapse: collapse; }
+.sub td, .sub th { padding: 4px 6px; border-bottom: 1px solid var(--borda); text-align: left; }
+@media (max-width: 900px) {
+  .rel-layout { grid-template-columns: 1fr; gap: 12px; }
+  .rel-menu { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+  .rel-menu a { flex: none; max-width: 220px; }
+  .rel-menu small { display: none; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .barra { grid-template-columns: 110px 1fr 44px; gap: 8px; }
+  .filtros .campo { flex: 1 1 100%; }
+}
+@media print {
+  .rel-menu, .filtros, .rel-acoes { display: none; }
+  .rel-layout { grid-template-columns: 1fr; }
+  .rel-tabela { max-height: none; overflow: visible; }
+  tr.linha-sub[hidden] { display: table-row; }
+}
+
+/* Grade de turmas em cartões (tela "Turmas" do protótipo de 17/10, viewHome e cartaoTurma): banner
+   com a cor e o motivo do curso (filtro banner_turma), avatar do Professor da Disciplina, horário,
+   local e código da disciplina no corpo, e a quantidade de alunos no rodapé. O cartão inteiro é um
+   link. Ajuste: minmax com min(290px, 100%) para não haver rolagem horizontal em 360 px (SC-007).
+   O .cartao do protótipo (cartão do quadro arrastável) não foi copiado: o .cartao acima já é o
+   contêiner genérico das telas. [US-07][US-13][FR-010][FR-031] */
+.grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 24px; }
+.card-turma { border: 1px solid var(--borda); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; height: 296px; background: #fff; cursor: pointer; color: inherit; text-decoration: none; }
+.card-turma:hover { box-shadow: var(--sombra2); }
+.ct-banner { position: relative; height: 100px; padding: 16px 16px 12px; color: #fff; background-repeat: no-repeat; background-position: right center; }
+.ct-banner h3 { margin: 0; font-family: var(--fonte-tit); font-size: 22px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85%; }
+.card-turma:hover .ct-banner h3, .card-turma:focus-visible .ct-banner h3 { text-decoration: underline; }
+.ct-banner p { margin: 2px 0 0; font-size: 14px; opacity: .95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-banner .prof { position: absolute; bottom: 10px; left: 16px; font-size: 13px; max-width: calc(100% - 120px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-avatar { position: absolute; right: 16px; bottom: -36px; border: 0; }
+.ct-body { flex: 1; padding: 16px; padding-top: 44px; font-size: 13px; color: var(--texto2); overflow: hidden; }
+.ct-body .linha { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+.ct-body .linha .ms { font-size: 18px; }
+.ct-foot { border-top: 1px solid var(--borda); height: 52px; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 0 16px; font-size: 13px; color: var(--texto2); }
+.ct-foot .linha { display: flex; gap: 6px; align-items: center; }
+.ct-foot .ms { font-size: 18px; }
+
+/* Botão flutuante do protótipo (.fab), usado em "Nova turma" (US-07). */
+.fab { height: 48px; padding: 0 24px 0 16px; border-radius: 24px; border: 0; background: #fff; box-shadow: var(--sombra); color: var(--azul-btn); font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; white-space: nowrap; }
+.fab:hover { box-shadow: var(--sombra2); background: #f6fafe; }

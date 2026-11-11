@@ -36,9 +36,9 @@ class Criterios(models.Model):
     cri_nome = models.CharField(max_length=100)
     cri_componente = models.CharField(max_length=20, choices=ComponenteCriterio.choices)
     cri_descricao = models.CharField(max_length=255, null=True, blank=True)
-    cri_desc_exemplar = models.CharField(max_length=255)
-    cri_desc_competente = models.CharField(max_length=255)
-    cri_desc_necessita_trabalho = models.CharField(max_length=255)
+    cri_desc_exemplar = models.CharField(max_length=1000)
+    cri_desc_competente = models.CharField(max_length=1000)
+    cri_desc_necessita_trabalho = models.CharField(max_length=1000)
     cri_peso = models.DecimalField(max_digits=3, decimal_places=1)
 
     class Meta:

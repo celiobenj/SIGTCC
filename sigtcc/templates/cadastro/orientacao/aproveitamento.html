@@ -1,11 +1,13 @@
 {% extends "base.html" %}
+{% load chips_tags %}
 {% comment %}
   Tela "Aproveitamento de artigos" do Coordenador de Curso, como viewArtigos do protótipo de
   17/10: título, texto sobre a nota mínima, filtro Curso (3 cursos e Todos) e a tabela com Aluno,
   Orientador, Título do TCC, Veículo, Estrato Qualis/CAPES, o link "abrir" e o aproveitamento,
   com "Homologar" e "Recusar" só nos artigos do curso coordenado ("Recusar" indisponível no
   artigo Homologado depois da liberação). Sem regra aqui: as decisões vêm de
-  services_artigos.artigos_para_analise.
+  services_artigos.artigos_para_analise. O aproveitamento aparece no chip com cor (cor_homologacao:
+  verde Homologado, vermelho Recusado, amarelo Em Análise).
   [US-20][RBN-CAD-12.2][RBN-CAD-12.3][RBN-CAD-14.1][FR-037][FR-038]
 {% endcomment %}
 {% block titulo %}Aproveitamento de artigos · SIGTCC{% endblock %}
@@ -29,13 +31,13 @@
     <tbody>
       {% for l in linhas %}
       <tr>
-        <td>{{ l.aluno }}</td>
-        <td>{{ l.orientador|default:"—" }}</td>
-        <td>{{ l.tcc.tcc_titulo }}</td>
+        <td class="texto">{{ l.aluno }}</td>
+        <td class="texto">{{ l.orientador|default:"—" }}</td>
+        <td class="texto">{{ l.tcc.tcc_titulo }}</td>
         <td>{{ l.artigo.art_veiculo_publicacao|default:"—" }}</td>
-        <td>{{ l.artigo.art_qualis_capes|default:"—" }}</td>
+        <td class="nw">{{ l.artigo.art_qualis_capes|default:"—" }}</td>
         <td><a href="{{ l.artigo.art_link_doi }}" target="_blank" rel="noopener noreferrer">abrir</a></td>
-        <td><span class="chip">{{ l.artigo.art_homologacao|default:"—" }}</span></td>
+        <td><span class="chip {{ l.artigo.art_homologacao|cor_homologacao }}">{{ l.artigo.art_homologacao|default:"—" }}</span></td>
         <td>
           <div class="acoes">
             {% if l.pode_homologar %}<form method="post" action="{% url 'cadastro:homologar_artigo' l.tcc.pk %}?curso={{ curso }}">{% csrf_token %}<button type="submit" class="btn pri">Homologar</button></form>{% endif %}

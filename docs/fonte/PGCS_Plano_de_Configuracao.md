@@ -4,7 +4,7 @@
 | :---- | :---- |
 | **Instituição:** | UEA – Universidade do Estado do Amazonas (NUCOMP) |
 | **Responsável:** | Célio Benjamim |
-| **Data:** | 25/10/2026 |
+| **Data:** | 10/11/2026 |
 
 # **Controle do Documento e Histórico de Revisões**
 
@@ -13,6 +13,7 @@
 | **1.0** | 18/10/2026 | Estruturação inicial do PGCS para o marco TP2: arquitetura MVT, organização de diretórios, GitFlow, padronização de commits, modelo de Pull Request e baselines. | Célio Benjamim |
 | **1.1** | 20/10/2026 | Incorporação do ambiente multiplataforma (Windows e macOS), substituição do lint.bat pelo pre-commit, fluxo SDD (specs/ e .specify/), definição de logs em stdout e arquitetura de implantação em produção (Vercel, Neon, Vercel Blob, Brevo e GitHub Actions). | Célio Benjamim |
 | **1.2** | 25/10/2026 | Revisão para a Baseline 2 (TP2, 25/10/2026): produção no Render (substitui Vercel, Neon e Vercel Blob), e-mail pelo Brevo por SMTP, log de acesso na saída padrão, pre-commit implantado, Histórias de Usuário v3.4, nova seção 2.4 com os diagramas de arquitetura e atualização dos itens de configuração, da árvore de diretórios, das variáveis, das dependências, das branches, do modelo de Pull Request, das baselines e do rito de auditoria. | Célio Benjamim |
+| **1.3** | 10/11/2026 | Revisão para a Baseline 3 (TP3): PDFs gerados sob demanda e nunca gravados, sem armazenamento externo de arquivos (Q-132, Q-134); xhtml2pdf em uso; Ata Final e Folha de Aprovação no padrão institucional da UEA/EST, com o Aluno só com a Folha; descritores oficiais dos critérios de avaliação (Q-03, Q-18); rotinas por data por execução manual, com o comando iniciar\_sessoes (Q-67 C); branches de correção fix/ do guia de 09/11/2026 e escopos de commit; novos itens de configuração (modelos institucionais e visão de ambientes); limitações conhecidas (Q-43) e visão de implantação real. | Célio Benjamim |
 
 # **1\. Introdução e Gerência de Configuração**
 
@@ -60,13 +61,15 @@ Este plano rege os artefatos técnicos versionados no repositório oficial do pr
 | **CI-08** | Matriz de Requisitos | Cópia de referência da Matriz de Requisitos de 17/10. | docs/fonte/Matriz\_Requisitos\_17\_10.md e .xlsx |
 | **CI-09** | Histórias de Usuário, Modelo Lógico e Cronograma | Cópias de referência das Histórias de Usuário (v3.4), do Modelo Lógico e Dicionário de Dados e do cronograma. | docs/fonte/Historias\_de\_Usuario\_v3\_4.md, Modelo\_Logico\_e\_Dicionario\_18\_10.md e Cronograma\_18\_10.md |
 | **CI-10** | Configuração de Implantação | Blueprint do Render (serviço web, banco, build, início e variáveis não secretas) e configurações lidas do ambiente. | render.yaml e sigtcc/settings.py |
-| **CI-11** | Rotinas por Data | Comandos de expiração de Membros Externos e de lembretes de prazo; agendamento automático planejado (seção 9.4). | sigtcc/apps/cadastro/management/commands/ |
-| **CI-12** | Diagramas de Arquitetura | Diagramas C4 de componentes e de implantação e diagrama de pacotes (seção 2.4). | docs/arquitetura/\*.drawio |
+| **CI-11** | Rotinas por Data | Comandos de expiração de Membros Externos, de lembretes de prazo e de início das sessões de defesa, por execução manual no ambiente de validação (seção 9.4). | sigtcc/apps/cadastro/management/commands/ e sigtcc/apps/defesa/management/commands/ |
+| **CI-12** | Diagramas de Arquitetura | Diagramas C4 de componentes e de implantação e diagrama de pacotes (seção 2.4), com as imagens exportadas. | docs/arquitetura/\*.drawio e docs/arquitetura/imagens/ |
 | **CI-13** | Diagramas de Sequência | Diagramas de sequência dos casos de uso em PlantUML (v2), um por caso de uso, e a rastreabilidade dos participantes até o código. | docs/diagramas/Diagramas\_Sequencia\_PlantUML\_v2.md e Rastreabilidade\_Diagramas\_Codigo.md |
-| **CI-14** | Especificações das Features | Especificação, pesquisa técnica, plano, tarefas, roteiro de validação e texto do Pull Request de cada feature, e o índice de questões abertas. | specs/ e docs/questoes-a-rever.md |
+| **CI-14** | Especificações das Features | Especificação, pesquisa técnica, plano, tarefas, roteiro de validação e texto do Pull Request de cada feature, e o índice de questões a rever (todas respondidas em 10/11/2026). | specs/ e docs/questoes-a-rever.md |
 | **CI-15** | Governança do Fluxo SDD | Constituição do projeto, regras do assistente de codificação e agentes do fluxo de especificação. | .specify/memory/constitution.md, CLAUDE.md, GUIA\_SDD.md e .claude/agents/ |
 | **CI-16** | Guia de Implantação e Carga de Demonstração | Passo a passo da implantação no Render e comando que limpa e popula o ambiente com dados fictícios. | docs/deploy-render.md e .../management/commands/popular\_demo.py |
 | **CI-17** | Modelo de Pull Request | Gabarito obrigatório dos Pull Requests (seção 6.3). | .github/PULL\_REQUEST\_TEMPLATE.md |
+| **CI-18** | Modelos Institucionais dos Documentos | Modelos da Ata Final e da Folha de Aprovação da UEA/EST e os logos usados nos PDFs gerados pelo sistema. | docs/Modelo Ata final.pdf, docs/Modelo Folha de Aprovacao.pdf e sigtcc/static/img/ |
+| **CI-19** | Visão de Ambientes | Distinção entre a visão de construção (desenvolvimento e validação no Render, seção 9) e a visão de implantação real em produção, não implementada. | docs/ambientes.md |
 
 # **2\. Arquitetura de Software e Estrutura de Diretórios**
 
@@ -106,9 +109,13 @@ SIGTCC/
 │   ├── diagramas/              \# Diagramas de sequência (PlantUML) e rastreabilidade  
 │   ├── fonte/                  \# Cópias de referência dos documentos do Drive  
 │   │   └── prototipo/          \# Protótipo de 17/10 (referência visual)  
+│   ├── metodologia/            \# Passo a passo do fluxo SDD por feature  
+│   ├── Modelo Ata final.pdf    \# Modelo institucional da Ata Final (UEA/EST)  
+│   ├── Modelo Folha de Aprovacao.pdf \# Modelo institucional da Folha de Aprovação  
+│   ├── ambientes.md            \# Visão de construção e de implantação real  
 │   ├── deploy-render.md        \# Implantação no Render e carga de demonstração  
-│   └── questoes-a-rever.md     \# Índice de questões abertas  
-├── specs/                      \# Especificações das features (001 a 006\)  
+│   └── questoes-a-rever.md     \# Índice de questões a rever  
+├── specs/                      \# Especificações das features (001 a 010\)  
 ├── .env.example                \# Gabarito de variáveis de ambiente sem credenciais reais  
 ├── .flake8                     \# Regras do Flake8  
 ├── .gitattributes              \# Quebra de linha LF entre Windows e macOS  
@@ -136,14 +143,16 @@ SIGTCC/
     │   │       ├── enviar\_lembretes\_entrega.py  \# Lembretes de prazo  
     │   │       ├── expirar\_membros\_externos.py  \# Expiração de Membros Externos  
     │   │       └── popular\_demo.py              \# Carga de demonstração  
-    │   ├── defesa/             \# Épico 2 (modelos; telas no TP3)  
-    │   └── relatorios/         \# Épico 3 (TP4)  
+    │   ├── defesa/             \# Épico 2: agendamento, avaliação, documentos e ouvintes  
+    │   │   └── management/commands/  
+    │   │       └── iniciar\_sessoes.py          \# Início das sessões de defesa no horário  
+    │   └── relatorios/         \# Épico 3: dashboards (feat-10) e relatórios (TP4)  
     ├── templates/              \# base.html, base\_publica.html e acesso\_negado.html  
     │   ├── cadastro/  
     │   ├── defesa/  
     │   ├── includes/  
     │   └── relatorios/  
-    ├── static/                 \# css, js e img  
+    ├── static/                 \# css, js, fonts (PDFs) e img (logos UEA e EST)  
     └── media/                  \# Assinaturas do ambiente local (ignorado no Git)
 
 ## **2.4 Diagramas de Arquitetura**
@@ -152,11 +161,11 @@ Os diagramas ficam em docs/arquitetura/ (CI-12), em draw.io, na notação C4 (co
 
 **![Figura: componentes modulos](../arquitetura/imagens/componentes_modulos.png)**
 
-*Figura 1 – Diagrama de Componentes da Aplicação Web: módulos Cadastro, Defesa e Relatórios, rotina agendada e banco de dados.*
+*Figura 1 – Diagrama de Componentes da Aplicação Web: módulos Cadastro, Defesa e Relatórios, rotinas por data (execução manual) e banco de dados.*
 
 **![Figura: componentes servicos comuns](../arquitetura/imagens/componentes_servicos_comuns.png)**
 
-*Figura 2 – Diagrama de Componentes da Aplicação Web: autenticação, notificações, documentos e arquivos, com o Brevo e o armazenamento.*
+*Figura 2 – Diagrama de Componentes da Aplicação Web: autenticação, notificações, documentos e arquivos, com o Brevo.*
 
 **![Figura: pacotes](../arquitetura/imagens/pacotes.png)**
 
@@ -238,9 +247,9 @@ O arquivo .gitattributes contém a regra \* text=auto eol=lf, para que os arquiv
 
 * **Variáveis de Ambiente:** É terminantemente vedado comitar chaves de segurança (SECRET\_KEY), credenciais do PostgreSQL ou a chave SMTP do serviço de e-mail. O repositório fornece o arquivo .env.example, a partir do qual cada membro cria seu .env local. Em produção, os segredos são gerados ou cadastrados apenas no painel do Render (aba Environment); o render.yaml contém somente valores não secretos.
 
-* **Imagens de Assinatura e Documentos Gerados:** O banco de dados guarda apenas o caminho de cada arquivo, conforme o Modelo Lógico. As imagens de assinatura (PNG/JPG até 2 MB) e, a partir do TP3, os PDFs da Ata Final e da Folha de Aprovação são gravados por meio do default\_storage do Django, no diretório sigtcc/media/. No plano gratuito do Render esse diretório fica no disco efêmero do serviço e é apagado a cada reinício; antes da geração dos PDFs (TP3), adota-se um armazenamento externo privado (seção 9.5). Os arquivos não possuem endereço público: a aplicação verifica a permissão do usuário antes de entregar cada arquivo. O diretório sigtcc/media/ é bloqueado no .gitignore.
+* **Imagens de Assinatura:** O banco de dados guarda apenas o caminho de cada imagem, conforme o Modelo Lógico. As imagens de assinatura (PNG/JPG até 2 MB) são gravadas por meio do default\_storage do Django, no diretório sigtcc/media/. No plano gratuito do Render esse diretório fica no disco efêmero do serviço e é apagado a cada reinício ou implantação; o sistema não usa armazenamento externo de arquivos (decisão de 03/11/2026, Q-134), e a perda das imagens no ambiente de validação é risco aceito: o documento sai sem a imagem que faltar. As imagens não possuem endereço público, e o diretório sigtcc/media/ é bloqueado no .gitignore.
 
-* **Geração dos PDFs (TP3):** A Ata Final e a Folha de Aprovação serão geradas uma única vez, na liberação do resultado, com a banca, as notas, as assinaturas e o Coordenador de Curso vigentes nesse momento, e permanecerão inalteradas após a geração.
+* **Geração dos PDFs:** A Ata Final, a Folha de Aprovação, as declarações de participação e a agenda de defesas são gerados sob demanda, em memória, a cada download, e nunca são gravados (Q-132). O sistema confere a permissão do usuário antes de gerar cada documento; a Ata Final não é entregue ao Aluno, que baixa só a Folha de Aprovação. As notas, o parecer e as assinaturas da banca vêm dos dados congelados na liberação do resultado; o nome e a assinatura do Coordenador de Curso são lidos no momento do download. Os documentos seguem o padrão institucional da UEA/EST (CI-18), com o cargo do Coordenador e a titulação na forma neutra, pois o cadastro não guarda gênero (Q-155).
 
 * **Localização dos Dados:** O banco de produção fica no Render, na região Virginia (EUA), a mesma do serviço web. Enquanto o sistema é usado para validação, utilizam-se apenas dados fictícios (comando popular\_demo). O uso de dados pessoais reais de alunos depende da definição da hospedagem definitiva e da região dos dados, a registrar antes do TP4.
 
@@ -256,9 +265,9 @@ O settings.py lê segredos e parâmetros do ambiente pelo python-dotenv. Os ajus
 | **4** | **Log de eventos de acesso:** no ambiente local, em arquivo (LOG\_DIR). No Render, com LOG\_STDOUT \= True, os eventos vão para a saída padrão e aparecem na aba Logs do serviço (seção 9.6). |
 | **5** | **Envio de e-mail:** no ambiente local, backend de console. Em produção, backend SMTP do Django com o relay do Brevo (smtp-relay.brevo.com, porta 2525, TLS), configurado pelas variáveis EMAIL\_\*. O envio ocorre depois do commit, em thread separada, o que o processo contínuo do Render permite; a falha é registrada no log de acesso sem desfazer a operação. |
 | **6** | **Arquivos estáticos:** STATIC\_ROOT aponta para staticfiles/, preenchido pelo collectstatic no build; o WhiteNoise serve os arquivos pela própria aplicação, com DEBUG \= False. |
-| **7** | **HTTPS e endereço:** com COOKIES\_SEGUROS \= True, os cookies de sessão e CSRF exigem HTTPS e SECURE\_PROXY\_SSL\_HEADER \= ("HTTP\_X\_FORWARDED\_PROTO", "https") reconhece o proxy do Render. O domínio informado pelo Render (RENDER\_EXTERNAL\_HOSTNAME) entra automaticamente em ALLOWED\_HOSTS e CSRF\_TRUSTED\_ORIGINS, e RENDER\_EXTERNAL\_URL é o valor padrão de SITE\_URL. |
-| **8** | **Armazenamento de arquivos (planejado, TP3):** a configuração STORAGES passa a usar, em produção, um armazenamento externo privado, a definir na implementação; o código que usa default\_storage (por exemplo, a gravação da assinatura no perfil) não precisa ser alterado. |
-| **9** | **Geração de PDF (planejada, TP3):** a Ata Final e a Folha de Aprovação serão geradas pela biblioteca xhtml2pdf a partir dos templates de sigtcc/templates/defesa/, na liberação do resultado, e gravadas no armazenamento de arquivos. |
+| **7** | **HTTPS e endereço:** com COOKIES\_SEGUROS \= True, os cookies de sessão e CSRF exigem HTTPS e SECURE\_PROXY\_SSL\_HEADER \= ("HTTP\_X\_FORWARDED\_PROTO", "https") reconhece o proxy do Render. O domínio informado pelo Render (RENDER\_EXTERNAL\_HOSTNAME) entra automaticamente em ALLOWED\_HOSTS e CSRF\_TRUSTED\_ORIGINS, e RENDER\_EXTERNAL\_URL é o valor padrão de SITE\_URL. O redirecionamento de HTTP para HTTPS é feito pelo próprio Render; SECURE\_SSL\_REDIRECT e HSTS (SECURE\_HSTS\_SECONDS) não são ligados no ambiente de validação, únicos avisos do check \--deploy, e ficam para a implantação real. |
+| **8** | **Armazenamento de arquivos:** mantém-se o default\_storage do Django em sigtcc/media/, inclusive no Render (disco efêmero), sem armazenamento externo (Q-134). Um armazenamento de objetos privado fica para a implantação real (docs/ambientes.md); o código que usa default\_storage não precisaria ser alterado. |
+| **9** | **Geração de PDF:** a biblioteca xhtml2pdf gera os documentos em memória a partir dos templates de sigtcc/templates/defesa/pdf/, com as fontes locais de sigtcc/static/fonts/ e os logos de sigtcc/static/img/, sem acesso à rede; a view entrega o PDF depois de conferir a permissão, e nada é gravado. Uma trava no módulo pdf.py serializa as gerações de um mesmo processo. |
 
 ## **3.6 Variáveis de Ambiente**
 
@@ -291,8 +300,7 @@ O arquivo .env.example lista as variáveis do ambiente local, sem valores reais;
 | **requirements.txt** | Django (5.2.18), psycopg, psycopg-binary, python-dotenv e dependências | Presentes desde a feat-01. |
 | **requirements.txt** | openpyxl, defusedxml e et\_xmlfile | Presentes desde a feat-03: importação de alunos por XLSX. |
 | **requirements.txt** | gunicorn, whitenoise e dj-database-url | Presentes desde a v0.2.0: execução, arquivos estáticos e banco no Render. |
-| **requirements.txt** | xhtml2pdf | Planejado (TP3): geração dos PDFs da Ata Final e da Folha de Aprovação. |
-| **requirements.txt** | Cliente do armazenamento externo de arquivos | Planejado (TP3): definido na implementação. |
+| **requirements.txt** | xhtml2pdf (0.2.28) e dependências (reportlab, pypdf, pillow, lxml, html5lib e outras) | Presentes desde a feat-08: geração dos PDFs sob demanda. O pypdf também é usado nos testes para ler os PDFs. |
 | **requirements-dev.txt** | pre-commit, black, isort, flake8 e dependências | Presentes desde a v0.2.0, fora do requirements.txt. |
 
 O Render instala somente o requirements.txt (buildCommand do render.yaml).
@@ -376,6 +384,8 @@ O ciclo de vida do código adota a metodologia GitFlow Clássico, estabelecendo 
 
 * **Escopo:** Correção de falhas identificadas durante a integração na branch develop antes do fechamento de um marco.
 
+* **Branches de correção por responsável (fix/\<pessoa\>-\<assunto\>):** para as correções do formulário "Questões a Rever" (guia de 09/11/2026), cada integrante abriu uma branch a partir da develop (ex.: fix/celio-defesa-pdf-config e fix/julia-inicio-ui-cadastro), mexendo só nas pastas de que é dono, com rebase sobre a develop antes de cada Pull Request e título de PR no formato fix(\<área\>): \<assunto\>.
+
 ### **D. Branches de Correção Emergencial (hotfix/vX.X.X)**
 
 * **Origem:** main \| **Destino:** main e develop.
@@ -429,7 +439,11 @@ O escopo identifica o módulo do sistema impactado pela alteração:
 
 * **(core):** configurações globais do Django: settings.py, urls.py, wsgi.py e middleware;
 
-* **(config):** verificações de qualidade (.pre-commit-config.yaml), dependências, implantação (render.yaml), documentos de referência, constituição do Spec Kit e gerência de configuração.
+* **(config):** verificações de qualidade (.pre-commit-config.yaml), dependências, implantação (render.yaml), documentos de referência, constituição do Spec Kit e gerência de configuração;
+
+* **(spec):** alterações só nas especificações (specs/), sem código;
+
+* **(cadastro), (defesa), (relatorios):** o módulo afetado, nos commits das branches de correção fix/ (seção 4.3 C).
 
 ## **5.4 Regras de Ouro para os Commits**
 
@@ -461,7 +475,15 @@ Exemplos reais e previstos:
 
 * \[Feat-00\] Documentos base v3.4 e diagramas (sem US)
 
-* \[Feat-07\] Agendamento e Banca (US-21, US-22, US-23, US-24, US-40) – previsto
+* \[Feat-07\] Agendamento e Banca (US-21, US-22, US-23, US-24, US-40)
+
+* \[Feat-08\] Avaliação e Resultados (US-25, US-26, US-27)
+
+* \[Feat-09\] Documentação e Encerramento (US-28, US-30)
+
+* \[Feat-10\] Dashboards de Produção (US-31, US-32, US-33, US-47)
+
+* \[Fix\] Tela inicial por perfil no lugar do painel (US-11) e fix(defesa): Ata e Folha no padrão institucional (branches fix/ do guia de 09/11/2026)
 
 ## **6.2 Governança de Esquema e Migrações de Banco de Dados**
 
@@ -539,7 +561,7 @@ As baselines do SIGTCC estão vinculadas às quatro entregas parciais planejadas
 | :---- | :---- | :---- | :---- | :---- |
 | **Baseline 1** | v0.1.0 (sem tag) | **TP1** | 30/09/2026 | Declaração de escopo, matriz de requisitos, cronograma, protótipo na branch prototype e planos iniciais. |
 | **Baseline 2** | v0.2.0 | **TP2** | 25/10/2026 (adiada de 23/10) | Módulo de Cadastro e Manutenção completo (feat-00 a feat-06, 30 US do Épico 1), 36 tabelas no PostgreSQL 16, telas em Django MVT, pre-commit, PGCS 1.2 e sistema publicado no Render a partir da main. |
-| **Baseline 3** | v0.3.0 | **TP3** | 18/11/2026 | Módulo de Gestão da Defesa (agendamento, validação de conflito, avaliação e PDFs da Ata/Folha) e plano de testes. |
+| **Baseline 3** | v0.3.0 | **TP3** | 18/11/2026 | Módulo de Gestão da Defesa (feat-07 a feat-09: agendamento, validação de conflito, banca, avaliação com os descritores oficiais, resultado, Ata Final e Folha de Aprovação no padrão institucional, declarações, ouvintes e agenda), dashboards de produção (feat-10), correções do guia de 09/11/2026, PGCS 1.3 e plano de testes. |
 | **Baseline 4** | v1.0.0 | **TP4** | 09/12/2026 | Sistema SIGTCC completo em produção (Render), Módulo de Relatórios, execução dos testes e encerramento. |
 
 ## **7.3 Rastreabilidade de Versões (CHANGELOG.md)**
@@ -577,10 +599,11 @@ Entre os marcos, as entregas se acumulam na seção \[Não lançado\]; na releas
 | Criação de Tags e aprovação de merges para a main | **R/A** | I | I |
 | Execução das verificações do pre-commit antes de comitar | R | **R** | I |
 | Revisão técnica por pares de Pull Requests na develop | R | **R/A** | I |
-| Guarda das contas da hospedagem, do banco, do armazenamento e do serviço de e-mail | **R/A** | I | I |
+| Guarda das contas da hospedagem, do banco e do serviço de e-mail | **R/A** | I | I |
 | Cadastro das variáveis de ambiente e dos segredos de produção | **R/A** | C | I |
 | Acompanhamento das migrações no build e cópia de segurança do banco de produção | **R/A** | C | I |
 | Carga dos dados de demonstração no ambiente de validação (popular\_demo) | **R/A** | I | I |
+| Execução manual das rotinas por data no ambiente de validação (seção 9.4) | **R/A** | I | I |
 | Homologação e aceite das entregas parciais de software | C | C | **R/A** |
 
 Convenção: R \= Responsável pela Execução; A \= Autoridade Final / Aprovador; C \= Consultado; I \= Informado.
@@ -618,9 +641,9 @@ O SIGTCC opera em dois ambientes, representados pelos diagramas de implantação
 | **Cache** | Arquivo (pastas cache e cache\_acesso) | Arquivo no disco efêmero do serviço |
 | **Log de eventos de acesso** | Arquivo (pasta logs) | Saída padrão, na aba Logs do Render (seção 9.6) |
 | **Envio de e-mail** | Exibido no terminal (backend de console) | Brevo por SMTP (porta 2525), em thread após o commit |
-| **Geração de PDF** | Planejada (TP3): xhtml2pdf | Planejada (TP3): xhtml2pdf |
-| **Armazenamento de arquivos** | Diretório sigtcc/media/ | Disco efêmero do serviço; armazenamento externo privado planejado (TP3) |
-| **Rotina agendada** | Comandos executados manualmente | Comandos executados manualmente; agendamento planejado (seção 9.4) |
+| **Geração de PDF** | xhtml2pdf, em memória, a cada download | xhtml2pdf, em memória, a cada download |
+| **Armazenamento de arquivos** | Diretório sigtcc/media/ (assinaturas) | Disco efêmero do serviço (assinaturas, apagadas a cada reinício; risco aceito); PDFs não são gravados |
+| **Rotinas por data** | Comandos executados manualmente | Comandos executados manualmente, da estação do responsável (seção 9.4; Q-67 C) |
 | **Origem do código** | Branch de trabalho local | Branch main (implantação automática a cada merge) |
 
 ## **9.2 Vínculo entre Branches e Ambientes**
@@ -645,26 +668,27 @@ O SIGTCC opera em dois ambientes, representados pelos diagramas de implantação
 | **7** | Acessar o sistema, autenticar-se e disparar um e-mail de teste. |
 | **8** | O passo a passo detalhado, com os problemas comuns, está em docs/deploy-render.md (CI-16). |
 
-## **9.4 Rotina Agendada**
+## **9.4 Rotinas por Data (Execução Manual)**
 
-O Modelo Lógico prevê mudanças de estado por data e lembretes de prazo. Nesta versão, eles existem como comandos de gestão, ainda sem agendamento automático:
+O Modelo Lógico prevê mudanças de estado por data e lembretes de prazo. Eles existem como comandos de gestão idempotentes, executados manualmente (decisão Q-67 C, 09/11/2026):
 
 | Nº | Descrição |
 | :---- | :---- |
 | **1** | enviar\_lembretes\_entrega: gera os lembretes de 7 dias, 48 horas e 24 horas antes da Data Limite (US-15, Could Have), em Notificacoes e por e-mail, só para quem ainda não enviou e fora de turmas arquivadas; cada lembrete é registrado para não se repetir. |
 | **2** | expirar\_membros\_externos: muda para Expirada as contas de Membro Externo com a validade vencida (US-06). |
-| **3** | Sem o agendamento, as telas já aplicam as regras por data: a entrega vencida sem envio aparece como Não Entregue e a validade do Membro Externo é conferida no login, pelo mesmo serviço; os comandos completam o registro e os lembretes. |
-| **4** | Planejado (antes do TP3, que traz o início automático das sessões de defesa): um workflow do GitHub Actions, de hora em hora, que executa os comandos com a DATABASE\_URL externa guardada nos segredos do repositório. O agendador do Render (Cron Job) não faz parte do plano gratuito. |
-| **5** | O agendamento do GitHub Actions é expresso em UTC; as comparações de data e hora são feitas no fuso America/Manaus, definido no settings.py. |
-| **6** | Os diagramas de sequência de 24/10 (página ExecutarTarefasAgendadas) agrupam as rotinas numa tarefa única; o nome e o agrupamento finais serão definidos na spec da feat-07 (índice Q-79). |
-| **7** | No ambiente local, os comandos são executados manualmente: python manage.py enviar\_lembretes\_entrega e python manage.py expirar\_membros\_externos. |
+| **2a** | iniciar\_sessoes: muda para Em Andamento as sessões de defesa cujo horário chegou (US-24); as telas da Defesa fazem o mesmo ao abrir. |
+| **3** | Sem agendamento, as telas aplicam as regras por data: a entrega vencida sem envio aparece como Não Entregue, a validade do Membro Externo é conferida no login e a sessão de defesa começa ao abrir as telas da Defesa, pelos mesmos serviços; os comandos completam o registro e os lembretes. |
+| **4** | No ambiente de validação, os comandos são executados manualmente pelo responsável, da sua estação, com a DATABASE\_URL externa do banco do Render apenas na janela do terminal (docs/deploy-render.md). O agendador do Render (Cron Job) não faz parte do plano gratuito, e o workflow do GitHub Actions planejado na versão 1.2 não foi adotado. O agendamento automático fica para a implantação real (docs/ambientes.md). |
+| **5** | As comparações de data e hora são feitas no fuso America/Manaus, definido no settings.py, independentemente do fuso do servidor. |
+| **6** | O diagrama de sequência 14 (ExecutarTarefasAgendadas) mantém a rotina única, que chama os comandos acima (Q-79, opção A). |
+| **7** | No ambiente local: python manage.py enviar\_lembretes\_entrega, python manage.py expirar\_membros\_externos e python manage.py iniciar\_sessoes. |
 
 ## **9.5 Limites dos Planos Gratuitos**
 
 | Nº | Descrição |
 | :---- | :---- |
 | **1** | Web Service Free: o serviço dorme após 15 minutos sem acesso e leva cerca de 1 minuto para voltar; 512 MB de memória e 750 horas de instância por mês. |
-| **2** | O disco do serviço é efêmero: arquivos gravados (assinaturas, cache e arquivos temporários) são apagados a cada reinício ou implantação; os dados do banco permanecem. |
+| **2** | O disco do serviço é efêmero: arquivos gravados (assinaturas, cache e arquivos temporários) são apagados a cada reinício ou implantação; os dados do banco permanecem. Os PDFs não são afetados, porque são gerados a cada download. |
 | **3** | PostgreSQL Free: 1 GB e expiração 30 dias após a criação (o banco atual vence por volta de 24/11/2026). Antes disso, adota-se um banco que não expire, trocando apenas a DATABASE\_URL (por exemplo, o Neon gratuito ou um plano pago do Render). |
 | **4** | Brevo gratuito: 300 e-mails por dia, com a marca do serviço. As portas SMTP 25, 465 e 587 são bloqueadas no plano gratuito do Render; usa-se a porta 2525\. |
 
@@ -677,6 +701,20 @@ O log de eventos de acesso foi especificado na feat-02 como arquivo local (LOG\_
 | **Saída padrão (stdout) \[Adotada\]** | **Com LOG\_STDOUT \= True (render.yaml), os eventos de acesso são enviados à saída padrão (StreamHandler) e exibidos na aba Logs do Render.** Escolhida para o projeto: preserva a especificação da feat-02 ("sem criar tabelas nem colunas", FR-028), com retenção limitada à do plano gratuito. |
 | **Tabela técnica** | Os eventos seriam gravados em uma tabela técnica do Django, fora do Modelo Lógico, como a tabela de sessões. Descartada nesta fase para não exigir migração adicional nem alterar a restrição arquitetural homologada na feat-02. |
 
+## **9.7 Visão de Construção e Visão de Implantação Real**
+
+Esta seção 9 descreve a visão de construção: os ambientes usados para desenvolver, validar e entregar o SIGTCC na disciplina, só com planos gratuitos. O documento docs/ambientes.md (CI-19) acrescenta a visão de implantação real, não implementada: várias instâncias sem estado, banco sem expiração com cópia de segurança, armazenamento de objetos para as assinaturas, cache compartilhado, agendador para as rotinas por data, remetente de e-mail do domínio da UEA e pré-produção. Ela serve de referência para uma eventual implantação na UEA depois do semestre.
+
+## **9.8 Limitações Conhecidas**
+
+| Nº | Descrição |
+| :---- | :---- |
+| **1** | A importação de alunos (feat-03) foi validada só com arquivos de teste; não houve teste com uma exportação real do sistema acadêmico da UEA (Q-43). |
+| **2** | Os critérios de avaliação usam os descritores oficiais da planilha de avaliação da EST (migração defesa 0005, Q-03 e Q-18); as colunas de descritores passaram a VARCHAR(1000), com o dicionário ajustado. |
+| **3** | A Ata Final mostra o Coordenador de Curso atual, e não o da data da liberação, pois não há histórico de coordenadores (ideia futura S-05). |
+| **4** | As imagens de assinatura somem do disco do Render a cada reinício; o documento sai sem a imagem que faltar (ideias futuras S-04 e S-06). |
+| **5** | O teste test\_cenario5\_link\_gerado\_fora\_das\_telas (spec 003) é intermitente no Windows, pela resolução do relógio (Q-119); o ajuste é da responsável pelo módulo de Cadastro. |
+
 # **10\. Considerações Finais e Referências Normativas**
 
 Este plano estabelece as salvaguardas técnicas necessárias para que o desenvolvimento e a implantação do SIGTCC transcorram de maneira organizada, transparente e com total rastreabilidade até o encerramento do semestre letivo.
@@ -685,10 +723,11 @@ Este plano estabelece as salvaguardas técnicas necessárias para que o desenvol
 
 * **BREVO.** *SMTP relay: send transactional emails*. Disponível em: https\://developers.brevo.com/docs/smtp-integration. Acesso em: 25 out. 2026\.  
 * **BROWN, S.** *The C4 model for visualising software architecture*. Disponível em: https\://c4model.com/. Acesso em: 20 out. 2026\.  
-* **GITHUB.** *GitHub Actions documentation*. Disponível em: https\://docs.github.com/actions. Acesso em: 20 out. 2026\.  
 * **PRE-COMMIT.** *pre-commit: a framework for managing and maintaining multi-language pre-commit hooks*. Disponível em: https\://pre-commit.com/. Acesso em: 20 out. 2026\.  
 * **RENDER.** *Blueprint YAML Reference*. Disponível em: https\://render.com/docs/blueprint-spec. Acesso em: 25 out. 2026\.  
 * **RENDER.** *Deploy a Django App on Render*. Disponível em: https\://render.com/docs/deploy-django. Acesso em: 25 out. 2026\.  
 * **RENDER.** *Deploy for Free*. Disponível em: https\://render.com/docs/free. Acesso em: 25 out. 2026\.
+
+* **XHTML2PDF.** *xhtml2pdf documentation*. Disponível em: https\://xhtml2pdf.readthedocs.io/. Acesso em: 03 nov. 2026\.
 
 * **WHITENOISE.** *WhiteNoise documentation*. Disponível em: https\://whitenoise.readthedocs.io/. Acesso em: 25 out. 2026\.

@@ -24,8 +24,8 @@
     <tbody>
       {% for linha in linhas %}
       <tr>
-        <td><a href="{% url 'cadastro:entrega_enviar' turma.pk linha.entrega.ent_tma_id %}">{{ linha.entrega.ent_tma.tma_titulo }}</a></td>
-        <td>{{ linha.entrega.ent_tma.tma_data_limite|date:"d/m/Y H:i" }}</td>
+        <td class="texto"><a href="{% url 'cadastro:entrega_enviar' turma.pk linha.entrega.ent_tma_id %}">{{ linha.entrega.ent_tma.tma_titulo }}</a></td>
+        <td class="nw">{{ linha.entrega.ent_tma.tma_data_limite|date:"d/m/Y H:i" }}</td>
         <td><span class="chip">{{ linha.status }}</span></td>
       </tr>
       {% endfor %}

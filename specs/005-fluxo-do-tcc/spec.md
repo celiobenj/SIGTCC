@@ -177,6 +177,14 @@ mudar rotas nem regras.*
 - Decisão de Célio Benjamim (hotfix v0.2.1): os nomes de telas, abas, botões e seções da interface passam a ser exatamente os das Histórias de Usuário v3.4 e dos diagramas de sequência PlantUML v2 (`docs/diagramas/`). Só rótulos mudaram; o comportamento é o mesmo. Quando a v3.4 se contradiz, vale a US dona da ação.
 - Q: Qual é o nome da aba das entregas? → A: "Entregas" (US-15, US-16 e US-43 da v3.4 e tela `TelaEntregas` dos diagramas 09, 10 e 11). O nome provisório "Atividades" sai; o botão e a janela "Cadastrar atividade" continuam, como na v3.4 (índice Q-80, respondida).
 
+### Session 2026-11-10 (Q-92 respondida, Julia Cohen)
+
+- Q: Na janela da entrega só para consulta (US-15, E3 a E6: depois da Data Limite sem devolução
+  pendente, TCC fora de "Em Andamento", aluno Desistente/Reprovado/Jubilado ou turma arquivada), o
+  botão Enviar some ou aparece desabilitado? A US-15 (E5 e cenário 12) diz "o botão Enviar aparece
+  desabilitado"; esta spec dizia "sem o botão Enviar". → A: **opção A, seguir a US**: em todos esses
+  casos, o campo Link fica somente leitura e o botão Enviar aparece desabilitado (`disabled`), sem
+  formulário que envie. Atualizados o cenário 8 da User Story 4, o FR-019 e o FR-023 (índice Q-92).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -364,8 +372,8 @@ leitura.
    https:// e ter até 500 caracteres".
 8. **Given** o Aluno já enviou o link e a Data Limite já passou (sem devolução pendente), ou o TCC
    não está "Em Andamento", ou o Aluno está Desistente/Reprovado/Jubilado, ou a turma está
-   arquivada, **When** ele abre a entrega, **Then** o campo Link aparece apenas para leitura, sem o
-   botão Enviar.
+   arquivada, **When** ele abre a entrega, **Then** o campo Link aparece apenas para leitura e o
+   botão Enviar desabilitado (US-15, E3 a E6; Q-92).
 9. **Given** o Aluno está numa das abas da sua turma, **When** seleciona a aba "Entregas",
    **Then** o sistema lista as entregas da turma com Título, Data Limite e o status de envio do
    Aluno (US-15, passos 1 e 2; FR-031).
@@ -595,7 +603,7 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
 - **FR-019** [RBN-CAD-09.3]: O sistema MUST calcular o status de envio a partir do primeiro envio: "Entregue" até
   23:59 da Data Limite, "Entregue com Atraso" depois; MUST permitir substituir o link até a Data
   Limite (mantendo o status calculado pelo primeiro envio) e MUST tornar o campo somente leitura,
-  sem o botão Enviar, depois da Data Limite, salvo nos casos de devolução para ajuste (US-44). Com
+  com o botão Enviar desabilitado, depois da Data Limite, salvo nos casos de devolução para ajuste (US-44). Com
   o campo editável, ele MUST vir preenchido com o link mais recente já enviado, para o Aluno
   substituí-lo (US-15, fluxo D; US-29, fluxo D).
 - **FR-020** [RBN-CAD-09.3]: O sistema MUST marcar a entrega como "Não Entregue" quando a Data Limite vencer sem
@@ -606,7 +614,7 @@ verificar o status "Devolvida para Ajuste" e a notificação ao aluno.
 - **FR-022** [RBN-CAD-09.6]: O sistema MUST enviar lembretes de prazo (notificação no sistema e e-mail) 7 dias, 48
   horas e 24 horas antes da Data Limite, apenas aos alunos que ainda não enviaram e apenas em turma
   não arquivada.
-- **FR-023** [RBN-CAD-09.2, RBN-CAD-08.5]: O sistema MUST desabilitar o envio (campo somente leitura, sem botão) quando o TCC
+- **FR-023** [RBN-CAD-09.2, RBN-CAD-08.5]: O sistema MUST desabilitar o envio (campo somente leitura e botão Enviar desabilitado; Q-92) quando o TCC
   não estiver "Em Andamento" (entregas Documento para Defesa e Outra), quando o aluno estiver
   Desistente/Reprovado/Jubilado, ou quando a turma estiver arquivada.
 - **FR-024** [RBN-CAD-09.2, RBN-CAD-09.3]: Na entrega do tipo Versão Final (exclusiva de TCC 2), o sistema MUST liberar o envio

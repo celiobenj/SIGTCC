@@ -61,6 +61,7 @@ from sigtcc.apps.cadastro.permissoes import (
     tem_perfil,
     validade_vencida,
 )
+from sigtcc.apps.cadastro.validators import id_valido
 from sigtcc.apps.defesa.choices import EventoDefesa, StatusSessao
 from sigtcc.apps.defesa.models import BancaDefesa, Defesas, HistoricoDefesas
 
@@ -605,8 +606,9 @@ def filtro_de_curso(usuario, valor):
     """
     if valor == "todos":
         return None, "todos"
-    if valor and valor.isdigit() and Cursos.objects.filter(pk=int(valor)).exists():
-        return int(valor), valor
+    cur_id = id_valido(valor)  # Q-153: "²" ou número gigante caem no curso do usuário
+    if cur_id is not None and Cursos.objects.filter(pk=cur_id).exists():
+        return cur_id, valor
     padrao = curso_id_do_usuario(usuario)
     return padrao, str(padrao) if padrao is not None else "todos"
 
