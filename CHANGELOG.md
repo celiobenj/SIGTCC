@@ -4,6 +4,16 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
 
 ## [Não lançado]
 
+## [v0.3.1] - 11/11/2026 - Hotfix: migração dos descritores no Render
+
+### Corrigido
+
+- O deploy da v0.3.0 no Render parava na migração `defesa/0005_descritores_oficiais`
+  ("Critério ausente ou duplicado: Relevância do Tema"): um `popular_demo` anterior à v0.3.0
+  tinha esvaziado a tabela `Criterios` do banco do Render. A 0005 passa a recarregar os 9
+  critérios da 0004 (carga idempotente) antes de gravar os descritores oficiais; em banco com os
+  critérios, nada muda.
+
 ## [v0.3.0] - 11/11/2026 - Marco TP3 (adiantado)
 
 Baseline 3: Módulo de Gestão da Defesa completo (feat-07 a feat-09, Épico 2) e, adiantado pela

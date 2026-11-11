@@ -14,7 +14,12 @@ from sigtcc.apps.defesa import cargas, descritores_oficiais
 
 
 def aplicar_descritores_oficiais(apps, schema_editor):
-    """Grava os 27 descritores oficiais; cada critério deve existir (carga da 0004)."""
+    """Grava os 27 descritores oficiais. Antes, recarrega os 9 critérios da 0004 (carga
+    idempotente): um `popular_demo` anterior à v0.3.0 esvaziava "Criterios", e o banco do Render
+    ficou sem eles (hotfix v0.3.1). Com os critérios presentes, nada muda.
+    [US-25][RBN-DEF-04.1][FR-014a]
+    """
+    cargas.carregar_criterios_provisorios(apps, schema_editor)
     criterios = apps.get_model("defesa", "Criterios")
     for nome, descritores in descritores_oficiais.DESCRITORES_OFICIAIS.items():
         if criterios.objects.filter(cri_nome=nome).update(**descritores) != 1:
