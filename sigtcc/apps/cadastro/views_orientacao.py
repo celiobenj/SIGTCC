@@ -16,6 +16,7 @@ from sigtcc.apps.cadastro.choices import TipoSolicitacao
 from sigtcc.apps.cadastro.forms_orientacao import CoorientadorForm
 from sigtcc.apps.cadastro.permissoes import perfil_requerido
 from sigtcc.apps.cadastro.services_turmas import TurmaArquivada
+from sigtcc.apps.cadastro.validators import id_valido
 from sigtcc.apps.defesa import services_defesa
 
 
@@ -40,12 +41,12 @@ def enviar_pedido_orientacao(request, tur_id):
     [US-17][RBN-CAD-10.1][RBN-CAD-10.6][FR-001 a FR-005][contracts/rotas.md]
     """
     services_tcc.turma_do_aluno(tur_id, request.user)  # vínculo antes de tudo (404, sem IDOR)
-    doc_id = request.POST.get("docente") or ""
-    if not doc_id.isdigit():
+    doc_id = id_valido(request.POST.get("docente") or "")  # [Q-153]
+    if doc_id is None:
         messages.error(request, mensagens.M14_CAMPO_OBRIGATORIO)
         return _volta_secao(tur_id)
     try:
-        pedido = services_orientacao.enviar_pedido(request.user, tur_id, int(doc_id))
+        pedido = services_orientacao.enviar_pedido(request.user, tur_id, doc_id)
     except TurmaArquivada:
         messages.warning(request, mensagens.MT25_TURMA_ARQUIVADA)
     except services_orientacao.ErroOrientacao as erro:
