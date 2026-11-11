@@ -27,13 +27,11 @@ O `SECRET_KEY` é gerado pelo Render. O `.env` não vai para o servidor e contin
 
 ## Passo 1. Enviar a branch para o GitHub
 
-O Render lê o código do GitHub, não do seu computador. No PowerShell, na pasta do projeto:
+O Render lê o código do GitHub, não do seu computador. O ambiente de validação publica a branch
+`main`, que só recebe código pelo merge de uma release ou de um hotfix (PGCS 9.2). Na primeira
+publicação de cada baseline, a `main` é atualizada pelo merge da `release/vX.Y.Z`.
 
-```powershell
-git push -u origin release/v0.2.0
-```
-
-Toda vez que você fizer push nessa branch, o Render publica de novo sozinho.
+Toda vez que a `main` recebe um push, o Render publica de novo sozinho.
 
 ## Passo 2. Criar a conta no Render
 
@@ -52,7 +50,7 @@ cobrado enquanto tudo estiver no plano **Free**.
    o acesso no GitHub.
 3. Preencha:
    - **Blueprint Name:** `sigtcc`;
-   - **Branch:** `release/v0.2.0`.
+   - **Branch:** `main`.
 4. O Render mostra o que vai criar: o banco `sigtcc-db` e o serviço web `sigtcc`, ambos Free.
    Clique em **Deploy Blueprint**.
 5. Espere de 5 a 10 minutos. Para acompanhar, abra o serviço **sigtcc** e a aba **Logs**. No
@@ -182,9 +180,13 @@ Os e-mails `demo.…@uea.edu.br` da carga não existem; os envios para eles volt
 
 ## Atualizar o sistema publicado
 
-- Novo push na `release/v0.2.0`: o Render publica sozinho. As migrações novas rodam no build.
-- Para publicar a partir de outra branch (por exemplo a `main`, depois do merge da release), abra
-  o serviço > **Settings** > **Build & Deploy** > **Branch**.
+- Novo push na `main` (merge de release ou hotfix): o Render publica sozinho. As migrações novas
+  rodam no build.
+- Para conferir ou trocar a branch publicada, abra o serviço > **Settings** > **Build & Deploy** >
+  **Branch**. A v0.2.0 foi publicada a partir da `release/v0.2.0`, já apagada depois do merge na
+  `main`: o serviço deve estar apontando para a `main`.
+- Depois de publicar uma baseline com migração de dados (por exemplo a `defesa 0005`, descritores
+  oficiais, na v0.3.0), rode de novo o `popular_demo` (Passo 4) se quiser recomeçar a demonstração.
 - Para publicar de novo sem mudar o código, use **Manual Deploy** > **Deploy latest commit**.
 
 ## Problemas comuns
