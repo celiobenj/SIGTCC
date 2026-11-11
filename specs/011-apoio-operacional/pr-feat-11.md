@@ -37,8 +37,8 @@ detected"):
 
 | Commit | Título |
 |---|---|
-| (1º) | docs(feat-11): especificar o apoio operacional |
-| (2º) | feat(feat-11): implementar os relatorios operacionais |
+| `974c795` | docs(feat-11): especificar o apoio operacional |
+| `ca2529e` | feat(feat-11): implementar os relatorios operacionais |
 
 **Mudanças em código de outras specs** (todas só acrescentam):
 
@@ -67,7 +67,7 @@ o cronograma estão na planilha da Parte C (A064 a A081).
 - [x] `makemigrations --check --dry-run`: "No changes detected"; nenhuma migração existente alterada.
 - [x] Os arquivos `.env` e os diretórios `sigtcc/media/` e `staticfiles/` NÃO foram adicionados ao Git.
 - [x] A interface usa o layout único da spec 010 (protótipo de 17/10), sem template novo.
-- [x] Suíte completa passando (ver a seção 4).
+- [x] Suíte completa passando: 1864 testes OK.
 
 ### 4. Evidência da Validação Manual (Critérios de Aceite das USs)
 
