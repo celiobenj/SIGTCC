@@ -12,8 +12,8 @@ na v0.2.1, para os diagramas do Épico 1 (Cadastro e Manutenção).
 - **Entidades** (`entity`): os modelos seguem o dicionário de dados de 18/10 (plural, `db_table`
   explícito), e os diagramas usam o singular.
 
-Os diagramas da Defesa (01 a 06 e 28) e dos Relatórios (23 a 26) serão implementados nos Épicos 2
-e 3. A spec 008 (Avaliação e Resultados) acrescentou abaixo os participantes dos diagramas 04
+Os diagramas da Defesa (01 a 06 e 28) e dos Relatórios (23 a 26) foram implementados nos Épicos 2
+e 3 (specs 007 a 011; a correspondência dos Relatórios está nas linhas da spec 010 e da spec 011). A spec 008 (Avaliação e Resultados) acrescentou abaixo os participantes dos diagramas 04
 (`AvaliarCriterios`) e 28 (`LiberarResultadoDefesa`), com o código do app `defesa`. A spec 009
 (Documentação e Encerramento) acrescentou os do diagrama 05 (`RegistrarOuvintesAgenda`) e
 completou o `:GeradorDocumentosPDF` do diagrama 28.
@@ -43,6 +43,7 @@ completou o `:GeradorDocumentosPDF` do diagrama 28.
 | `:TelaSessaoDefesa` (spec 008) | `defesa/sessao.html` com `_bloco_avaliacao.html` e `_bloco_resultado.html`; `defesa/confirmar_liberacao.html`; `defesa/_resultado_aluno.html` (aba Meu TCC) | `defesa/views_defesa.py` (`sessao`), `defesa/views_avaliacoes.py` (`registrar_parecer`, `liberar_resultado`) | 28 |
 | `:TelaSessaoDefesa` (spec 009) | blocos `_bloco_documentos.html`, `_bloco_ouvintes.html` e `_bloco_ocorrencias.html` de `defesa/sessao.html`; `defesa/_documentos_aluno.html` (aba Meu TCC, só a Folha de Aprovação para o Aluno); PDFs `defesa/pdf/ata_final.html` e `folha_aprovacao.html` (padrão institucional, com o cabeçalho `defesa/pdf/_cabecalho.html` e os logos `static/img/logo_uea.png` e `logo_est.png`) e `declaracao.html` | `defesa/views_documentos.py` (`ata_final`, que recusa o Aluno com 403, `folha_aprovacao`, `declaracao`) e `defesa/permissoes_defesa.py` (`pode_baixar_ata`, `pode_baixar_folha`) | 28 |
 | `:TelaDefesas` (spec 009, diagrama 05) | `defesa/form_ouvintes.html` (com `static/js/ouvintes.js`), `defesa/form_ocorrencias.html`, `defesa/ouvintes_das_defesas.html`, botão "Agenda de defesas (PDF)" de `defesa/defesas.html` e o PDF `defesa/pdf/agenda.html` | `defesa/views_ouvintes.py` (`ouvintes`, `ocorrencias`, `ouvintes_das_defesas`), `defesa/views_documentos.py` (`agenda`) | 05 |
+| `:TelaRelatorios` (specs 010 e 011) | `relatorios/relatorios.html` (layout único), `_filtros.html`, `_tabela.html`, `_grafico_*.html` e os PDFs de `relatorios/pdf/` | `relatorios/views.py` (`lista`, `relatorio`, `exportar`) | 23, 24, 25, 26 |
 
 ## Controladores e serviços
 
@@ -61,14 +62,17 @@ completou o `:GeradorDocumentosPDF` do diagrama 28.
 | `:ControladorOrientacao` | `services_orientacao.py`: `enviar_pedido`, `cancelar_pedido`, `aceitar_solicitacao`, `recusar_solicitacao`, `registrar_coorientador`, `remover_coorientador`, `remover_convite`, `orientandos` |
 | `:ControladorAtas` | `services_atas.py`: `registrar_ata`, `editar_ata`, `comentar_ata` |
 | `:ControladorArtigos` | `services_artigos.py`: `salvar_publicacao`, `artigos_para_analise`, `homologar_artigo`, `recusar_artigo` |
-| `:ControladorTarefas` | comandos `enviar_lembretes_entrega` e `expirar_membros_externos` (`management/commands/`); o agendamento automático está planejado (PGCS 9.4) |
-| `:ControladorBanca`, `:ControladorDefesa` | `services_contas.recalcular_validade` é o ponto de entrada da US-06 para o Épico 2; o restante fica no app `defesa` (planejado) |
+| `:ControladorTarefas` | comandos `enviar_lembretes_entrega`, `expirar_membros_externos` e `iniciar_sessoes` (`management/commands/`), por execução manual, sem agendador (Q-67 C; PGCS 9.4) |
+| `:ControladorBanca`, `:ControladorDefesa` (spec 007) | `defesa/services_defesa.py`: `agendar`, `alterar_banca`, `acionar_suplente`, `reagendar`, `cancelar`, `iniciar_sessoes_vencidas`, `membros_efetivos`, `filtro_de_periodo`; a validade do Membro Externo continua em `services_contas.recalcular_validade` (US-06) |
 | `:ControladorAvaliacao` (spec 008) | `defesa/services_avaliacoes.py`: `salvar_rascunho`, `enviar_avaliacao`, `reabrir_avaliacao`, `criterios_liberados`, `nota_individual`, `estado_da_avaliacao`, `estados_da_banca`, `descartar_avaliacoes`, `voltar_envios_a_rascunho`, `minhas_bancas` |
 | `:ControladorResultado` (spec 008) | `defesa/services_avaliacoes.py`: `apuracao`, `nota_final`, `parecer_automatico`, `registrar_parecer`, `liberar_resultado`, `visao_da_avaliacao`, `resultado_da_sessao`, `resultado_para_o_aluno`; a sessão muda só por `services_defesa.transicionar_status` e o TCC por `services_turmas.atualizar_status_tcc` |
 | `:ControladorResultado` (spec 008, Q-131 B) | `defesa/services_avaliacoes.py`: `_avisar_liberacao` avisa só a Secretaria do curso (MA-08); o Aluno e a banca não recebem aviso do resultado (diagrama 28, `LiberarResultadoDefesa`) |
 | `:ControladorResultado` (spec 009) | `defesa/services_documentos.py`: `avisar_pendencia_da_ata` (E2 da US-28 depois do commit da liberação, chamada por `views_avaliacoes.liberar_resultado`) |
 | `:GeradorDocumentosPDF` (specs 008 e 009) | `defesa/pdf.py`: `gerar_pdf` (com a trava de módulo `_TRAVA_PDF`), `resposta_pdf` (PDF sob demanda, em memória, nunca gravado); `defesa/services_documentos.py`: `situacao_da_ata`, `dados_da_ata`, `dados_da_folha`, `folha_aplicavel`, `dados_da_declaracao`, `codigo_de_validacao`, `agenda_de_defesas`, `visao_dos_documentos`, `documentos_do_aluno` (sem a Ata), `ao_liberar_resultado` (envio das declarações por e-mail) e `declaracao_disponivel` |
 | `:ControladorEventosDefesa` (spec 009, diagrama 05) | `defesa/services_ouvintes.py`: `salvar_ouvintes`, `ouvintes_da_sessao`, `registrar_ocorrencias`, `visao_da_sessao`, `ouvintes_das_defesas`; `defesa/forms_ouvintes.py`: `OuvintesFormSet`, `OcorrenciasForm`; permissões em `defesa/permissoes_defesa.py` (`pode_editar_ouvintes`, `pode_ver_ouvintes`, `pode_editar_ocorrencias`, `pode_ver_ocorrencias`, `pode_gerar_agenda`, `pode_ver_ouvintes_das_defesas`) |
+| `:ControladorRelatorios` (spec 010, diagramas 23, 24 e 26) | `relatorios/registro.py` (`@relatorio`, `relatorios_do_usuario`, `pode_abrir`), `relatorios/forms.py` (`FiltroRelatorioForm`, `Filtros`) e `relatorios/services_relatorios.py` (`montar_relatorio`, `atividades_docente`, `membros_externos`, `producao_tccs`, `artigos`, `formacao_evasao`, `historico_nucomp`) |
+| `:ControladorRelatorios` (spec 011, diagramas 25 e 26) | `relatorios/services_operacionais.py`: `defesas_realizadas` (US-48), `turmas_alunos` (US-49), `aluno_orientador` (US-34) e `horas_ouvintes` (US-35, sobre `services_ouvintes.ouvintes_das_defesas`); recorte do Professor da Disciplina em `_recortar` |
+| `:GeradorArquivo` (spec 010) | `relatorios/exportacao.py`: `exportar` (PDF, CSV e XLSX da mesma estrutura da tela, com `proteger`) |
 
 ## Entidades
 

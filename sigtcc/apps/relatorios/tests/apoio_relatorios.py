@@ -27,7 +27,7 @@ from sigtcc.apps.cadastro.tests.apoio_turmas import (
     tcc_de,
 )
 from sigtcc.apps.defesa.choices import FormatoSessao, PapelBanca, StatusSessao
-from sigtcc.apps.defesa.models import BancaDefesa, Defesas
+from sigtcc.apps.defesa.models import BancaDefesa, Defesas, Ouvintes, PresencaOuvintes
 
 # Conteúdo que uma planilha, o HTML ou o PDF poderiam interpretar (research R15).
 LINK_HOSTIL = "javascript:alert(1)"
@@ -116,7 +116,7 @@ def artigo(tcc, status=None, homologacao=None, link="https://doi.org/10.1000/tes
 
 
 def cenario_hostil():
-    """Dados para os 6 relatórios em 2026/2, com conteúdo hostil em nomes, títulos, veículo,
+    """Dados para os 10 relatórios em 2026/2, com conteúdo hostil em nomes, títulos, veículo,
     instituição e link. Devolve o Coordenador. [US-31][US-47][US-32][US-33][research R15]
     """
     coordenador = coordenador_de(EC)
@@ -143,7 +143,10 @@ def cenario_hostil():
     primeiro.art_veiculo_publicacao = "=VEICULO()"
     primeiro.save()
     artigo(trabalhos[1], status=StatusSubmissao.ACEITO, link=LINK_LONGO)
-    sessao_realizada(trabalhos[0], banca_de(orientador, avaliador, externo))
+    sessao = sessao_realizada(trabalhos[0], banca_de(orientador, avaliador, externo))
+    # Ouvinte com nome que uma planilha interpretaria (spec 011, US-35). [US-35][research R15]
+    ouvinte = Ouvintes.objects.create(ouv_matricula="2415080011", ouv_nome="=HYPERLINK(1)")
+    PresencaOuvintes.objects.create(pre_def=sessao, pre_ouv=ouvinte)
     aluno_com_status(turma1, StatusTCC.SEM_PROPOSTA, nome="Sem Proposta da Silva")
     aluno_com_status(turma1, StatusTCC.REPROVADO, orientador=avaliador, nome="<b>Negrito</b>")
     return coordenador

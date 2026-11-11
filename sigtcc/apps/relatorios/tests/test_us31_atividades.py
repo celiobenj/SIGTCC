@@ -195,7 +195,12 @@ class TesteCenariosDaUS(TesteAtividades):
     def test_cenario_14_professor_da_disciplina_como_docente(self):
         """1.14: só o Painel, com a própria linha."""
         resposta = self.abrir(self.professor)
-        self.assertEqual([item.id for item in resposta.context["lista"]], [ID])
+        # Dos relatórios da spec 010, só o Painel; a spec 011 acrescenta os operacionais, que o
+        # Professor da Disciplina também abre (RAN-REL-03). [US-31][US-48][US-49][US-34][US-35]
+        operacionais = {"defesas-realizadas", "turmas-alunos", "aluno-orientador", "horas-ouvintes"}
+        ids = [item.id for item in resposta.context["lista"]]
+        self.assertEqual([id for id in ids if id not in operacionais], [ID])
+        self.assertEqual(set(ids) - {ID}, operacionais)
         self.assertEqual(len(resposta.context["relatorio"].linhas), 1)
         self.assertEqual(
             resposta.context["relatorio"].linhas[0].valores["docente"],

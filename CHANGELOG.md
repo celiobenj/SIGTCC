@@ -79,6 +79,15 @@ Histórico de alterações do SIGTCC por baseline (PGCS 7.3). Versões no padrã
   - gráficos em HTML/CSS e SVG, sem biblioteca nova, com a tabela como fonte de verdade;
   - base reaproveitável pela feat-11: registro de relatórios por decorador, formulário de filtros,
     estrutura única e exportação genérica (`contracts/base-relatorios.md`).
+- Apoio Operacional (spec 011, feat-11; US-48, US-49, US-34 e US-35), no app `relatorios`, sobre
+  a base da spec 010, sem tabela nem coluna nova e só de leitura:
+  - Defesas realizadas no período (só sessões Realizadas, com Orientador, Banca efetiva,
+    Modalidade e Parecer), Turmas e alunos (Status do TCC por aluno, com Reprovado, Desistente e
+    Jubilado destacados), Aluno e orientador (apoio à matrícula; Aprovados para TCC 2 primeiro e
+    destacados) e Horas complementares de ouvintes (2 horas por presença e o total);
+  - para Coordenador de Curso, Secretaria e Professor da Disciplina; o Professor que não é
+    Coordenador vê só as próprias turmas, sem o filtro Curso (Q-157);
+  - exportação em PDF, CSV e XLSX pela base da spec 010.
 - `popular_demo` com o cenário dos relatórios: troca de orientador, Suplente acionado em período
   passado, terceiro período letivo com artigo copiado e Membros Externos de duas instituições numa
   sessão Realizada (a 1ª Avaliadora dessa sessão passa a ser um Membro Externo).
